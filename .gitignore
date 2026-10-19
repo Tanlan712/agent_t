@@ -10,6 +10,9 @@
 .svn/
 migrate_working_dir/
 
+# Environment variables (contains sensitive data)
+.env
+
 # IntelliJ related
 *.iml
 *.ipr
@@ -41,3 +44,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local secrets / archived legacy code
+.cookies/
+archive/
