@@ -10,6 +10,8 @@
 
 **Spec：** `docs/superpowers/specs/2026-10-19-manual-shop-wishlist-design.md`
 
+> **第 2 版（2026-10-20）：目標平台改為網頁，並取消提醒。** Task 1 到 6 已依第 1 版完成。後續請改照文件最後的「第 2 版：網頁版後續 Task」：Task W1 修正已完成的部分，Task W2 到 W6 取代下方原本的 Task 7 到 11。若第 1 版的 Global Constraints 和第 2 版衝突，以第 2 版為準。
+
 ## Global Constraints
 
 - 開始 Task 1 之前，執行者要先詢問使用者：是否把目前未提交的修改（`.gitignore`、`.metadata`、`lib/main.dart`、`pubspec.*`）commit 成基準點。由使用者決定，不可以自行 commit 或丟棄這些修改。
@@ -452,3 +454,137 @@ testWidgets('首頁顯示瀏覽分類', (tester) async {
   commit 訊息為 `docs: update progress for manual shop + wishlist`。
 - [ ] **Step 4：回報**
   列出修改內容、驗證結果，以及尚未驗證的 Android 項目，提醒使用者安裝 Android Studio 後再驗證。
+
+---
+
+## 第 2 版：網頁版後續 Task
+
+### 第 2 版 Global Constraints（覆蓋第 1 版的衝突項目）
+
+- 目標平台是 Flutter Web（本機 SDK 3.24.5）。`lib/` 底下禁止 import `dart:io`。
+- 不做任何提醒或通知；移除 `flutter_local_notifications`、`timezone`、`flutter_timezone`、`path_provider`。
+- `AppSettings` 改為 `{resetHour = 8, resetMinute = 0, highlightWishlist = true}`。
+- 本機 Flutter 3.24 沒有 `Color.withValues`，改用 `withOpacity`。
+- 每個 Task 結束時，`flutter analyze` 不可以有新的 error 或 warning、`flutter test` 全數通過，而且 `flutter build web` 要成功。
+- 不部署，不修改 `.env` 的 asset 設定（見 spec 第 9 節）。
+
+### 第 2 版 Review Focus
+
+沿用第 1 版的 1 到 5 項，並把第 1 版第 2 項的 `notifyHour` 改為 `resetHour`。另外加一項：
+
+6. **localStorage 寫入失敗**（容量超過上限或被瀏覽器拒絕）：`CatalogProvider` 仍然使用剛下載的目錄，不顯示錯誤。（Task W1）
+
+---
+
+### Task W1：轉換為網頁版的基礎（修正 Task 2、4、6 的產物）
+
+**Files：**
+- Modify：`pubspec.yaml`（移除 4 個套件）
+- Modify：`lib/models/app_settings.dart`、`test/models/models_json_test.dart`
+- Modify：`lib/storage/catalog_cache.dart`、`test/storage/catalog_cache_test.dart`
+- Modify：`lib/providers/settings_provider.dart`、`lib/providers/catalog_provider.dart`、`test/providers/providers_test.dart`、`test/catalog_helpers.dart`
+- Delete：`lib/services/notification_service.dart`、`lib/services/noop_notification_service.dart`、`test/fakes.dart`（這幾個是本 session 剛新增的檔案，不是使用者的資料）
+
+**Interfaces：**
+- Produces：
+  - `AppSettings({int resetHour = 8, int resetMinute = 0, bool highlightWishlist = true})`，有 `copyWith`、`toJson`、`fromJson`。
+  - `CatalogCache(SharedPreferences prefs)`：`SkinCatalog? load()`（同步）、`Future<void> save(SkinCatalog)`。key 為 `catalog`。`save` 失敗時丟出例外，由 provider 處理。
+  - `CatalogProvider(CatalogApi api, CatalogCache cache)`：介面和 Task 6 相同。下載成功但 `cache.save` 丟出例外時，仍然採用新目錄，並 `debugPrint`。
+  - `SettingsProvider(SettingsStorage storage)`：`AppSettings get settings`、`Future<void> setResetTime(int hour, int minute)`、`Future<void> setHighlightWishlist(bool v)`。
+
+- [ ] **Step 1：修改測試（RED）**
+  - models：`AppSettings` 的來回轉換和預設值改用 `resetHour`、`resetMinute`。
+  - catalog_cache：改用 `SharedPreferences.setMockInitialValues`。存入再讀出要一致；沒有資料時回傳 null；`{'catalog': '{bad'}` 時回傳 null。
+  - providers：
+    - 刪除通知相關的測試。
+    - 新增 `'setResetTime 存檔'`：`setResetTime(9, 15)` 之後 `SettingsStorage(prefs).load().resetHour == 9`。
+    - 新增 `'快取寫入失敗仍採用新目錄'`：用一個 `save` 會丟例外的 `CatalogCache` 子類別（寫在測試檔裡），驗證 `init()` 之後 `catalog` 有 2 筆、`error == null`。
+  - `catalog_helpers`：改用 prefs 版的 `CatalogCache`，不再需要暫存目錄。
+- [ ] **Step 2：執行** `flutter test`
+  預期 FAIL，原因是型別或參數不符。
+- [ ] **Step 3：實作上述 Interfaces，刪除通知檔案，執行 `flutter pub remove flutter_local_notifications timezone flutter_timezone path_provider`**
+- [ ] **Step 4：執行** `flutter test` 和 `flutter analyze`
+  預期全部 PASS，沒有新的 warning。另外用 Grep 確認 `lib/` 底下沒有 `dart:io`。
+- [ ] **Step 5：執行** `flutter build web`
+  預期成功。
+- [ ] **Step 6：Commit**
+  commit 訊息為 `refactor: switch target to web and drop reminders`。
+
+---
+
+### Task W2：造型卡片元件與造型搜尋器（取代原 Task 7）
+
+內容同原 Task 7，包括已經寫好但還沒 commit 的 `tier_badge`、`skin_tile`、`bundle_tile`、`catalog_gate`、`skin_picker_page` 和 `test/widgets/skin_picker_test.dart`。差異只有：
+- `TierBadge` 的 `withValues(alpha: 0.15)` 改為 `withOpacity(0.15)`。
+- `CatalogGate` 在這個 Task 建立（ledger 已記錄這個決定）。
+
+- [ ] **Step 1：執行** `flutter test test/widgets`
+  預期：在修正 `withValues` 之前會編譯失敗。
+- [ ] **Step 2：修正後再執行** `flutter test test/widgets`
+  預期 PASS。
+- [ ] **Step 3：執行** `flutter test`、`flutter analyze`、`flutter build web`
+  預期全部通過。
+- [ ] **Step 4：Commit**
+  commit 訊息為 `feat: add skin tiles and skin picker page`。
+
+---
+
+### Task W3：我的商店與商店編輯頁（取代原 Task 8）
+
+內容同原 Task 8，差異如下：
+- 每日商店的到期時間改用 `nextResetAfter(now(), settings.resetHour, settings.resetMinute)`。
+- 夜市結束日期的時刻改用 `resetHour:resetMinute`。
+- `CatalogGate` 已經在 W2 建立，直接使用。
+- 測試沿用原 Task 8 的 Step 1 和 Step 2。驗證指令加上 `flutter build web`。commit 訊息不變。
+
+---
+
+### Task W4：願望清單頁、首頁入口、組裝 main（取代原 Task 9）
+
+內容同原 Task 9，差異如下：
+- `main.dart` 沒有通知服務、`navigatorKey` 和 `launchedFromNotification`。啟動順序為：`SharedPreferences.getInstance()` → 建立 storage 和 providers → `catalogProvider.init()`（不 await）→ `runApp`。
+- Step 5 的手動冒煙測試改成：
+  - 在 `.claude/launch.json` 加入一組設定：`runtimeExecutable: "flutter"`，`runtimeArgs: ["run", "-d", "web-server", "--web-port", "8642"]`，`port: 8642`。
+  - 用內建瀏覽器窗格開啟，依序確認：首次下載目錄 → 願望清單加入 2 個造型 → 每日商店輸入 4 個（含 1 個願望清單造型）→ 金框和計數正確 → 重新整理頁面後資料仍在。
+  - 截圖附在回報裡。
+- commit 訊息不變。
+
+---
+
+### Task W5：設定頁「我的商店」區塊（取代原 Task 10）
+
+**Files：**
+- Modify：`lib/screens/settings_page.dart`（在 ListView 的 children 最後加一個 Card，現有內容不動）
+- Test：`test/screens/settings_page_test.dart`
+
+**Interfaces：**
+- Consumes：`SettingsProvider`（W1 版）、`CatalogProvider`。
+
+- [ ] **Step 1：寫失敗的測試**
+  - 看得到「我的商店」區塊標題，以及「商店刷新時間 08:00」、「標示願望清單」開關、「重新下載造型目錄」。
+  - 關掉「標示願望清單」→ `settings.highlightWishlist == false`。
+  - 點「重新下載造型目錄」→ MockClient 收到請求。
+  - 顯示「上次下載：2026-10-19 12:00」，格式為 `yyyy-MM-dd HH:mm`。
+- [ ] **Step 2：執行** `flutter test test/screens/settings_page_test.dart`
+  預期 FAIL。
+- [ ] **Step 3：實作**
+  刷新時間用 `showTimePicker` 選擇，選完呼叫 `setResetTime`。
+- [ ] **Step 4：執行** `flutter test`、`flutter analyze`、`flutter build web`
+  預期全部通過。
+- [ ] **Step 5：Commit**
+  commit 訊息為 `feat: add my-shop section to settings page`。
+
+---
+
+### Task W6：文件更新與最終驗證（取代原 Task 11）
+
+- [ ] **Step 1：執行** `flutter analyze`、`flutter test`、`flutter build web`
+  記錄結果。
+- [ ] **Step 2：更新文件**
+  - `PROGRESS.md`：「商店追蹤」改為完成（網頁版）；註明不做提醒、Android 和 Windows 不再維護。
+  - `PROGRESS.md` 和 `README.md`：加入 `.env` 會被打包成公開檔案的部署前注意事項（spec 第 9 節）。
+  - `README.md`：加上本機執行方式 `flutter run -d web-server --web-port 8642`。
+- [ ] **Step 3：Commit**
+  commit 訊息為 `docs: update progress for web manual shop + wishlist`。
+- [ ] **Step 4：回報**
+  列出修改內容、驗證結果和已知限制。
