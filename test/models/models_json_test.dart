@@ -127,15 +127,13 @@ void main() {
 
     test('AppSettings', () {
       final s = AppSettings(
-        notifyEnabled: true,
-        notifyHour: 21,
-        notifyMinute: 30,
+        resetHour: 21,
+        resetMinute: 30,
         highlightWishlist: false,
       );
       final r = AppSettings.fromJson(s.toJson());
-      expect(r.notifyEnabled, true);
-      expect(r.notifyHour, 21);
-      expect(r.notifyMinute, 30);
+      expect(r.resetHour, 21);
+      expect(r.resetMinute, 30);
       expect(r.highlightWishlist, false);
     });
   });
@@ -150,9 +148,8 @@ void main() {
 
   test('AppSettings 預設值', () {
     final s = AppSettings();
-    expect(s.notifyEnabled, false);
-    expect(s.notifyHour, 8);
-    expect(s.notifyMinute, 0);
+    expect(s.resetHour, 8);
+    expect(s.resetMinute, 0);
     expect(s.highlightWishlist, true);
   });
 }

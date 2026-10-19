@@ -1,34 +1,26 @@
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/skin_catalog.dart';
+import 'prefs_json.dart';
 
-/// 把精簡後的造型目錄存成 catalog.json。
+/// 把精簡後的造型目錄存在 shared_preferences（網頁上為 localStorage）。
 class CatalogCache {
-  static const _fileName = 'catalog.json';
+  static const _key = 'catalog';
 
-  final Future<Directory> Function() _directory;
+  final SharedPreferences _prefs;
 
-  CatalogCache(this._directory);
+  CatalogCache(this._prefs);
 
-  Future<File> _file() async => File('${(await _directory()).path}/$_fileName');
+  SkinCatalog? load() => readPrefsJson<SkinCatalog?>(
+        _prefs,
+        _key,
+        (json) => SkinCatalog.fromJson(json as Map<String, dynamic>),
+        null,
+      );
 
-  Future<SkinCatalog?> load() async {
-    final file = await _file();
-    if (!await file.exists()) return null;
-    try {
-      final json = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
-      return SkinCatalog.fromJson(json);
-    } catch (e) {
-      debugPrint('catalog.json 損壞，忽略快取：$e');
-      return null;
-    }
-  }
-
+  /// 寫入失敗（例如超過容量）時會丟出例外，由呼叫端決定如何處理。
   Future<void> save(SkinCatalog catalog) async {
-    final file = await _file();
-    await file.writeAsString(jsonEncode(catalog.toJson()));
+    final ok = await writePrefsJson(_prefs, _key, catalog.toJson());
+    if (!ok) throw StateError('造型目錄寫入失敗');
   }
 }

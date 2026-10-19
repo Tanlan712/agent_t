@@ -1,43 +1,34 @@
 class AppSettings {
-  final bool notifyEnabled;
-  final int notifyHour;
-  final int notifyMinute;
+  /// 商店每天刷新的時間（本地時間），用來計算每日商店的到期時刻。
+  final int resetHour;
+  final int resetMinute;
   final bool highlightWishlist;
 
   const AppSettings({
-    this.notifyEnabled = false,
-    this.notifyHour = 8,
-    this.notifyMinute = 0,
+    this.resetHour = 8,
+    this.resetMinute = 0,
     this.highlightWishlist = true,
   });
 
-  AppSettings copyWith({
-    bool? notifyEnabled,
-    int? notifyHour,
-    int? notifyMinute,
-    bool? highlightWishlist,
-  }) {
+  AppSettings copyWith({int? resetHour, int? resetMinute, bool? highlightWishlist}) {
     return AppSettings(
-      notifyEnabled: notifyEnabled ?? this.notifyEnabled,
-      notifyHour: notifyHour ?? this.notifyHour,
-      notifyMinute: notifyMinute ?? this.notifyMinute,
+      resetHour: resetHour ?? this.resetHour,
+      resetMinute: resetMinute ?? this.resetMinute,
       highlightWishlist: highlightWishlist ?? this.highlightWishlist,
     );
   }
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
     return AppSettings(
-      notifyEnabled: json['notifyEnabled'] as bool? ?? false,
-      notifyHour: json['notifyHour'] as int? ?? 8,
-      notifyMinute: json['notifyMinute'] as int? ?? 0,
+      resetHour: json['resetHour'] as int? ?? 8,
+      resetMinute: json['resetMinute'] as int? ?? 0,
       highlightWishlist: json['highlightWishlist'] as bool? ?? true,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'notifyEnabled': notifyEnabled,
-        'notifyHour': notifyHour,
-        'notifyMinute': notifyMinute,
+        'resetHour': resetHour,
+        'resetMinute': resetMinute,
         'highlightWishlist': highlightWishlist,
       };
 }

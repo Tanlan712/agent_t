@@ -34,7 +34,7 @@ class CatalogProvider with ChangeNotifier {
 
   /// 先讀快取，沒有快取才下載。
   Future<void> init() async {
-    final cached = await _cache.load();
+    final cached = _cache.load();
     if (cached != null) {
       _setCatalog(cached);
       notifyListeners();
@@ -50,9 +50,13 @@ class CatalogProvider with ChangeNotifier {
     notifyListeners();
     try {
       final fresh = await _api.fetchCatalog();
-      await _cache.save(fresh);
       _setCatalog(fresh);
       _usingStaleCache = false;
+      try {
+        await _cache.save(fresh);
+      } catch (e) {
+        debugPrint('造型目錄無法寫入快取，僅保留在記憶體：$e');
+      }
     } catch (e) {
       debugPrint('下載造型目錄失敗：$e');
       if (_catalog != null) {

@@ -51,18 +51,18 @@ void main() {
   group('SettingsStorage', () {
     test('存入後讀出一致', () async {
       final storage = SettingsStorage(await prefsWith({}));
-      await storage.save(const AppSettings(notifyEnabled: true, notifyHour: 21, notifyMinute: 30));
+      await storage.save(const AppSettings(resetHour: 21, resetMinute: 30, highlightWishlist: false));
       final r = storage.load();
-      expect(r.notifyEnabled, true);
-      expect(r.notifyHour, 21);
-      expect(r.notifyMinute, 30);
+      expect(r.highlightWishlist, false);
+      expect(r.resetHour, 21);
+      expect(r.resetMinute, 30);
     });
     test('沒有資料時回傳預設設定', () async {
-      expect(SettingsStorage(await prefsWith({})).load().notifyHour, 8);
+      expect(SettingsStorage(await prefsWith({})).load().resetHour, 8);
     });
     test('資料損壞時回傳預設設定', () async {
       final r = SettingsStorage(await prefsWith({'settings': 'not json'})).load();
-      expect(r.notifyEnabled, false);
+      expect(r.resetHour, 8);
       expect(r.highlightWishlist, true);
     });
   });

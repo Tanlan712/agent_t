@@ -20,5 +20,5 @@ T readPrefsJson<T>(
   }
 }
 
-Future<void> writePrefsJson(SharedPreferences prefs, String key, Object json) =>
+Future<bool> writePrefsJson(SharedPreferences prefs, String key, Object json) =>
     prefs.setString(key, jsonEncode(json));

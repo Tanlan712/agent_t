@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -16,7 +15,6 @@ import 'package:valorant_shop_tracker/storage/settings_storage.dart';
 import 'package:valorant_shop_tracker/storage/shop_storage.dart';
 import 'package:valorant_shop_tracker/storage/wishlist_storage.dart';
 
-import '../fakes.dart';
 import '../fixtures.dart';
 
 void main() {
@@ -29,13 +27,11 @@ void main() {
   });
 
   group('CatalogProvider', () {
-    late Directory dir;
     late int requests;
     late bool failing;
     late CatalogProvider provider;
 
     setUp(() {
-      dir = Directory.systemTemp.createTempSync('catalog_provider_test');
       requests = 0;
       failing = false;
       final client = MockClient((req) {
@@ -45,23 +41,21 @@ void main() {
       });
       provider = CatalogProvider(
         CatalogApi(client: client, now: () => now),
-        CatalogCache(() async => dir),
+        CatalogCache(prefs),
       );
     });
-
-    tearDown(() => dir.deleteSync(recursive: true));
 
     test('沒有快取時 init 下載並存入快取', () async {
       await provider.init();
       expect(provider.catalog!.skins.length, 2);
-      expect(await CatalogCache(() async => dir).load(), isNotNull);
+      expect(CatalogCache(prefs).load(), isNotNull);
       expect(provider.skinById('skin-odin')!.name, '凌空之志 奧丁');
       expect(provider.bundleById('bundle-rgx')!.name, 'RGX 11z Pro');
       expect(provider.weaponNames, ['奧丁']);
     });
 
     test('有快取時 init 不呼叫 API', () async {
-      await CatalogCache(() async => dir)
+      await CatalogCache(prefs)
           .save(SkinCatalog(skins: const [], bundles: const [], fetchedAt: now));
       await provider.init();
       expect(requests, 0);
@@ -83,6 +77,17 @@ void main() {
       expect(provider.catalog, isNull);
       expect(provider.error, '無法下載造型資料，請檢查網路後重試');
       expect(provider.isLoading, isFalse);
+    });
+
+    test('快取寫入失敗仍採用新目錄', () async {
+      final p = CatalogProvider(
+        CatalogApi(client: MockClient(fixtureHandler), now: () => now),
+        _FailingSaveCache(prefs),
+      );
+      await p.init();
+      expect(p.catalog!.skins.length, 2);
+      expect(p.error, isNull);
+      expect(p.usingStaleCache, isFalse);
     });
   });
 
@@ -148,57 +153,27 @@ void main() {
   });
 
   group('SettingsProvider', () {
-    test('權限被拒 → 維持關閉', () async {
-      final n = FakeNotificationService(permissionGranted: false);
-      final p = SettingsProvider(SettingsStorage(prefs), n);
-      await p.setNotifyEnabled(true);
-      expect(p.settings.notifyEnabled, isFalse);
-      expect(p.permissionDenied, isTrue);
-      expect(n.calls, isNot(contains(startsWith('scheduleDaily'))));
-    });
-
-    test('權限允許 → 排程 08:00', () async {
-      final n = FakeNotificationService();
-      final p = SettingsProvider(SettingsStorage(prefs), n);
-      await p.setNotifyEnabled(true);
-      expect(p.settings.notifyEnabled, isTrue);
-      expect(p.permissionDenied, isFalse);
-      expect(n.calls.where((c) => c == 'scheduleDaily(8,0)').length, 1);
-      expect(SettingsStorage(prefs).load().notifyEnabled, isTrue);
-    });
-
-    test('開啟中改時間 → 先取消再重排', () async {
-      final n = FakeNotificationService();
-      final p = SettingsProvider(SettingsStorage(prefs), n);
-      await p.setNotifyEnabled(true);
-      n.calls.clear();
-      await p.setNotifyTime(21, 30);
-      expect(n.calls, ['cancelDaily', 'scheduleDaily(21,30)']);
-      expect(SettingsStorage(prefs).load().notifyHour, 21);
-    });
-
-    test('關閉時改時間 → 不排程', () async {
-      final n = FakeNotificationService();
-      final p = SettingsProvider(SettingsStorage(prefs), n);
-      await p.setNotifyTime(21, 30);
-      expect(n.calls, isEmpty);
-      expect(p.settings.notifyMinute, 30);
-    });
-
-    test('關閉提醒 → cancelDaily', () async {
-      final n = FakeNotificationService();
-      final p = SettingsProvider(SettingsStorage(prefs), n);
-      await p.setNotifyEnabled(true);
-      n.calls.clear();
-      await p.setNotifyEnabled(false);
-      expect(n.calls, ['cancelDaily']);
-      expect(p.settings.notifyEnabled, isFalse);
+    test('setResetTime 存檔', () async {
+      final p = SettingsProvider(SettingsStorage(prefs));
+      await p.setResetTime(9, 15);
+      expect(p.settings.resetHour, 9);
+      expect(SettingsStorage(prefs).load().resetHour, 9);
+      expect(SettingsStorage(prefs).load().resetMinute, 15);
     });
 
     test('setHighlightWishlist 存檔', () async {
-      final p = SettingsProvider(SettingsStorage(prefs), FakeNotificationService());
+      final p = SettingsProvider(SettingsStorage(prefs));
       await p.setHighlightWishlist(false);
       expect(SettingsStorage(prefs).load().highlightWishlist, isFalse);
     });
   });
+}
+
+/// save 一律失敗的快取，模擬 localStorage 容量不足。
+class _FailingSaveCache extends CatalogCache {
+  _FailingSaveCache(super.prefs);
+
+  @override
+  Future<void> save(SkinCatalog catalog) async =>
+      throw StateError('QuotaExceededError');
 }
