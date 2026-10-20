@@ -111,7 +111,8 @@
 ### `GET /mmr/v1/players/{puuid}` 🧩
 - `LatestCompetitiveUpdate{MatchID, TierAfterUpdate, RankedRatingAfterUpdate}`：自己的頁首牌位用這個 ✅。
 - `QueueSkills.competitive.SeasonalInfoBySeasonID[seasonId]{SeasonID, CompetitiveTier, RankedRating, NumberOfWins}`：他人的這季牌位用這個 ✅ 2026-10-21（他人可以查詢）。
-- `IsActRankBadgeHidden`、`IsLeaderboardAnonymized` 📄：隱藏牌位的判斷依據，**實際回應裡是否有這兩個欄位尚待實測**。
+- `IsActRankBadgeHidden` ✅ 2026-10-21：實測有這個欄位，隱藏牌位的玩家為 true，App 依此不顯示他的牌位 🧩。
+- `IsLeaderboardAnonymized` 📄：尚未實測。
 
 ### `PUT /name-service/v2/players`（body：puuid 陣列）✅ 🧩
 - 回應 `[]{Subject, GameName, TagLine}`；可能有名稱為空的項目。
@@ -123,13 +124,14 @@
 
 ### `GET /parties/v1/parties/{partyId}` ✅ 2026-10-21
 - 隊伍：`ID, MUCName, VoiceRoomID, Version, ClientVersion, Members, State, PreviousState, StateTransitionReason, Accessibility, CustomGameData, MatchmakingData, Invites, Requests, QueueEntryTime, ErrorNotification, RestrictedSeconds, EligibleQueues, QueueIneligibilities, CheatData, XPBonuses, InviteCode`
-  - `State` 實測值：`CUSTOM_GAME_SETUP`；`Accessibility` 實測值：`CLOSED`
+  - `State` 實測值：`CUSTOM_GAME_SETUP`、`DEFAULT`；`Accessibility` 實測值：`CLOSED`
+  - `QueueEntryTime`：離開佇列回到大廳後，**仍保留上一次排隊的時間** ✅，所以只能在 `State == MATCHMAKING` 時當作排隊開始時間。沒有排隊紀錄時是 `0001-01-01T00:00:00Z`。
   - `MatchmakingData`：`QueueID, PreferredGamePods, SkillDisparityRRPenalty, MaxPartySize`
   - `CheatData`：只記錄欄位名稱，**不讀取、不使用**。
 - `Members[]`：`Subject, CompetitiveTier, PlayerIdentity, SeasonalBadgeInfo, IsOwner, QueueEligibleRemainingAccountLevels, Pings, IsReady, IsModerator, UseBroadcastHUD, PlatformType, PreferredAgentInfo, PremierPrestige, JoinedAt`
   - `PlayerIdentity`：`Subject, PlayerCardID, PlayerTitleID, AccountLevel, PreferredLevelBorderID, Incognito, HideAccountLevel`
     - `Incognito`：成員隱藏名稱。顯示「已隱藏名稱」，不查名稱。
-    - `HideAccountLevel`：成員隱藏等級，不顯示等級。
+    - `HideAccountLevel`：成員隱藏等級，不顯示等級。這個開關也會出現在自己的資料上；依規格，自己的等級仍然要顯示。
 
 ### `GET /pregame/v1/players/{puuid}`、`GET /core-game/v1/players/{puuid}` ✅ 2026-10-21
 - 不在該階段時回 404：`{httpStatus, errorCode, message}`。

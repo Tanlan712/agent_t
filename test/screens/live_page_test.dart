@@ -124,4 +124,39 @@ void main() {
     expect(find.text('登入 Riot 以查看即時對局'), findsOneWidget);
     await leave(tester, h);
   });
+
+  testWidgets('排隊時間只在配對中顯示（Riot 會保留上次排隊的時間）', (tester) async {
+    setWidth(tester, 1400);
+    final entry = DateTime.now()
+        .toUtc()
+        .subtract(const Duration(minutes: 3))
+        .toIso8601String();
+    var h = await harness(tester,
+        party: partyJson(state: 'DEFAULT', queueEntryTime: entry));
+    await tester.pumpWidget(h.wrap(home: const LivePage()));
+    await drain(tester);
+    expect(find.textContaining('已排隊'), findsNothing);
+    await leave(tester, h);
+
+    h = await harness(tester,
+        party: partyJson(state: 'MATCHMAKING', queueEntryTime: entry));
+    await tester.pumpWidget(h.wrap(home: const LivePage()));
+    await drain(tester);
+    expect(find.textContaining('已排隊 3:'), findsOneWidget);
+    await leave(tester, h);
+  });
+
+  testWidgets('自己的等級永遠顯示，即使開了隱藏等級', (tester) async {
+    setWidth(tester, 1400);
+    final party = partyJson();
+    for (final m in (party['Members'] as List).cast<Map<String, dynamic>>()) {
+      (m['PlayerIdentity'] as Map<String, dynamic>)['HideAccountLevel'] = true;
+    }
+    final h = await harness(tester, party: party);
+    await tester.pumpWidget(h.wrap(home: const LivePage()));
+    await drain(tester);
+    expect(inKey('live-level-$myPuuid', 'Lv 100'), findsOneWidget);
+    expect(find.byKey(const ValueKey('live-level-mate')), findsNothing);
+    await leave(tester, h);
+  });
 }

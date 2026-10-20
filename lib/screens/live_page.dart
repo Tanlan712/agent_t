@@ -130,7 +130,8 @@ class _PartyHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final since = party.queueEntryTime;
+    // Riot 會保留上一次排隊的時間，所以只在配對中時顯示。
+    final since = party.state == 'MATCHMAKING' ? party.queueEntryTime : null;
     final waited =
         since == null ? null : DateTime.now().toUtc().difference(since);
     return Card(
@@ -253,7 +254,8 @@ class _MemberCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        if (!member.hideLevel) ...[
+                        // 自己的資料永遠顯示；他人隱藏等級時不顯示。
+                        if (member.isMe || !member.hideLevel) ...[
                           Text('Lv ${member.level}',
                               key: ValueKey('live-level-${member.puuid}'),
                               style: const TextStyle(
