@@ -5,10 +5,13 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/riot_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/riot_auth.dart';
 
 /// Riot 登入：使用者在 Riot 官方頁面登入後，把跳轉網址貼回來。
 class RiotLoginPage extends StatefulWidget {
+  static const clipboardMissingMessage = '剪貼簿裡沒有登入網址，請在 Riot 登入後的頁面複製網址列的完整網址';
+
   const RiotLoginPage({super.key});
 
   @override
@@ -18,7 +21,7 @@ class RiotLoginPage extends StatefulWidget {
 class _RiotLoginPageState extends State<RiotLoginPage> {
   final _controller = TextEditingController();
   String? _error;
-  String _shard = 'ap';
+  late String _shard = context.read<SettingsProvider>().settings.loginShard;
 
   static const _shards = {
     'ap': '亞太（ap）',
@@ -46,6 +49,19 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
         .showSnackBar(const SnackBar(content: Text('已複製登入網址')));
+  }
+
+  /// 一鍵登入：讀取剪貼簿裡的跳轉網址（瀏覽器會詢問是否允許），不保存任何 token。
+  Future<void> _pasteAndLogin() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text?.trim() ?? '';
+    if (!mounted) return;
+    if (!text.contains('access_token=')) {
+      setState(() => _error = RiotLoginPage.clipboardMissingMessage);
+      return;
+    }
+    _controller.text = text;
+    await _submit();
   }
 
   Future<void> _submit() async {
@@ -78,8 +94,8 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
                   child: Text(
                     '⚠️ 使用 Riot 未公開 API，可能違反服務條款，帳號有受處分的風險，'
                     'API 也可能隨時失效。建議使用非主要帳號。\n'
-                    '本 App 不會接觸你的密碼；登入資訊只保留在這個分頁的記憶體中，'
-                    '重新整理或約 1 小時後需要重新登入。',
+                    '本 App 不會接觸你的密碼，也不會保存登入資訊（token）；'
+                    '登入資訊只保留在這個分頁的記憶體中，重新整理或約 1 小時後需要重新登入。',
                   ),
                 ),
               ),
@@ -92,7 +108,8 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
                 ),
                 OutlinedButton(onPressed: riot.logout, child: const Text('登出')),
               ] else ...[
-                const Text('1. 開啟 Riot 官方登入頁並登入。'),
+                const Text('1. 開啟 Riot 官方登入頁並登入。'
+                    '勾選 Riot 頁面上的「保持登入」，之後就不用再輸入密碼。'),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 12,
@@ -112,7 +129,14 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
                 ),
                 const SizedBox(height: 16),
                 const Text('2. 登入後網頁會跳到 playvalorant.com，'
-                    '把網址列的完整網址貼到下方。'),
+                    '複製網址列的完整網址，回來按「從剪貼簿貼上並登入」；'
+                    '或手動貼到下方。'),
+                const SizedBox(height: 8),
+                FilledButton.icon(
+                  onPressed: riot.isBusy ? null : _pasteAndLogin,
+                  icon: const Icon(Icons.content_paste_go),
+                  label: const Text('從剪貼簿貼上並登入'),
+                ),
                 const SizedBox(height: 8),
                 TextField(
                   key: const ValueKey('redirect-field'),
@@ -134,7 +158,10 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
                     for (final e in _shards.entries)
                       DropdownMenuItem(value: e.key, child: Text(e.value)),
                   ],
-                  onChanged: (v) => setState(() => _shard = v ?? 'ap'),
+                  onChanged: (v) {
+                    setState(() => _shard = v ?? 'ap');
+                    context.read<SettingsProvider>().setLoginShard(_shard);
+                  },
                 ),
                 const SizedBox(height: 12),
                 FilledButton(

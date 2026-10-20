@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -145,6 +147,8 @@ class AppShell extends StatelessWidget {
                         ),
                       ),
                     ),
+                  // 一直放在樹中（不需要時是空的），跨斷點時結構不變。
+                  const ExpiryBanner(),
                   Expanded(child: body),
                 ],
               ),
@@ -263,6 +267,55 @@ class _RiotStatus extends StatelessWidget {
       leading: icon,
       title: Text(label, overflow: TextOverflow.ellipsis),
       onTap: open,
+    );
+  }
+}
+
+/// Riot 登入快到期（剩 5 分鐘內）時的提醒列；每 30 秒重新檢查一次。
+class ExpiryBanner extends StatefulWidget {
+  const ExpiryBanner({super.key});
+
+  @override
+  State<ExpiryBanner> createState() => _ExpiryBannerState();
+}
+
+class _ExpiryBannerState extends State<ExpiryBanner> {
+  late final Timer _tick =
+      Timer.periodic(const Duration(seconds: 30), (_) => setState(() {}));
+
+  @override
+  void initState() {
+    super.initState();
+    _tick;
+  }
+
+  @override
+  void dispose() {
+    _tick.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final riot = context.watch<RiotProvider>();
+    if (!riot.expiresSoon) return const SizedBox.shrink();
+    final minutes = (riot.timeLeft.inSeconds / 60).ceil();
+    return Container(
+      key: const ValueKey('expiry-banner'),
+      color: AppColors.surfaceHigh,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
+        children: [
+          const Icon(Icons.timer_outlined,
+              size: 18, color: AppColors.wishlistGold),
+          const SizedBox(width: 8),
+          Expanded(child: Text('Riot 登入將在 $minutes 分鐘後過期')),
+          TextButton(
+            onPressed: () => Navigator.pushNamed(context, '/riot-login'),
+            child: const Text('重新登入'),
+          ),
+        ],
+      ),
     );
   }
 }

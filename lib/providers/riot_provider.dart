@@ -33,6 +33,17 @@ class RiotProvider with ChangeNotifier {
   bool isOwned(String skinUuid) => isLoggedIn && _owned.contains(skinUuid);
   bool get isBusy => _isBusy;
 
+  /// 登入剩餘時間；沒有登入或已過期時為 Duration.zero。
+  Duration get timeLeft {
+    final s = _session;
+    if (s == null) return Duration.zero;
+    final left = s.expiresAt.difference(_now());
+    return left.isNegative ? Duration.zero : left;
+  }
+
+  /// 剩不到 5 分鐘就過期（用來提醒重新登入）。
+  bool get expiresSoon => isLoggedIn && timeLeft <= const Duration(minutes: 5);
+
   /// 成功回傳 null，否則回傳可顯示的錯誤訊息。
   Future<String?> login(String pastedUrl, {String fallbackShard = 'ap'}) async {
     final tokens = parseRiotRedirect(pastedUrl);

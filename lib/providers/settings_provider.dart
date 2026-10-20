@@ -17,6 +17,9 @@ class SettingsProvider with ChangeNotifier {
   Future<void> setHighlightWishlist(bool value) =>
       _save(_settings.copyWith(highlightWishlist: value));
 
+  Future<void> setLoginShard(String shard) =>
+      _save(_settings.copyWith(loginShard: shard));
+
   Future<void> _save(AppSettings next) async {
     _settings = next;
     await _storage.save(next);
