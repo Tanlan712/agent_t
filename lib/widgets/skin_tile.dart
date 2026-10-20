@@ -51,7 +51,7 @@ class SkinTile extends StatelessWidget {
             if (owned)
               const Text('已擁有',
                   style: TextStyle(
-                      color: Colors.green, fontWeight: FontWeight.bold)),
+                      color: AppColors.owned, fontWeight: FontWeight.bold)),
             if (highlighted)
               const Text('★ 願望清單',
                   style: TextStyle(

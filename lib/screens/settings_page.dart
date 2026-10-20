@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:valorant_shop_tracker/theme/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:valorant_shop_tracker/services/riot_api_key_manager.dart';
@@ -100,7 +101,7 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(height: 8),
               Text(
                 '⏰ Development Key 有效期限：24 小時',
-                style: TextStyle(color: Colors.grey[600]),
+                style: TextStyle(color: AppColors.muted),
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
@@ -120,10 +121,10 @@ class _SettingsPageState extends State<SettingsPage> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: _statusMessage!.startsWith('✅')
-                        ? Colors.green[100]
+                        ? AppColors.owned.withOpacity(0.15)
                         : _statusMessage!.startsWith('❌')
-                            ? Colors.red[100]
-                            : Colors.orange[100],
+                            ? AppColors.error.withOpacity(0.15)
+                            : AppColors.wishlistGold.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(_statusMessage!),
@@ -218,7 +219,7 @@ class _SettingsPageState extends State<SettingsPage> {
               icon: const Icon(Icons.copy),
               label: const Text('複製 valorant-api.com 網址'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: AppColors.buttonRed,
               ),
             ),
           ],

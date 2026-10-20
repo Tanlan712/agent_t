@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -85,7 +86,8 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
               const SizedBox(height: 16),
               if (riot.isLoggedIn && session != null) ...[
                 ListTile(
-                  leading: const Icon(Icons.verified_user, color: Colors.green),
+                  leading:
+                      const Icon(Icons.verified_user, color: AppColors.owned),
                   title: Text('已登入：${session.displayName}（${session.shard}）'),
                 ),
                 OutlinedButton(onPressed: riot.logout, child: const Text('登出')),

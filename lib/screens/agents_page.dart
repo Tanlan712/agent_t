@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 import '../shell/app_shell.dart';
 import '../shell/responsive_grid.dart';
@@ -50,7 +51,7 @@ class _AgentsPageState extends State<AgentsPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error, size: 64, color: Colors.red),
+                      const Icon(Icons.error, size: 64, color: AppColors.error),
                       const SizedBox(height: 16),
                       Text('載入失敗: $_error'),
                       const SizedBox(height: 16),
@@ -100,14 +101,14 @@ class _AgentsPageState extends State<AgentsPage> {
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
-                        color: Colors.grey[800],
+                        color: AppColors.surfaceHigh,
                         child: const Icon(Icons.person, size: 64),
                       );
                     },
                   )
                 else
                   Container(
-                    color: Colors.grey[800],
+                    color: AppColors.surfaceHigh,
                     child: const Icon(Icons.person, size: 64),
                   ),
                 if (displayIcon != null)
@@ -143,7 +144,7 @@ class _AgentsPageState extends State<AgentsPage> {
                     role['displayName'] as String,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[600],
+                      color: AppColors.muted,
                     ),
                   ),
               ],
