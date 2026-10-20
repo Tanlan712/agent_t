@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../logic/shop_time.dart';
 import '../logic/wishlist_match.dart';
 import '../providers/catalog_provider.dart';
+import '../providers/riot_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/shop_provider.dart';
 import '../providers/wishlist_provider.dart';
@@ -12,7 +13,8 @@ import '../widgets/catalog_gate.dart';
 import '../widgets/skin_tile.dart';
 import 'shop_edit_page.dart';
 
-String formatRemaining(Duration d) => '剩餘 ${d.inHours} 小時 ${d.inMinutes % 60} 分';
+String formatRemaining(Duration d) =>
+    '剩餘 ${d.inHours} 小時 ${d.inMinutes % 60} 分';
 
 class MyShopPage extends StatelessWidget {
   final DateTime Function() now;
@@ -24,10 +26,13 @@ class MyShopPage extends StatelessWidget {
     final catalog = context.watch<CatalogProvider>();
     final shop = context.watch<ShopProvider>().shop;
     final wishlist = context.watch<WishlistProvider>();
-    final highlight = context.watch<SettingsProvider>().settings.highlightWishlist;
+    final highlight =
+        context.watch<SettingsProvider>().settings.highlightWishlist;
+    final riot = context.watch<RiotProvider>();
     final t = now();
 
-    final matched = highlight ? wishlistUuidsInShop(shop, wishlist.uuids, t) : <String>{};
+    final matched =
+        highlight ? wishlistUuidsInShop(shop, wishlist.uuids, t) : <String>{};
     final dailyActive = isDailyActive(shop, t);
     final nightActive = isNightMarketActive(shop, t);
 
@@ -40,6 +45,7 @@ class MyShopPage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            const _RiotBar(),
             if (matched.isNotEmpty)
               Card(
                 color: wishlistGold.withOpacity(0.2),
@@ -62,6 +68,7 @@ class MyShopPage extends StatelessWidget {
                     skin: catalog.skinById(e.skinUuid),
                     price: e.price,
                     highlighted: dailyActive && matched.contains(e.skinUuid),
+                    owned: riot.isOwned(e.skinUuid),
                   ),
               ],
             ),
@@ -80,6 +87,7 @@ class MyShopPage extends StatelessWidget {
                     price: e.discountedPrice,
                     originalPrice: e.originalPrice,
                     highlighted: nightActive && matched.contains(e.skinUuid),
+                    owned: riot.isOwned(e.skinUuid),
                   ),
               ],
             ),
@@ -89,7 +97,8 @@ class MyShopPage extends StatelessWidget {
               onEdit: () => edit(ShopSection.featuredBundle),
               children: [
                 if (shop.featuredBundle case final b?)
-                  BundleTile(bundle: catalog.bundleById(b.bundleUuid), price: b.price),
+                  BundleTile(
+                      bundle: catalog.bundleById(b.bundleUuid), price: b.price),
               ],
             ),
           ],
@@ -143,6 +152,71 @@ class _Section extends StatelessWidget {
           ),
           ...children,
         ],
+      ),
+    );
+  }
+}
+
+/// 頁面頂端的 Riot 帳號列：未登入時引導登入，登入後提供同步與錢包。
+class _RiotBar extends StatelessWidget {
+  const _RiotBar();
+
+  Future<void> _sync(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final error = await context.read<RiotProvider>().sync(
+          shop: context.read<ShopProvider>(),
+          catalog: context.read<CatalogProvider>(),
+        );
+    messenger.showSnackBar(SnackBar(content: Text(error ?? '已從 Riot 同步商店')));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final riot = context.watch<RiotProvider>();
+    final session = riot.session;
+    if (!riot.isLoggedIn || session == null) {
+      return Card(
+        child: ListTile(
+          leading: const Icon(Icons.login),
+          title: const Text('登入 Riot 以自動同步'),
+          subtitle: const Text('或在下方手動輸入商店內容'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.pushNamed(context, '/riot-login'),
+        ),
+      );
+    }
+    final wallet = riot.wallet;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            const Icon(Icons.verified_user, color: Colors.green),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('已登入：${session.displayName}（${session.shard}）',
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  if (wallet != null)
+                    Text(
+                        'VP ${wallet.vp} · 輻能點數 ${wallet.radianite} · 王國幣 ${wallet.kingdom}'),
+                ],
+              ),
+            ),
+            FilledButton.icon(
+              onPressed: riot.isBusy ? null : () => _sync(context),
+              icon: riot.isBusy
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.sync),
+              label: const Text('從 Riot 同步'),
+            ),
+          ],
+        ),
       ),
     );
   }

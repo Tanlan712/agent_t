@@ -29,6 +29,14 @@ class MyShopSettingsCard extends StatelessWidget {
             Text('我的商店', style: Theme.of(context).textTheme.titleLarge),
             ListTile(
               contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.account_circle),
+              title: const Text('Riot 帳號'),
+              subtitle: const Text('登入後可自動同步商店、錢包與已擁有造型'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.pushNamed(context, '/riot-login'),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.schedule),
               title: Text(
                   '商店刷新時間 ${_two(settings.resetHour)}:${_two(settings.resetMinute)}'),
@@ -36,11 +44,12 @@ class MyShopSettingsCard extends StatelessWidget {
               onTap: () async {
                 final picked = await showTimePicker(
                   context: context,
-                  initialTime:
-                      TimeOfDay(hour: settings.resetHour, minute: settings.resetMinute),
+                  initialTime: TimeOfDay(
+                      hour: settings.resetHour, minute: settings.resetMinute),
                 );
                 if (picked != null) {
-                  await settingsProvider.setResetTime(picked.hour, picked.minute);
+                  await settingsProvider.setResetTime(
+                      picked.hour, picked.minute);
                 }
               },
             ),
@@ -59,7 +68,9 @@ class MyShopSettingsCard extends StatelessWidget {
                   : '上次下載：${formatDateTime(fetchedAt)}'),
               trailing: catalog.isLoading
                   ? const SizedBox(
-                      width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2))
                   : null,
               onTap: catalog.isLoading ? null : catalog.refresh,
             ),

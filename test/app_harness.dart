@@ -5,14 +5,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:valorant_shop_tracker/models/current_shop.dart';
 import 'package:valorant_shop_tracker/models/wishlist_item.dart';
 import 'package:valorant_shop_tracker/providers/catalog_provider.dart';
+import 'package:valorant_shop_tracker/providers/riot_provider.dart';
 import 'package:valorant_shop_tracker/providers/settings_provider.dart';
 import 'package:valorant_shop_tracker/providers/shop_provider.dart';
 import 'package:valorant_shop_tracker/providers/wishlist_provider.dart';
+import 'package:valorant_shop_tracker/services/riot_client.dart';
 import 'package:valorant_shop_tracker/storage/settings_storage.dart';
 import 'package:valorant_shop_tracker/storage/shop_storage.dart';
 import 'package:valorant_shop_tracker/storage/wishlist_storage.dart';
 
 import 'catalog_helpers.dart';
+import 'riot_fixtures.dart';
 
 /// 測試用的整組 providers，已預先寫入商店／願望清單資料。
 class Harness {
@@ -20,9 +23,10 @@ class Harness {
   final ShopProvider shop;
   final WishlistProvider wishlist;
   final SettingsProvider settings;
+  final RiotProvider riot;
   final SharedPreferences prefs;
 
-  Harness(this.catalog, this.shop, this.wishlist, this.settings, this.prefs);
+  Harness(this.catalog, this.shop, this.wishlist, this.settings, this.riot, this.prefs);
 
   static Future<Harness> create(
     WidgetTester tester, {
@@ -41,6 +45,7 @@ class Harness {
       ShopProvider(ShopStorage(prefs)),
       WishlistProvider(WishlistStorage(prefs)),
       SettingsProvider(SettingsStorage(prefs)),
+      RiotProvider(RiotClient(client: riotClient())),
       prefs,
     );
   }
@@ -56,6 +61,7 @@ class Harness {
         ChangeNotifierProvider.value(value: shop),
         ChangeNotifierProvider.value(value: wishlist),
         ChangeNotifierProvider.value(value: settings),
+        ChangeNotifierProvider.value(value: riot),
       ],
       child: MaterialApp(home: home, routes: routes, onGenerateRoute: onGenerateRoute),
     );

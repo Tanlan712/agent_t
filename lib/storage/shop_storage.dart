@@ -17,5 +17,6 @@ class ShopStorage {
         const CurrentShop(),
       );
 
-  Future<void> save(CurrentShop shop) => writePrefsJson(_prefs, _key, shop.toJson());
+  Future<void> save(CurrentShop shop) =>
+      writePrefsJson(_prefs, _key, shop.toJson());
 }

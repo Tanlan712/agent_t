@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../logic/wishlist_match.dart';
 import '../models/skin_info.dart';
 import '../providers/catalog_provider.dart';
+import '../providers/riot_provider.dart';
 import '../providers/shop_provider.dart';
 import '../providers/wishlist_provider.dart';
 import '../widgets/catalog_gate.dart';
@@ -16,13 +17,15 @@ class WishlistPage extends StatelessWidget {
 
   Future<void> _add(BuildContext context) async {
     final wishlist = context.read<WishlistProvider>();
-    final skin = await Navigator.pushNamed(context, '/skin-picker') as SkinInfo?;
+    final skin =
+        await Navigator.pushNamed(context, '/skin-picker') as SkinInfo?;
     if (skin != null) await wishlist.add(skin.uuid);
   }
 
   @override
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogProvider>();
+    final riot = context.watch<RiotProvider>();
     final wishlist = context.watch<WishlistProvider>();
     final shop = context.watch<ShopProvider>().shop;
     final onSale = wishlistUuidsInShop(shop, wishlist.uuids, now());
@@ -58,6 +61,7 @@ class WishlistPage extends StatelessWidget {
                       child: SkinTile(
                         skin: catalog.skinById(item.skinUuid),
                         highlighted: onSale.contains(item.skinUuid),
+                        owned: riot.isOwned(item.skinUuid),
                         trailing: onSale.contains(item.skinUuid)
                             ? const Chip(label: Text('現在上架中'))
                             : null,

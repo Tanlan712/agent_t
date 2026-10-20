@@ -10,7 +10,8 @@ class AppSettings {
     this.highlightWishlist = true,
   });
 
-  AppSettings copyWith({int? resetHour, int? resetMinute, bool? highlightWishlist}) {
+  AppSettings copyWith(
+      {int? resetHour, int? resetMinute, bool? highlightWishlist}) {
     return AppSettings(
       resetHour: resetHour ?? this.resetHour,
       resetMinute: resetMinute ?? this.resetMinute,

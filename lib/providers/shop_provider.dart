@@ -40,8 +40,8 @@ class ShopProvider with ChangeNotifier {
     ));
   }
 
-  Future<void> saveFeaturedBundle(BundleEntry entry, DateTime now) =>
-      _update(_shop.copyWith(featuredBundle: entry, featuredBundleUpdatedAt: now));
+  Future<void> saveFeaturedBundle(BundleEntry entry, DateTime now) => _update(
+      _shop.copyWith(featuredBundle: entry, featuredBundleUpdatedAt: now));
 
   /// 以 Riot 同步結果整份取代，不套用手動輸入的筆數驗證。
   Future<void> replaceShop(CurrentShop shop) => _update(shop);

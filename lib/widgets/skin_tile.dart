@@ -11,6 +11,7 @@ class SkinTile extends StatelessWidget {
   final int? price;
   final int? originalPrice;
   final bool highlighted;
+  final bool owned;
   final VoidCallback? onTap;
   final Widget? trailing;
 
@@ -20,6 +21,7 @@ class SkinTile extends StatelessWidget {
     this.price,
     this.originalPrice,
     this.highlighted = false,
+    this.owned = false,
     this.onTap,
     this.trailing,
   });
@@ -45,12 +47,18 @@ class SkinTile extends StatelessWidget {
           children: [
             if (skin != null) Text(skin.weaponName),
             if (skin != null) TierBadge(tier: skin.tier),
+            if (owned)
+              const Text('已擁有',
+                  style: TextStyle(
+                      color: Colors.green, fontWeight: FontWeight.bold)),
             if (highlighted)
               const Text('★ 願望清單',
-                  style: TextStyle(color: wishlistGold, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      color: wishlistGold, fontWeight: FontWeight.bold)),
           ],
         ),
-        trailing: trailing ?? (price == null ? null : _PriceLabel(price!, originalPrice)),
+        trailing: trailing ??
+            (price == null ? null : _PriceLabel(price!, originalPrice)),
       ),
     );
   }
@@ -70,7 +78,8 @@ class _PriceLabel extends StatelessWidget {
       children: [
         if (originalPrice != null)
           Text('$originalPrice',
-              style: const TextStyle(decoration: TextDecoration.lineThrough, fontSize: 12)),
+              style: const TextStyle(
+                  decoration: TextDecoration.lineThrough, fontSize: 12)),
         Text('$price', style: const TextStyle(fontWeight: FontWeight.bold)),
       ],
     );

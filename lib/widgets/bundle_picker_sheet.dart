@@ -26,10 +26,13 @@ class _BundlePickerSheetState extends State<_BundlePickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bundles = context.watch<CatalogProvider>().catalog?.bundles ?? const [];
+    final bundles =
+        context.watch<CatalogProvider>().catalog?.bundles ?? const [];
     final q = _query.toLowerCase().replaceAll(RegExp(r'\s+'), '');
     final results = bundles
-        .where((b) => q.isEmpty || b.name.toLowerCase().replaceAll(RegExp(r'\s+'), '').contains(q))
+        .where((b) =>
+            q.isEmpty ||
+            b.name.toLowerCase().replaceAll(RegExp(r'\s+'), '').contains(q))
         .toList();
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.8,

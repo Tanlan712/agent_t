@@ -3,15 +3,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:valorant_shop_tracker/models/skin_info.dart';
 import 'package:valorant_shop_tracker/providers/catalog_provider.dart';
+import 'package:valorant_shop_tracker/providers/riot_provider.dart';
 import 'package:valorant_shop_tracker/screens/skin_picker_page.dart';
+import 'package:valorant_shop_tracker/services/riot_client.dart';
 import 'package:valorant_shop_tracker/widgets/skin_tile.dart';
 
 import '../catalog_helpers.dart';
+import '../riot_fixtures.dart';
 
 void main() {
   Widget app(CatalogProvider catalog, {void Function(SkinInfo?)? onResult}) {
-    return ChangeNotifierProvider.value(
-      value: catalog,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: catalog),
+        ChangeNotifierProvider(create: (_) => RiotProvider(RiotClient(client: riotClient()))),
+      ],
       child: MaterialApp(
         routes: {'/skin-picker': (_) => const SkinPickerPage()},
         home: Builder(

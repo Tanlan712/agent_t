@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'providers/catalog_provider.dart';
+import 'providers/riot_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/shop_provider.dart';
 import 'providers/wishlist_provider.dart';
@@ -14,12 +15,14 @@ import 'screens/home_page.dart';
 import 'screens/maps_page.dart';
 import 'screens/my_shop_page.dart';
 import 'screens/playercards_page.dart';
+import 'screens/riot_login_page.dart';
 import 'screens/settings_page.dart';
 import 'screens/shop_edit_page.dart';
 import 'screens/skin_picker_page.dart';
 import 'screens/weapons_page.dart';
 import 'screens/wishlist_page.dart';
 import 'services/catalog_api.dart';
+import 'services/riot_client.dart';
 import 'storage/catalog_cache.dart';
 import 'storage/settings_storage.dart';
 import 'storage/shop_storage.dart';
@@ -49,6 +52,7 @@ Future<void> main() async {
             create: (_) => WishlistProvider(WishlistStorage(prefs))),
         ChangeNotifierProvider(
             create: (_) => SettingsProvider(SettingsStorage(prefs))),
+        ChangeNotifierProvider(create: (_) => RiotProvider(RiotClient())),
       ],
       child: const MyApp(),
     ),
@@ -78,10 +82,12 @@ class MyApp extends StatelessWidget {
         '/my-shop': (context) => const MyShopPage(),
         '/wishlist': (context) => const WishlistPage(),
         '/skin-picker': (context) => const SkinPickerPage(),
+        '/riot-login': (context) => const RiotLoginPage(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/my-shop/edit') {
-          final section = settings.arguments as ShopSection? ?? ShopSection.daily;
+          final section =
+              settings.arguments as ShopSection? ?? ShopSection.daily;
           return MaterialPageRoute(
             builder: (_) => ShopEditPage(section: section),
             settings: settings,

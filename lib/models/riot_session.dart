@@ -33,5 +33,6 @@ class RiotWallet {
   final int radianite;
   final int kingdom;
 
-  const RiotWallet({required this.vp, required this.radianite, required this.kingdom});
+  const RiotWallet(
+      {required this.vp, required this.radianite, required this.kingdom});
 }

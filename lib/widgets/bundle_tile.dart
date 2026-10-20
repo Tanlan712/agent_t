@@ -19,7 +19,8 @@ class BundleTile extends StatelessWidget {
         title: Text(bundle?.name ?? '未知組合包'),
         trailing: price == null
             ? null
-            : Text('$price', style: const TextStyle(fontWeight: FontWeight.bold)),
+            : Text('$price',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }

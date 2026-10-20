@@ -16,7 +16,8 @@ class TierBadge extends StatelessWidget {
         border: Border.all(color: tier.color),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(tier.label, style: TextStyle(color: tier.color, fontSize: 12)),
+      child:
+          Text(tier.label, style: TextStyle(color: tier.color, fontSize: 12)),
     );
   }
 }
