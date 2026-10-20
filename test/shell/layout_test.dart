@@ -5,10 +5,10 @@ import 'package:valorant_shop_tracker/shell/responsive_grid.dart';
 
 void main() {
   test('navModeFor 斷點', () {
-    expect(navModeFor(599), NavMode.drawer);
+    expect(navModeFor(599), NavMode.bottom);
     expect(navModeFor(600), NavMode.rail);
-    expect(navModeFor(1199), NavMode.rail);
-    expect(navModeFor(1200), NavMode.extended);
+    expect(navModeFor(1023), NavMode.rail);
+    expect(navModeFor(1024), NavMode.extended);
   });
 
   test('columnsFor', () {

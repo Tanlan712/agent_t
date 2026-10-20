@@ -35,3 +35,6 @@ const navGroupLabels = {
 
 /// `/my-shop` 與 `/` 是同一頁。
 String canonicalRoute(String route) => route == '/my-shop' ? '/' : route;
+
+/// 手機底部導覽的 4 個常用頁面（第 5 項是「更多」）。
+const bottomNavRoutes = ['/', '/matches', '/live', '/wishlist'];

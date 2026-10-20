@@ -18,13 +18,50 @@ Widget shell() => const AppShell(
     );
 
 void main() {
-  testWidgets('400 寬：漢堡選單、沒有 NavigationRail', (tester) async {
+  testWidgets('400 寬：底部導覽 5 項、沒有 NavigationRail 與漢堡選單', (tester) async {
     setWidth(tester, 400);
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(home: shell()));
-    expect(find.byIcon(Icons.menu), findsOneWidget);
+    final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
+    expect(bar.destinations.length, 5);
+    for (final label in ['我的商店', '對戰紀錄', '即時對局', '願望清單', '更多']) {
+      expect(
+          find.descendant(
+              of: find.byType(NavigationBar), matching: find.text(label)),
+          findsOneWidget,
+          reason: label);
+    }
+    expect(find.byIcon(Icons.menu), findsNothing);
     expect(find.byType(NavigationRail), findsNothing);
     expect(find.text('內容'), findsOneWidget);
+  });
+
+  testWidgets('400 寬：「更多」列出其餘頁面，點角色換頁', (tester) async {
+    setWidth(tester, 400);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(useAppRoutes: true));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('更多'));
+    await tester.pumpAndSettle();
+    expect(find.text('設定'), findsOneWidget);
+    await tester.tap(find.text('角色'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(AppBar, '角色'), findsOneWidget);
+  });
+
+  testWidgets('400 寬與 1400 寬都有到期提醒列', (tester) async {
+    for (final width in [400.0, 1400.0]) {
+      setWidth(tester, width);
+      var now = DateTime(2026, 10, 21, 12);
+      final h = await Harness.create(tester, now: () => now);
+      await tester.runAsync(() => h.riot.login(fakeRedirect));
+      now = now.add(const Duration(minutes: 57));
+      await tester.pumpWidget(h.wrap(home: shell()));
+      await tester.pump();
+      expect(find.byKey(const ValueKey('expiry-banner')), findsOneWidget,
+          reason: '$width');
+      await tester.pumpWidget(h.wrap(home: const SizedBox()));
+    }
   });
 
   testWidgets('900 寬：窄導覽列', (tester) async {
@@ -36,8 +73,8 @@ void main() {
     expect(find.byIcon(Icons.menu), findsNothing);
   });
 
-  testWidgets('1400 寬：展開導覽列，看得到完整名稱', (tester) async {
-    setWidth(tester, 1400);
+  testWidgets('1100 寬：展開導覽列，看得到完整名稱', (tester) async {
+    setWidth(tester, 1100);
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(home: shell()));
     final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
@@ -51,10 +88,12 @@ void main() {
     setWidth(tester, 1400);
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(home: shell()));
+    tester.view.physicalSize = const Size(800, 900);
+    await tester.pumpAndSettle();
     tester.view.physicalSize = const Size(400, 900);
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    expect(find.byIcon(Icons.menu), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
   });
 
   testWidgets('矮視窗（900×500、1400×500）導覽列不溢出', (tester) async {
@@ -83,10 +122,13 @@ void main() {
       ),
     ));
     final list = find.byKey(const ValueKey('page-list'));
-    tester.state<ScrollableState>(
-        find.descendant(of: list, matching: find.byType(Scrollable))).position.jumpTo(400);
+    tester
+        .state<ScrollableState>(
+            find.descendant(of: list, matching: find.byType(Scrollable)))
+        .position
+        .jumpTo(400);
     await tester.pump();
-    for (final width in [500.0, 1400.0, 500.0]) {
+    for (final width in [500.0, 1400.0, 800.0, 500.0]) {
       tester.view.physicalSize = Size(width, 900);
       await tester.pumpAndSettle();
       final pixels = tester

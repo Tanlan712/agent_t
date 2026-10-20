@@ -45,16 +45,16 @@ void main() {
     expect(observer.replaces, 1);
   });
 
-  testWidgets('手機寬度：抽屜點角色後關閉並換頁', (tester) async {
+  testWidgets('手機寬度：更多 → 角色，選單關閉並換頁', (tester) async {
     setWidth(tester, 400);
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(useAppRoutes: true));
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.menu));
+    await tester.tap(find.text('更多'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('角色'));
     await tester.pumpAndSettle();
-    expect(find.byType(Drawer), findsNothing);
+    expect(find.byType(BottomSheet), findsNothing);
     expect(find.widgetWithText(AppBar, '角色'), findsOneWidget);
   });
 

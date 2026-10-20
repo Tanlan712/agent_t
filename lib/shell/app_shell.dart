@@ -32,10 +32,37 @@ class AppShell extends StatelessWidget {
     return i < 0 ? null : i;
   }
 
-  void _go(BuildContext context, NavItem item, {bool closeDrawer = false}) {
-    if (closeDrawer) Navigator.pop(context);
+  void _go(BuildContext context, NavItem item) {
     if (item.route == canonicalRoute(currentRoute)) return;
     Navigator.pushReplacementNamed(context, item.route);
+  }
+
+  /// 底部導覽選中的位置；不在常用 4 頁時是「更多」（4）。
+  int get _bottomIndex {
+    final i = bottomNavRoutes.indexOf(canonicalRoute(currentRoute));
+    return i < 0 ? bottomNavRoutes.length : i;
+  }
+
+  void _onBottomTap(BuildContext context, int i) {
+    if (i < bottomNavRoutes.length) {
+      _go(context, navItems.firstWhere((n) => n.route == bottomNavRoutes[i]));
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      showDragHandle: true,
+      isScrollControlled: true,
+      constraints:
+          BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
+      builder: (sheet) => _MoreSheet(
+        selectedRoute: canonicalRoute(currentRoute),
+        onTap: (item) {
+          Navigator.pop(sheet);
+          _go(context, item);
+        },
+      ),
+    );
   }
 
   @override
@@ -45,22 +72,33 @@ class AppShell extends StatelessWidget {
       final mode = navModeFor(width);
       final body = _Content(padding: horizontalPadding(width), child: child);
 
-      final drawer = mode == NavMode.drawer;
+      final bottom = mode == NavMode.bottom;
       final extended = mode == NavMode.extended;
       // 三種模式共用同一個樹結構（Scaffold > Row > Expanded > Column > Expanded），
       // 只增減導覽欄與標題列；Flex 會從尾端對到同一個 Expanded，
       // 跨斷點時內容子樹（捲動位置、頁面狀態）得以保留。
       return Scaffold(
-        appBar: drawer ? AppBar(title: Text(title), actions: actions) : null,
-        drawer: drawer
-            ? _NavDrawer(
-                selectedIndex: _selectedIndex,
-                onTap: (item, ctx) => _go(ctx, item, closeDrawer: true),
+        appBar: bottom
+            ? AppBar(
+                title: Text(title),
+                actions: [...actions, const _RiotStatus(compact: true)])
+            : null,
+        bottomNavigationBar: bottom
+            ? NavigationBar(
+                selectedIndex: _bottomIndex,
+                onDestinationSelected: (i) => _onBottomTap(context, i),
+                destinations: [
+                  for (final r in bottomNavRoutes)
+                    for (final n in navItems.where((n) => n.route == r))
+                      NavigationDestination(icon: Icon(n.icon), label: n.label),
+                  const NavigationDestination(
+                      icon: Icon(Icons.more_horiz), label: '更多'),
+                ],
               )
             : null,
         body: Row(
           children: [
-            if (!drawer)
+            if (!bottom)
               Container(
                 width: extended ? 240 : 88,
                 color: AppColors.surface,
@@ -105,10 +143,12 @@ class AppShell extends StatelessWidget {
                                               color: AppColors.primary),
                                         ),
                                   destinations: [
-                                    for (final item in navItems)
+                                    for (var i = 0; i < navItems.length; i++)
                                       NavigationRailDestination(
-                                        icon: Icon(item.icon),
-                                        label: Text(item.label),
+                                        icon: Icon(navItems[i].icon),
+                                        selectedIcon: _SelectedIcon(
+                                            icon: navItems[i].icon),
+                                        label: Text(navItems[i].label),
                                       ),
                                   ],
                                   onDestinationSelected: (i) =>
@@ -124,12 +164,12 @@ class AppShell extends StatelessWidget {
                   ),
                 ),
               ),
-            if (!drawer) const VerticalDivider(width: 1),
+            if (!bottom) const VerticalDivider(width: 1),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (!drawer)
+                  if (!bottom)
                     _Content(
                       padding: horizontalPadding(width),
                       child: Padding(
@@ -182,52 +222,55 @@ class _Content extends StatelessWidget {
   }
 }
 
-class _NavDrawer extends StatelessWidget {
-  final int? selectedIndex;
-  final void Function(NavItem item, BuildContext context) onTap;
+/// 側邊欄選中項目：圖示左側 3px 品牌紅指示條。
+class _SelectedIcon extends StatelessWidget {
+  final IconData icon;
 
-  const _NavDrawer({required this.selectedIndex, required this.onTap});
+  const _SelectedIcon({required this.icon});
+
+  @override
+  Widget build(BuildContext context) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(width: 3, height: 20, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Icon(icon, color: AppColors.primary),
+        ],
+      );
+}
+
+/// 手機「更多」：依分組列出其餘頁面。
+class _MoreSheet extends StatelessWidget {
+  final String selectedRoute;
+  final void Function(NavItem item) onTap;
+
+  const _MoreSheet({required this.selectedRoute, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final tiles = <Widget>[];
     NavGroup? group;
-    for (var i = 0; i < navItems.length; i++) {
-      final item = navItems[i];
+    for (final item in navItems) {
+      if (bottomNavRoutes.contains(item.route)) continue;
       if (item.group != group) {
         group = item.group;
         tiles.add(Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-          child: Text(navGroupLabels[group]!,
-              style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Text(navGroupLabels[group]!, style: AppText.label),
         ));
       }
       tiles.add(ListTile(
         leading: Icon(item.icon),
         title: Text(item.label),
-        selected: i == selectedIndex,
+        selected: item.route == selectedRoute,
         selectedColor: AppColors.primary,
         selectedTileColor: AppColors.surfaceHigh,
-        onTap: () => onTap(item, context),
+        onTap: () => onTap(item),
       ));
     }
-    return Drawer(
-      child: SafeArea(
-        child: ListView(
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(appName,
-                  style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold)),
-            ),
-            ...tiles,
-            const Divider(),
-            const _RiotStatus(compact: false),
-          ],
-        ),
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: tiles),
       ),
     );
   }

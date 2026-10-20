@@ -1,11 +1,11 @@
-/// 依視窗寬度決定的導覽型態。
-enum NavMode { drawer, rail, extended }
+/// 依視窗寬度決定的導覽型態（MASTER.md 第 3 節）。
+enum NavMode { bottom, rail, extended }
 
 const double contentMaxWidth = 1280;
 
 NavMode navModeFor(double width) {
-  if (width < 600) return NavMode.drawer;
-  if (width < 1200) return NavMode.rail;
+  if (width < 600) return NavMode.bottom;
+  if (width < 1024) return NavMode.rail;
   return NavMode.extended;
 }
 
