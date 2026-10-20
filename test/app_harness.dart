@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:valorant_shop_tracker/app_routes.dart';
 import 'package:valorant_shop_tracker/models/current_shop.dart';
 import 'package:valorant_shop_tracker/models/wishlist_item.dart';
 import 'package:valorant_shop_tracker/providers/catalog_provider.dart';
@@ -10,6 +11,7 @@ import 'package:valorant_shop_tracker/providers/settings_provider.dart';
 import 'package:valorant_shop_tracker/providers/shop_provider.dart';
 import 'package:valorant_shop_tracker/providers/wishlist_provider.dart';
 import 'package:valorant_shop_tracker/services/riot_client.dart';
+import 'package:valorant_shop_tracker/theme/app_theme.dart';
 import 'package:valorant_shop_tracker/storage/settings_storage.dart';
 import 'package:valorant_shop_tracker/storage/shop_storage.dart';
 import 'package:valorant_shop_tracker/storage/wishlist_storage.dart';
@@ -52,10 +54,13 @@ class Harness {
     );
   }
 
+  /// [useAppRoutes] 為 true 時改用 App 的路由表（`onGenerateAppRoute`），從 `/` 開始。
   Widget wrap({
-    required Widget home,
+    Widget? home,
     Map<String, WidgetBuilder> routes = const {},
     RouteFactory? onGenerateRoute,
+    bool useAppRoutes = false,
+    List<NavigatorObserver> observers = const [],
   }) {
     return MultiProvider(
       providers: [
@@ -65,8 +70,19 @@ class Harness {
         ChangeNotifierProvider.value(value: settings),
         ChangeNotifierProvider.value(value: riot),
       ],
-      child: MaterialApp(
-          home: home, routes: routes, onGenerateRoute: onGenerateRoute),
+      child: useAppRoutes
+          ? MaterialApp(
+              theme: buildAppTheme(),
+              onGenerateRoute: onGenerateAppRoute,
+              navigatorObservers: observers,
+            )
+          : MaterialApp(
+              theme: buildAppTheme(),
+              home: home,
+              routes: routes,
+              onGenerateRoute: onGenerateRoute,
+              navigatorObservers: observers,
+            ),
     );
   }
 }

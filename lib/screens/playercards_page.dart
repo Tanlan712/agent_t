@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
+
+import '../shell/app_shell.dart';
+import '../shell/responsive_grid.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
 class PlayerCardsPage extends StatefulWidget {
@@ -37,19 +41,17 @@ class _PlayerCardsPageState extends State<PlayerCardsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('玩家卡片'),
-        backgroundColor: Colors.teal,
-      ),
-      body: _isLoading
+    return AppShell(
+      currentRoute: '/playercards',
+      title: '玩家卡片',
+      child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error, size: 64, color: Colors.red),
+                      const Icon(Icons.error, size: 64, color: AppColors.error),
                       const SizedBox(height: 16),
                       Text('載入失敗: $_error'),
                       const SizedBox(height: 16),
@@ -66,14 +68,9 @@ class _PlayerCardsPageState extends State<PlayerCardsPage> {
                     ],
                   ),
                 )
-              : GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 1.5,
-                  ),
+              : ResponsiveGridView.builder(
+                  minTileWidth: 200,
+                  childAspectRatio: 0.6,
                   itemCount: _playerCards.length,
                   itemBuilder: (context, index) {
                     final card = _playerCards[index];
@@ -102,14 +99,14 @@ class _PlayerCardsPageState extends State<PlayerCardsPage> {
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
                 return Container(
-                  color: Colors.grey[800],
+                  color: AppColors.surfaceHigh,
                   child: const Icon(Icons.badge, size: 64),
                 );
               },
             )
           else
             Container(
-              color: Colors.grey[800],
+              color: AppColors.surfaceHigh,
               child: const Icon(Icons.badge, size: 64),
             ),
           Positioned(

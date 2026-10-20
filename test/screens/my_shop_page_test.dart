@@ -4,14 +4,17 @@ import 'package:valorant_shop_tracker/models/current_shop.dart';
 import 'package:valorant_shop_tracker/models/skin_info.dart';
 import 'package:valorant_shop_tracker/models/tier.dart';
 import 'package:valorant_shop_tracker/screens/my_shop_page.dart';
+import 'package:valorant_shop_tracker/widgets/skin_card.dart';
 import 'package:valorant_shop_tracker/widgets/skin_tile.dart';
 
 import '../app_harness.dart';
 import '../catalog_helpers.dart';
 import '../riot_fixtures.dart';
+import '../shell/app_shell_test.dart' show setWidth;
 
 void main() {
   group('Riot 連動', riotTests);
+  group('響應式版面', layoutTests);
   final now = DateTime(2026, 10, 19, 10);
   final expires = DateTime(2026, 10, 20, 8);
 
@@ -111,9 +114,69 @@ void riotTests() {
     expect(h.shop.shop.daily.first.skinUuid, 'skin-odin');
   });
 
+  testWidgets('360 寬、已登入有錢包：帳號列不溢出', (tester) async {
+    setWidth(tester, 360);
+    final h = await Harness.create(tester, catalog: await loadedCatalog(tester, skins: const [
+      SkinInfo(uuid: 'skin-odin', name: '凌空之志 奧丁', weaponName: '奧丁', tier: Tier.deluxe, levelUuid: 'lvl-odin'),
+    ]));
+    await tester.runAsync(() => h.riot.login(fakeRedirect));
+    await tester.runAsync(() => h.riot.sync(shop: h.shop, catalog: h.catalog));
+    await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+    await tester.pumpAndSettle();
+    expect(find.text('VP 1500 · 輻能點數 120 · 王國幣 3000'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('SkinTile owned 顯示已擁有', (tester) async {
     await tester.pumpWidget(const MaterialApp(
         home: Scaffold(body: SkinTile(skin: odin, owned: true))));
     expect(find.text('已擁有'), findsOneWidget);
+  });
+}
+
+void layoutTests() {
+  final now = DateTime(2026, 10, 19, 10);
+  final shop = CurrentShop(
+    daily: [
+      for (final id in ['o', 'p', 'i', 'r'])
+        ShopEntry(skinUuid: id, price: 1775),
+    ],
+    dailyExpiresAt: DateTime(2026, 10, 20, 8),
+  );
+
+  List<double> cardTops(WidgetTester tester) => [
+        for (final e in find.byType(SkinCard).evaluate())
+          tester.getTopLeft(find.byWidget(e.widget)).dy,
+      ];
+
+  testWidgets('1400 寬：每日 4 款在同一列', (tester) async {
+    setWidth(tester, 1400);
+    final h = await Harness.create(tester, shop: shop);
+    await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+    await tester.pumpAndSettle();
+    final tops = cardTops(tester);
+    expect(tops.length, 4);
+    expect(tops.toSet().length, 1);
+  });
+
+  testWidgets('帳號列與每日商店標題之間有間距', (tester) async {
+    setWidth(tester, 1400);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+    await tester.pumpAndSettle();
+    final barBottom =
+        tester.getBottomLeft(find.ancestor(of: find.text('登入 Riot 以自動同步'), matching: find.byType(Card))).dy;
+    final headerTop = tester.getTopLeft(find.text('每日商店')).dy;
+    expect(headerTop - barBottom, greaterThanOrEqualTo(16));
+  });
+
+  testWidgets('390 寬：每日 4 款各佔一列', (tester) async {
+    setWidth(tester, 390);
+    final h = await Harness.create(tester, shop: shop);
+    await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+    await tester.pumpAndSettle();
+    final tops = cardTops(tester);
+    expect(tops.toSet().length, tops.length);
+    expect(tester.takeException(), isNull);
   });
 }

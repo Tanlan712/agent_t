@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+
+import '../shell/app_shell.dart';
+import '../shell/responsive_grid.dart';
+import '../theme/app_theme.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
 class GamemodesPage extends StatefulWidget {
@@ -37,19 +41,17 @@ class _GamemodesPageState extends State<GamemodesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('遊戲模式'),
-        backgroundColor: Colors.green,
-      ),
-      body: _isLoading
+    return AppShell(
+      currentRoute: '/gamemodes',
+      title: '遊戲模式',
+      child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error, size: 64, color: Colors.red),
+                      const Icon(Icons.error, size: 64, color: AppColors.error),
                       const SizedBox(height: 16),
                       Text('載入失敗: $_error'),
                       const SizedBox(height: 16),
@@ -66,8 +68,9 @@ class _GamemodesPageState extends State<GamemodesPage> {
                     ],
                   ),
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
+              : ResponsiveGridView.builder(
+                  minTileWidth: 260,
+                  childAspectRatio: 1.8,
                   itemCount: _gamemodes.length,
                   itemBuilder: (context, index) {
                     final gamemode = _gamemodes[index];
@@ -84,46 +87,57 @@ class _GamemodesPageState extends State<GamemodesPage> {
     final duration = gamemode['duration'] as String?;
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: displayIcon != null
-            ? Image.network(
-                displayIcon,
-                width: 60,
-                height: 60,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(Icons.sports_esports, size: 40);
-                },
-              )
-            : const Icon(Icons.sports_esports, size: 40),
-        title: Text(
-          displayName,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (description != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+            SizedBox(
+              width: 48,
+              height: 48,
+              child: displayIcon != null
+                  ? Image.network(
+                      displayIcon,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.sports_esports, size: 40),
+                    )
+                  : const Icon(Icons.sports_esports, size: 40),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  if (description != null) ...[
+                    const SizedBox(height: 4),
+                    Expanded(
+                      child: Text(
+                        description,
+                        overflow: TextOverflow.fade,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    ),
+                  ],
+                  if (duration != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '時長: $duration',
+                      style:
+                          const TextStyle(fontSize: 12, color: AppColors.muted),
+                    ),
+                  ],
+                ],
               ),
-            ],
-            if (duration != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                '時長: $duration',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
+            ),
           ],
         ),
-        isThreeLine: description != null,
       ),
     );
   }

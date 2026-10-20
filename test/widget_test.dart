@@ -1,19 +1,15 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:valorant_shop_tracker/screens/home_page.dart';
+import 'app_harness.dart';
+import 'shell/app_shell_test.dart' show setWidth;
 
 void main() {
-  testWidgets('首頁顯示瀏覽分類', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: HomePage()));
-    expect(find.text('角色'), findsOneWidget);
-    expect(find.text('武器'), findsOneWidget);
-  });
-
-  testWidgets('首頁有我的商店與願望清單入口', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: HomePage()));
-    expect(find.text('我的商店'), findsOneWidget);
-    expect(find.text('願望清單'), findsOneWidget);
+  testWidgets("'/' 顯示我的商店", (tester) async {
+    setWidth(tester, 1400);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(useAppRoutes: true));
+    await tester.pumpAndSettle();
+    expect(find.text('每日商店'), findsOneWidget);
     expect(find.text('角色'), findsOneWidget);
   });
 }

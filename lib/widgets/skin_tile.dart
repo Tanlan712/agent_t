@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../models/skin_info.dart';
+import '../theme/app_theme.dart';
 import 'tier_badge.dart';
 
-const wishlistGold = Color(0xFFFFC107);
+const wishlistGold = AppColors.wishlistGold;
 
 /// 造型卡片；[skin] 為 null 時顯示「未知造型」佔位。
 class SkinTile extends StatelessWidget {
@@ -50,7 +51,7 @@ class SkinTile extends StatelessWidget {
             if (owned)
               const Text('已擁有',
                   style: TextStyle(
-                      color: Colors.green, fontWeight: FontWeight.bold)),
+                      color: AppColors.owned, fontWeight: FontWeight.bold)),
             if (highlighted)
               const Text('★ 願望清單',
                   style: TextStyle(
@@ -89,8 +90,9 @@ class _PriceLabel extends StatelessWidget {
 /// 網路圖片，失敗或沒有網址時顯示佔位圖示。
 class SkinIcon extends StatelessWidget {
   final String? url;
+  final BoxFit fit;
 
-  const SkinIcon({super.key, required this.url});
+  const SkinIcon({super.key, required this.url, this.fit = BoxFit.contain});
 
   @override
   Widget build(BuildContext context) {
@@ -98,6 +100,6 @@ class SkinIcon extends StatelessWidget {
     final url = this.url;
     if (url == null) return placeholder;
     return Image.network(url,
-        fit: BoxFit.contain, errorBuilder: (_, __, ___) => placeholder);
+        fit: fit, errorBuilder: (_, __, ___) => placeholder);
   }
 }

@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
+
+import '../shell/app_shell.dart';
+import '../shell/responsive_grid.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
 class AgentsPage extends StatefulWidget {
@@ -37,19 +41,17 @@ class _AgentsPageState extends State<AgentsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('角色'),
-        backgroundColor: Colors.red,
-      ),
-      body: _isLoading
+    return AppShell(
+      currentRoute: '/agents',
+      title: '角色',
+      child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error, size: 64, color: Colors.red),
+                      const Icon(Icons.error, size: 64, color: AppColors.error),
                       const SizedBox(height: 16),
                       Text('載入失敗: $_error'),
                       const SizedBox(height: 16),
@@ -66,14 +68,9 @@ class _AgentsPageState extends State<AgentsPage> {
                     ],
                   ),
                 )
-              : GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 0.75,
-                  ),
+              : ResponsiveGridView.builder(
+                  minTileWidth: 140,
+                  childAspectRatio: 0.75,
                   itemCount: _agents.length,
                   itemBuilder: (context, index) {
                     final agent = _agents[index];
@@ -85,7 +82,6 @@ class _AgentsPageState extends State<AgentsPage> {
 
   Widget _buildAgentCard(Map<String, dynamic> agent) {
     final displayName = agent['displayName'] as String;
-    final description = agent['description'] as String;
     final role = agent['role'] as Map<String, dynamic>?;
     final displayIcon = agent['displayIcon'] as String?;
     final background = agent['background'] as String?;
@@ -105,14 +101,14 @@ class _AgentsPageState extends State<AgentsPage> {
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
-                        color: Colors.grey[800],
+                        color: AppColors.surfaceHigh,
                         child: const Icon(Icons.person, size: 64),
                       );
                     },
                   )
                 else
                   Container(
-                    color: Colors.grey[800],
+                    color: AppColors.surfaceHigh,
                     child: const Icon(Icons.person, size: 64),
                   ),
                 if (displayIcon != null)
@@ -148,7 +144,7 @@ class _AgentsPageState extends State<AgentsPage> {
                     role['displayName'] as String,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[600],
+                      color: AppColors.muted,
                     ),
                   ),
               ],

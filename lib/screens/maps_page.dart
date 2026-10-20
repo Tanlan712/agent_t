@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
+
+import '../shell/app_shell.dart';
+import '../shell/responsive_grid.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
 class MapsPage extends StatefulWidget {
@@ -37,19 +41,17 @@ class _MapsPageState extends State<MapsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('地圖'),
-        backgroundColor: Colors.blue,
-      ),
-      body: _isLoading
+    return AppShell(
+      currentRoute: '/maps',
+      title: '地圖',
+      child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error, size: 64, color: Colors.red),
+                      const Icon(Icons.error, size: 64, color: AppColors.error),
                       const SizedBox(height: 16),
                       Text('載入失敗: $_error'),
                       const SizedBox(height: 16),
@@ -66,14 +68,9 @@ class _MapsPageState extends State<MapsPage> {
                     ],
                   ),
                 )
-              : GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 1.2,
-                  ),
+              : ResponsiveGridView.builder(
+                  minTileWidth: 260,
+                  childAspectRatio: 1.6,
                   itemCount: _maps.length,
                   itemBuilder: (context, index) {
                     final map = _maps[index];
@@ -99,14 +96,14 @@ class _MapsPageState extends State<MapsPage> {
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
                 return Container(
-                  color: Colors.grey[800],
+                  color: AppColors.surfaceHigh,
                   child: const Icon(Icons.map, size: 64),
                 );
               },
             )
           else
             Container(
-              color: Colors.grey[800],
+              color: AppColors.surfaceHigh,
               child: const Icon(Icons.map, size: 64),
             ),
           Positioned(
@@ -144,7 +141,7 @@ class _MapsPageState extends State<MapsPage> {
                       coordinates,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[300],
+                        color: AppColors.text,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
