@@ -27,6 +27,7 @@ import 'storage/catalog_cache.dart';
 import 'storage/settings_storage.dart';
 import 'storage/shop_storage.dart';
 import 'storage/wishlist_storage.dart';
+import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,11 +66,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'VALORANT 資料庫',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.red),
-        useMaterial3: true,
-      ),
+      title: 'VALORANT 商店追蹤',
+      debugShowCheckedModeBanner: false,
+      theme: buildAppTheme(),
       home: const HomePage(),
       routes: {
         '/agents': (context) => const AgentsPage(),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../models/skin_info.dart';
+import '../theme/app_theme.dart';
 import 'tier_badge.dart';
 
-const wishlistGold = Color(0xFFFFC107);
+const wishlistGold = AppColors.wishlistGold;
 
 /// 造型卡片；[skin] 為 null 時顯示「未知造型」佔位。
 class SkinTile extends StatelessWidget {
