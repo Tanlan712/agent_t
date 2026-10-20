@@ -28,7 +28,7 @@ void main() {
   });
 
   test('buildAppTheme 為深色', () {
-    final theme = buildAppTheme();
+    final theme = buildAppTheme(useGoogleFonts: false);
     expect(theme.brightness, Brightness.dark);
     expect(theme.scaffoldBackgroundColor, AppColors.background);
     expect(theme.colorScheme.primary, AppColors.primary);
@@ -47,5 +47,34 @@ void main() {
         greaterThanOrEqualTo(4.5));
     expect(contrast(AppColors.primary, AppColors.background),
         greaterThanOrEqualTo(4.5));
+  });
+
+  group('戰術 HUD tokens', () {
+    test('語意色與別名', () {
+      expect(AppColors.info, const Color(0xFF38BDF8));
+      expect(AppColors.win, AppColors.owned);
+      expect(AppColors.loss, AppColors.error);
+      expect(AppColors.warn, AppColors.wishlistGold);
+      for (final c in [
+        AppColors.info,
+        AppColors.win,
+        AppColors.loss,
+        AppColors.warn,
+      ]) {
+        expect(contrast(c, AppColors.surface), greaterThanOrEqualTo(4.5));
+      }
+    });
+
+    test('AppText.tabular 使用等寬數字', () {
+      expect(AppText.tabular(null).fontFeatures,
+          contains(const FontFeature.tabularFigures()));
+      expect(AppText.tabular(const TextStyle(fontSize: 13)).fontSize, 13);
+    });
+
+    test('不使用 google_fonts 時退回系統字體，焦點色為 info', () {
+      final t = buildAppTheme(useGoogleFonts: false);
+      expect(t.textTheme.titleLarge?.fontFamily, isNot(contains('Chakra')));
+      expect(t.focusColor, AppColors.info);
+    });
   });
 }

@@ -148,12 +148,12 @@ class Harness {
       ],
       child: useAppRoutes
           ? MaterialApp(
-              theme: buildAppTheme(),
+              theme: buildAppTheme(useGoogleFonts: false),
               onGenerateRoute: onGenerateAppRoute,
               navigatorObservers: observers,
             )
           : MaterialApp(
-              theme: buildAppTheme(),
+              theme: buildAppTheme(useGoogleFonts: false),
               home: home,
               routes: routes,
               onGenerateRoute: onGenerateRoute,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// VALORANT 風格深色主題的色彩 tokens。
 abstract final class AppColors {
@@ -19,6 +20,14 @@ abstract final class AppColors {
   static const wishlistGold = Color(0xFFFFC107);
   static const owned = Color(0xFF4ADE80);
 
+  /// 資訊、連結、進行中、鍵盤焦點（對 surface 7.3）。
+  static const info = Color(0xFF38BDF8);
+
+  /// 語意別名（MASTER.md 第 1 節）：勝利／已擁有、落敗／錯誤、警示。
+  static const win = owned;
+  static const loss = error;
+  static const warn = wishlistGold;
+
   /// 對戰計分板的組隊標記；同一組隊用同一個顏色。
   static const partyColors = [
     Color(0xFF60A5FA),
@@ -31,7 +40,42 @@ abstract final class AppColors {
 
 const _radius = BorderRadius.all(Radius.circular(4));
 
-ThemeData buildAppTheme() {
+/// 共用文字樣式（MASTER.md 第 2 節）。
+abstract final class AppText {
+  /// 數字欄位等寬，讓 ACS、K/D、比分、價格對齊。
+  static TextStyle tabular(TextStyle? base) => (base ?? const TextStyle())
+      .copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
+
+  /// KPI 大數字。
+  static TextStyle kpi(BuildContext context) =>
+      tabular(Theme.of(context).textTheme.headlineSmall?.copyWith(
+          fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.text));
+
+  static const label =
+      TextStyle(color: AppColors.muted, fontSize: 12, letterSpacing: 0.4);
+}
+
+/// 標題用 Chakra Petch、內文用 Noto Sans TC（中文退回 Noto Sans TC）。
+/// [useGoogleFonts] 為 false 時用系統字體（測試、或字體載入失敗時）。
+TextTheme _textTheme(bool useGoogleFonts) {
+  final base = ThemeData(brightness: Brightness.dark).textTheme;
+  if (!useGoogleFonts) return base;
+  final body = GoogleFonts.notoSansTcTextTheme(base);
+  final cjk = GoogleFonts.notoSansTc().fontFamily;
+  TextStyle? head(TextStyle? s) => GoogleFonts.chakraPetch(textStyle: s)
+      .copyWith(fontFamilyFallback: [if (cjk != null) cjk]);
+  return body.copyWith(
+    displayLarge: head(body.displayLarge),
+    displayMedium: head(body.displayMedium),
+    displaySmall: head(body.displaySmall),
+    headlineLarge: head(body.headlineLarge),
+    headlineMedium: head(body.headlineMedium),
+    headlineSmall: head(body.headlineSmall),
+    titleLarge: head(body.titleLarge),
+  );
+}
+
+ThemeData buildAppTheme({bool useGoogleFonts = true}) {
   const scheme = ColorScheme.dark(
     primary: AppColors.primary,
     onPrimary: AppColors.onPrimary,
@@ -60,6 +104,28 @@ ThemeData buildAppTheme() {
     useMaterial3: true,
     brightness: Brightness.dark,
     colorScheme: scheme,
+    textTheme: _textTheme(useGoogleFonts),
+    focusColor: AppColors.info,
+    chipTheme: const ChipThemeData(
+      backgroundColor: AppColors.surfaceHigh,
+      side: BorderSide(color: AppColors.outline),
+      shape: RoundedRectangleBorder(borderRadius: _radius),
+      labelStyle: TextStyle(color: AppColors.text, fontSize: 12),
+    ),
+    dataTableTheme: const DataTableThemeData(
+      headingRowHeight: 36,
+      dataRowMinHeight: 36,
+      headingTextStyle: AppText.label,
+      dividerThickness: 0.5,
+    ),
+    tooltipTheme: const TooltipThemeData(
+      decoration: BoxDecoration(
+          color: AppColors.surfaceHigh,
+          borderRadius: _radius,
+          border: Border.fromBorderSide(BorderSide(color: AppColors.outline))),
+      textStyle: TextStyle(color: AppColors.text, fontSize: 12),
+      waitDuration: Duration(milliseconds: 300),
+    ),
     scaffoldBackgroundColor: AppColors.background,
     canvasColor: AppColors.background,
     dividerColor: AppColors.outline,
