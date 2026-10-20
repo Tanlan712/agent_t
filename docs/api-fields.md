@@ -169,6 +169,18 @@
   - `bonsaiBloomline`：`bloomlineFlourishID, bloomlineShortLevel, bloomlineHypeID`（意義不明，未使用）
   - 沒有名稱與 partyId；名稱要用 name-service 查詢。
 
+### `GET /core-game/v1/matches/{matchId}/loadouts` ✅ 2026-10-21（對局中，使用者決定讀取）
+- `Loadouts[]`（10 人）：`Subject, CharacterID, Loadout`
+- `Loadout`：`Subject, Expressions{AESSelections}, DynamicOptions, Items`
+- `Items`：以**武器 ID** 為 key 的物件（實測 21 項），每項 `{ID, TypeID, Sockets}`
+  - `Sockets` 以 socket 類型 ID 為 key，每項 `{ID, Item{ID, TypeID}}`。依社群文件：
+    - `bcef87d6-209b-46c6-8b19-fbe40bd95abc`：造型（skin）
+    - `e7c63390-eda7-46e0-bb7a-a6abdacd2433`：造型等級（skin level，與商店／已擁有造型相同的 ID）
+    - `3ad1b2b2-acdb-4524-852f-954a76ddae0a`：炫彩（chroma）
+    - `dd3bf334-87f3-40bd-b043-682a57a8dc3a`：吊飾（buddy，有裝才有；📄 本次未見）
+  - 實測 21 項都有造型 socket；沒有換造型時是預設造型。
+- `pregame/v1/matches/{id}/loadouts`：📄 尚未實測。
+
 ## 公開遊戲資料（valorant-api.com）🧩
 
 - `/v1/weapons/skins`、`/v1/bundles`、`/v1/agents`、`/v1/maps`、`/v1/competitivetiers`、`/v1/playercards`、`/v1/gamemodes` 等；回傳格式都是 `{status, data}`。
