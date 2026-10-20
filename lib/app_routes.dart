@@ -11,6 +11,7 @@ import 'screens/my_shop_page.dart';
 import 'screens/player_page.dart';
 import 'screens/playercards_page.dart';
 import 'screens/riot_login_page.dart';
+import 'screens/seen_players_page.dart';
 import 'screens/settings_page.dart';
 import 'screens/shop_edit_page.dart';
 import 'screens/skin_picker_page.dart';
@@ -23,6 +24,7 @@ final Map<String, WidgetBuilder> _topLevel = {
   '/my-shop': (_) => const MyShopPage(),
   '/wishlist': (_) => const WishlistPage(),
   '/matches': (_) => const MatchHistoryPage(),
+  '/players': (_) => const SeenPlayersPage(),
   '/agents': (_) => const AgentsPage(),
   '/weapons': (_) => const WeaponsPage(),
   '/maps': (_) => const MapsPage(),

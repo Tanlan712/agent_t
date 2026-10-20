@@ -9,6 +9,7 @@ import 'providers/match_history_provider.dart';
 import 'providers/match_reference_provider.dart';
 import 'providers/recent_form_loader.dart';
 import 'providers/riot_provider.dart';
+import 'providers/seen_players_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/shop_provider.dart';
 import 'providers/wishlist_provider.dart';
@@ -19,6 +20,7 @@ import 'services/match_reference_api.dart';
 import 'services/riot_client.dart';
 import 'storage/catalog_cache.dart';
 import 'storage/match_reference_cache.dart';
+import 'storage/seen_players_storage.dart';
 import 'storage/settings_storage.dart';
 import 'storage/shop_storage.dart';
 import 'storage/wishlist_storage.dart';
@@ -45,6 +47,8 @@ Future<void> main() async {
   // 自己的紀錄、最近 5 場與玩家頁共用同一份場次快取。
   final matchClient = MatchClient(riotClient);
   final matchCache = MatchDetailCache();
+  // 遇過的玩家只存在這個瀏覽器（localStorage），方便之後查詢他的紀錄。
+  final seenPlayers = SeenPlayersProvider(SeenPlayersStorage(prefs));
   final matchReference =
       MatchReferenceProvider(MatchReferenceApi(), MatchReferenceCache(prefs));
   matchReference.init();
@@ -64,8 +68,9 @@ Future<void> main() async {
         ChangeNotifierProvider(
             create: (_) => RecentFormLoader(matchClient, riot, matchCache)),
         ChangeNotifierProvider(
-            create: (_) =>
-                MatchHistoryProvider(matchClient, riot, cache: matchCache)),
+            create: (_) => MatchHistoryProvider(matchClient, riot,
+                cache: matchCache, onDetails: seenPlayers.recordAll)),
+        ChangeNotifierProvider.value(value: seenPlayers),
         ChangeNotifierProvider.value(value: matchReference),
       ],
       child: const MyApp(),

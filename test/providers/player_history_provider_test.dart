@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:valorant_shop_tracker/models/match_models.dart';
 import 'package:valorant_shop_tracker/providers/match_detail_cache.dart';
 import 'package:valorant_shop_tracker/providers/match_history_provider.dart';
 import 'package:valorant_shop_tracker/providers/player_history_provider.dart';
@@ -78,6 +79,18 @@ void main() {
         puuid: 'r1');
     await p.loadFirstPage();
     expect(p.entries.length, 20);
+  });
+
+  test('每頁載入完成後把補上名稱的詳情交給 onDetails', () async {
+    final rc = RiotClient(client: riotClient(blankNames: true));
+    final riot = RiotProvider(rc);
+    await riot.login(fakeRedirect);
+    final seen = <MatchDetail>[];
+    final p = PlayerHistoryProvider(MatchClient(rc), riot, MatchDetailCache(),
+        puuid: 'r1', pageSize: 3, onDetails: seen.addAll);
+    await p.loadFirstPage();
+    expect(seen.length, 3);
+    expect(seen.first.teams['Red']!.first.riotId, 'N-r1#TW1');
   });
 
   test('載入中 dispose 不會丟出例外', () async {

@@ -42,11 +42,15 @@ class MatchHistoryProvider with ChangeNotifier {
 
   /// 要查看的玩家；null 表示自己（含牌位與 RR）。
   final String? focusPuuid;
+
+  /// 每頁載入完成（已補上名稱）後呼叫，例如記錄遇過的玩家。
+  final void Function(Iterable<MatchDetail> details)? onDetails;
   bool _disposed = false;
 
   MatchHistoryProvider(this._client, this._riot,
       {MatchDetailCache? cache,
       this.focusPuuid,
+      this.onDetails,
       this.pageSize = 10,
       this.maxConcurrent = 4})
       : cache = cache ?? MatchDetailCache();
@@ -216,6 +220,7 @@ class MatchHistoryProvider with ChangeNotifier {
     }
 
     _details.addAll(fetched);
+    if (fetched.isNotEmpty) onDetails?.call(fetched.values);
     _entries.addAll(results.whereType<MatchEntry>());
   }
 }

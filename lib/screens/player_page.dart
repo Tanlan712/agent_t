@@ -6,6 +6,7 @@ import '../providers/match_detail_cache.dart';
 import '../providers/match_reference_provider.dart';
 import '../providers/player_history_provider.dart';
 import '../providers/riot_provider.dart';
+import '../providers/seen_players_provider.dart';
 import '../services/match_client.dart';
 import '../theme/app_theme.dart';
 import '../shell/responsive_grid.dart';
@@ -29,7 +30,8 @@ class _PlayerPageState extends State<PlayerPage> {
     super.initState();
     _history = PlayerHistoryProvider(context.read<MatchClient>(),
         context.read<RiotProvider>(), context.read<MatchDetailCache>(),
-        puuid: widget.player.puuid);
+        puuid: widget.player.puuid,
+        onDetails: context.read<SeenPlayersProvider>().recordAll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _history.loadFirstPage();
     });

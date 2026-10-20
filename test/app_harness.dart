@@ -13,6 +13,7 @@ import 'package:valorant_shop_tracker/providers/match_history_provider.dart';
 import 'package:valorant_shop_tracker/providers/match_reference_provider.dart';
 import 'package:valorant_shop_tracker/providers/recent_form_loader.dart';
 import 'package:valorant_shop_tracker/providers/riot_provider.dart';
+import 'package:valorant_shop_tracker/providers/seen_players_provider.dart';
 import 'package:valorant_shop_tracker/providers/settings_provider.dart';
 import 'package:valorant_shop_tracker/providers/shop_provider.dart';
 import 'package:valorant_shop_tracker/providers/wishlist_provider.dart';
@@ -21,6 +22,7 @@ import 'package:valorant_shop_tracker/services/match_reference_api.dart';
 import 'package:valorant_shop_tracker/services/riot_client.dart';
 import 'package:valorant_shop_tracker/storage/match_reference_cache.dart';
 import 'package:valorant_shop_tracker/theme/app_theme.dart';
+import 'package:valorant_shop_tracker/storage/seen_players_storage.dart';
 import 'package:valorant_shop_tracker/storage/settings_storage.dart';
 import 'package:valorant_shop_tracker/storage/shop_storage.dart';
 import 'package:valorant_shop_tracker/storage/wishlist_storage.dart';
@@ -51,6 +53,7 @@ class Harness {
   final SharedPreferences prefs;
   final MatchClient matchClient;
   final MatchDetailCache matchCache;
+  final SeenPlayersProvider seenPlayers;
   late final RecentFormLoader recentForm =
       RecentFormLoader(matchClient, riot, matchCache);
 
@@ -64,7 +67,8 @@ class Harness {
       this.matchReference,
       this.prefs,
       this.matchClient,
-      this.matchCache);
+      this.matchCache,
+      this.seenPlayers);
 
   static Future<Harness> create(
     WidgetTester tester, {
@@ -90,6 +94,7 @@ class Harness {
     await reference.init();
     final matchClient = MatchClient(rc);
     final matchCache = MatchDetailCache();
+    final seenPlayers = SeenPlayersProvider(SeenPlayersStorage(prefs));
     return Harness(
       c,
       ShopProvider(ShopStorage(prefs)),
@@ -97,11 +102,14 @@ class Harness {
       SettingsProvider(SettingsStorage(prefs)),
       riot,
       MatchHistoryProvider(matchClient, riot,
-          cache: matchCache, pageSize: matchPageSize),
+          cache: matchCache,
+          pageSize: matchPageSize,
+          onDetails: seenPlayers.recordAll),
       reference,
       prefs,
       matchClient,
       matchCache,
+      seenPlayers,
     );
   }
 
@@ -123,6 +131,7 @@ class Harness {
         Provider.value(value: matchClient),
         Provider.value(value: matchCache),
         ChangeNotifierProvider.value(value: recentForm),
+        ChangeNotifierProvider.value(value: seenPlayers),
         ChangeNotifierProvider.value(value: matchHistory),
         ChangeNotifierProvider.value(value: matchReference),
       ],
