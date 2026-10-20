@@ -217,14 +217,6 @@ class _MemberCard extends StatelessWidget {
                               style:
                                   const TextStyle(fontWeight: FontWeight.bold)),
                         ),
-                        // 使用者決定：隱藏名稱的成員照樣顯示名稱，只加上標籤。
-                        if (member.incognito) ...[
-                          const SizedBox(width: 6),
-                          Text('隱藏名稱',
-                              key: ValueKey('live-incognito-${member.puuid}'),
-                              style: const TextStyle(
-                                  color: AppColors.muted, fontSize: 11)),
-                        ],
                         if (member.isOwner) ...[
                           const SizedBox(width: 6),
                           Icon(Icons.star,

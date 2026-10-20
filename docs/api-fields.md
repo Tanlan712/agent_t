@@ -130,7 +130,7 @@
   - `CheatData`：只記錄欄位名稱，**不讀取、不使用**。
 - `Members[]`：`Subject, CompetitiveTier, PlayerIdentity, SeasonalBadgeInfo, IsOwner, QueueEligibleRemainingAccountLevels, Pings, IsReady, IsModerator, UseBroadcastHUD, PlatformType, PreferredAgentInfo, PremierPrestige, JoinedAt`
   - `PlayerIdentity`：`Subject, PlayerCardID, PlayerTitleID, AccountLevel, PreferredLevelBorderID, Incognito, HideAccountLevel`
-    - `Incognito`：成員隱藏名稱。使用者決定照樣查詢並顯示名稱，只加上「隱藏名稱」標籤。
+    - `Incognito`：成員隱藏名稱。使用者決定照樣查詢並顯示名稱，不加標籤。
     - `HideAccountLevel`：成員隱藏等級。使用者決定照樣顯示（自己的資料上也會出現這個開關）。
 
 ### `GET /pregame/v1/players/{puuid}`、`GET /core-game/v1/players/{puuid}` ✅ 2026-10-21

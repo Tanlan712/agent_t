@@ -70,14 +70,14 @@ void main() {
     await leave(tester, h);
   });
 
-  testWidgets('使用者決定：隱藏的名稱、等級、牌位也直接顯示，並標示隱藏名稱', (tester) async {
+  testWidgets('使用者決定：隱藏的名稱、等級、牌位也直接顯示，不加標籤', (tester) async {
     setWidth(tester, 1400);
     final h = await harness(tester, otherMmrHidden: {'mate'});
     await tester.pumpWidget(h.wrap(home: const LivePage()));
     await drain(tester);
     expect(inKey('live-name-ghost', 'N-ghost#TW1'), findsOneWidget);
-    expect(find.byKey(const ValueKey('live-incognito-ghost')), findsOneWidget);
-    expect(find.byKey(const ValueKey('live-incognito-mate')), findsNothing);
+    // 使用者要求：不加「隱藏名稱」標籤。
+    expect(find.text('隱藏名稱'), findsNothing);
     expect(inKey('live-level-shy', 'Lv 100'), findsOneWidget);
     String rank(String id) =>
         tester.widget<Tooltip>(find.byKey(ValueKey('live-rank-$id'))).message!;
