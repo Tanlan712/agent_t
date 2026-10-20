@@ -5,6 +5,7 @@ import '../live_fixtures.dart';
 import '../match_fixtures.dart';
 
 void main() {
+  group('對局', coreGameTests);
   group('玩家卡', cardUrlTests);
   test('隊伍欄位與成員，自己排第一', () {
     final p = mapParty(partyJson(), myPuuid);
@@ -70,5 +71,39 @@ void cardUrlTests() {
         'https://media.valorant-api.com/playercards/abc/smallart.png');
     expect(playerCardUrl(null), isNull);
     expect(playerCardUrl(''), isNull);
+  });
+}
+
+void coreGameTests() {
+  test('對局：地圖、模式、雙方隊伍，我方在前', () {
+    final m = mapCoreGame(coreMatchJson(), myPuuid);
+    expect(m.matchId, testCoreMatchId);
+    expect(m.state, 'IN_PROGRESS');
+    expect(m.mapId, '/Game/Maps/Ascent/Ascent');
+    expect(m.queueId, 'competitive');
+    expect(m.myTeamId, 'Blue');
+    expect(m.teamIds, ['Blue', 'Red']);
+    final blue = m.team('Blue');
+    expect(blue.first.puuid, myPuuid);
+    expect(blue.length, 5);
+    expect(m.team('Red').length, 6);
+  });
+
+  test('對局玩家欄位：特務、牌位、等級、隱藏名稱、教練', () {
+    final m = mapCoreGame(coreMatchJson(), myPuuid);
+    final r1 = m.players.singleWhere((p) => p.puuid == 'r1');
+    expect(r1.agentId, 'agent-r1');
+    expect(r1.tier, 18);
+    expect(r1.level, 50);
+    expect(r1.isMe, isFalse);
+    expect(m.players.singleWhere((p) => p.puuid == 'r2').incognito, isTrue);
+    expect(m.players.singleWhere((p) => p.puuid == 'coach').isCoach, isTrue);
+  });
+
+  test('缺少欄位時不崩潰', () {
+    final m = mapCoreGame({'MatchID': 'x'}, myPuuid);
+    expect(m.players, isEmpty);
+    expect(m.myTeamId, '');
+    expect(m.teamIds, isEmpty);
   });
 }

@@ -50,3 +50,66 @@ class LiveParty {
     required this.members,
   });
 }
+
+/// 對局中（core-game）的一位玩家。
+class LivePlayer {
+  final String puuid;
+  final bool isMe;
+  final String teamId;
+  final String agentId;
+  final String? cardId;
+  final int level;
+
+  /// 本季牌位（SeasonalBadgeInfo.Rank）。
+  final int tier;
+  final bool incognito;
+  final bool hideLevel;
+  final bool isCoach;
+
+  const LivePlayer({
+    required this.puuid,
+    required this.isMe,
+    required this.teamId,
+    required this.agentId,
+    required this.cardId,
+    required this.level,
+    required this.tier,
+    required this.incognito,
+    required this.hideLevel,
+    required this.isCoach,
+  });
+}
+
+/// 對局中（core-game）的場次。依 AGENTS.md，不保存連線資訊與任何 token。
+class LiveMatch {
+  final String matchId;
+  final String state;
+  final String mapId;
+  final String queueId;
+  final String myTeamId;
+  final List<LivePlayer> players;
+
+  const LiveMatch({
+    required this.matchId,
+    required this.state,
+    required this.mapId,
+    required this.queueId,
+    required this.myTeamId,
+    required this.players,
+  });
+
+  /// 我方在前，其餘依名稱排序。
+  List<String> get teamIds {
+    final ids = {for (final p in players) p.teamId}.toList()
+      ..sort(
+          (a, b) => a == myTeamId ? -1 : (b == myTeamId ? 1 : a.compareTo(b)));
+    return ids;
+  }
+
+  /// 該隊玩家，自己排第一。
+  List<LivePlayer> team(String teamId) {
+    final list = players.where((p) => p.teamId == teamId).toList();
+    final me = list.where((p) => p.isMe).toList();
+    return [...me, ...list.where((p) => !p.isMe)];
+  }
+}

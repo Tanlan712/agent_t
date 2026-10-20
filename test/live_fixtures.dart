@@ -76,3 +76,68 @@ Map<String, dynamic> partyPlayerJson() => {
       'Requests': <dynamic>[],
       'IsCrossPlayEnabled': false,
     };
+
+const testCoreMatchId = 'core-1';
+
+Map<String, dynamic> corePlayer(String subject, String team,
+        {int rank = 12, bool incognito = false, bool coach = false}) =>
+    {
+      'Subject': subject,
+      'TeamID': team,
+      'TeamNumber': 0,
+      'CharacterID': 'agent-$subject',
+      'PlayerIdentity': {
+        'Subject': subject,
+        'PlayerCardID': 'card-$subject',
+        'PlayerTitleID': 'title',
+        'AccountLevel': 50,
+        'PreferredLevelBorderID': 'border',
+        'Incognito': incognito,
+        'HideAccountLevel': false,
+      },
+      'SeasonalBadgeInfo': {
+        'SeasonID': 'season-1',
+        'NumberOfWins': 3,
+        'WinsByTier': {'12': 3},
+        'Rank': rank,
+        'LeaderboardRank': 0,
+      },
+      'IsCoach': coach,
+      'IsAssociated': true,
+      'PlatformType': 'pc',
+    };
+
+/// 依 2026-10-21 實測的 core-game 欄位結構；ConnectionDetails 用假值，App 不得讀取。
+Map<String, dynamic> coreMatchJson() => {
+      'MatchID': testCoreMatchId,
+      'Version': 1,
+      'State': 'IN_PROGRESS',
+      'MapID': '/Game/Maps/Ascent/Ascent',
+      'ModeID': '/Game/GameModes/Bomb/BombGameMode.BombGameMode_C',
+      'ProvisioningFlow': 'Matchmaking',
+      'GamePodID': 'pod',
+      'ConnectionDetails': {
+        'GameServerHost': 'do-not-read',
+        'GameServerPort': 1,
+        'PlayerKey': 'do-not-read',
+      },
+      'TeamMatchToken': 'do-not-read',
+      'PostGameDetails': null,
+      'MatchmakingData': {'QueueID': 'competitive', 'IsRanked': true},
+      'Players': [
+        corePlayer('r1', 'Red', rank: 18),
+        corePlayer(myPuuid, 'Blue', rank: 15),
+        corePlayer('mate', 'Blue'),
+        corePlayer('b3', 'Blue'),
+        corePlayer('b4', 'Blue'),
+        corePlayer('b5', 'Blue'),
+        corePlayer('r2', 'Red', incognito: true),
+        corePlayer('r3', 'Red'),
+        corePlayer('r4', 'Red'),
+        corePlayer('r5', 'Red'),
+        corePlayer('coach', 'Red', coach: true),
+      ],
+    };
+
+Map<String, dynamic> corePlayerJson() =>
+    {'Subject': myPuuid, 'MatchID': testCoreMatchId, 'Version': 1};

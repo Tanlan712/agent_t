@@ -49,3 +49,38 @@ LiveParty mapParty(Map<String, dynamic> json, String myPuuid) {
 String? playerCardUrl(String? cardId) => cardId == null || cardId.isEmpty
     ? null
     : 'https://media.valorant-api.com/playercards/$cardId/smallart.png';
+
+/// 解析 glz `core-game/v1/matches/{id}`（欄位見 docs/api-fields.md）。
+/// 依 AGENTS.md 只讀取需要的欄位，不碰 ConnectionDetails 與任何 token。
+LiveMatch mapCoreGame(Map<String, dynamic> json, String myPuuid) {
+  final players = <LivePlayer>[];
+  for (final p in (json['Players'] as List<dynamic>? ?? const [])
+      .cast<Map<String, dynamic>>()) {
+    final id = p['Subject'] as String? ?? '';
+    final identity = p['PlayerIdentity'] as Map<String, dynamic>? ?? const {};
+    final badge = p['SeasonalBadgeInfo'] as Map<String, dynamic>? ?? const {};
+    players.add(LivePlayer(
+      puuid: id,
+      isMe: id == myPuuid,
+      teamId: p['TeamID'] as String? ?? '',
+      agentId: (p['CharacterID'] as String? ?? '').toLowerCase(),
+      cardId: identity['PlayerCardID'] as String?,
+      level: _int(identity['AccountLevel']),
+      tier: _int(badge['Rank']),
+      incognito: identity['Incognito'] == true,
+      hideLevel: identity['HideAccountLevel'] == true,
+      isCoach: p['IsCoach'] == true,
+    ));
+  }
+  final me = players.where((p) => p.isMe).firstOrNull;
+  return LiveMatch(
+    matchId: json['MatchID'] as String? ?? '',
+    state: json['State'] as String? ?? '',
+    mapId: json['MapID'] as String? ?? '',
+    queueId: (json['MatchmakingData'] as Map<String, dynamic>?)?['QueueID']
+            as String? ??
+        '',
+    myTeamId: me?.teamId ?? '',
+    players: players,
+  );
+}
