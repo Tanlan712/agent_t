@@ -39,6 +39,8 @@ void main() {
 
   Future<(LivePartyProvider, RiotProvider)> setup({
     int partyStatus = 200,
+    int coreStatus = 404,
+    int pregameStatus = 404,
     Set<String> otherMmrHidden = const {},
     Map<String, int> otherMmrStatus = const {},
   }) async {
@@ -46,6 +48,8 @@ void main() {
     timer = null;
     final inner = riotClient(
         partyStatus: partyStatus,
+        coreStatus: coreStatus,
+        pregameStatus: pregameStatus,
         otherMmrHidden: otherMmrHidden,
         otherMmrStatus: otherMmrStatus);
     final client = MockClient((req) async {
@@ -148,5 +152,36 @@ void main() {
     p.dispose();
     await f;
     expect(notified, 0);
+  });
+
+  group('階段判斷', () {
+    test('對局中：切到 inGame，讀取對局並查所有人的名稱，不讀隊伍', () async {
+      final (p, _) = await setup(coreStatus: 200);
+      await p.refresh();
+      expect(p.phase, LivePhase.inGame);
+      expect(p.match!.players.length, 11);
+      expect(p.name('r1'), 'N-r1#TW1');
+      expect(p.name('r2'), 'N-r2#TW1');
+      expect(p.name(myPuuid), 'Tester#TW1');
+      expect(where('/parties/'), isEmpty);
+      expect(where('/pregame/'), isEmpty);
+    });
+
+    test('選角中：切到 pregame，不讀隊伍', () async {
+      final (p, _) = await setup(pregameStatus: 200);
+      await p.refresh();
+      expect(p.phase, LivePhase.pregame);
+      expect(p.match, isNull);
+      expect(where('/parties/'), isEmpty);
+    });
+
+    test('不在選角也不在對局：隊伍階段', () async {
+      final (p, _) = await setup();
+      await p.refresh();
+      expect(p.phase, LivePhase.party);
+      expect(p.party, isNotNull);
+      expect(where('/core-game/v1/players/'), hasLength(1));
+      expect(where('/pregame/v1/players/'), hasLength(1));
+    });
   });
 }

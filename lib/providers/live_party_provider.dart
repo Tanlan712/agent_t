@@ -12,7 +12,10 @@ import 'riot_provider.dart';
 
 enum LiveStatus { idle, loading, ready, noParty, error, loggedOut }
 
-/// 即時對局的隊伍階段：頁面開著時定期讀取（只有 GET）。
+/// 目前所在的階段；優先順序：對局 > 選角 > 隊伍。
+enum LivePhase { party, pregame, inGame }
+
+/// 即時對局：頁面開著時定期讀取（只有 GET），依序判斷對局、選角、隊伍三個階段。
 class LivePartyProvider with ChangeNotifier {
   static const expiredMessage = '登入已過期，請重新登入';
 
@@ -25,6 +28,8 @@ class LivePartyProvider with ChangeNotifier {
   final Timer Function(Duration, void Function(Timer)) _periodic;
 
   LiveParty? _party;
+  LiveMatch? _liveMatch;
+  LivePhase _phase = LivePhase.party;
   LiveStatus _status = LiveStatus.idle;
   String? _error;
   final Map<String, String> _names = {};
@@ -40,6 +45,8 @@ class LivePartyProvider with ChangeNotifier {
         _periodic = periodic ?? Timer.periodic;
 
   LiveParty? get party => _party;
+  LiveMatch? get match => _liveMatch;
+  LivePhase get phase => _phase;
   LiveStatus get status => _status;
   String? get error => _error;
 
@@ -79,11 +86,37 @@ class LivePartyProvider with ChangeNotifier {
       return;
     }
     _busy = true;
-    if (_party == null) {
+    if (_status == LiveStatus.idle) {
       _status = LiveStatus.loading;
       notifyListeners();
     }
     try {
+      _names[s.puuid] = '${s.gameName}#${s.tagLine}';
+      // 對局中：顯示即時對戰（使用者決定，AGENTS.md 第 2 節）。
+      final coreId = await _live.fetchCoreMatchId(s);
+      if (_disposed) return;
+      if (coreId != null) {
+        final match =
+            mapCoreGame(await _live.fetchCoreMatch(s, coreId), s.puuid);
+        if (_disposed) return;
+        await _fillNames(s, match.players.map((p) => p.puuid));
+        if (_disposed) return;
+        _liveMatch = match;
+        _phase = LivePhase.inGame;
+        _status = LiveStatus.ready;
+        _error = null;
+        return;
+      }
+      _liveMatch = null;
+      final preId = await _live.fetchPregameMatchId(s);
+      if (_disposed) return;
+      if (preId != null) {
+        _phase = LivePhase.pregame;
+        _status = LiveStatus.ready;
+        _error = null;
+        return;
+      }
+      _phase = LivePhase.party;
       final id = await _live.fetchPartyId(s);
       if (_disposed) return;
       if (id == null) {
@@ -94,8 +127,7 @@ class LivePartyProvider with ChangeNotifier {
       }
       final party = mapParty(await _live.fetchParty(s, id), s.puuid);
       if (_disposed) return;
-      _names[s.puuid] = '${s.gameName}#${s.tagLine}';
-      await _fillNames(s, party);
+      await _fillNames(s, party.members.map((m) => m.puuid));
       if (_disposed) return;
       _party = party;
       _status = LiveStatus.ready;
@@ -106,6 +138,7 @@ class LivePartyProvider with ChangeNotifier {
         stop();
         _riot.logout();
         _party = null;
+        _liveMatch = null;
         _status = LiveStatus.loggedOut;
         _error = expiredMessage;
       } else {
@@ -120,10 +153,10 @@ class LivePartyProvider with ChangeNotifier {
 
   /// 使用者決定（2026-10-21，AGENTS.md 第 2 節）：隱藏名稱的成員也查詢並顯示。
   /// 失敗時下一輪再試。
-  Future<void> _fillNames(RiotSession s, LiveParty party) async {
+  Future<void> _fillNames(RiotSession s, Iterable<String> puuids) async {
     final ids = [
-      for (final m in party.members)
-        if (!m.isMe && !_names.containsKey(m.puuid)) m.puuid,
+      for (final p in puuids)
+        if (!_names.containsKey(p)) p,
     ];
     if (ids.isEmpty) return;
     try {
