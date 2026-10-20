@@ -1,0 +1,46 @@
+import 'package:flutter/foundation.dart';
+
+import '../models/match_models.dart';
+import '../services/match_reference_api.dart';
+import '../storage/match_reference_cache.dart';
+
+/// 特務、地圖、牌位的顯示資料；下載失敗時以佔位顯示，不阻擋畫面。
+class MatchReferenceProvider with ChangeNotifier {
+  final MatchReferenceApi _api;
+  final MatchReferenceCache _cache;
+  MatchReference? _reference;
+
+  MatchReferenceProvider(this._api, this._cache);
+
+  MatchReference? get reference => _reference;
+
+  Future<void> init() async {
+    final cached = _cache.load();
+    if (cached != null) {
+      _reference = cached;
+      notifyListeners();
+      return;
+    }
+    try {
+      final fresh = await _api.fetch();
+      _reference = fresh;
+      await _cache.save(fresh);
+    } catch (e) {
+      debugPrint('對戰參考資料下載失敗：$e');
+    }
+    notifyListeners();
+  }
+
+  static RefItem _fallback(String id) => RefItem(
+      name:
+          id.length > 8 ? id.substring(0, 8).toLowerCase() : id.toLowerCase());
+
+  RefItem agent(String uuid) =>
+      _reference?.agents[uuid.toLowerCase()] ?? _fallback(uuid);
+
+  RefItem map(String mapUrl) =>
+      _reference?.maps[mapUrl] ?? _fallback(mapUrl.split('/').last);
+
+  RefItem tier(int tier) =>
+      _reference?.tiers[tier] ?? const RefItem(name: '未定級');
+}

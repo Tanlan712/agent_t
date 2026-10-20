@@ -97,3 +97,46 @@ class RankInfo {
 
   const RankInfo({required this.tier, required this.rr});
 }
+
+/// 參考資料的一筆：顯示名稱與圖示。
+class RefItem {
+  final String name;
+  final String? iconUrl;
+
+  const RefItem({required this.name, this.iconUrl});
+
+  factory RefItem.fromJson(Map<String, dynamic> json) => RefItem(
+      name: json['name'] as String, iconUrl: json['iconUrl'] as String?);
+
+  Map<String, dynamic> toJson() => {'name': name, 'iconUrl': iconUrl};
+}
+
+/// 特務（uuid 小寫）、地圖（mapUrl）、牌位（tier 編號）的對照表。
+class MatchReference {
+  final Map<String, RefItem> agents;
+  final Map<String, RefItem> maps;
+  final Map<int, RefItem> tiers;
+
+  const MatchReference(
+      {required this.agents, required this.maps, required this.tiers});
+
+  factory MatchReference.fromJson(Map<String, dynamic> json) {
+    Map<String, RefItem> items(Object? m) => {
+          for (final e in (m as Map<String, dynamic>).entries)
+            e.key: RefItem.fromJson(e.value as Map<String, dynamic>),
+        };
+    return MatchReference(
+      agents: items(json['agents']),
+      maps: items(json['maps']),
+      tiers: {
+        for (final e in items(json['tiers']).entries) int.parse(e.key): e.value,
+      },
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'agents': {for (final e in agents.entries) e.key: e.value.toJson()},
+        'maps': {for (final e in maps.entries) e.key: e.value.toJson()},
+        'tiers': {for (final e in tiers.entries) '${e.key}': e.value.toJson()},
+      };
+}
