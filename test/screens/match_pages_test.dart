@@ -330,4 +330,22 @@ void scoreboardTests() {
           reason: p);
     }
   });
+
+  testWidgets('寬螢幕時兩隊上下排列、欄位不被截斷、有隊伍標題', (tester) async {
+    setWidth(tester, 1300);
+    final h = await detailHarness(tester);
+    await tester.pumpWidget(h.wrap(home: const MatchDetailPage(matchId: 'm1')));
+    await tester.pumpAndSettle();
+    final blue = tester.getTopLeft(find.byKey(const ValueKey('team-Blue')));
+    final red = tester.getTopLeft(find.byKey(const ValueKey('team-Red')));
+    expect(red.dy, greaterThan(blue.dy));
+    expect(red.dx, blue.dx);
+    for (final header in find.text('最近 5 場').evaluate()) {
+      final right = tester.getTopRight(find.byWidget(header.widget)).dx;
+      expect(right, lessThanOrEqualTo(1300));
+    }
+    expect(find.text('我方・勝利'), findsOneWidget);
+    expect(find.text('敵方・落敗'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

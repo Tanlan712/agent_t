@@ -105,7 +105,9 @@ class _DetailBody extends StatelessWidget {
             players: detail.teams[id]!,
             ref: ref,
             parties: parties,
-            queueId: s.queueId),
+            queueId: s.queueId,
+            mine: id == s.myTeamId,
+            won: id == s.myTeamId ? s.won : (s.won == null ? null : !s.won!)),
     ];
 
     return ListView(
@@ -135,26 +137,11 @@ class _DetailBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        LayoutBuilder(
-          builder: (context, c) => c.maxWidth >= 1000
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (var i = 0; i < tables.length; i++) ...[
-                      if (i > 0) const SizedBox(width: 16),
-                      Expanded(child: tables[i]),
-                    ],
-                  ],
-                )
-              : Column(
-                  children: [
-                    for (var i = 0; i < tables.length; i++) ...[
-                      if (i > 0) const SizedBox(height: 16),
-                      tables[i],
-                    ],
-                  ],
-                ),
-        ),
+        // 每隊 12 欄，並排會被截斷，所以一律上下排列、各自撐滿寬度。
+        for (var i = 0; i < tables.length; i++) ...[
+          if (i > 0) const SizedBox(height: 16),
+          tables[i],
+        ],
         const SizedBox(height: 24),
         const Center(
           child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊',
@@ -173,6 +160,10 @@ class _TeamTable extends StatelessWidget {
 
   final String queueId;
 
+  /// 是否為 summary 主角（自己或查看中的玩家）那一隊。
+  final bool mine;
+  final bool? won;
+
   const _TeamTable({
     super.key,
     required this.teamId,
@@ -180,6 +171,8 @@ class _TeamTable extends StatelessWidget {
     required this.ref,
     required this.parties,
     required this.queueId,
+    required this.mine,
+    required this.won,
   });
 
   static const _headers = [
@@ -214,74 +207,103 @@ class _TeamTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const muted = TextStyle(color: AppColors.muted, fontSize: 12);
+    final result = won == null ? '平手' : (won! ? '勝利' : '落敗');
     return Card(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columnSpacing: 16,
-          headingRowHeight: 36,
-          columns: [
-            for (final h in _headers) DataColumn(label: Text(h, style: muted))
-          ],
-          rows: [
-            for (final p in players)
-              DataRow(
-                color: p.isMe
-                    ? const WidgetStatePropertyAll(AppColors.surfaceHigh)
-                    : null,
-                cells: [
-                  DataCell(Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(width: 6, child: _partyDot(p)),
-                      const SizedBox(width: 6),
-                      SizedBox(
-                          width: 28,
-                          height: 28,
-                          child: SkinIcon(url: ref.agent(p.agentId).iconUrl)),
-                      const SizedBox(width: 6),
-                      Text(ref.agent(p.agentId).name),
-                    ],
-                  )),
-                  DataCell(
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(p.riotId,
-                            key:
-                                p.isMe ? const ValueKey('player-row-me') : null,
-                            style: TextStyle(
-                                fontWeight: p.isMe
-                                    ? FontWeight.bold
-                                    : FontWeight.normal)),
-                        if (p.mvp != MvpKind.none) ...[
-                          const SizedBox(width: 6),
-                          _MvpTag(key: ValueKey('mvp-${p.puuid}'), kind: p.mvp),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              border:
+                  Border(left: BorderSide(color: resultColor(won), width: 4)),
+            ),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+            child: Text('${mine ? '我方' : '敵方'}・$result',
+                style: TextStyle(
+                    color: resultColor(won), fontWeight: FontWeight.bold)),
+          ),
+          LayoutBuilder(
+            builder: (context, c) => SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minWidth: c.maxWidth),
+                child: DataTable(
+                  columnSpacing: 16,
+                  headingRowHeight: 36,
+                  columns: [
+                    for (final h in _headers)
+                      DataColumn(label: Text(h, style: muted))
+                  ],
+                  rows: [
+                    for (final p in players)
+                      DataRow(
+                        color: p.isMe
+                            ? const WidgetStatePropertyAll(
+                                AppColors.surfaceHigh)
+                            : null,
+                        cells: [
+                          DataCell(Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(width: 6, child: _partyDot(p)),
+                              const SizedBox(width: 6),
+                              SizedBox(
+                                  width: 28,
+                                  height: 28,
+                                  child: SkinIcon(
+                                      url: ref.agent(p.agentId).iconUrl)),
+                              const SizedBox(width: 6),
+                              Text(ref.agent(p.agentId).name),
+                            ],
+                          )),
+                          DataCell(
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(p.riotId,
+                                    key: p.isMe
+                                        ? const ValueKey('player-row-me')
+                                        : null,
+                                    style: TextStyle(
+                                        fontWeight: p.isMe
+                                            ? FontWeight.bold
+                                            : FontWeight.normal)),
+                                if (p.mvp != MvpKind.none) ...[
+                                  const SizedBox(width: 6),
+                                  _MvpTag(
+                                      key: ValueKey('mvp-${p.puuid}'),
+                                      kind: p.mvp),
+                                ],
+                              ],
+                            ),
+                            onTap: () => _open(context, p),
+                          ),
+                          DataCell(Text(ref.tier(p.tier).name)),
+                          _cell('rating-${p.puuid}',
+                              p.rating == null ? '—' : '${p.rating!.round()}'),
+                          DataCell(
+                              Text('${p.kills} / ${p.deaths} / ${p.assists}')),
+                          _cell('kd-${p.puuid}', p.kd.toStringAsFixed(2)),
+                          _cell('acs-${p.puuid}', '${p.acs}'),
+                          _cell('adr-${p.puuid}', '${p.adr}'),
+                          DataCell(Text(p.headshotPercent == null
+                              ? '—'
+                              : '${p.headshotPercent!.round()}%')),
+                          _cell('fk-${p.puuid}', '${p.firstKills}'),
+                          DataCell(Text('${p.accountLevel}')),
+                          DataCell(_FormCell(
+                              key: ValueKey('form-${p.puuid}'),
+                              puuid: p.puuid,
+                              queue: queueId)),
                         ],
-                      ],
-                    ),
-                    onTap: () => _open(context, p),
-                  ),
-                  DataCell(Text(ref.tier(p.tier).name)),
-                  _cell('rating-${p.puuid}',
-                      p.rating == null ? '—' : '${p.rating!.round()}'),
-                  DataCell(Text('${p.kills} / ${p.deaths} / ${p.assists}')),
-                  _cell('kd-${p.puuid}', p.kd.toStringAsFixed(2)),
-                  _cell('acs-${p.puuid}', '${p.acs}'),
-                  _cell('adr-${p.puuid}', '${p.adr}'),
-                  DataCell(Text(p.headshotPercent == null
-                      ? '—'
-                      : '${p.headshotPercent!.round()}%')),
-                  _cell('fk-${p.puuid}', '${p.firstKills}'),
-                  DataCell(Text('${p.accountLevel}')),
-                  DataCell(_FormCell(
-                      key: ValueKey('form-${p.puuid}'),
-                      puuid: p.puuid,
-                      queue: queueId)),
-                ],
+                      ),
+                  ],
+                ),
               ),
-          ],
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }
