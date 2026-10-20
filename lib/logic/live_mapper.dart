@@ -135,3 +135,38 @@ LivePregame mapPregame(Map<String, dynamic> json, String myPuuid) {
     allies: allies,
   );
 }
+
+/// 造型列預設顯示的武器（依序 Vandal、Phantom、Operator、Sheriff、近戰），ID 與 valorant-api.com 相同。
+const mainWeaponIds = [
+  '9c82e19d-4575-0200-1a81-3eacf00cf872',
+  'ee8e8d15-496b-07ac-e5f6-8fae5d4c7b1a',
+  'a03b24d3-4319-996d-0f8c-94bbfba1dfc7',
+  'e336c6b8-418d-9340-d77f-7a9e4cfe0702',
+  '2f59173c-4bed-b6c3-2191-dea9b58be9c7',
+];
+
+const _skinSocket = 'bcef87d6-209b-46c6-8b19-fbe40bd95abc';
+
+/// 解析 `core-game/v1/matches/{id}/loadouts`：玩家 puuid → 武器 ID → 造型 ID（小寫）。
+/// 只讀造型 socket；其他欄位（Expressions 等）不使用。
+Map<String, Map<String, String>> mapLoadouts(Map<String, dynamic> json) {
+  final result = <String, Map<String, String>>{};
+  for (final l in (json['Loadouts'] as List<dynamic>? ?? const [])
+      .cast<Map<String, dynamic>>()) {
+    final id = l['Subject'] as String? ?? '';
+    final items = (l['Loadout'] as Map<String, dynamic>?)?['Items']
+            as Map<String, dynamic>? ??
+        const {};
+    final skins = <String, String>{};
+    for (final e in items.entries) {
+      final socket = ((e.value as Map<String, dynamic>?)?['Sockets']
+          as Map<String, dynamic>?)?[_skinSocket] as Map<String, dynamic>?;
+      final skin = (socket?['Item'] as Map<String, dynamic>?)?['ID'] as String?;
+      if (skin != null && skin.isNotEmpty) {
+        skins[e.key.toLowerCase()] = skin.toLowerCase();
+      }
+    }
+    result[id] = skins;
+  }
+  return result;
+}

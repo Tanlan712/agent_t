@@ -208,3 +208,61 @@ Map<String, dynamic> pregameMatchJson() => {
       'PhaseTimeRemainingNS': 53255044362,
       'StepTimeRemainingNS': 0,
     };
+
+// 實測的武器 ID（valorant-api.com 相同）。
+const vandalId = '9c82e19d-4575-0200-1a81-3eacf00cf872';
+const phantomId = 'ee8e8d15-496b-07ac-e5f6-8fae5d4c7b1a';
+const operatorId = 'a03b24d3-4319-996d-0f8c-94bbfba1dfc7';
+const sheriffId = 'e336c6b8-418d-9340-d77f-7a9e4cfe0702';
+const meleeId = '2f59173c-4bed-b6c3-2191-dea9b58be9c7';
+const ghostId = '1baa85b4-4c70-1284-64bb-6481dfc3bb4e';
+const skinSocket = 'bcef87d6-209b-46c6-8b19-fbe40bd95abc';
+
+Map<String, dynamic> _weapon(String weaponId, String skinId) => {
+      'ID': weaponId,
+      'TypeID': 'e7c63390-eda7-46e0-bb7a-a6abdacd2433',
+      'Sockets': {
+        skinSocket: {
+          'ID': skinSocket,
+          'Item': {'ID': skinId, 'TypeID': 'skin-type'},
+        },
+        '3ad1b2b2-acdb-4524-852f-954a76ddae0a': {
+          'ID': '3ad1b2b2-acdb-4524-852f-954a76ddae0a',
+          'Item': {'ID': 'chroma', 'TypeID': 'chroma-type'},
+        },
+      },
+    };
+
+/// mate：Vandal、Phantom、Sheriff、近戰、Ghost 是目錄裡的造型；Operator 是預設造型（不在目錄）。
+/// 自己全部是預設造型。造型 ID 用 catalog_helpers 的測試造型（o、p、i、r）。
+Map<String, dynamic> coreLoadoutsJson() => {
+      'Loadouts': [
+        {
+          'Subject': 'mate',
+          'CharacterID': 'agent-mate',
+          'Loadout': {
+            'Subject': 'mate',
+            'Expressions': {'AESSelections': <dynamic>[]},
+            'DynamicOptions': <String, dynamic>{},
+            'Items': {
+              vandalId: _weapon(vandalId, 'P'),
+              phantomId: _weapon(phantomId, 'i'),
+              operatorId: _weapon(operatorId, 'standard-operator'),
+              sheriffId: _weapon(sheriffId, 'o'),
+              meleeId: _weapon(meleeId, 'r'),
+              ghostId: _weapon(ghostId, 'o'),
+            },
+          },
+        },
+        {
+          'Subject': myPuuid,
+          'CharacterID': 'agent-$myPuuid',
+          'Loadout': {
+            'Subject': myPuuid,
+            'Items': {
+              vandalId: _weapon(vandalId, 'standard-vandal'),
+            },
+          },
+        },
+      ],
+    };

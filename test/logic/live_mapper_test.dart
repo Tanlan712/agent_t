@@ -6,6 +6,7 @@ import '../live_fixtures.dart';
 import '../match_fixtures.dart';
 
 void main() {
+  group('造型', loadoutTests);
   group('選角', pregameTests);
   group('對局', coreGameTests);
   group('玩家卡', cardUrlTests);
@@ -143,5 +144,31 @@ void pregameTests() {
     expect(p.allies, isEmpty);
     expect(p.enemySize, 0);
     expect(p.remaining, Duration.zero);
+  });
+}
+
+void loadoutTests() {
+  test('loadouts：每位玩家的武器 → 造型 ID（小寫）', () {
+    final l = mapLoadouts(coreLoadoutsJson());
+    expect(l['mate']![vandalId], 'p');
+    expect(l['mate']![operatorId], 'standard-operator');
+    expect(l['mate']!.length, 6);
+    expect(l[myPuuid]![vandalId], 'standard-vandal');
+  });
+
+  test('主要武器依序為 Vandal、Phantom、Operator、Sheriff、近戰', () {
+    expect(
+        mainWeaponIds, [vandalId, phantomId, operatorId, sheriffId, meleeId]);
+  });
+
+  test('缺少欄位時不崩潰', () {
+    expect(mapLoadouts({}), isEmpty);
+    expect(
+        mapLoadouts({
+          'Loadouts': [
+            {'Subject': 'a'},
+          ],
+        })['a'],
+        isEmpty);
   });
 }
