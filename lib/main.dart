@@ -22,6 +22,7 @@ import 'services/riot_client.dart';
 import 'storage/catalog_cache.dart';
 import 'storage/match_reference_cache.dart';
 import 'storage/seen_players_storage.dart';
+import 'storage/session_storage.dart';
 import 'storage/settings_storage.dart';
 import 'storage/shop_storage.dart';
 import 'storage/wishlist_storage.dart';
@@ -42,9 +43,9 @@ Future<void> main() async {
   // 不等待：先顯示畫面，目錄在背景載入。
   catalog.init();
 
-  // 商店同步與對戰紀錄共用同一個 Riot 登入。
+  // 商店同步與對戰紀錄共用同一個 Riot 登入；登入資訊保存到 token 過期為止（AGENTS.md 第 4 節）。
   final riotClient = RiotClient();
-  final riot = RiotProvider(riotClient);
+  final riot = RiotProvider(riotClient, storage: SessionStorage(prefs));
   // 自己的紀錄、最近 5 場與玩家頁共用同一份場次快取。
   final matchClient = MatchClient(riotClient);
   // 即時對局（glz）只有 GET，規則見 AGENTS.md。

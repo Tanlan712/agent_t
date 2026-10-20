@@ -1,4 +1,4 @@
-/// 登入後的 Riot 連線資訊；只存在記憶體，不寫入任何儲存。
+/// 登入後的 Riot 連線資訊；由 SessionStorage 保存到過期為止（AGENTS.md 第 4 節）。
 class RiotSession {
   final String accessToken;
   final String idToken;

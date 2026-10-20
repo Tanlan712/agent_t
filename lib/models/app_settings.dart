@@ -4,7 +4,7 @@ class AppSettings {
   final int resetMinute;
   final bool highlightWishlist;
 
-  /// 上次選的 Riot 伺服器區域（不是機密，可以保存；token 依 AGENTS.md 不保存）。
+  /// 上次選的 Riot 伺服器區域（不是機密；token 另由 SessionStorage 保存）。
   final String loginShard;
 
   const AppSettings({

@@ -11,8 +11,6 @@ import '../widgets/hud/hud.dart';
 
 /// Riot 登入：使用者在 Riot 官方頁面登入後，把跳轉網址貼回來。
 class RiotLoginPage extends StatefulWidget {
-  static const clipboardMissingMessage = '剪貼簿裡沒有登入網址，請在 Riot 登入後的頁面複製網址列的完整網址';
-
   const RiotLoginPage({super.key});
 
   @override
@@ -52,19 +50,6 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
         .showSnackBar(const SnackBar(content: Text('已複製登入網址')));
   }
 
-  /// 一鍵登入：讀取剪貼簿裡的跳轉網址（瀏覽器會詢問是否允許），不保存任何 token。
-  Future<void> _pasteAndLogin() async {
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    final text = data?.text?.trim() ?? '';
-    if (!mounted) return;
-    if (!text.contains('access_token=')) {
-      setState(() => _error = RiotLoginPage.clipboardMissingMessage);
-      return;
-    }
-    _controller.text = text;
-    await _submit();
-  }
-
   Future<void> _submit() async {
     final error = await context
         .read<RiotProvider>()
@@ -101,8 +86,10 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
                       child: Text(
                         '使用 Riot 未公開 API，可能違反服務條款，帳號有受處分的風險，'
                         'API 也可能隨時失效。建議使用非主要帳號。\n'
-                        '本 App 不會接觸你的密碼，也不會保存登入資訊（token）；'
-                        '登入資訊只保留在這個分頁的記憶體中，重新整理或約 1 小時後需要重新登入。',
+                        '本 App 不會接觸你的密碼。登入資訊（token）會保存在這個瀏覽器，'
+                        '重新開啟頁面時保持登入；約 1 小時後過期，需要重新登入。'
+                        '能使用這個瀏覽器的人在過期前都能用它讀取你的帳號資料，'
+                        '用完請按「登出」刪除。',
                       ),
                     ),
                   ],
@@ -138,14 +125,7 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
                 ),
                 const SizedBox(height: 16),
                 const Text('2. 登入後網頁會跳到 playvalorant.com，'
-                    '複製網址列的完整網址，回來按「從剪貼簿貼上並登入」；'
-                    '或手動貼到下方。'),
-                const SizedBox(height: 8),
-                FilledButton.icon(
-                  onPressed: riot.isBusy ? null : _pasteAndLogin,
-                  icon: const Icon(Icons.content_paste_go),
-                  label: const Text('從剪貼簿貼上並登入'),
-                ),
+                    '複製網址列的完整網址，貼到下方後按「完成登入」。'),
                 const SizedBox(height: 8),
                 TextField(
                   key: const ValueKey('redirect-field'),

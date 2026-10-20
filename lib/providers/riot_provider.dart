@@ -4,10 +4,11 @@ import '../logic/storefront_mapper.dart';
 import '../models/riot_session.dart';
 import '../services/riot_auth.dart';
 import '../services/riot_client.dart';
+import '../storage/session_storage.dart';
 import 'catalog_provider.dart';
 import 'shop_provider.dart';
 
-/// Riot 登入狀態與同步結果；session 只存在記憶體。
+/// Riot 登入狀態與同步結果；有 [SessionStorage] 時會保存登入資訊（AGENTS.md 第 4 節）。
 class RiotProvider with ChangeNotifier {
   static const badUrlMessage = '網址中找不到登入資訊，請貼上登入後跳轉的完整網址';
   static const expiredMessage = '登入已過期，請重新登入';
@@ -15,14 +16,19 @@ class RiotProvider with ChangeNotifier {
 
   final RiotClient _client;
   final DateTime Function() _now;
+  final SessionStorage? _storage;
 
   RiotSession? _session;
   RiotWallet? _wallet;
   Set<String> _owned = {};
   bool _isBusy = false;
 
-  RiotProvider(this._client, {DateTime Function() now = DateTime.now})
-      : _now = now;
+  RiotProvider(this._client,
+      {DateTime Function() now = DateTime.now, SessionStorage? storage})
+      : _now = now,
+        _storage = storage {
+    _session = storage?.load(now());
+  }
 
   RiotSession? get session => _session;
   bool get isLoggedIn =>
@@ -55,6 +61,7 @@ class RiotProvider with ChangeNotifier {
       () async {
         _session = await _client.createSession(tokens, _now(),
             fallbackShard: fallbackShard);
+        await _storage?.save(_session!);
       },
       failurePrefix: '登入失敗',
       authErrorMessage: invalidLoginMessage,
@@ -82,6 +89,7 @@ class RiotProvider with ChangeNotifier {
 
   void logout() {
     _session = null;
+    _storage?.clear();
     _wallet = null;
     _owned = {};
     notifyListeners();
