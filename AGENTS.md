@@ -93,6 +93,7 @@ Riot 的第三方 App 說明指出：暴露隱藏資訊、即時分析或帶來�
   新增欄位或實測確認時要同步更新。
 - 「即時對局」目前只允許 GET 以下兩組 `glz` 端點：
   - 選角與對局：`pregame`、`core-game` 的 player 與 match。
+  - 造型（使用者決定 2026-10-21，先探查）：`pregame`／`core-game` 的 `matches/{id}/loadouts`，只能 GET，只用來顯示玩家攜帶的造型。
   - 隊伍：`parties/v1/players/{puuid}`、`parties/v1/parties/{id}`。
 
 ## 7. 已知與政策衝突、待使用者決定的現有功能
