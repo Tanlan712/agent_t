@@ -43,7 +43,8 @@ class SkinCard extends StatelessWidget {
               ? const BorderSide(color: AppColors.wishlistGold, width: 3)
               : const BorderSide(color: AppColors.outline),
         ),
-        child: Container(
+        // Ink：漸層畫在 Material 上，InkWell 的水波與焦點高亮才看得到。
+        child: Ink(
           decoration: BoxDecoration(
             border: Border(
                 bottom: BorderSide(

@@ -35,7 +35,7 @@ class StatusChip extends StatelessWidget {
               softWrap: false,
               overflow: TextOverflow.fade,
               style: TextStyle(
-                  color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+                  color: color, fontSize: 12, fontWeight: FontWeight.w600)),
         ],
       ),
     );

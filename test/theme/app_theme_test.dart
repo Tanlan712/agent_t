@@ -74,7 +74,7 @@ void main() {
     test('不使用 google_fonts 時退回系統字體，焦點色為 info', () {
       final t = buildAppTheme(useGoogleFonts: false);
       expect(t.textTheme.titleLarge?.fontFamily, isNot(contains('Chakra')));
-      expect(t.focusColor, AppColors.info);
+      expect(t.focusColor, AppColors.info.withOpacity(0.2));
     });
   });
 }

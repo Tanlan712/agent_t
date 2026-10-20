@@ -69,9 +69,11 @@ class KpiTile extends StatelessWidget {
   }
 }
 
-/// 頁首 KPI 列：寬度 ≥ 600 時同一列平分，窄螢幕每列 2 個。
+/// 頁首 KPI 列：每個 tile 至少 [minTileWidth]，放得下就同一列平分。
 class KpiStrip extends StatelessWidget {
   final List<KpiTile> tiles;
+
+  static const minTileWidth = 160.0;
 
   const KpiStrip({super.key, required this.tiles});
 
@@ -79,7 +81,8 @@ class KpiStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     const gap = 8.0;
     return LayoutBuilder(builder: (context, c) {
-      final perRow = c.maxWidth >= 600 ? tiles.length.clamp(1, 6) : 2;
+      final fit = ((c.maxWidth + gap) / (minTileWidth + gap)).floor();
+      final perRow = fit.clamp(1, tiles.isEmpty ? 1 : tiles.length);
       final width = (c.maxWidth - gap * (perRow - 1)) / perRow;
       return Wrap(
         spacing: gap,

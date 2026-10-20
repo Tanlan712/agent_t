@@ -40,6 +40,13 @@ abstract final class AppColors {
 
 const _radius = BorderRadius.all(Radius.circular(4));
 
+/// 鍵盤焦點：2px info 外框（MASTER.md 第 6 節）；其餘狀態用 [normal]。
+WidgetStateProperty<BorderSide?> _focusSide([BorderSide? normal]) =>
+    WidgetStateProperty.resolveWith((states) =>
+        states.contains(WidgetState.focused)
+            ? const BorderSide(color: AppColors.info, width: 2)
+            : normal);
+
 /// 共用文字樣式（MASTER.md 第 2 節）。
 abstract final class AppText {
   /// 數字欄位等寬，讓 ACS、K/D、比分、價格對齊。
@@ -105,7 +112,8 @@ ThemeData buildAppTheme({bool useGoogleFonts = true}) {
     brightness: Brightness.dark,
     colorScheme: scheme,
     textTheme: _textTheme(useGoogleFonts),
-    focusColor: AppColors.info,
+    // 半透明，讓焦點列上的文字仍清楚可讀（對比 ≥ 4.5）。
+    focusColor: AppColors.info.withOpacity(0.2),
     chipTheme: const ChipThemeData(
       backgroundColor: AppColors.surfaceHigh,
       side: BorderSide(color: AppColors.outline),
@@ -150,17 +158,17 @@ ThemeData buildAppTheme({bool useGoogleFonts = true}) {
         backgroundColor: AppColors.buttonRed,
         foregroundColor: AppColors.onPrimary,
         shape: const RoundedRectangleBorder(borderRadius: _radius),
-      ),
+      ).copyWith(side: _focusSide()),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.text,
-        side: const BorderSide(color: AppColors.outline),
         shape: const RoundedRectangleBorder(borderRadius: _radius),
-      ),
+      ).copyWith(side: _focusSide(const BorderSide(color: AppColors.outline))),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+      style: TextButton.styleFrom(foregroundColor: AppColors.primary)
+          .copyWith(side: _focusSide()),
     ),
     inputDecorationTheme: const InputDecorationTheme(
       filled: true,

@@ -353,7 +353,7 @@ class _MvpTag extends StatelessWidget {
   Widget build(BuildContext context) => kind == MvpKind.match
       ? const StatusChip(
           label: '全場 MVP', color: AppColors.warn, icon: Icons.emoji_events)
-      : const StatusChip(label: '隊伍 MVP', color: AppColors.primary);
+      : const StatusChip(label: '隊伍 MVP', color: AppColors.info);
 }
 
 /// 牌位小圖示：這場有牌位就用這場的，沒有時用背景查到的這季牌位。
