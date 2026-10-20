@@ -178,15 +178,11 @@ class _TeamTable extends StatelessWidget {
   static const _headers = [
     '特務',
     'Riot ID',
-    '牌位',
     '表現分數',
     'K/D/A',
     'K/D',
     'ACS',
-    'ADR',
     '爆頭率',
-    '首殺',
-    '等級',
     '最近 5 場',
   ];
 
@@ -246,15 +242,27 @@ class _TeamTable extends StatelessWidget {
                           DataCell(Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              // 牌位與特務只顯示圖示，名稱放在提示裡。
+                              Tooltip(
+                                key: ValueKey('rank-${p.puuid}'),
+                                message: ref.tier(p.tier).name,
+                                child: SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: SkinIcon(
+                                        url: ref.tier(p.tier).iconUrl)),
+                              ),
+                              const SizedBox(width: 6),
                               SizedBox(width: 6, child: _partyDot(p)),
                               const SizedBox(width: 6),
-                              SizedBox(
-                                  width: 28,
-                                  height: 28,
-                                  child: SkinIcon(
-                                      url: ref.agent(p.agentId).iconUrl)),
-                              const SizedBox(width: 6),
-                              Text(ref.agent(p.agentId).name),
+                              Tooltip(
+                                message: ref.agent(p.agentId).name,
+                                child: SizedBox(
+                                    width: 28,
+                                    height: 28,
+                                    child: SkinIcon(
+                                        url: ref.agent(p.agentId).iconUrl)),
+                              ),
                             ],
                           )),
                           DataCell(
@@ -269,6 +277,11 @@ class _TeamTable extends StatelessWidget {
                                         fontWeight: p.isMe
                                             ? FontWeight.bold
                                             : FontWeight.normal)),
+                                const SizedBox(width: 6),
+                                Text('Lv ${p.accountLevel}',
+                                    key: ValueKey('level-${p.puuid}'),
+                                    style: const TextStyle(
+                                        color: AppColors.muted, fontSize: 12)),
                                 if (p.mvp != MvpKind.none) ...[
                                   const SizedBox(width: 6),
                                   _MvpTag(
@@ -279,19 +292,15 @@ class _TeamTable extends StatelessWidget {
                             ),
                             onTap: () => _open(context, p),
                           ),
-                          DataCell(Text(ref.tier(p.tier).name)),
                           _cell('rating-${p.puuid}',
                               p.rating == null ? '—' : '${p.rating!.round()}'),
                           DataCell(
                               Text('${p.kills} / ${p.deaths} / ${p.assists}')),
                           _cell('kd-${p.puuid}', p.kd.toStringAsFixed(2)),
                           _cell('acs-${p.puuid}', '${p.acs}'),
-                          _cell('adr-${p.puuid}', '${p.adr}'),
                           DataCell(Text(p.headshotPercent == null
                               ? '—'
                               : '${p.headshotPercent!.round()}%')),
-                          _cell('fk-${p.puuid}', '${p.firstKills}'),
-                          DataCell(Text('${p.accountLevel}')),
                           DataCell(_FormCell(
                               key: ValueKey('form-${p.puuid}'),
                               puuid: p.puuid,

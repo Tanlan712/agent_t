@@ -246,17 +246,32 @@ void scoreboardTests() {
     final h = await detailHarness(tester);
     await tester.pumpWidget(h.wrap(home: const MatchDetailPage(matchId: 'm1')));
     await tester.pumpAndSettle();
-    for (final t in ['表現分數', 'K/D', 'ADR', '首殺', '最近 5 場']) {
+    for (final t in ['表現分數', 'K/D/A', 'K/D', 'ACS', '爆頭率', '最近 5 場']) {
       expect(find.text(t), findsNWidgets(2));
     }
+    // 使用者要求：移除牌位／ADR／首殺／等級欄與特務名稱。
+    for (final t in ['牌位', 'ADR', '首殺', '等級', '蓋克', '菲德']) {
+      expect(find.text(t), findsNothing, reason: t);
+    }
+    // 牌位改成最前面的小圖示（滑鼠移上去顯示名稱），等級放在名稱後面。
+    expect(
+        find.descendant(
+            of: find.byKey(const ValueKey('rank-puuid-1')),
+            matching: find
+                .byWidgetPredicate((w) => w is Tooltip && w.message == '鑽石 2'),
+            matchRoot: true),
+        findsOneWidget);
+    expect(inCell('level-puuid-1', 'Lv 100'), findsOneWidget);
+    final name = tester.getTopRight(find.text('Alpha#TW1')).dx;
+    final level =
+        tester.getTopLeft(find.byKey(const ValueKey('level-puuid-1'))).dx;
+    expect(level, greaterThan(name));
     expect(inCell('mvp-r1', '全場 MVP'), findsOneWidget);
     expect(inCell('mvp-puuid-1', '隊伍 MVP'), findsOneWidget);
     expect(find.byKey(const ValueKey('mvp-mate')), findsNothing);
     expect(inCell('rating-puuid-1', '265'), findsOneWidget);
     expect(inCell('rating-mate', '—'), findsOneWidget);
     expect(inCell('kd-puuid-1', '1.67'), findsOneWidget);
-    expect(inCell('adr-puuid-1', '13'), findsOneWidget);
-    expect(inCell('fk-r1', '2'), findsOneWidget);
   });
 
   testWidgets('最近 5 場：載入中、完成、失敗', (tester) async {
