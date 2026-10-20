@@ -109,11 +109,20 @@ class RiotClient {
     }
   }
 
+  /// pd 端點的共用 GET：帶齊 4 個標頭；非 2xx 丟出 [RiotApiException]。
+  Future<Map<String, dynamic>> getPd(
+    RiotSession s,
+    String path, {
+    Map<String, String>? query,
+    required String label,
+  }) =>
+      _json(
+          label,
+          () => _client.get(Uri.https('pd.${s.shard}.a.pvp.net', path, query),
+              headers: _pdHeaders(s)));
+
   Future<RiotWallet> fetchWallet(RiotSession s) async {
-    final json = await _json(
-        '取得錢包',
-        () => _client.get(_pd(s, '/store/v1/wallet/${s.puuid}'),
-            headers: _pdHeaders(s)));
+    final json = await getPd(s, '/store/v1/wallet/${s.puuid}', label: '取得錢包');
     final balances = json['Balances'] as Map<String, dynamic>? ?? const {};
     int balance(String id) => (balances[id] as num?)?.toInt() ?? 0;
     return RiotWallet(
@@ -123,11 +132,9 @@ class RiotClient {
   }
 
   Future<Set<String>> fetchOwnedSkinLevels(RiotSession s) async {
-    final json = await _json(
-        '取得已擁有造型',
-        () => _client.get(
-            _pd(s, '/store/v1/entitlements/${s.puuid}/$_skinLevelType'),
-            headers: _pdHeaders(s)));
+    final json = await getPd(
+        s, '/store/v1/entitlements/${s.puuid}/$_skinLevelType',
+        label: '取得已擁有造型');
     return {
       for (final e in (json['Entitlements'] as List<dynamic>? ?? const []))
         (e as Map<String, dynamic>)['ItemID'] as String,

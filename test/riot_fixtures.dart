@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
+import 'match_fixtures.dart';
+
 /// 依社群文件（valapidocs）格式精簡的 storefront 測試資料。
 const vp = '85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741';
 
@@ -75,6 +77,10 @@ MockClient riotClient({
   int storefrontV2Status = 200,
   int walletStatus = 200,
   bool corsBlocked = false,
+  int historyStatus = 200,
+  int historyTotal = 25,
+  Set<String> failMatchIds = const {},
+  Duration matchDelay = Duration.zero,
 }) {
   return MockClient((req) async {
     requests?.add(req);
@@ -128,6 +134,29 @@ MockClient riotClient({
                 'Balances': {vp: 1500, radianite: 120, kingdom: 3000},
               })
             : json({'errorCode': 'x'}, walletStatus);
+      }
+      if (path == '/match-history/v1/history/puuid-1') {
+        if (historyStatus != 200)
+          return json({'errorCode': 'x'}, historyStatus);
+        final start = int.parse(req.url.queryParameters['startIndex'] ?? '0');
+        final end = int.parse(req.url.queryParameters['endIndex'] ?? '20');
+        final count = (end < historyTotal ? end : historyTotal) - start;
+        return json(historyJson(
+            total: historyTotal, count: count < 0 ? 0 : count, start: start));
+      }
+      if (path.startsWith('/match-details/v1/matches/')) {
+        final id = path.split('/').last;
+        if (matchDelay > Duration.zero) await Future<void>.delayed(matchDelay);
+        if (failMatchIds.contains(id)) return json({'errorCode': 'x'}, 500);
+        final m = matchDetailsJson();
+        (m['matchInfo'] as Map<String, dynamic>)['matchId'] = id;
+        return json(m);
+      }
+      if (path == '/mmr/v1/players/puuid-1/competitiveupdates') {
+        return json(competitiveUpdatesJson());
+      }
+      if (path == '/mmr/v1/players/puuid-1') {
+        return json(mmrJson());
       }
       if (path == '/store/v1/entitlements/puuid-1/$skinLevelType') {
         return json({
