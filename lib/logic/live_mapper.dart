@@ -75,6 +75,7 @@ LiveMatch mapCoreGame(Map<String, dynamic> json, String myPuuid) {
       incognito: identity['Incognito'] == true,
       hideLevel: identity['HideAccountLevel'] == true,
       isCoach: p['IsCoach'] == true,
+      seasonWins: (badge['NumberOfWins'] as num?)?.toInt(),
     ));
   }
   final me = players.where((p) => p.isMe).firstOrNull;
@@ -119,6 +120,7 @@ LivePregame mapPregame(Map<String, dynamic> json, String myPuuid) {
       selection: _selection(p['CharacterSelectionState']),
       tier: _int(p['CompetitiveTier']),
       level: _int(identity['AccountLevel']),
+      seasonWins: (badge['NumberOfWins'] as num?)?.toInt(),
     );
     player.isMe ? allies.insert(0, player) : allies.add(player);
   }

@@ -136,6 +136,25 @@ void main() {
       expect(env.riot.isLoggedIn, isTrue);
     });
   });
+  group('多讀場次', () {
+    test('指定 games: 10 時另外快取 10 場，預設 5 場不受影響', () async {
+      env = await setup();
+      env.loader.request(['r1'], queue: 'competitive', games: 10);
+      for (var i = 0; i < 200; i++) {
+        if (env.loader.status('r1', queue: 'competitive', games: 10) ==
+            FormStatus.done) {
+          break;
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+      expect(
+          env.loader.form('r1', queue: 'competitive', games: 10)!.games.length,
+          10);
+      expect(env.loader.status('r1', queue: 'competitive'), FormStatus.pending);
+      final h = env.calls.where((u) => u.path.endsWith('/history/r1')).single;
+      expect(h.queryParameters['endIndex'], '10');
+    });
+  });
   group('審查修正', () {
     test('B 頁取消只影響 B 自己要求的玩家，A 的玩家照常載完', () async {
       env = await setup(maxConcurrent: 1);

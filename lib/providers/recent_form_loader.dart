@@ -65,7 +65,7 @@ class RecentFormLoader with ChangeNotifier {
   final Map<String, RecentForm> _forms = {};
   final Queue<String> _queue = Queue();
   final Map<String, Set<Object>> _owners = {};
-  final Map<String, (String, String?)> _targets = {};
+  final Map<String, (String, String?, int)> _targets = {};
 
   /// 「賽季|玩家」→ 這季的牌位與是否公開。
   final Map<String, PlayerRank> _ranks = {};
@@ -84,12 +84,17 @@ class RecentFormLoader with ChangeNotifier {
       : _delay = delay ?? Future<void>.delayed;
 
   /// 佇列與結果以「模式 + 玩家」為單位；[queue] 為 null 時不限模式。
-  static String _key(String puuid, String? queue) => '${queue ?? ''}|$puuid';
+  /// 場數不是預設值時另外快取（例如即時對局的小號判斷要 10 場）。
+  String _key(String puuid, String? queue, int? count) =>
+      count == null || count == games
+          ? '${queue ?? ''}|$puuid'
+          : '${queue ?? ''}#$count|$puuid';
 
   /// 尚未加入佇列的玩家視為 pending。
-  FormStatus status(String puuid, {String? queue}) =>
-      _status[_key(puuid, queue)] ?? FormStatus.pending;
-  RecentForm? form(String puuid, {String? queue}) => _forms[_key(puuid, queue)];
+  FormStatus status(String puuid, {String? queue, int? games}) =>
+      _status[_key(puuid, queue, games)] ?? FormStatus.pending;
+  RecentForm? form(String puuid, {String? queue, int? games}) =>
+      _forms[_key(puuid, queue, games)];
 
   /// 玩家在 [seasonId] 那季的牌位狀態；還沒查時為 pending。
   PlayerRank rank(String puuid, String seasonId) =>
@@ -104,12 +109,13 @@ class RecentFormLoader with ChangeNotifier {
       {Object? owner,
       String? queue,
       String seasonId = '',
-      Set<String> rankFor = const {}}) {
+      Set<String> rankFor = const {},
+      int? games}) {
     final o = owner ?? _anonymous;
     final front = <String>[];
     for (final puuid in puuids) {
-      final p = _key(puuid, queue);
-      _targets[p] = (puuid, queue);
+      final p = _key(puuid, queue, games);
+      _targets[p] = (puuid, queue, games ?? this.games);
       if (rankFor.contains(puuid) && seasonId.isNotEmpty) {
         _rankSeason[p] = seasonId;
       }
@@ -180,10 +186,10 @@ class RecentFormLoader with ChangeNotifier {
     _status[key] = FormStatus.loading;
     _notify();
     try {
-      final (puuid, queue) = _targets[key]!;
+      final (puuid, queue, count) = _targets[key]!;
       final season = _rankSeason.remove(key);
       if (season != null) await _loadRank(s, puuid, season);
-      final form = await _load(s, puuid, queue);
+      final form = await _load(s, puuid, queue, count);
       if (_disposed) return;
       _forms[key] = form;
       _status[key] = FormStatus.done;
@@ -223,9 +229,10 @@ class RecentFormLoader with ChangeNotifier {
     _notify();
   }
 
-  Future<RecentForm> _load(RiotSession s, String puuid, String? queue) async {
+  Future<RecentForm> _load(
+      RiotSession s, String puuid, String? queue, int count) async {
     final (refs, _) = await _retry(
-        () => _client.fetchHistory(s, 0, games, puuid: puuid, queue: queue));
+        () => _client.fetchHistory(s, 0, count, puuid: puuid, queue: queue));
     final result = <FormGame>[];
     for (final ref in refs) {
       final Map<String, dynamic> json;

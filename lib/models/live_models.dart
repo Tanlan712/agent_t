@@ -66,6 +66,9 @@ class LivePlayer {
   final bool hideLevel;
   final bool isCoach;
 
+  /// 本季勝場（SeasonalBadgeInfo.NumberOfWins）；沒有資料時為 null。
+  final int? seasonWins;
+
   const LivePlayer({
     required this.puuid,
     required this.isMe,
@@ -77,6 +80,7 @@ class LivePlayer {
     required this.incognito,
     required this.hideLevel,
     required this.isCoach,
+    this.seasonWins,
   });
 }
 
@@ -132,6 +136,9 @@ class PregamePlayer {
   final int tier;
   final int level;
 
+  /// 本季勝場；沒有資料時為 null。
+  final int? seasonWins;
+
   const PregamePlayer({
     required this.puuid,
     required this.isMe,
@@ -139,6 +146,7 @@ class PregamePlayer {
     required this.selection,
     required this.tier,
     required this.level,
+    this.seasonWins,
   });
 }
 

@@ -99,6 +99,7 @@ void coreGameTests() {
     expect(r1.agentId, 'agent-r1');
     expect(r1.tier, 18);
     expect(r1.level, 50);
+    expect(r1.seasonWins, 3);
     expect(r1.isMe, isFalse);
     expect(m.players.singleWhere((p) => p.puuid == 'r2').incognito, isTrue);
     expect(m.players.singleWhere((p) => p.puuid == 'coach').isCoach, isTrue);
@@ -137,6 +138,7 @@ void pregameTests() {
     expect(b3.selection, AgentSelection.none);
     expect(b3.agentId, '');
     expect(b3.level, 40);
+    expect(b3.seasonWins, 0);
   });
 
   test('缺少欄位時不崩潰', () {
