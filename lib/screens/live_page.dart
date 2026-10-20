@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../logic/live_mapper.dart';
 import '../logic/match_mapper.dart' show queueName;
 import '../models/live_models.dart';
+import '../models/skin_info.dart';
+import '../providers/catalog_provider.dart';
 import '../models/match_models.dart';
 import '../providers/live_party_provider.dart';
 import '../providers/match_reference_provider.dart';
@@ -421,55 +423,66 @@ class _PlayerRow extends StatelessWidget {
       child: Container(
         color: player.isMe ? AppColors.surfaceHigh : null,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Tooltip(
-              key: ValueKey('live-rank-${player.puuid}'),
-              message: tier.name,
-              child: SizedBox(
-                  width: 24, height: 24, child: SkinIcon(url: tier.iconUrl)),
-            ),
-            const SizedBox(width: 8),
-            Tooltip(
-              key: ValueKey('live-agent-${player.puuid}'),
-              message: agent.name,
-              child: SizedBox(
-                  width: 32, height: 32, child: SkinIcon(url: agent.iconUrl)),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Row(
-                children: [
-                  Flexible(
-                    child: Text(name,
-                        key: ValueKey('live-name-${player.puuid}'),
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontWeight: player.isMe
-                                ? FontWeight.bold
-                                : FontWeight.normal)),
+            Row(
+              children: [
+                Tooltip(
+                  key: ValueKey('live-rank-${player.puuid}'),
+                  message: tier.name,
+                  child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: SkinIcon(url: tier.iconUrl)),
+                ),
+                const SizedBox(width: 8),
+                Tooltip(
+                  key: ValueKey('live-agent-${player.puuid}'),
+                  message: agent.name,
+                  child: SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: SkinIcon(url: agent.iconUrl)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(name,
+                            key: ValueKey('live-name-${player.puuid}'),
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontWeight: player.isMe
+                                    ? FontWeight.bold
+                                    : FontWeight.normal)),
+                      ),
+                      // 實測隱藏等級時 Riot 直接給 0，不顯示以免誤導。
+                      if (player.level > 0) ...[
+                        const SizedBox(width: 6),
+                        Text('Lv ${player.level}',
+                            key: ValueKey('live-level-${player.puuid}'),
+                            style: const TextStyle(
+                                color: AppColors.muted, fontSize: 12)),
+                      ],
+                      if (player.isCoach) ...[
+                        const SizedBox(width: 6),
+                        const Text('教練',
+                            style: TextStyle(
+                                color: AppColors.muted, fontSize: 12)),
+                      ],
+                    ],
                   ),
-                  // 實測隱藏等級時 Riot 直接給 0，不顯示以免誤導。
-                  if (player.level > 0) ...[
-                    const SizedBox(width: 6),
-                    Text('Lv ${player.level}',
-                        key: ValueKey('live-level-${player.puuid}'),
-                        style: const TextStyle(
-                            color: AppColors.muted, fontSize: 12)),
-                  ],
-                  if (player.isCoach) ...[
-                    const SizedBox(width: 6),
-                    const Text('教練',
-                        style: TextStyle(color: AppColors.muted, fontSize: 12)),
-                  ],
-                ],
-              ),
+                ),
+                if (!player.isCoach)
+                  RecentFormCell(
+                      key: ValueKey('form-${player.puuid}'),
+                      puuid: player.puuid,
+                      queue: queue),
+              ],
             ),
-            if (!player.isCoach)
-              RecentFormCell(
-                  key: ValueKey('form-${player.puuid}'),
-                  puuid: player.puuid,
-                  queue: queue),
+            if (!player.isCoach) _SkinStrip(puuid: player.puuid, live: live),
           ],
         ),
       ),
@@ -677,6 +690,79 @@ class _PregameRow extends StatelessWidget {
                 queue: queue),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 玩家攜帶的造型（使用者決定，AGENTS.md）。預設只顯示主要武器，可以展開全部；
+/// 造型目錄沒有的（預設造型）不顯示；全部都是預設造型時整列不顯示。
+class _SkinStrip extends StatefulWidget {
+  final String puuid;
+  final LivePartyProvider live;
+
+  const _SkinStrip({required this.puuid, required this.live});
+
+  @override
+  State<_SkinStrip> createState() => _SkinStripState();
+}
+
+class _SkinStripState extends State<_SkinStrip> {
+  bool _all = false;
+
+  Widget _icon(String weaponId, SkinInfo skin) => Tooltip(
+        key: ValueKey('skin-${widget.puuid}-$weaponId'),
+        message: skin.name,
+        child: Container(
+          width: 56,
+          height: 28,
+          margin: const EdgeInsets.only(right: 6),
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            border:
+                Border(bottom: BorderSide(color: skin.tier.color, width: 2)),
+          ),
+          child: SkinIcon(url: skin.iconUrl),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final skins = widget.live.skins(widget.puuid);
+    if (skins == null) return const SizedBox.shrink();
+    final catalog = context.watch<CatalogProvider>();
+    SkinInfo? info(String weaponId) {
+      final id = skins[weaponId];
+      return id == null ? null : catalog.skinById(id);
+    }
+
+    final main = [
+      for (final w in mainWeaponIds)
+        if (info(w) case final skin?) (w, skin),
+    ];
+    final others = [
+      for (final w in skins.keys)
+        if (!mainWeaponIds.contains(w))
+          if (info(w) case final skin?) (w, skin),
+    ];
+    if (main.isEmpty && others.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      key: ValueKey('skins-${widget.puuid}'),
+      padding: const EdgeInsets.only(top: 6, left: 64),
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        runSpacing: 4,
+        children: [
+          for (final (w, skin) in main) _icon(w, skin),
+          if (_all)
+            for (final (w, skin) in others) _icon(w, skin),
+          if (others.isNotEmpty)
+            TextButton(
+              key: ValueKey('skins-more-${widget.puuid}'),
+              onPressed: () => setState(() => _all = !_all),
+              child: Text(_all ? '收合' : '全部（+${others.length}）'),
+            ),
+        ],
       ),
     );
   }

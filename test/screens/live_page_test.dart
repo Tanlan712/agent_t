@@ -307,4 +307,28 @@ void main() {
       await leave(tester, h);
     });
   });
+
+  group('對局造型', () {
+    testWidgets('預設顯示主要武器的造型（預設造型不顯示），可以展開全部', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester, coreStatus: 200);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      String tip(String key) =>
+          tester.widget<Tooltip>(find.byKey(ValueKey(key))).message!;
+      expect(tip('skin-mate-$vandalId'), 'Prime 幻象');
+      expect(tip('skin-mate-$phantomId'), '離子 幻象');
+      expect(tip('skin-mate-$sheriffId'), '凌空之志 奧丁');
+      expect(tip('skin-mate-$meleeId'), '掠奪者 暴徒');
+      expect(find.byKey(const ValueKey('skin-mate-$operatorId')), findsNothing);
+      expect(find.byKey(const ValueKey('skin-mate-$ghostId')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('skins-more-mate')));
+      await tester.pump();
+      expect(find.byKey(const ValueKey('skin-mate-$ghostId')), findsOneWidget);
+      expect(find.byKey(const ValueKey('skin-mate-$operatorId')), findsNothing);
+      // 全部是預設造型的玩家不顯示造型列。
+      expect(find.byKey(const ValueKey('skins-$myPuuid')), findsNothing);
+      await leave(tester, h);
+    });
+  });
 }
