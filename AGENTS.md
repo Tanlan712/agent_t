@@ -81,6 +81,11 @@ Riot 的第三方 App 說明指出：暴露隱藏資訊、即時分析或帶來�
 - 新功能先寫規格與計畫（`docs/superpowers/`），再用 TDD 實作。`flutter analyze` 不可以有新的 warning，
   `flutter test` 全部通過，`flutter build web` 成功。
 - 顏色只能來自 `AppColors`；`lib/` 不可使用 `dart:io`。
+- 讀取到的 API 欄位一律記錄在 [docs/api-fields.md](docs/api-fields.md)（只記欄位名稱和意義，不記玩家資料或 token）；
+  新增欄位或實測確認時要同步更新。
+- 「即時對局」目前只允許 GET 以下兩組 `glz` 端點：
+  - 選角與對局：`pregame`、`core-game` 的 player 與 match。
+  - 隊伍：`parties/v1/players/{puuid}`、`parties/v1/parties/{id}`。
 
 ## 7. 已知與政策衝突、待使用者決定的現有功能
 
