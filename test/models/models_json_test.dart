@@ -19,6 +19,7 @@ void main() {
         weaponName: '奧丁',
         tier: Tier.deluxe,
         iconUrl: 'https://x/a.png',
+        levelUuid: 'lvl-a',
       );
       final r = SkinInfo.fromJson(s.toJson());
       expect(r.uuid, 'a');
@@ -26,6 +27,7 @@ void main() {
       expect(r.weaponName, '奧丁');
       expect(r.tier, Tier.deluxe);
       expect(r.iconUrl, 'https://x/a.png');
+      expect(r.levelUuid, 'lvl-a');
     });
 
     test('SkinInfo 無圖示', () {

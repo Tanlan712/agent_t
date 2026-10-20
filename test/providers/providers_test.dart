@@ -52,6 +52,9 @@ void main() {
       expect(provider.skinById('skin-odin')!.name, '凌空之志 奧丁');
       expect(provider.bundleById('bundle-rgx')!.name, 'RGX 11z Pro');
       expect(provider.weaponNames, ['奧丁']);
+      expect(provider.skinByItemId('lvl-odin')!.uuid, 'skin-odin');
+      expect(provider.skinByItemId('skin-odin')!.uuid, 'skin-odin');
+      expect(provider.skinByItemId('nope'), isNull);
     });
 
     test('有快取時 init 不呼叫 API', () async {
@@ -125,6 +128,12 @@ void main() {
       expect(again.shop.daily.map((e) => e.skinUuid), ['a', 'b', 'c', 'd']);
       expect(again.shop.dailyExpiresAt, expires);
       expect(again.shop.dailyUpdatedAt, now);
+    });
+
+    test('replaceShop 不驗證筆數並可持久化', () async {
+      final p = ShopProvider(ShopStorage(prefs));
+      await p.replaceShop(CurrentShop(daily: entries(['a', 'b', 'c']), dailyExpiresAt: expires));
+      expect(ShopProvider(ShopStorage(prefs)).shop.daily.length, 3);
     });
 
     test('clearDaily 清空每日區塊', () async {

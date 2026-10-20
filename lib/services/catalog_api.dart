@@ -50,7 +50,9 @@ class CatalogApi {
           name: skin['displayName'] as String,
           weaponName: weaponName,
           tier: tier,
-          iconUrl: skin['displayIcon'] as String? ?? _firstLevelIcon(skin),
+          iconUrl: skin['displayIcon'] as String? ??
+              _firstLevel(skin)?['displayIcon'] as String?,
+          levelUuid: _firstLevel(skin)?['uuid'] as String?,
         ));
       }
     }
@@ -69,10 +71,10 @@ class CatalogApi {
     );
   }
 
-  String? _firstLevelIcon(Map<String, dynamic> skin) {
+  Map<String, dynamic>? _firstLevel(Map<String, dynamic> skin) {
     final levels = skin['levels'] as List<dynamic>? ?? [];
     if (levels.isEmpty) return null;
-    return (levels.first as Map<String, dynamic>)['displayIcon'] as String?;
+    return levels.first as Map<String, dynamic>;
   }
 
   Future<List<dynamic>> _getData(String path) async {
@@ -81,7 +83,8 @@ class CatalogApi {
     if (response.statusCode != 200) {
       throw CatalogFetchException('$path 回應 ${response.statusCode}');
     }
-    final body = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    final body =
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
     return body['data'] as List<dynamic>;
   }
 }

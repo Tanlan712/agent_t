@@ -25,6 +25,8 @@ void main() {
     final noIcon = catalog.skins.firstWhere((s) => s.uuid == 'skin-noicon');
     expect(noIcon.iconUrl, 'https://x/level0.png');
     expect(noIcon.tier, Tier.ultra);
+    expect(odin.levelUuid, 'lvl-odin');
+    expect(noIcon.levelUuid, 'lvl-noicon');
     expect(catalog.bundles.length, 1);
     expect(catalog.bundles.single.name, 'RGX 11z Pro');
     expect(catalog.fetchedAt, fetchedAt);

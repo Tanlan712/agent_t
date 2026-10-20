@@ -15,6 +15,7 @@ class CatalogProvider with ChangeNotifier {
   SkinCatalog? _catalog;
   Map<String, SkinInfo> _skins = {};
   Map<String, BundleInfo> _bundles = {};
+  Map<String, SkinInfo> _skinsByLevel = {};
   bool _isLoading = false;
   String? _error;
   bool _usingStaleCache = false;
@@ -31,6 +32,9 @@ class CatalogProvider with ChangeNotifier {
 
   SkinInfo? skinById(String uuid) => _skins[uuid];
   BundleInfo? bundleById(String uuid) => _bundles[uuid];
+
+  /// Riot API 的 ItemID 可能是造型 uuid 或第一個等級的 uuid。
+  SkinInfo? skinByItemId(String id) => _skins[id] ?? _skinsByLevel[id];
 
   /// 先讀快取，沒有快取才下載。
   Future<void> init() async {
@@ -74,5 +78,9 @@ class CatalogProvider with ChangeNotifier {
     _catalog = catalog;
     _skins = {for (final s in catalog.skins) s.uuid: s};
     _bundles = {for (final b in catalog.bundles) b.uuid: b};
+    _skinsByLevel = {
+      for (final s in catalog.skins)
+        if (s.levelUuid case final level?) level: s,
+    };
   }
 }

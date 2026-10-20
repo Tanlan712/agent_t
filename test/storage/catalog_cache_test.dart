@@ -27,11 +27,17 @@ void main() {
     expect(loaded.fetchedAt, DateTime(2026, 10, 19, 12));
   });
 
+  test('寫入時刪除舊版快取', () async {
+    final cache = await cacheWith({'catalog': '{"old":true}'});
+    await cache.save(SkinCatalog(skins: const [], bundles: const [], fetchedAt: DateTime(2026)));
+    expect((await SharedPreferences.getInstance()).containsKey('catalog'), isFalse);
+  });
+
   test('沒有資料時回傳 null', () async {
     expect((await cacheWith({})).load(), isNull);
   });
 
   test('內容損壞時回傳 null', () async {
-    expect((await cacheWith({'catalog': '{bad'})).load(), isNull);
+    expect((await cacheWith({'catalog_v2': '{bad'})).load(), isNull);
   });
 }
