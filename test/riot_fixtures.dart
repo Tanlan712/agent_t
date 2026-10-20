@@ -83,6 +83,8 @@ MockClient riotClient({
   bool brokenHistory = false,
   Set<String> failMatchIds = const {},
   Duration matchDelay = Duration.zero,
+  bool blankNames = false,
+  int nameStatus = 200,
 }) {
   return MockClient((req) async {
     requests?.add(req);
@@ -144,9 +146,12 @@ MockClient riotClient({
         final end = int.parse(req.url.queryParameters['endIndex'] ?? '20');
         final count = (end < historyTotal ? end : historyTotal) - start;
         if (brokenHistory) {
-          return json({'Total': 1, 'History': [
-            {'GameStartTime': 1}
-          ]});
+          return json({
+            'Total': 1,
+            'History': [
+              {'GameStartTime': 1}
+            ]
+          });
         }
         return json(historyJson(
             total: historyTotal, count: count < 0 ? 0 : count, start: start));
@@ -157,7 +162,29 @@ MockClient riotClient({
         if (failMatchIds.contains(id)) return json({'errorCode': 'x'}, 500);
         final m = matchDetailsJson();
         (m['matchInfo'] as Map<String, dynamic>)['matchId'] = id;
+        if (blankNames) {
+          // 實測：match-details 的 gameName／tagLine 全部是空的。
+          for (final p in (m['players'] as List).cast<Map<String, dynamic>>()) {
+            p['gameName'] = '';
+            p['tagLine'] = '';
+          }
+        }
         return json(m);
+      }
+      if (path == '/name-service/v2/players' && req.method == 'PUT') {
+        if (nameStatus != 200) return json({'errorCode': 'x'}, nameStatus);
+        final ids = (jsonDecode(req.body) as List).cast<String>();
+        return http.Response.bytes(
+            utf8.encode(jsonEncode([
+              for (final id in ids)
+                {
+                  'Subject': id,
+                  'GameName': id == 'r5' ? '' : 'N-$id',
+                  'TagLine': id == 'r5' ? '' : 'TW1',
+                },
+            ])),
+            200,
+            headers: {'content-type': 'application/json'});
       }
       if (path == '/mmr/v1/players/puuid-1/competitiveupdates') {
         return json(competitiveUpdatesJson());

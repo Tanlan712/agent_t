@@ -11,6 +11,9 @@ const _queueNames = {
   'premier': 'Premier',
 };
 
+/// match-details 沒有名稱、name-service 也查不到時顯示的名稱。
+const unknownPlayerName = '未知玩家';
+
 String queueName(String queueId) => _queueNames[queueId] ?? queueId;
 
 int _int(Object? v) => (v as num?)?.toInt() ?? 0;
@@ -104,7 +107,7 @@ MatchDetail mapMatchDetail(Map<String, dynamic> json, String myPuuid,
     final shots = h + b + l;
     lines.add(PlayerLine(
       puuid: id,
-      riotId: name.isEmpty ? '未知玩家' : '$name#${p['tagLine'] ?? ''}',
+      riotId: name.isEmpty ? unknownPlayerName : '$name#${p['tagLine'] ?? ''}',
       teamId: p['teamId'] as String? ?? '',
       partyId: p['partyId'] as String? ?? '',
       agentId: p['characterId'] as String? ?? '',
@@ -167,4 +170,36 @@ bool? _teamWon(Map<String, dynamic> json, String teamId) {
     if (t['teamId'] == teamId && t['won'] is bool) return t['won'] as bool;
   }
   return null;
+}
+
+/// 用 name-service 的結果補上 [names] 裡有的玩家名稱；其他玩家維持原樣。
+MatchDetail applyNames(MatchDetail d, Map<String, String> names) {
+  if (names.isEmpty) return d;
+  PlayerLine named(PlayerLine p) {
+    final n = names[p.puuid];
+    if (n == null) return p;
+    return PlayerLine(
+      puuid: p.puuid,
+      riotId: n,
+      teamId: p.teamId,
+      partyId: p.partyId,
+      agentId: p.agentId,
+      tier: p.tier,
+      accountLevel: p.accountLevel,
+      kills: p.kills,
+      deaths: p.deaths,
+      assists: p.assists,
+      score: p.score,
+      acs: p.acs,
+      headshotPercent: p.headshotPercent,
+      isMe: p.isMe,
+    );
+  }
+
+  return MatchDetail(
+    summary: d.summary,
+    teams: {
+      for (final e in d.teams.entries) e.key: e.value.map(named).toList()
+    },
+  );
 }

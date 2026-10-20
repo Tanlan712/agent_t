@@ -8,6 +8,7 @@ import 'package:valorant_shop_tracker/services/riot_client.dart';
 import '../riot_fixtures.dart';
 
 void main() {
+  group('名稱查詢', nameTests);
   final now = DateTime(2026, 10, 20, 10);
 
   Future<(MatchClient, RiotSession)> setup(http.Client client) async {
@@ -61,5 +62,31 @@ void main() {
       expect(e.isAuthError, isTrue);
       expect(e.toString().contains(fakeAccessToken), isFalse);
     }
+  });
+}
+
+void nameTests() {
+  test('fetchNames 以 PUT 送出 puuid 清單並回傳 Riot ID', () async {
+    final requests = <http.Request>[];
+    final rc = RiotClient(client: riotClient(requests: requests));
+    final s = await rc.createSession(
+        parseRiotRedirect(fakeRedirect)!, DateTime(2026, 10, 20));
+    final names = await MatchClient(rc).fetchNames(s, ['r1', 'r5']);
+    expect(names, {'r1': 'N-r1#TW1'});
+    final req =
+        requests.lastWhere((r) => r.url.path == '/name-service/v2/players');
+    expect(req.method, 'PUT');
+    expect(req.headers['X-Riot-Entitlements-JWT'], 'fake-ent');
+    expect(req.body, '["r1","r5"]');
+  });
+
+  test('fetchNames 空清單時不發出請求', () async {
+    final requests = <http.Request>[];
+    final rc = RiotClient(client: riotClient(requests: requests));
+    final s = await rc.createSession(
+        parseRiotRedirect(fakeRedirect)!, DateTime(2026, 10, 20));
+    final before = requests.length;
+    expect(await MatchClient(rc).fetchNames(s, const []), isEmpty);
+    expect(requests.length, before);
   });
 }

@@ -158,6 +158,28 @@ class MatchHistoryProvider with ChangeNotifier {
     await Future.wait([for (var w = 0; w < workers; w++) worker()]);
     if (gen != _generation) return;
     if (authError != null) throw authError!;
+
+    // 實測 match-details 沒有名稱：整頁的未知玩家一次向 name-service 查詢。
+    final unnamed = {
+      for (final d in fetched.values)
+        for (final p in d.teams.values.expand((t) => t))
+          if (p.riotId == unknownPlayerName) p.puuid,
+    };
+    final names = await _optional(
+        () => _client.fetchNames(s, unnamed), <String, String>{});
+    if (gen != _generation) return;
+    if (names.isNotEmpty) {
+      fetched.updateAll((_, d) => applyNames(d, names));
+      for (var i = 0; i < results.length; i++) {
+        final r = results[i];
+        final d = r?.detail;
+        if (r != null && d != null) {
+          results[i] =
+              MatchEntry(ref: r.ref, detail: fetched[r.ref.matchId] ?? d);
+        }
+      }
+    }
+
     _details.addAll(fetched);
     _entries.addAll(results.whereType<MatchEntry>());
   }

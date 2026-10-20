@@ -36,6 +36,7 @@ class _Counting {
 }
 
 void main() {
+  group('名稱補查', nameTests);
   group('審查修正', reviewFixTests);
   Future<(MatchHistoryProvider, RiotProvider, _Counting)> setup({
     int historyTotal = 25,
@@ -157,7 +158,8 @@ void reviewFixTests() {
   });
 
   test('重複呼叫 loadFirstPage 不會產生重複資料', () async {
-    final (p, _) = await make(riotClient(matchDelay: const Duration(milliseconds: 20)));
+    final (p, _) =
+        await make(riotClient(matchDelay: const Duration(milliseconds: 20)));
     final first = p.loadFirstPage();
     final second = p.loadFirstPage();
     await Future.wait([first, second]);
@@ -166,11 +168,43 @@ void reviewFixTests() {
   });
 
   test('loadMore 進行中被 loadFirstPage 取代時不混入舊頁', () async {
-    final (p, _) = await make(riotClient(matchDelay: const Duration(milliseconds: 20)));
+    final (p, _) =
+        await make(riotClient(matchDelay: const Duration(milliseconds: 20)));
     await p.loadFirstPage();
     final more = p.loadMore();
     final reset = p.loadFirstPage();
     await Future.wait([more, reset]);
     expect(p.entries.map((e) => e.ref.matchId).toList(), ['m1', 'm2', 'm3']);
+  });
+}
+
+void nameTests() {
+  Future<MatchHistoryProvider> make(http.Client client) async {
+    final rc = RiotClient(client: client);
+    final riot = RiotProvider(rc);
+    await riot.login(fakeRedirect);
+    return MatchHistoryProvider(MatchClient(rc), riot, pageSize: 2);
+  }
+
+  test('詳情沒有名稱時改用 name-service 補上', () async {
+    final p = await make(riotClient(blankNames: true));
+    await p.loadFirstPage();
+    final lines =
+        p.entries.first.detail!.teams.values.expand((t) => t).toList();
+    expect(lines.singleWhere((l) => l.isMe).riotId, 'N-puuid-1#TW1');
+    expect(lines.singleWhere((l) => l.puuid == 'r1').riotId, 'N-r1#TW1');
+    expect(lines.singleWhere((l) => l.puuid == 'r5').riotId, '未知玩家');
+    expect(p.detail('m2')!.teams['Blue']!.first.riotId, startsWith('N-'));
+  });
+
+  test('name-service 失敗時仍顯示列表，名稱維持未知玩家', () async {
+    final p = await make(riotClient(blankNames: true, nameStatus: 500));
+    await p.loadFirstPage();
+    expect(p.entries.length, 2);
+    expect(p.error, isNull);
+    final me = p.entries.first.detail!.teams.values
+        .expand((t) => t)
+        .singleWhere((l) => l.isMe);
+    expect(me.riotId, '未知玩家');
   });
 }

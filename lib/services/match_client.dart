@@ -28,6 +28,21 @@ class MatchClient {
     return rrByMatch(json);
   }
 
+  /// 實測 match-details 不含玩家名稱，改用 name-service 查詢；
+  /// 回傳 puuid → `名稱#Tag`，名稱為空的玩家不列入。
+  Future<Map<String, String>> fetchNames(
+      RiotSession s, Iterable<String> puuids) async {
+    final ids = puuids.toSet().toList();
+    if (ids.isEmpty) return const {};
+    final list = await _riot.putPdList(s, '/name-service/v2/players', ids,
+        label: '取得玩家名稱');
+    return {
+      for (final e in list.cast<Map<String, dynamic>>())
+        if ((e['GameName'] as String? ?? '').isNotEmpty)
+          e['Subject'] as String: '${e['GameName']}#${e['TagLine'] ?? ''}',
+    };
+  }
+
   Future<RankInfo?> fetchRank(RiotSession s) async => mapRank(
       await _riot.getPd(s, '/mmr/v1/players/${s.puuid}', label: '取得牌位'));
 }

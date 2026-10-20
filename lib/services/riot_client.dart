@@ -121,6 +121,32 @@ class RiotClient {
           () => _client.get(Uri.https('pd.${s.shard}.a.pvp.net', path, query),
               headers: _pdHeaders(s)));
 
+  /// pd 端點的 PUT，回應為 JSON 陣列（例如 name-service）。
+  Future<List<dynamic>> putPdList(
+    RiotSession s,
+    String path,
+    Object body, {
+    required String label,
+  }) async {
+    final http.Response response;
+    try {
+      response = await _client.put(Uri.https('pd.${s.shard}.a.pvp.net', path),
+          headers: {..._pdHeaders(s), 'Content-Type': 'application/json'},
+          body: jsonEncode(body));
+    } catch (_) {
+      throw RiotApiException(null, '$label：連線失敗');
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw RiotApiException(
+          response.statusCode, '$label：伺服器回應 ${response.statusCode}');
+    }
+    try {
+      return jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+    } catch (_) {
+      throw RiotApiException(response.statusCode, '$label：回應格式不符');
+    }
+  }
+
   Future<RiotWallet> fetchWallet(RiotSession s) async {
     final json = await getPd(s, '/store/v1/wallet/${s.puuid}', label: '取得錢包');
     final balances = json['Balances'] as Map<String, dynamic>? ?? const {};
