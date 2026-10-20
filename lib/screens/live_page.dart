@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../logic/live_mapper.dart';
+import '../logic/suspicion.dart';
 import '../logic/match_mapper.dart' show queueName;
 import '../models/live_models.dart';
 import '../models/skin_info.dart';
@@ -23,7 +24,10 @@ import '../widgets/skin_tile.dart' show SkinIcon;
 
 /// 即時對局（目前只有隊伍階段）。只有 GET，頁面開著時每 10 秒更新。
 class LivePage extends StatefulWidget {
-  const LivePage({super.key});
+  /// 小號／代打推測的門檻（使用者決定，AGENTS.md）。
+  final SuspicionRules rules;
+
+  const LivePage({super.key, this.rules = const SuspicionRules()});
 
   @override
   State<LivePage> createState() => _LivePageState();
@@ -83,7 +87,11 @@ class _LivePageState extends State<LivePage> {
     if (key == _formsFor) return;
     _formsFor = key;
     _forms.request(puuids,
-        owner: this, queue: queue, seasonId: seasonId, rankFor: rankFor);
+        owner: this,
+        queue: queue,
+        seasonId: seasonId,
+        rankFor: rankFor,
+        games: liveFormGames);
   }
 
   @override
@@ -133,10 +141,12 @@ class _LivePageState extends State<LivePage> {
   Widget _body(BuildContext context) {
     final ref = context.watch<MatchReferenceProvider>();
     if (_live.phase == LivePhase.inGame && _live.match != null) {
-      return _MatchView(match: _live.match!, live: _live, ref: ref);
+      return _MatchView(
+          match: _live.match!, live: _live, ref: ref, rules: widget.rules);
     }
     if (_live.phase == LivePhase.pregame && _live.pregame != null) {
-      return _PregameView(pregame: _live.pregame!, live: _live, ref: ref);
+      return _PregameView(
+          pregame: _live.pregame!, live: _live, ref: ref, rules: widget.rules);
     }
     final party = _live.party;
     if (party == null) {
@@ -319,9 +329,13 @@ class _MatchView extends StatelessWidget {
   final LiveMatch match;
   final LivePartyProvider live;
   final MatchReferenceProvider ref;
+  final SuspicionRules rules;
 
   const _MatchView(
-      {required this.match, required this.live, required this.ref});
+      {required this.match,
+      required this.live,
+      required this.ref,
+      required this.rules});
 
   @override
   Widget build(BuildContext context) {
@@ -365,7 +379,8 @@ class _MatchView extends StatelessWidget {
                       live: live,
                       ref: ref,
                       queue: match.queueId,
-                      seasonId: match.seasonId),
+                      seasonId: match.seasonId,
+                      rules: rules),
               ],
             ),
           ),
@@ -386,13 +401,15 @@ class _PlayerRow extends StatelessWidget {
   final MatchReferenceProvider ref;
   final String queue;
   final String seasonId;
+  final SuspicionRules rules;
 
   const _PlayerRow(
       {required this.player,
       required this.live,
       required this.ref,
       required this.queue,
-      required this.seasonId});
+      required this.seasonId,
+      required this.rules});
 
   void _open(BuildContext context) {
     final nav = Navigator.of(context);
@@ -458,6 +475,13 @@ class _PlayerRow extends StatelessWidget {
                                     ? FontWeight.bold
                                     : FontWeight.normal)),
                       ),
+                      if (!player.isMe && !player.isCoach)
+                        _SuspicionTag(
+                            puuid: player.puuid,
+                            level: player.level,
+                            seasonWins: player.seasonWins,
+                            queue: queue,
+                            rules: rules),
                       // 實測隱藏等級時 Riot 直接給 0，不顯示以免誤導。
                       if (player.level > 0) ...[
                         const SizedBox(width: 6),
@@ -479,7 +503,8 @@ class _PlayerRow extends StatelessWidget {
                   RecentFormCell(
                       key: ValueKey('form-${player.puuid}'),
                       puuid: player.puuid,
-                      queue: queue),
+                      queue: queue,
+                      games: liveFormGames),
               ],
             ),
             if (!player.isCoach) _SkinStrip(puuid: player.puuid, live: live),
@@ -501,9 +526,13 @@ class _PregameView extends StatefulWidget {
   final LivePregame pregame;
   final LivePartyProvider live;
   final MatchReferenceProvider ref;
+  final SuspicionRules rules;
 
   const _PregameView(
-      {required this.pregame, required this.live, required this.ref});
+      {required this.pregame,
+      required this.live,
+      required this.ref,
+      required this.rules});
 
   @override
   State<_PregameView> createState() => _PregameViewState();
@@ -570,7 +599,8 @@ class _PregameViewState extends State<_PregameView> {
                     live: widget.live,
                     ref: widget.ref,
                     queue: pre.queueId,
-                    seasonId: pre.seasonId),
+                    seasonId: pre.seasonId,
+                    rules: widget.rules),
             ],
           ),
         ),
@@ -596,13 +626,15 @@ class _PregameRow extends StatelessWidget {
   final MatchReferenceProvider ref;
   final String queue;
   final String seasonId;
+  final SuspicionRules rules;
 
   const _PregameRow(
       {required this.player,
       required this.live,
       required this.ref,
       required this.queue,
-      required this.seasonId});
+      required this.seasonId,
+      required this.rules});
 
   void _open(BuildContext context) {
     final nav = Navigator.of(context);
@@ -674,6 +706,13 @@ class _PregameRow extends StatelessWidget {
                                 ? FontWeight.bold
                                 : FontWeight.normal)),
                   ),
+                  if (!player.isMe)
+                    _SuspicionTag(
+                        puuid: player.puuid,
+                        level: player.level,
+                        seasonWins: player.seasonWins,
+                        queue: queue,
+                        rules: rules),
                   if (player.level > 0) ...[
                     const SizedBox(width: 6),
                     Text('Lv ${player.level}',
@@ -687,7 +726,8 @@ class _PregameRow extends StatelessWidget {
             RecentFormCell(
                 key: ValueKey('form-${player.puuid}'),
                 puuid: player.puuid,
-                queue: queue),
+                queue: queue,
+                games: liveFormGames),
           ],
         ),
       ),
@@ -763,6 +803,54 @@ class _SkinStripState extends State<_SkinStrip> {
               child: Text(_all ? '收合' : '全部（+${others.length}）'),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// 即時對局要求的場數：最新 5 場顯示，更早 5 場用來比較表現突變。
+const liveFormGames = 10;
+
+/// 疑似小號／表現突變的標籤；只是推測，滑鼠移上去列出原因（使用者決定，AGENTS.md）。
+class _SuspicionTag extends StatelessWidget {
+  final String puuid;
+  final int level;
+  final int? seasonWins;
+  final String queue;
+  final SuspicionRules rules;
+
+  const _SuspicionTag(
+      {required this.puuid,
+      required this.level,
+      required this.seasonWins,
+      required this.queue,
+      required this.rules});
+
+  @override
+  Widget build(BuildContext context) {
+    final form = context
+        .watch<RecentFormLoader>()
+        .form(puuid, queue: queue, games: liveFormGames);
+    if (form == null) return const SizedBox.shrink();
+    final s = assessAccount(
+        level: level, seasonWins: seasonWins, recent: form.games, rules: rules);
+    if (!s.any) return const SizedBox.shrink();
+    final label = [if (s.smurf) '疑似小號', if (s.shift) '表現突變'].join('・');
+    return Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: Tooltip(
+        key: ValueKey('sus-$puuid'),
+        message: '${s.reasons.join('\n')}\n（依公開數據推測，可能誤判）',
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.wishlistGold),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text('⚠ $label',
+              style:
+                  const TextStyle(color: AppColors.wishlistGold, fontSize: 11)),
+        ),
       ),
     );
   }

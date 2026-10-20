@@ -10,13 +10,17 @@ class RecentFormCell extends StatelessWidget {
   final String puuid;
   final String queue;
 
-  const RecentFormCell({super.key, required this.puuid, required this.queue});
+  /// 載入時要求的場數（例如即時對局的 10 場）；畫面只顯示最新 5 場。
+  final int? games;
+
+  const RecentFormCell(
+      {super.key, required this.puuid, required this.queue, this.games});
 
   @override
   Widget build(BuildContext context) {
     final loader = context.watch<RecentFormLoader>();
     const muted = TextStyle(color: AppColors.muted);
-    switch (loader.status(puuid, queue: queue)) {
+    switch (loader.status(puuid, queue: queue, games: games)) {
       case FormStatus.pending:
       case FormStatus.loading:
         return const Text('…', style: muted);
@@ -25,7 +29,8 @@ class RecentFormCell extends StatelessWidget {
       case FormStatus.done:
         break;
     }
-    final form = loader.form(puuid, queue: queue);
+    final all = loader.form(puuid, queue: queue, games: games);
+    final form = all == null ? null : RecentForm(all.games.take(5).toList());
     if (form == null || form.games.isEmpty) {
       return const Text('—', style: muted);
     }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:valorant_shop_tracker/models/match_models.dart';
+import 'package:valorant_shop_tracker/logic/suspicion.dart';
 import 'package:valorant_shop_tracker/screens/live_page.dart';
 import 'package:valorant_shop_tracker/shell/nav_items.dart';
 
@@ -328,6 +329,41 @@ void main() {
       expect(find.byKey(const ValueKey('skin-mate-$operatorId')), findsNothing);
       // 全部是預設造型的玩家不顯示造型列。
       expect(find.byKey(const ValueKey('skins-$myPuuid')), findsNothing);
+      await leave(tester, h);
+    });
+  });
+
+  group('小號／代打推測', () {
+    testWidgets('預設門檻下 fixture 的玩家都不標示；最近 5 場仍只顯示 5 格', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester, coreStatus: 200);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      await drain(tester);
+      expect(find.byKey(const ValueKey('sus-r1')), findsNothing);
+      expect(find.byKey(const ValueKey('form-r1-4')), findsOneWidget);
+      expect(find.byKey(const ValueKey('form-r1-5')), findsNothing);
+      await leave(tester, h);
+    });
+
+    testWidgets('符合門檻時標示疑似小號，滑鼠提示列出原因與「推測」', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester, coreStatus: 200);
+      await tester.pumpWidget(h.wrap(
+          home: const LivePage(
+              rules: SuspicionRules(lowLevel: 60, smurfMinAcs: 200))));
+      await drain(tester);
+      await drain(tester);
+      final tip = tester.widget<Tooltip>(find.byKey(const ValueKey('sus-r1')));
+      expect(
+          find.descendant(
+              of: find.byKey(const ValueKey('sus-r1')),
+              matching: find.textContaining('疑似小號')),
+          findsOneWidget);
+      expect(tip.message, contains('Lv 50'));
+      expect(tip.message, contains('推測'));
+      expect(find.byKey(const ValueKey('sus-mate')), findsNothing);
+      expect(find.byKey(const ValueKey('sus-$myPuuid')), findsNothing);
       await leave(tester, h);
     });
   });
