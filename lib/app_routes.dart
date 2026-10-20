@@ -4,6 +4,7 @@ import 'models/match_models.dart';
 import 'screens/agents_page.dart';
 import 'screens/bundles_page.dart';
 import 'screens/gamemodes_page.dart';
+import 'screens/live_page.dart';
 import 'screens/maps_page.dart';
 import 'screens/match_detail_page.dart';
 import 'screens/match_history_page.dart';
@@ -24,6 +25,7 @@ final Map<String, WidgetBuilder> _topLevel = {
   '/my-shop': (_) => const MyShopPage(),
   '/wishlist': (_) => const WishlistPage(),
   '/matches': (_) => const MatchHistoryPage(),
+  '/live': (_) => const LivePage(),
   '/players': (_) => const SeenPlayersPage(),
   '/agents': (_) => const AgentsPage(),
   '/weapons': (_) => const WeaponsPage(),

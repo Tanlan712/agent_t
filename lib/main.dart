@@ -15,6 +15,7 @@ import 'providers/shop_provider.dart';
 import 'providers/wishlist_provider.dart';
 import 'app_routes.dart';
 import 'services/catalog_api.dart';
+import 'services/live_client.dart';
 import 'services/match_client.dart';
 import 'services/match_reference_api.dart';
 import 'services/riot_client.dart';
@@ -46,6 +47,8 @@ Future<void> main() async {
   final riot = RiotProvider(riotClient);
   // 自己的紀錄、最近 5 場與玩家頁共用同一份場次快取。
   final matchClient = MatchClient(riotClient);
+  // 即時對局（glz）只有 GET，規則見 AGENTS.md。
+  final liveClient = LiveClient(riotClient);
   final matchCache = MatchDetailCache();
   // 遇過的玩家只存在這個瀏覽器（localStorage），方便之後查詢他的紀錄。
   final seenPlayers = SeenPlayersProvider(SeenPlayersStorage(prefs));
@@ -64,6 +67,7 @@ Future<void> main() async {
             create: (_) => SettingsProvider(SettingsStorage(prefs))),
         ChangeNotifierProvider.value(value: riot),
         Provider.value(value: matchClient),
+        Provider.value(value: liveClient),
         Provider.value(value: matchCache),
         ChangeNotifierProvider(
             create: (_) => RecentFormLoader(matchClient, riot, matchCache)),

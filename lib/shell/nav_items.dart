@@ -16,6 +16,7 @@ const List<NavItem> navItems = [
   NavItem('/', '我的商店', Icons.storefront, NavGroup.shop),
   NavItem('/wishlist', '願望清單', Icons.star, NavGroup.shop),
   NavItem('/matches', '對戰紀錄', Icons.history, NavGroup.shop),
+  NavItem('/live', '即時對局', Icons.sensors, NavGroup.shop),
   NavItem('/players', '遇過的玩家', Icons.people_outline, NavGroup.shop),
   NavItem('/agents', '角色', Icons.person, NavGroup.database),
   NavItem('/weapons', '武器', Icons.track_changes, NavGroup.database),

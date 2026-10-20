@@ -5,6 +5,7 @@ import '../live_fixtures.dart';
 import '../match_fixtures.dart';
 
 void main() {
+  group('玩家卡', cardUrlTests);
   test('隊伍欄位與成員，自己排第一', () {
     final p = mapParty(partyJson(), myPuuid);
     expect(p.id, testPartyId);
@@ -60,5 +61,14 @@ void main() {
     expect(partyStateLabel('MATCHMADE_GAME_STARTING'), '對戰即將開始');
     expect(partyStateLabel('CUSTOM_GAME_SETUP'), '自訂對戰設定');
     expect(partyStateLabel('SOMETHING_NEW'), 'SOMETHING_NEW');
+  });
+}
+
+void cardUrlTests() {
+  test('玩家卡圖片網址；沒有 ID 時為 null', () {
+    expect(playerCardUrl('abc'),
+        'https://media.valorant-api.com/playercards/abc/smallart.png');
+    expect(playerCardUrl(null), isNull);
+    expect(playerCardUrl(''), isNull);
   });
 }

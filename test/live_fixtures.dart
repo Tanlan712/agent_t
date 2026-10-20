@@ -11,13 +11,14 @@ Map<String, dynamic> partyMember(
   int level = 100,
   bool incognito = false,
   bool hideLevel = false,
+  bool card = true,
 }) =>
     {
       'Subject': subject,
       'CompetitiveTier': tier,
       'PlayerIdentity': {
         'Subject': subject,
-        'PlayerCardID': 'card-$subject',
+        if (card) 'PlayerCardID': 'card-$subject',
         'PlayerTitleID': 'title',
         'AccountLevel': level,
         'PreferredLevelBorderID': 'border',
@@ -43,6 +44,7 @@ Map<String, dynamic> partyJson({
   String queue = 'unrated',
   String accessibility = 'CLOSED',
   String? queueEntryTime,
+  bool cards = true,
 }) =>
     {
       'ID': testPartyId,
@@ -59,10 +61,10 @@ Map<String, dynamic> partyJson({
       'QueueEntryTime': queueEntryTime ?? '0001-01-01T00:00:00Z',
       'EligibleQueues': ['unrated', 'competitive'],
       'Members': [
-        partyMember('mate', tier: 18),
-        partyMember(myPuuid, owner: true, tier: 15),
-        partyMember('ghost', incognito: true),
-        partyMember('shy', hideLevel: true, ready: false),
+        partyMember('mate', tier: 18, card: cards),
+        partyMember(myPuuid, owner: true, tier: 15, card: cards),
+        partyMember('ghost', incognito: true, card: cards),
+        partyMember('shy', hideLevel: true, ready: false, card: cards),
       ],
     };
 

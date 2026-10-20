@@ -17,6 +17,7 @@ import 'package:valorant_shop_tracker/providers/seen_players_provider.dart';
 import 'package:valorant_shop_tracker/providers/settings_provider.dart';
 import 'package:valorant_shop_tracker/providers/shop_provider.dart';
 import 'package:valorant_shop_tracker/providers/wishlist_provider.dart';
+import 'package:valorant_shop_tracker/services/live_client.dart';
 import 'package:valorant_shop_tracker/services/match_client.dart';
 import 'package:valorant_shop_tracker/services/match_reference_api.dart';
 import 'package:valorant_shop_tracker/services/riot_client.dart';
@@ -59,6 +60,7 @@ class Harness {
   final MatchClient matchClient;
   final MatchDetailCache matchCache;
   final SeenPlayersProvider seenPlayers;
+  final LiveClient liveClient;
   late final RecentFormLoader recentForm =
       RecentFormLoader(matchClient, riot, matchCache);
 
@@ -73,7 +75,8 @@ class Harness {
       this.prefs,
       this.matchClient,
       this.matchCache,
-      this.seenPlayers);
+      this.seenPlayers,
+      this.liveClient);
 
   static Future<Harness> create(
     WidgetTester tester, {
@@ -115,6 +118,7 @@ class Harness {
       matchClient,
       matchCache,
       seenPlayers,
+      LiveClient(rc),
     );
   }
 
@@ -134,6 +138,7 @@ class Harness {
         ChangeNotifierProvider.value(value: settings),
         ChangeNotifierProvider.value(value: riot),
         Provider.value(value: matchClient),
+        Provider.value(value: liveClient),
         Provider.value(value: matchCache),
         ChangeNotifierProvider.value(value: recentForm),
         ChangeNotifierProvider.value(value: seenPlayers),

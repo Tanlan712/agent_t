@@ -44,3 +44,8 @@ LiveParty mapParty(Map<String, dynamic> json, String myPuuid) {
     members: members,
   );
 }
+
+/// 玩家卡小圖（valorant-api.com 的公開資料）。
+String? playerCardUrl(String? cardId) => cardId == null || cardId.isEmpty
+    ? null
+    : 'https://media.valorant-api.com/playercards/$cardId/smallart.png';
