@@ -135,12 +135,13 @@ ThemeData buildAppTheme({bool useGoogleFonts = true}) {
       elevation: 0,
       scrolledUnderElevation: 0,
     ),
+    // 戰術 HUD：所有卡片右上角 8px 斜切（MASTER.md 第 3 節）。
     cardTheme: const CardTheme(
       color: AppColors.surface,
       elevation: 0,
       margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: _radius,
+      shape: BeveledRectangleBorder(
+        borderRadius: BorderRadius.only(topRight: Radius.circular(8)),
         side: BorderSide(color: AppColors.outline),
       ),
     ),

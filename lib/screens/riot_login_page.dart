@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/riot_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/riot_auth.dart';
+import '../widgets/hud/hud.dart';
 
 /// Riot 登入：使用者在 Riot 官方頁面登入後，把跳轉網址貼回來。
 class RiotLoginPage extends StatefulWidget {
@@ -87,16 +88,24 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Card(
-                color: Theme.of(context).colorScheme.errorContainer,
-                child: const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text(
-                    '⚠️ 使用 Riot 未公開 API，可能違反服務條款，帳號有受處分的風險，'
-                    'API 也可能隨時失效。建議使用非主要帳號。\n'
-                    '本 App 不會接觸你的密碼，也不會保存登入資訊（token）；'
-                    '登入資訊只保留在這個分頁的記憶體中，重新整理或約 1 小時後需要重新登入。',
-                  ),
+              // 風險提示：警示色條＋圖示（MASTER.md：不用 emoji 當圖示）。
+              const HudCard(
+                accent: AppColors.warn,
+                padding: EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.warning_amber, color: AppColors.warn),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        '使用 Riot 未公開 API，可能違反服務條款，帳號有受處分的風險，'
+                        'API 也可能隨時失效。建議使用非主要帳號。\n'
+                        '本 App 不會接觸你的密碼，也不會保存登入資訊（token）；'
+                        '登入資訊只保留在這個分頁的記憶體中，重新整理或約 1 小時後需要重新登入。',
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),

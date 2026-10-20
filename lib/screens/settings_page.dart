@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:valorant_shop_tracker/services/riot_api_key_manager.dart';
 import 'package:valorant_shop_tracker/shell/app_shell.dart';
+import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 import 'package:valorant_shop_tracker/widgets/my_shop_settings_card.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -16,6 +17,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   String? _apiKey;
   String? _statusMessage;
+  int? _status;
   bool _isChecking = false;
 
   @override
@@ -33,7 +35,8 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _checkApiKey() async {
     if (_apiKey == null || _apiKey!.isEmpty) {
       setState(() {
-        _statusMessage = '❌ 未設定 API Key';
+        _status = 0;
+        _statusMessage = '未設定 API Key';
       });
       return;
     }
@@ -43,10 +46,11 @@ class _SettingsPageState extends State<SettingsPage> {
     });
 
     final manager = RiotApiKeyManager(_apiKey!);
-    final message = await manager.getStatusMessage();
+    final status = await manager.checkKeyValidity();
 
     setState(() {
-      _statusMessage = message;
+      _status = status;
+      _statusMessage = RiotApiKeyManager.messageFor(status);
       _isChecking = false;
     });
   }
@@ -79,150 +83,166 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildApiKeySection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '🔑 Riot API Key',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+    return HudCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionTitle(icon: Icons.key, title: 'Riot API Key'),
+          const SizedBox(height: 16),
+          if (_apiKey != null && _apiKey!.isNotEmpty) ...[
+            Text(
+              'API Key: ${_apiKey!.substring(0, 20)}...',
+              style: const TextStyle(fontFamily: 'monospace'),
             ),
+            const SizedBox(height: 8),
+            const Row(children: [
+              Icon(Icons.schedule, size: 16, color: AppColors.muted),
+              SizedBox(width: 6),
+              Text('Development Key 有效期限：24 小時',
+                  style: TextStyle(color: AppColors.muted)),
+            ]),
             const SizedBox(height: 16),
-            if (_apiKey != null && _apiKey!.isNotEmpty) ...[
-              Text(
-                'API Key: ${_apiKey!.substring(0, 20)}...',
-                style: const TextStyle(fontFamily: 'monospace'),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '⏰ Development Key 有效期限：24 小時',
-                style: TextStyle(color: AppColors.muted),
-              ),
+            ElevatedButton.icon(
+              onPressed: _isChecking ? null : _checkApiKey,
+              icon: _isChecking
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.check_circle),
+              label: Text(_isChecking ? '檢查中...' : '檢查狀態'),
+            ),
+            if (_statusMessage != null) ...[
               const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: _isChecking ? null : _checkApiKey,
-                icon: _isChecking
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.check_circle),
-                label: Text(_isChecking ? '檢查中...' : '檢查狀態'),
-              ),
-              if (_statusMessage != null) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: _statusMessage!.startsWith('✅')
-                        ? AppColors.owned.withOpacity(0.15)
-                        : _statusMessage!.startsWith('❌')
-                            ? AppColors.error.withOpacity(0.15)
-                            : AppColors.wishlistGold.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(_statusMessage!),
-                ),
-              ],
-            ] else ...[
-              const Text('❌ 未設定 API Key'),
-              const SizedBox(height: 8),
-              const Text('請在 .env 檔案中設定 RIOT_API_KEY'),
+              _StatusBox(status: _status, message: _statusMessage!),
             ],
+          ] else ...[
+            const Row(children: [
+              Icon(Icons.cancel_outlined, size: 18, color: AppColors.loss),
+              SizedBox(width: 6),
+              Text('未設定 API Key'),
+            ]),
+            const SizedBox(height: 8),
+            const Text('請在 .env 檔案中設定 RIOT_API_KEY'),
           ],
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildRenewalInstructionsSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '🔄 更新 API Key',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              RiotApiKeyManager.getRenewalInstructions(),
-              style: const TextStyle(height: 1.5),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () {
-                Clipboard.setData(
-                  const ClipboardData(
-                    text: 'https://developer.riotgames.com/',
-                  ),
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('已複製網址到剪貼簿'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.copy),
-              label: const Text('複製網址'),
-            ),
-          ],
-        ),
+    return HudCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionTitle(icon: Icons.autorenew, title: '更新 API Key'),
+          const SizedBox(height: 16),
+          Text(
+            RiotApiKeyManager.getRenewalInstructions(),
+            style: const TextStyle(height: 1.5),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () {
+              Clipboard.setData(
+                const ClipboardData(
+                  text: 'https://developer.riotgames.com/',
+                ),
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('已複製網址到剪貼簿'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            icon: const Icon(Icons.copy),
+            label: const Text('複製網址'),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildAlternativeApiSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '💡 推薦替代方案',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              RiotApiKeyManager.getAlternativeApiInfo(),
-              style: const TextStyle(height: 1.5),
-            ),
-            const SizedBox(height: 16),
-            // FilledButton：主題已設為 buttonRed 底＋白字（對比 4.96）。
-            FilledButton.icon(
-              onPressed: () {
-                Clipboard.setData(
-                  const ClipboardData(text: 'https://valorant-api.com/'),
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('已複製網址到剪貼簿'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.copy),
-              label: const Text('複製 valorant-api.com 網址'),
-            ),
-          ],
-        ),
+    return HudCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionTitle(icon: Icons.lightbulb_outline, title: '推薦替代方案'),
+          const SizedBox(height: 16),
+          Text(
+            RiotApiKeyManager.getAlternativeApiInfo(),
+            style: const TextStyle(height: 1.5),
+          ),
+          const SizedBox(height: 16),
+          // FilledButton：主題已設為 buttonRed 底＋白字（對比 4.96）。
+          FilledButton.icon(
+            onPressed: () {
+              Clipboard.setData(
+                const ClipboardData(text: 'https://valorant-api.com/'),
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('已複製網址到剪貼簿'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            icon: const Icon(Icons.copy),
+            label: const Text('複製 valorant-api.com 網址'),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+/// 區塊標題：Material 圖示＋文字（MASTER.md：不用 emoji 當圖示）。
+class _SectionTitle extends StatelessWidget {
+  final IconData icon;
+  final String title;
+
+  const _SectionTitle({required this.icon, required this.title});
+
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        Icon(icon, color: AppColors.primary, size: 20),
+        const SizedBox(width: 8),
+        Text(title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      ]);
+}
+
+/// 檢查結果：顏色搭配圖示，不只靠顏色表達狀態。
+class _StatusBox extends StatelessWidget {
+  final int? status;
+  final String message;
+
+  const _StatusBox({required this.status, required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final (color, icon) = switch (status) {
+      200 || 404 => (AppColors.win, Icons.check_circle_outline),
+      401 || -1 || 0 => (AppColors.loss, Icons.cancel_outlined),
+      _ => (AppColors.warn, Icons.warning_amber),
+    };
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(width: 8),
+        Expanded(child: Text(message)),
+      ]),
     );
   }
 }

@@ -29,30 +29,32 @@ class RiotApiKeyManager {
   }
 
   /// 取得人類可讀的狀態訊息
-  Future<String> getStatusMessage() async {
-    final status = await checkKeyValidity();
+  Future<String> getStatusMessage() async =>
+      messageFor(await checkKeyValidity());
 
+  /// 狀態碼對應的訊息（不含 emoji，圖示由畫面決定）。
+  static String messageFor(int status) {
     switch (status) {
       case 200:
       case 404: // 找不到玩家也代表 Key 有效
-        return '✅ API Key 有效 (24小時內有效)';
+        return 'API Key 有效 (24小時內有效)';
       case 401:
-        return '❌ API Key 已過期或無效，請到 developer.riotgames.com 重新生成';
+        return 'API Key 已過期或無效，請到 developer.riotgames.com 重新生成';
       case 403:
-        return '⚠️ API Key 有效但權限不足 (Development Key 無法存取 VALORANT)';
+        return 'API Key 有效但權限不足 (Development Key 無法存取 VALORANT)';
       case 429:
-        return '⚠️ 請求次數過多，請稍後再試';
+        return '請求次數過多，請稍後再試';
       case -1:
-        return '❌ 網路連線失敗';
+        return '網路連線失敗';
       default:
-        return '❓ 未知狀態: $status';
+        return '未知狀態: $status';
     }
   }
 
   /// 取得更新指引
   static String getRenewalInstructions() {
     return '''
-🔄 如何更新 Development API Key：
+如何更新 Development API Key：
 
 1. 前往 https://developer.riotgames.com/
 2. 使用你的 Riot 帳號登入
@@ -60,7 +62,7 @@ class RiotApiKeyManager {
 4. 複製新的 API Key
 5. 更新專案的 .env 檔案中的 RIOT_API_KEY
 
-⚠️ 注意：
+注意：
 - Development Key 每 24 小時過期一次
 - 重新生成後，舊的 Key 立即失效
 - Riot 沒有提供自動更新的 API 端點
@@ -70,14 +72,14 @@ class RiotApiKeyManager {
   /// 建議使用 valorant-api.com 的說明
   static String getAlternativeApiInfo() {
     return '''
-💡 推薦替代方案：valorant-api.com
+推薦替代方案：valorant-api.com
 
 優勢：
-✅ 完全免費
-✅ 不需要 API Key
-✅ 不需要註冊
-✅ 支援繁體中文
-✅ 永不過期
+- 完全免費
+- 不需要 API Key
+- 不需要註冊
+- 支援繁體中文
+- 永不過期
 
 可用資料：
 - 角色 (Agents)
