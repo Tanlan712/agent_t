@@ -66,7 +66,14 @@ Route<dynamic>? onGenerateAppRoute(RouteSettings settings) {
     case '/players/detail':
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) => PlayerPage(player: settings.arguments as PlayerRef),
+        // 網頁重新整理後參數會遺失，此時顯示提示而不是錯誤畫面。
+        builder: (_) => switch (settings.arguments) {
+          final PlayerRef p => PlayerPage(player: p),
+          _ => Scaffold(
+              appBar: AppBar(),
+              body: const Center(child: Text('找不到這位玩家')),
+            ),
+        },
       );
     case '/riot-login':
       return MaterialPageRoute<void>(

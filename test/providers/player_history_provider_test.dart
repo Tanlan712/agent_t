@@ -58,7 +58,8 @@ void main() {
   test('403 只顯示錯誤，不登出', () async {
     final (p, riot) = await setup(otherHistoryStatus: {'r1': 403});
     await p.loadFirstPage();
-    expect(p.error, isNotNull);
+    expect(p.error, MatchHistoryProvider.notProvidedMessage);
+    expect(MatchHistoryProvider.notProvidedMessage, 'Riot 不提供這位玩家的紀錄');
     expect(riot.isLoggedIn, isTrue);
   });
 
@@ -67,6 +68,16 @@ void main() {
     await p.loadFirstPage();
     expect(riot.isLoggedIn, isFalse);
     expect(p.error, MatchHistoryProvider.expiredMessage);
+  });
+
+  test('沒有指定 pageSize 時每頁 20 場', () async {
+    final rc = RiotClient(client: riotClient());
+    final riot = RiotProvider(rc);
+    await riot.login(fakeRedirect);
+    final p = PlayerHistoryProvider(MatchClient(rc), riot, MatchDetailCache(),
+        puuid: 'r1');
+    await p.loadFirstPage();
+    expect(p.entries.length, 20);
   });
 
   test('載入中 dispose 不會丟出例外', () async {

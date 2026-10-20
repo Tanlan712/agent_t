@@ -89,8 +89,10 @@ MockClient riotClient({
   Map<String, int> history429 = const {},
   bool retryAfter = false,
   Map<String, int> otherHistoryStatus = const {},
+  Map<String, int> historyConnectionFail = const {},
 }) {
   final throttled = <String, int>{};
+  final dropped = <String, int>{};
   return MockClient((req) async {
     requests?.add(req);
     final host = req.url.host;
@@ -164,6 +166,11 @@ MockClient riotClient({
       // 其他玩家的紀錄：第 1 場固定是 m1（所有人共用），其餘是各自的場次。
       if (path.startsWith('/match-history/v1/history/')) {
         final p = path.split('/').last;
+        // 瀏覽器實測推測：限流回應沒有 CORS 標頭時只會看到連線失敗。
+        final c = dropped[p] = (dropped[p] ?? 0) + 1;
+        if (c <= (historyConnectionFail[p] ?? 0)) {
+          throw http.ClientException('XMLHttpRequest error.');
+        }
         final n = throttled[p] = (throttled[p] ?? 0) + 1;
         if (n <= (history429[p] ?? 0)) {
           return http.Response('{}', 429,

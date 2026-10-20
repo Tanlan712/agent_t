@@ -37,7 +37,7 @@ class RecentForm {
 enum FormStatus { pending, loading, done, failed }
 
 /// 背景依序載入每位玩家最近幾場的表現：同時最多 [maxConcurrent] 個請求，
-/// 429 依 Retry-After（沒有時 2s、4s、8s）重試最多 [maxRetries] 次。
+/// 429 與連線失敗依 Retry-After（沒有時 2s、4s、8s）重試最多 [maxRetries] 次。
 class RecentFormLoader with ChangeNotifier {
   final MatchClient _client;
   final RiotProvider _riot;
@@ -50,6 +50,9 @@ class RecentFormLoader with ChangeNotifier {
   final Map<String, FormStatus> _status = {};
   final Map<String, RecentForm> _forms = {};
   final Queue<String> _queue = Queue();
+  final Map<String, Set<Object>> _owners = {};
+  final Map<String, (String, String?)> _targets = {};
+  static final _anonymous = Object();
   int _running = 0;
   bool _disposed = false;
 
@@ -60,28 +63,57 @@ class RecentFormLoader with ChangeNotifier {
       Future<void> Function(Duration)? delay})
       : _delay = delay ?? Future<void>.delayed;
 
-  /// 尚未加入佇列的玩家視為 pending。
-  FormStatus status(String puuid) => _status[puuid] ?? FormStatus.pending;
-  RecentForm? form(String puuid) => _forms[puuid];
+  /// 佇列與結果以「模式 + 玩家」為單位；[queue] 為 null 時不限模式。
+  static String _key(String puuid, String? queue) => '${queue ?? ''}|$puuid';
 
-  /// 依序加入佇列；已在佇列或已有結果的玩家略過。
-  void request(List<String> puuids) {
-    for (final p in puuids) {
-      if (_status.containsKey(p)) continue;
+  /// 尚未加入佇列的玩家視為 pending。
+  FormStatus status(String puuid, {String? queue}) =>
+      _status[_key(puuid, queue)] ?? FormStatus.pending;
+  RecentForm? form(String puuid, {String? queue}) => _forms[_key(puuid, queue)];
+
+  /// 把 [puuids] 依序排到佇列最前面（目前畫面上的頁面優先）。
+  /// 載入中或已完成的玩家略過；失敗的玩家重新排隊。
+  /// [owner] 通常是頁面，[cancelPending] 只取消該頁要求的玩家。
+  /// [queue] 指定時只查該模式的最近幾場（match-history 的 queue 參數）。
+  void request(List<String> puuids, {Object? owner, String? queue}) {
+    final o = owner ?? _anonymous;
+    final front = <String>[];
+    for (final puuid in puuids) {
+      final p = _key(puuid, queue);
+      _targets[p] = (puuid, queue);
+      final st = _status[p];
+      if (st == FormStatus.loading || st == FormStatus.done) continue;
+      (_owners[p] ??= {}).add(o);
+      if (front.contains(p)) continue;
+      _queue.remove(p);
       _status[p] = FormStatus.pending;
-      _queue.add(p);
+      front.add(p);
+    }
+    for (final p in front.reversed) {
+      _queue.addFirst(p);
     }
     _pump();
     _notify();
   }
 
-  /// 清空尚未開始的工作；之後可以再次 request。被取消的玩家狀態仍是
-  /// pending，畫面不變，所以不通知（頁面 dispose 時呼叫，樹已鎖定）。
-  void cancelPending() {
+  /// 取消 [owner] 要求、且沒有其他頁面還需要的尚未開始的玩家；
+  /// 沒有指定 [owner] 時取消全部。被取消的玩家狀態仍是 pending，畫面不變，
+  /// 所以不通知（頁面 dispose 時呼叫，樹已鎖定）。
+  void cancelPending({Object? owner}) {
+    final dropped = <String>[];
     for (final p in _queue) {
-      _status.remove(p);
+      final owners = _owners[p];
+      if (owner != null && owners != null) {
+        owners.remove(owner);
+        if (owners.isNotEmpty) continue;
+      }
+      dropped.add(p);
     }
-    _queue.clear();
+    for (final p in dropped) {
+      _queue.remove(p);
+      _status.remove(p);
+      _owners.remove(p);
+    }
   }
 
   @override
@@ -98,6 +130,7 @@ class RecentFormLoader with ChangeNotifier {
   void _pump() {
     while (!_disposed && _running < maxConcurrent && _queue.isNotEmpty) {
       final p = _queue.removeFirst();
+      _owners.remove(p);
       _running++;
       _run(p).whenComplete(() {
         _running--;
@@ -106,47 +139,49 @@ class RecentFormLoader with ChangeNotifier {
     }
   }
 
-  Future<void> _run(String puuid) async {
+  Future<void> _run(String key) async {
     final s = _riot.session;
     if (s == null || !_riot.isLoggedIn) {
-      _failAll(puuid);
+      _failAll(key);
       return;
     }
-    _status[puuid] = FormStatus.loading;
+    _status[key] = FormStatus.loading;
     _notify();
     try {
-      final form = await _load(s, puuid);
+      final (puuid, queue) = _targets[key]!;
+      final form = await _load(s, puuid, queue);
       if (_disposed) return;
-      _forms[puuid] = form;
-      _status[puuid] = FormStatus.done;
+      _forms[key] = form;
+      _status[key] = FormStatus.done;
     } on RiotApiException catch (e) {
       if (_disposed) return;
       if (e.statusCode == 401) {
         _riot.logout();
-        _failAll(puuid);
+        _failAll(key);
         return;
       }
-      _status[puuid] = FormStatus.failed;
+      _status[key] = FormStatus.failed;
     } on _Cancelled {
       return;
     } catch (e) {
       debugPrint('最近戰績解析失敗：${e.runtimeType}');
       if (_disposed) return;
-      _status[puuid] = FormStatus.failed;
+      _status[key] = FormStatus.failed;
     }
     _notify();
   }
 
-  Future<RecentForm> _load(RiotSession s, String puuid) async {
-    final (refs, _) =
-        await _retry(() => _client.fetchHistory(s, 0, games, puuid: puuid));
+  Future<RecentForm> _load(RiotSession s, String puuid, String? queue) async {
+    final (refs, _) = await _retry(
+        () => _client.fetchHistory(s, 0, games, puuid: puuid, queue: queue));
     final result = <FormGame>[];
     for (final ref in refs) {
       final Map<String, dynamic> json;
       try {
         json = await _retry(() => _cache.json(s, ref.matchId, _client));
       } on RiotApiException catch (e) {
-        // 單場失敗只略過那一場；登入過期與限流用盡才讓整列失敗。
+        // 單場失敗（含連線失敗用盡）只略過那一場；登入過期與限流用盡
+        // 才讓整列失敗。
         if (e.statusCode == 401 || e.statusCode == 429) rethrow;
         continue;
       }
@@ -170,7 +205,10 @@ class RecentFormLoader with ChangeNotifier {
       try {
         return await call();
       } on RiotApiException catch (e) {
-        if (e.statusCode != 429 || attempt >= maxRetries) rethrow;
+        // 瀏覽器裡限流回應可能沒有 CORS 標頭，只會看到連線失敗（沒有狀態碼），
+        // 所以也一併退避重試。
+        final retryable = e.statusCode == 429 || e.statusCode == null;
+        if (!retryable || attempt >= maxRetries) rethrow;
         await _delay(e.retryAfter ?? Duration(seconds: 2 << attempt));
       }
     }

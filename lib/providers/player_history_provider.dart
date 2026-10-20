@@ -5,6 +5,6 @@ import 'match_history_provider.dart';
 /// 摘要以該玩家為主，不取牌位與 RR。
 class PlayerHistoryProvider extends MatchHistoryProvider {
   PlayerHistoryProvider(super.client, super.riot, MatchDetailCache cache,
-      {required String puuid, super.pageSize, super.maxConcurrent = 2})
+      {required String puuid, super.pageSize = 20, super.maxConcurrent = 2})
       : super(cache: cache, focusPuuid: puuid);
 }

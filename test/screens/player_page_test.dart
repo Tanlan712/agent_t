@@ -39,6 +39,10 @@ void main() {
     expect(find.text('最近 5 場平均 ACS 227'), findsOneWidget);
     expect(find.text('10 / 10 / 5'), findsWidgets);
     expect(find.text('ACS 227'), findsWidgets);
+    // 一頁 20 場，頁尾提示要捲到底才會建立。
+    await tester.scrollUntilVisible(
+        find.text('名稱資料來自 Riot，請勿公開或分享他人資訊'), 600,
+        scrollable: find.byType(Scrollable).first);
     expect(find.text('名稱資料來自 Riot，請勿公開或分享他人資訊'), findsOneWidget);
   });
 
@@ -80,5 +84,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(PlayerPage), findsOneWidget);
     await drain(tester);
+  });
+
+  testWidgets('重新整理後沒有參數時顯示找不到玩家', (tester) async {
+    setWidth(tester, 1400);
+    final h = await harness(tester);
+    await tester.pumpWidget(h.wrap(
+        home: Builder(
+            builder: (c) => TextButton(
+                onPressed: () => Navigator.pushNamed(c, '/players/detail'),
+                child: const Text('go'))),
+        onGenerateRoute: onGenerateAppRoute));
+    await tester.tap(find.text('go'));
+    await tester.pumpAndSettle();
+    expect(find.text('找不到這位玩家'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

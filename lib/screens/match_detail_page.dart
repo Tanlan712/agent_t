@@ -39,16 +39,17 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       final me = detail.summary.myTeamId;
       final ids = detail.teams.keys.toList()
         ..sort((a, b) => a == me ? -1 : (b == me ? 1 : a.compareTo(b)));
+      // 只比較同一個模式（例如競技就看最近 5 場競技）。
       _loader.request([
         for (final id in ids) ...detail.teams[id]!.map((p) => p.puuid),
-      ]);
+      ], owner: this, queue: detail.summary.queueId);
     });
   }
 
   @override
   void dispose() {
     // 離開時取消尚未開始的玩家；已完成的結果留在記憶體。
-    _loader.cancelPending();
+    _loader.cancelPending(owner: this);
     super.dispose();
   }
 
@@ -103,7 +104,8 @@ class _DetailBody extends StatelessWidget {
             teamId: id,
             players: detail.teams[id]!,
             ref: ref,
-            parties: parties),
+            parties: parties,
+            queueId: s.queueId),
     ];
 
     return ListView(
@@ -169,12 +171,15 @@ class _TeamTable extends StatelessWidget {
   final MatchReferenceProvider ref;
   final Map<String, Color> parties;
 
+  final String queueId;
+
   const _TeamTable({
     super.key,
     required this.teamId,
     required this.players,
     required this.ref,
     required this.parties,
+    required this.queueId,
   });
 
   static const _headers = [
@@ -270,7 +275,9 @@ class _TeamTable extends StatelessWidget {
                   _cell('fk-${p.puuid}', '${p.firstKills}'),
                   DataCell(Text('${p.accountLevel}')),
                   DataCell(_FormCell(
-                      key: ValueKey('form-${p.puuid}'), puuid: p.puuid)),
+                      key: ValueKey('form-${p.puuid}'),
+                      puuid: p.puuid,
+                      queue: queueId)),
                 ],
               ),
           ],
@@ -315,14 +322,15 @@ class _MvpTag extends StatelessWidget {
 /// 最近 5 場：勝敗顏色的小方塊（寫 ACS）與平均 ACS。
 class _FormCell extends StatelessWidget {
   final String puuid;
+  final String queue;
 
-  const _FormCell({super.key, required this.puuid});
+  const _FormCell({super.key, required this.puuid, required this.queue});
 
   @override
   Widget build(BuildContext context) {
     final loader = context.watch<RecentFormLoader>();
     const muted = TextStyle(color: AppColors.muted);
-    switch (loader.status(puuid)) {
+    switch (loader.status(puuid, queue: queue)) {
       case FormStatus.pending:
       case FormStatus.loading:
         return const Text('…', style: muted);
@@ -331,7 +339,7 @@ class _FormCell extends StatelessWidget {
       case FormStatus.done:
         break;
     }
-    final form = loader.form(puuid);
+    final form = loader.form(puuid, queue: queue);
     if (form == null || form.games.isEmpty) {
       return const Text('—', style: muted);
     }

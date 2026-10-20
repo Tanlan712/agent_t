@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:valorant_shop_tracker/models/match_models.dart';
+import 'package:valorant_shop_tracker/providers/recent_form_loader.dart';
 import 'package:valorant_shop_tracker/screens/match_detail_page.dart';
 import 'package:valorant_shop_tracker/screens/match_history_page.dart';
 
@@ -307,5 +308,26 @@ void scoreboardTests() {
         .length;
     expect(histories, lessThanOrEqualTo(2));
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('A → B → 返回 A：A 的最近 5 場仍會載完', (tester) async {
+    setWidth(tester, 2000);
+    final h = await detailHarness(tester);
+    await tester.pumpWidget(h.wrap(home: const MatchDetailPage(matchId: 'm1')));
+    await tester.pump();
+    await tester.pump();
+    final nav = tester.state<NavigatorState>(find.byType(Navigator));
+    nav.push(MaterialPageRoute<void>(
+        builder: (_) => const MatchDetailPage(matchId: 'm2')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    nav.pop();
+    await tester.pumpAndSettle();
+    expect(find.byType(MatchDetailPage), findsOneWidget);
+    await drain(tester);
+    for (final p in ['r1', 'r2', 'r3', 'r4', 'b3', 'b4', 'b5', 'mate']) {
+      expect(h.recentForm.status(p, queue: 'competitive'), FormStatus.done,
+          reason: p);
+    }
   });
 }

@@ -21,6 +21,7 @@ class MatchHistoryProvider with ChangeNotifier {
   static const notLoggedInMessage = '請先登入 Riot';
   static const expiredMessage = '登入已過期，請重新登入';
   static const formatErrorMessage = '資料格式不符';
+  static const notProvidedMessage = 'Riot 不提供這位玩家的紀錄';
 
   final MatchClient _client;
   final RiotProvider _riot;
@@ -142,6 +143,8 @@ class MatchHistoryProvider with ChangeNotifier {
           // 讓同一個帳號重新登入後，頁面能再次觸發載入。
           _loadedFor = null;
           _error = expiredMessage;
+        } else if (focusPuuid != null && e.statusCode == 403) {
+          _error = notProvidedMessage;
         } else {
           _error = e.message;
         }

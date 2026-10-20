@@ -9,14 +9,19 @@ class MatchClient {
 
   MatchClient(this._riot);
 
-  /// 回傳 [puuid]（預設是自己）從 [start] 起的 [count] 場與總場數。
+  /// 回傳 [puuid]（預設是自己）從 [start] 起的 [count] 場與總場數；
+  /// [queue] 指定時只取該模式。
   Future<(List<MatchRef>, int)> fetchHistory(
       RiotSession s, int start, int count,
-      {String? puuid}) async {
-    final json = await _riot.getPd(
-        s, '/match-history/v1/history/${puuid ?? s.puuid}',
-        query: {'startIndex': '$start', 'endIndex': '${start + count}'},
-        label: '取得對戰紀錄');
+      {String? puuid, String? queue}) async {
+    final json =
+        await _riot.getPd(s, '/match-history/v1/history/${puuid ?? s.puuid}',
+            query: {
+              'startIndex': '$start',
+              'endIndex': '${start + count}',
+              if (queue != null && queue.isNotEmpty) 'queue': queue,
+            },
+            label: '取得對戰紀錄');
     return (mapHistory(json), (json['Total'] as num?)?.toInt() ?? 0);
   }
 

@@ -16,23 +16,27 @@ class _Env {
   final RiotProvider riot;
   final List<Duration> waits;
   final List<String> paths;
+  final List<Uri> calls;
   int maxInFlight;
 
-  _Env(this.loader, this.riot, this.waits, this.paths, this.maxInFlight);
+  _Env(this.loader, this.riot, this.waits, this.paths, this.calls,
+      this.maxInFlight);
 
   int requestsFor(String fragment) =>
       paths.where((p) => p.contains(fragment)).length;
 }
 
-Future<void> _settle(RecentFormLoader l, List<String> ids) async {
+Future<void> _settle(RecentFormLoader l, List<String> ids,
+    {String? queue}) async {
+  FormStatus st(String p) => l.status(p, queue: queue);
   for (var i = 0; i < 200; i++) {
-    if (ids.every((p) =>
-        l.status(p) == FormStatus.done || l.status(p) == FormStatus.failed)) {
+    if (ids
+        .every((p) => st(p) == FormStatus.done || st(p) == FormStatus.failed)) {
       return;
     }
     await Future<void>.delayed(const Duration(milliseconds: 5));
   }
-  fail('未在時限內完成：${ids.map(l.status).toList()}');
+  fail('未在時限內完成：${ids.map(st).toList()}');
 }
 
 void main() {
@@ -42,10 +46,12 @@ void main() {
     Map<String, int> history429 = const {},
     bool retryAfter = false,
     Map<String, int> otherHistoryStatus = const {},
+    Map<String, int> historyConnectionFail = const {},
     int maxConcurrent = 2,
   }) async {
     final waits = <Duration>[];
     final paths = <String>[];
+    final calls = <Uri>[];
     var inFlight = 0;
     var maxInFlight = 0;
     late _Env e;
@@ -53,12 +59,14 @@ void main() {
       history429: history429,
       retryAfter: retryAfter,
       otherHistoryStatus: otherHistoryStatus,
+      historyConnectionFail: historyConnectionFail,
       matchDelay: const Duration(milliseconds: 5),
     );
     final client = MockClient((req) async {
       final pd = req.url.host.startsWith('pd.');
       if (pd) {
         paths.add(req.url.path);
+        calls.add(req.url);
         inFlight++;
         if (inFlight > maxInFlight) maxInFlight = inFlight;
         e.maxInFlight = maxInFlight;
@@ -77,13 +85,80 @@ void main() {
     final riot = RiotProvider(rc);
     await riot.login(fakeRedirect);
     paths.clear();
+    calls.clear();
     final loader = RecentFormLoader(MatchClient(rc), riot, MatchDetailCache(),
         maxConcurrent: maxConcurrent, delay: (d) async => waits.add(d));
-    e = _Env(loader, riot, waits, paths, 0);
+    e = _Env(loader, riot, waits, paths, calls, 0);
     return e;
   }
 
   tearDown(() => env.loader.dispose());
+  group('審查修正', () {
+    test('B 頁取消只影響 B 自己要求的玩家，A 的玩家照常載完', () async {
+      env = await setup(maxConcurrent: 1);
+      final a = Object(), b = Object();
+      env.loader.request(['r1', 'mate', 'r2'], owner: a);
+      env.loader.request(['mate', 'r3', 'r4'], owner: b);
+      env.loader.cancelPending(owner: b);
+      await _settle(env.loader, ['r1', 'mate', 'r2']);
+      expect(env.loader.status('mate'), FormStatus.done);
+      expect(env.loader.status('r2'), FormStatus.done);
+      expect(env.requestsFor('/history/r3'), 0);
+      expect(env.requestsFor('/history/r4'), 0);
+    });
+
+    test('後要求的頁面玩家排到佇列前面', () async {
+      env = await setup(maxConcurrent: 1);
+      env.loader.request(['r1', 'mate', 'r2'], owner: 1);
+      env.loader.request(['r3'], owner: 2);
+      await _settle(env.loader, ['r1', 'mate', 'r2', 'r3']);
+      final order = [
+        for (final p in env.paths)
+          if (p.startsWith('/match-history/v1/history/')) p.split('/').last,
+      ];
+      expect(order, ['r1', 'r3', 'mate', 'r2']);
+    });
+
+    test('失敗的玩家再次 request 會重新載入', () async {
+      env = await setup(history429: {'r1': 4});
+      env.loader.request(['r1']);
+      await _settle(env.loader, ['r1']);
+      expect(env.loader.status('r1'), FormStatus.failed);
+      env.loader.request(['r1']);
+      await _settle(env.loader, ['r1']);
+      expect(env.loader.status('r1'), FormStatus.done);
+    });
+
+    test('連線失敗（沒有狀態碼）也會退避重試', () async {
+      env = await setup(historyConnectionFail: {'r1': 2});
+      env.loader.request(['r1']);
+      await _settle(env.loader, ['r1']);
+      expect(env.loader.status('r1'), FormStatus.done);
+      expect(env.waits, const [Duration(seconds: 2), Duration(seconds: 4)]);
+    });
+
+    test('只查詢與這場相同的模式，不同模式分開快取', () async {
+      env = await setup();
+      env.loader.request(['r1'], queue: 'competitive');
+      await _settle(env.loader, ['r1'], queue: 'competitive');
+      final h = env.calls
+          .where((u) => u.path.endsWith('/history/r1'))
+          .map((u) => u.queryParameters['queue'])
+          .toList();
+      expect(h, ['competitive']);
+      expect(env.loader.status('r1', queue: 'competitive'), FormStatus.done);
+      expect(env.loader.status('r1', queue: 'swiftplay'), FormStatus.pending);
+      env.loader.request(['r1'], queue: 'swiftplay');
+      await _settle(env.loader, ['r1'], queue: 'swiftplay');
+      expect(env.loader.form('r1', queue: 'swiftplay'), isNotNull);
+      expect(
+          env.calls
+              .where((u) => u.path.endsWith('/history/r1'))
+              .map((u) => u.queryParameters['queue'])
+              .toList(),
+          ['competitive', 'swiftplay']);
+    });
+  });
 
   test('同時進行中的請求最多 2 個，每位玩家 5 場與平均 ACS', () async {
     env = await setup();
