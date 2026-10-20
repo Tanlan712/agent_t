@@ -145,3 +145,66 @@ Map<String, dynamic> coreMatchJson() => {
 
 Map<String, dynamic> corePlayerJson() =>
     {'Subject': myPuuid, 'MatchID': testCoreMatchId, 'Version': 1};
+
+const testPregameMatchId = 'pre-1';
+
+Map<String, dynamic> pregamePlayer(String subject,
+        {String state = '', int tier = 12, int level = 40, String? agent}) =>
+    {
+      'Subject': subject,
+      'CharacterID': agent ?? (state.isEmpty ? '' : 'agent-$subject'),
+      'CharacterSelectionState': state,
+      'PregamePlayerState': 'joined',
+      'CompetitiveTier': tier,
+      'PlayerIdentity': {
+        'Subject': subject,
+        'PlayerCardID': 'card-$subject',
+        'PlayerTitleID': 'title',
+        'AccountLevel': level,
+        'PreferredLevelBorderID': 'border',
+        'Incognito': false,
+        'HideAccountLevel': false,
+      },
+      'SeasonalBadgeInfo': {
+        'SeasonID': 'season-1',
+        'NumberOfWins': 0,
+        'WinsByTier': null,
+        'Rank': 0,
+        'LeaderboardRank': 0,
+      },
+      'IsCaptain': false,
+      'PlatformType': 'PC',
+    };
+
+/// 依 2026-10-21 實測的 pregame 欄位結構；EnemyTeam 為 null，憑證類欄位用假值。
+Map<String, dynamic> pregameMatchJson() => {
+      'ID': testPregameMatchId,
+      'Version': 1,
+      'Teams': [
+        {'TeamID': 'Red', 'TeamNumber': 0, 'Players': <dynamic>[]},
+      ],
+      'AllyTeam': {
+        'TeamID': 'Red',
+        'TeamNumber': 0,
+        'Players': [
+          pregamePlayer('mate', state: 'locked', tier: 18),
+          pregamePlayer(myPuuid, state: 'selected', tier: 15),
+          pregamePlayer('b3'),
+          pregamePlayer('b4', tier: 0),
+          pregamePlayer('b5', level: 0),
+        ],
+      },
+      'EnemyTeam': null,
+      'EnemyTeamSize': 5,
+      'EnemyTeamLockCount': 2,
+      'PregameState': 'character_select_active',
+      'MapID': '/Game/Maps/Ascent/Ascent',
+      'Mode': '/Game/GameModes/Bomb/BombGameMode.BombGameMode_C',
+      'VoiceSessionID': 'do-not-read',
+      'MUCName': 'do-not-read',
+      'TeamMatchToken': 'do-not-read',
+      'QueueID': 'competitive',
+      'IsRanked': true,
+      'PhaseTimeRemainingNS': 53255044362,
+      'StepTimeRemainingNS': 0,
+    };

@@ -117,3 +117,55 @@ class LiveMatch {
     return [...me, ...list.where((p) => !p.isMe)];
   }
 }
+
+/// 選角狀態：尚未選、已選（未鎖定）、已鎖定。
+enum AgentSelection { none, selected, locked }
+
+/// 選角中的我方一位成員。
+class PregamePlayer {
+  final String puuid;
+  final bool isMe;
+
+  /// 還沒選特務時是空字串。
+  final String agentId;
+  final AgentSelection selection;
+  final int tier;
+  final int level;
+
+  const PregamePlayer({
+    required this.puuid,
+    required this.isMe,
+    required this.agentId,
+    required this.selection,
+    required this.tier,
+    required this.level,
+  });
+}
+
+/// 選角中（pregame）的場次。依 AGENTS.md，不保存 token 與語音／聊天 ID。
+/// 選角時 Riot 不提供對手資料，只有人數與已鎖定人數。
+class LivePregame {
+  final String matchId;
+  final String mapId;
+  final String queueId;
+  final String seasonId;
+
+  /// 讀取當下的剩餘時間。
+  final Duration remaining;
+  final int enemySize;
+  final int enemyLocked;
+
+  /// 自己排第一。
+  final List<PregamePlayer> allies;
+
+  const LivePregame({
+    required this.matchId,
+    required this.mapId,
+    required this.queueId,
+    required this.seasonId,
+    required this.remaining,
+    required this.enemySize,
+    required this.enemyLocked,
+    required this.allies,
+  });
+}

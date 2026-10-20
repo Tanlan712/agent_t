@@ -1,10 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:valorant_shop_tracker/logic/live_mapper.dart';
+import 'package:valorant_shop_tracker/models/live_models.dart';
 
 import '../live_fixtures.dart';
 import '../match_fixtures.dart';
 
 void main() {
+  group('選角', pregameTests);
   group('對局', coreGameTests);
   group('玩家卡', cardUrlTests);
   test('隊伍欄位與成員，自己排第一', () {
@@ -106,5 +108,40 @@ void coreGameTests() {
     expect(m.players, isEmpty);
     expect(m.myTeamId, '');
     expect(m.teamIds, isEmpty);
+  });
+}
+
+void pregameTests() {
+  test('選角：地圖、佇列、剩餘時間、敵方人數與鎖定數', () {
+    final p = mapPregame(pregameMatchJson(), myPuuid);
+    expect(p.matchId, testPregameMatchId);
+    expect(p.mapId, '/Game/Maps/Ascent/Ascent');
+    expect(p.queueId, 'competitive');
+    expect(p.remaining, const Duration(seconds: 53, microseconds: 255044));
+    expect(p.enemySize, 5);
+    expect(p.enemyLocked, 2);
+    expect(p.seasonId, 'season-1');
+  });
+
+  test('我方成員：自己排第一，特務、選角狀態、牌位、等級', () {
+    final p = mapPregame(pregameMatchJson(), myPuuid);
+    expect(p.allies.map((a) => a.puuid).toList(),
+        [myPuuid, 'mate', 'b3', 'b4', 'b5']);
+    final mate = p.allies.singleWhere((a) => a.puuid == 'mate');
+    expect(mate.agentId, 'agent-mate');
+    expect(mate.selection, AgentSelection.locked);
+    expect(mate.tier, 18);
+    expect(p.allies.first.selection, AgentSelection.selected);
+    final b3 = p.allies.singleWhere((a) => a.puuid == 'b3');
+    expect(b3.selection, AgentSelection.none);
+    expect(b3.agentId, '');
+    expect(b3.level, 40);
+  });
+
+  test('缺少欄位時不崩潰', () {
+    final p = mapPregame({'ID': 'x', 'EnemyTeam': null}, myPuuid);
+    expect(p.allies, isEmpty);
+    expect(p.enemySize, 0);
+    expect(p.remaining, Duration.zero);
   });
 }

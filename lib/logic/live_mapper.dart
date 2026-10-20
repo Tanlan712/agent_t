@@ -90,3 +90,48 @@ LiveMatch mapCoreGame(Map<String, dynamic> json, String myPuuid) {
     players: players,
   );
 }
+
+AgentSelection _selection(Object? v) => switch (v) {
+      'locked' => AgentSelection.locked,
+      'selected' => AgentSelection.selected,
+      _ => AgentSelection.none,
+    };
+
+/// 解析 glz `pregame/v1/matches/{id}`（欄位見 docs/api-fields.md）。
+/// 不讀取 TeamMatchToken、VoiceSessionID、MUCName。
+LivePregame mapPregame(Map<String, dynamic> json, String myPuuid) {
+  final allies = <PregamePlayer>[];
+  var seasonId = '';
+  final team = json['AllyTeam'] as Map<String, dynamic>? ?? const {};
+  for (final p in (team['Players'] as List<dynamic>? ?? const [])
+      .cast<Map<String, dynamic>>()) {
+    final id = p['Subject'] as String? ?? '';
+    final identity = p['PlayerIdentity'] as Map<String, dynamic>? ?? const {};
+    final badge = p['SeasonalBadgeInfo'] as Map<String, dynamic>? ?? const {};
+    final season = badge['SeasonID'] as String? ?? '';
+    if (season.isNotEmpty && (seasonId.isEmpty || id == myPuuid)) {
+      seasonId = season;
+    }
+    final player = PregamePlayer(
+      puuid: id,
+      isMe: id == myPuuid,
+      agentId: (p['CharacterID'] as String? ?? '').toLowerCase(),
+      selection: _selection(p['CharacterSelectionState']),
+      tier: _int(p['CompetitiveTier']),
+      level: _int(identity['AccountLevel']),
+    );
+    player.isMe ? allies.insert(0, player) : allies.add(player);
+  }
+  return LivePregame(
+    matchId: json['ID'] as String? ?? '',
+    mapId: json['MapID'] as String? ?? '',
+    queueId: json['QueueID'] as String? ?? '',
+    seasonId: seasonId,
+    // PhaseTimeRemainingNS 是奈秒。
+    remaining:
+        Duration(microseconds: _int(json['PhaseTimeRemainingNS']) ~/ 1000),
+    enemySize: _int(json['EnemyTeamSize']),
+    enemyLocked: _int(json['EnemyTeamLockCount']),
+    allies: allies,
+  );
+}
