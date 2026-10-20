@@ -52,6 +52,12 @@ class RecentFormLoader with ChangeNotifier {
   final Queue<String> _queue = Queue();
   final Map<String, Set<Object>> _owners = {};
   final Map<String, (String, String?)> _targets = {};
+
+  /// 「賽季|玩家」→ 這季的競技牌位（null 表示查過但沒有）。
+  final Map<String, int?> _ranks = {};
+
+  /// 佇列鍵 → 需要另外查牌位的賽季。
+  final Map<String, String> _rankSeason = {};
   static final _anonymous = Object();
   int _running = 0;
   bool _disposed = false;
@@ -71,16 +77,27 @@ class RecentFormLoader with ChangeNotifier {
       _status[_key(puuid, queue)] ?? FormStatus.pending;
   RecentForm? form(String puuid, {String? queue}) => _forms[_key(puuid, queue)];
 
+  /// 玩家在 [seasonId] 那季的競技牌位；尚未查到或沒有時為 null。
+  int? rankTier(String puuid, String seasonId) => _ranks['$seasonId|$puuid'];
+
   /// 把 [puuids] 依序排到佇列最前面（目前畫面上的頁面優先）。
   /// 載入中或已完成的玩家略過；失敗的玩家重新排隊。
   /// [owner] 通常是頁面，[cancelPending] 只取消該頁要求的玩家。
   /// [queue] 指定時只查該模式的最近幾場（match-history 的 queue 參數）。
-  void request(List<String> puuids, {Object? owner, String? queue}) {
+  /// [rankFor] 裡的玩家（這場沒有牌位資料的人）會另外查 [seasonId] 那季的牌位。
+  void request(List<String> puuids,
+      {Object? owner,
+      String? queue,
+      String seasonId = '',
+      Set<String> rankFor = const {}}) {
     final o = owner ?? _anonymous;
     final front = <String>[];
     for (final puuid in puuids) {
       final p = _key(puuid, queue);
       _targets[p] = (puuid, queue);
+      if (rankFor.contains(puuid) && seasonId.isNotEmpty) {
+        _rankSeason[p] = seasonId;
+      }
       final st = _status[p];
       if (st == FormStatus.loading || st == FormStatus.done) continue;
       (_owners[p] ??= {}).add(o);
@@ -149,6 +166,8 @@ class RecentFormLoader with ChangeNotifier {
     _notify();
     try {
       final (puuid, queue) = _targets[key]!;
+      final season = _rankSeason.remove(key);
+      if (season != null) await _loadRank(s, puuid, season);
       final form = await _load(s, puuid, queue);
       if (_disposed) return;
       _forms[key] = form;
@@ -167,6 +186,20 @@ class RecentFormLoader with ChangeNotifier {
       debugPrint('最近戰績解析失敗：${e.runtimeType}');
       if (_disposed) return;
       _status[key] = FormStatus.failed;
+    }
+    _notify();
+  }
+
+  /// 牌位只是補充資訊：失敗（401 以外）時維持未知，不影響最近戰績。
+  Future<void> _loadRank(RiotSession s, String puuid, String season) async {
+    final k = '$season|$puuid';
+    if (_ranks.containsKey(k)) return;
+    try {
+      final mmr = await _retry(() => _client.fetchMmrJson(s, puuid));
+      _ranks[k] = seasonTier(mmr, season);
+    } on RiotApiException catch (e) {
+      if (e.statusCode == 401) rethrow;
+      _ranks[k] = null;
     }
     _notify();
   }

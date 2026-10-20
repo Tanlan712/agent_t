@@ -78,7 +78,9 @@ void main() {
     final p = PlayerHistoryProvider(MatchClient(rc), riot, MatchDetailCache(),
         puuid: 'r1');
     await p.loadFirstPage();
+    expect(p.error, isNull);
     expect(p.entries.length, 20);
+    expect(p.entries.map((e) => e.ref.matchId).toSet().length, 20);
   });
 
   test('每頁載入完成後把補上名稱的詳情交給 onDetails', () async {

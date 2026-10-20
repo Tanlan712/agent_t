@@ -7,6 +7,11 @@ class SeenPlayer {
   /// 最後一次遇到的場次。
   final String matchId;
 
+  /// 舊版資料只記了載入時間，轉移後改成「時間未知」，下次遇到時更新。
+  static final unknownTime = DateTime.fromMillisecondsSinceEpoch(0);
+
+  bool get lastSeenKnown => lastSeen.isAfter(unknownTime);
+
   const SeenPlayer({
     required this.puuid,
     required this.riotId,

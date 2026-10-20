@@ -9,13 +9,10 @@ import '../storage/seen_players_storage.dart';
 class SeenPlayersProvider with ChangeNotifier {
   final SeenPlayersStorage _storage;
   final int max;
-  final DateTime Function() _now;
   List<SeenPlayer> _players;
 
-  SeenPlayersProvider(this._storage,
-      {this.max = 500, DateTime Function() now = DateTime.now})
-      : _now = now,
-        _players = _storage.load();
+  SeenPlayersProvider(this._storage, {this.max = 500})
+      : _players = _storage.load();
 
   List<SeenPlayer> get players => List.unmodifiable(_players);
 
@@ -26,32 +23,40 @@ class SeenPlayersProvider with ChangeNotifier {
     return _players.where((p) => p.riotId.toLowerCase().contains(q)).toList();
   }
 
-  /// 記錄 [details] 裡除了自己以外的所有玩家；再次遇到時更新名稱與時間。
-  /// 名稱查不到（未知玩家）時保留之前記下的名稱。
+  /// 記錄 [details] 裡除了自己以外的所有玩家，時間用該場的開始時間。
+  /// 較新的場次才會更新名稱、時間與場次；名稱查不到（未知玩家）時保留舊名稱。
   Future<void> recordAll(Iterable<MatchDetail> details) async {
-    final now = _now();
     final byId = {for (final p in _players) p.puuid: p};
-    final touched = <SeenPlayer>[];
+    var changed = false;
     for (final d in details) {
+      final at = d.summary.startTime;
       for (final line in d.teams.values.expand((t) => t)) {
         if (line.isMe) continue;
-        // 同一批裡先遇到的紀錄優先於已存的舊紀錄。
-        final i = touched.indexWhere((p) => p.puuid == line.puuid);
-        final earlier = i < 0 ? null : touched.removeAt(i);
-        final stored = byId.remove(line.puuid);
-        final old = earlier ?? stored;
+        final old = byId[line.puuid];
         final known = line.riotId != unknownPlayerName;
-        touched.add(SeenPlayer(
+        if (old != null && old.lastSeen.isAfter(at)) {
+          // 較舊的場次：只在舊紀錄沒有名稱時補上名稱。
+          if (known && old.riotId == unknownPlayerName) {
+            byId[line.puuid] = SeenPlayer(
+                puuid: old.puuid,
+                riotId: line.riotId,
+                lastSeen: old.lastSeen,
+                matchId: old.matchId);
+            changed = true;
+          }
+          continue;
+        }
+        byId[line.puuid] = SeenPlayer(
           puuid: line.puuid,
           riotId: known ? line.riotId : (old?.riotId ?? line.riotId),
-          lastSeen: now,
+          lastSeen: at,
           matchId: d.summary.matchId,
-        ));
+        );
+        changed = true;
       }
     }
-    if (touched.isEmpty) return;
-    // 這次遇到的排最前面（後遇到的更前面），其餘維持原本的新舊順序。
-    _players = [...touched.reversed, ...byId.values]
+    if (!changed) return;
+    _players = byId.values.toList()
       ..sort((a, b) => b.lastSeen.compareTo(a.lastSeen));
     if (_players.length > max) _players = _players.sublist(0, max);
     await _save();

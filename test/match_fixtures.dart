@@ -219,3 +219,23 @@ Map<String, dynamic> mmrJson({bool empty = false}) => {
           'RankedRatingAfterUpdate': 45,
         },
     };
+
+/// 依社群文件格式的他人 MMR：QueueSkills.competitive.SeasonalInfoBySeasonID。
+Map<String, dynamic> seasonalMmrJson(String subject,
+        {String season = 'season-1', int tier = 21}) =>
+    {
+      'Version': 1,
+      'Subject': subject,
+      'QueueSkills': {
+        'competitive': {
+          'SeasonalInfoBySeasonID': {
+            season: {
+              'SeasonID': season,
+              'CompetitiveTier': tier,
+              'RankedRating': 40,
+              'NumberOfWins': 12,
+            },
+          },
+        },
+      },
+    };

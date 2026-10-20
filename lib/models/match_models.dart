@@ -90,6 +90,7 @@ class MatchSummary {
   final DateTime startTime;
   final String queueId;
   final String mapId;
+  final String seasonId;
   final int durationMs;
   final bool isRanked;
   final String myTeamId;
@@ -110,6 +111,7 @@ class MatchSummary {
     required this.startTime,
     required this.queueId,
     required this.mapId,
+    this.seasonId = '',
     required this.durationMs,
     required this.isRanked,
     required this.myTeamId,

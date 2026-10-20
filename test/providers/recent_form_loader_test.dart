@@ -47,6 +47,7 @@ void main() {
     bool retryAfter = false,
     Map<String, int> otherHistoryStatus = const {},
     Map<String, int> historyConnectionFail = const {},
+    Map<String, int> otherMmrStatus = const {},
     int maxConcurrent = 2,
   }) async {
     final waits = <Duration>[];
@@ -60,6 +61,7 @@ void main() {
       retryAfter: retryAfter,
       otherHistoryStatus: otherHistoryStatus,
       historyConnectionFail: historyConnectionFail,
+      otherMmrStatus: otherMmrStatus,
       matchDelay: const Duration(milliseconds: 5),
     );
     final client = MockClient((req) async {
@@ -93,6 +95,32 @@ void main() {
   }
 
   tearDown(() => env.loader.dispose());
+  group('賽季牌位', () {
+    test('牌位未知的玩家另外查 MMR，同一季只查一次', () async {
+      env = await setup();
+      env.loader.request(['r1', 'mate'],
+          queue: 'unrated', seasonId: 'season-1', rankFor: {'r1'});
+      await _settle(env.loader, ['r1', 'mate'], queue: 'unrated');
+      expect(env.loader.rankTier('r1', 'season-1'), 21);
+      expect(env.loader.rankTier('mate', 'season-1'), isNull);
+      expect(env.requestsFor('/mmr/v1/players/r1'), 1);
+      expect(env.requestsFor('/mmr/v1/players/mate'), 0);
+      env.loader.request(['r1'],
+          queue: 'swiftplay', seasonId: 'season-1', rankFor: {'r1'});
+      await _settle(env.loader, ['r1'], queue: 'swiftplay');
+      expect(env.requestsFor('/mmr/v1/players/r1'), 1);
+    });
+
+    test('MMR 403 時牌位維持未知，最近戰績照常完成', () async {
+      env = await setup(otherMmrStatus: {'r1': 403});
+      env.loader.request(['r1'],
+          queue: 'unrated', seasonId: 'season-1', rankFor: {'r1'});
+      await _settle(env.loader, ['r1'], queue: 'unrated');
+      expect(env.loader.rankTier('r1', 'season-1'), isNull);
+      expect(env.loader.status('r1', queue: 'unrated'), FormStatus.done);
+      expect(env.riot.isLoggedIn, isTrue);
+    });
+  });
   group('審查修正', () {
     test('B 頁取消只影響 B 自己要求的玩家，A 的玩家照常載完', () async {
       env = await setup(maxConcurrent: 1);

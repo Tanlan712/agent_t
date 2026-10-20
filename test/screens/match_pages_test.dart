@@ -208,12 +208,14 @@ void retryTests() {
 void scoreboardTests() {
   Future<Harness> detailHarness(WidgetTester tester,
       {List<http.Request>? requests,
-      Map<String, int> otherHistoryStatus = const {}}) async {
+      Map<String, int> otherHistoryStatus = const {},
+      bool unratedTiers = false}) async {
     final h = await Harness.create(tester,
         riotHttp: riotClient(
             historyTotal: 3,
             requests: requests,
-            otherHistoryStatus: otherHistoryStatus));
+            otherHistoryStatus: otherHistoryStatus,
+            unratedTiers: unratedTiers));
     await tester.runAsync(() async {
       await h.riot.login(fakeRedirect);
       await h.matchHistory.loadFirstPage();
@@ -362,5 +364,18 @@ void scoreboardTests() {
     expect(find.text('我方・勝利'), findsOneWidget);
     expect(find.text('敵方・落敗'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('這場沒有牌位時改顯示查到的這季牌位', (tester) async {
+    setWidth(tester, 2000);
+    final h = await detailHarness(tester, unratedTiers: true);
+    await tester.pumpWidget(h.wrap(home: const MatchDetailPage(matchId: 'm1')));
+    await tester.pump();
+    Tooltip rank(String id) =>
+        tester.widget<Tooltip>(find.byKey(ValueKey('rank-$id')));
+    expect(rank('r1').message, '牌階未定');
+    await drain(tester);
+    expect(rank('r1').message, '超凡 1');
+    expect(rank('mate').message, '超凡 1');
   });
 }

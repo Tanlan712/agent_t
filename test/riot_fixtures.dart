@@ -90,6 +90,8 @@ MockClient riotClient({
   bool retryAfter = false,
   Map<String, int> otherHistoryStatus = const {},
   Map<String, int> historyConnectionFail = const {},
+  Map<String, int> otherMmrStatus = const {},
+  bool unratedTiers = false,
 }) {
   final throttled = <String, int>{};
   final dropped = <String, int>{};
@@ -180,6 +182,8 @@ MockClient riotClient({
         if (status != 200) return json({'errorCode': 'x'}, status);
         final start = int.parse(req.url.queryParameters['startIndex'] ?? '0');
         final end = int.parse(req.url.queryParameters['endIndex'] ?? '5');
+        // 實測：查他人紀錄一次要 20 場會回 400，10 場正常。
+        if (end - start > 10) return json({'errorCode': 'x'}, 400);
         return json({
           'Subject': p,
           'Total': 30,
@@ -199,6 +203,12 @@ MockClient riotClient({
         if (failMatchIds.contains(id)) return json({'errorCode': 'x'}, 500);
         final m = matchDetailsJson();
         (m['matchInfo'] as Map<String, dynamic>)['matchId'] = id;
+        if (unratedTiers) {
+          // 實測：一般模式的 match-details 每個人的牌位都是 0。
+          for (final p in (m['players'] as List).cast<Map<String, dynamic>>()) {
+            p['competitiveTier'] = 0;
+          }
+        }
         if (blankNames) {
           // 實測：match-details 的 gameName／tagLine 全部是空的。
           for (final p in (m['players'] as List).cast<Map<String, dynamic>>()) {
@@ -229,6 +239,15 @@ MockClient riotClient({
       }
       if (path == '/mmr/v1/players/puuid-1/competitiveupdates') {
         return json(competitiveUpdatesJson());
+      }
+      // 他人的 MMR：用賽季資料找出他在這季的競技牌位。
+      if (path.startsWith('/mmr/v1/players/') &&
+          path != '/mmr/v1/players/puuid-1' &&
+          !path.endsWith('/competitiveupdates')) {
+        final p = path.split('/').last;
+        final status = otherMmrStatus[p] ?? 200;
+        if (status != 200) return json({'errorCode': 'x'}, status);
+        return json(seasonalMmrJson(p));
       }
       if (path == '/mmr/v1/players/puuid-1') {
         if (mmrStatus != 200) return json({'errorCode': 'x'}, mmrStatus);

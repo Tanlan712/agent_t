@@ -78,7 +78,8 @@ class _SeenPlayersPageState extends State<SeenPlayersPage> {
                       return ListTile(
                         leading: const Icon(Icons.person_outline),
                         title: Text(p.riotId),
-                        subtitle: Text('最後遇到：${formatMatchTime(p.lastSeen)}',
+                        subtitle: Text(
+                            '最後遇到：${p.lastSeenKnown ? formatMatchTime(p.lastSeen) : '—'}',
                             style: const TextStyle(color: AppColors.muted)),
                         trailing: IconButton(
                           key: ValueKey('seen-delete-${p.puuid}'),

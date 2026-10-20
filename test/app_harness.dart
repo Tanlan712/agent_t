@@ -38,7 +38,12 @@ const testMatchReference = MatchReference(
     'agent-mate': RefItem(name: '菲德'),
   },
   maps: {'/Game/Maps/Ascent/Ascent': RefItem(name: '亞海懸城')},
-  tiers: {18: RefItem(name: '鑽石 2'), 12: RefItem(name: '白金 1')},
+  tiers: {
+    0: RefItem(name: '牌階未定'),
+    18: RefItem(name: '鑽石 2'),
+    12: RefItem(name: '白金 1'),
+    21: RefItem(name: '超凡 1'),
+  },
 );
 
 /// 測試用的整組 providers，已預先寫入商店／願望清單資料。

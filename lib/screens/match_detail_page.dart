@@ -40,9 +40,18 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       final ids = detail.teams.keys.toList()
         ..sort((a, b) => a == me ? -1 : (b == me ? 1 : a.compareTo(b)));
       // 只比較同一個模式（例如競技就看最近 5 場競技）。
-      _loader.request([
-        for (final id in ids) ...detail.teams[id]!.map((p) => p.puuid),
-      ], owner: this, queue: detail.summary.queueId);
+      _loader.request(
+          [
+            for (final id in ids) ...detail.teams[id]!.map((p) => p.puuid),
+          ],
+          owner: this,
+          queue: detail.summary.queueId,
+          // 一般、超速衝點等場次沒有牌位資料，另外查這季的牌位。
+          seasonId: detail.summary.seasonId,
+          rankFor: {
+            for (final p in detail.teams.values.expand((t) => t))
+              if (p.tier == 0) p.puuid,
+          });
     });
   }
 
@@ -106,6 +115,7 @@ class _DetailBody extends StatelessWidget {
             ref: ref,
             parties: parties,
             queueId: s.queueId,
+            seasonId: s.seasonId,
             mine: id == s.myTeamId,
             won: id == s.myTeamId ? s.won : (s.won == null ? null : !s.won!)),
     ];
@@ -159,6 +169,7 @@ class _TeamTable extends StatelessWidget {
   final Map<String, Color> parties;
 
   final String queueId;
+  final String seasonId;
 
   /// 是否為 summary 主角（自己或查看中的玩家）那一隊。
   final bool mine;
@@ -171,6 +182,7 @@ class _TeamTable extends StatelessWidget {
     required this.ref,
     required this.parties,
     required this.queueId,
+    required this.seasonId,
     required this.mine,
     required this.won,
   });
@@ -243,15 +255,11 @@ class _TeamTable extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               // 牌位與特務只顯示圖示，名稱放在提示裡。
-                              Tooltip(
-                                key: ValueKey('rank-${p.puuid}'),
-                                message: ref.tier(p.tier).name,
-                                child: SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: SkinIcon(
-                                        url: ref.tier(p.tier).iconUrl)),
-                              ),
+                              _RankIcon(
+                                  key: ValueKey('rank-icon-${p.puuid}'),
+                                  player: p,
+                                  seasonId: seasonId,
+                                  ref: ref),
                               const SizedBox(width: 6),
                               SizedBox(width: 6, child: _partyDot(p)),
                               const SizedBox(width: 6),
@@ -396,6 +404,34 @@ class _FormCell extends StatelessWidget {
         const SizedBox(width: 6),
         Text('平均 ${form.avgAcs!.round()}', style: muted),
       ],
+    );
+  }
+}
+
+/// 牌位小圖示：這場有牌位就用這場的，沒有時用背景查到的這季牌位。
+class _RankIcon extends StatelessWidget {
+  final PlayerLine player;
+  final String seasonId;
+  final MatchReferenceProvider ref;
+
+  const _RankIcon(
+      {super.key,
+      required this.player,
+      required this.seasonId,
+      required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final tier = player.tier > 0
+        ? player.tier
+        : (context.watch<RecentFormLoader>().rankTier(player.puuid, seasonId) ??
+            0);
+    final item = ref.tier(tier);
+    return Tooltip(
+      key: ValueKey('rank-${player.puuid}'),
+      message: item.name,
+      child:
+          SizedBox(width: 24, height: 24, child: SkinIcon(url: item.iconUrl)),
     );
   }
 }

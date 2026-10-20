@@ -7,6 +7,7 @@ import '../match_fixtures.dart';
 void main() {
   group('審查修正', reviewFixTests);
   group('加強版數據', playerStatsTests);
+  group('賽季牌位', seasonRankTests);
   group('mapMatchDetail', () {
     final d = mapMatchDetail(matchDetailsJson(), myPuuid, rrChange: 18);
     final all = d.teams.values.expand((t) => t).toList();
@@ -174,5 +175,20 @@ void playerStatsTests() {
     expect(r1.firstKills, 2);
     expect(r1.kd, p('r1').kd);
     expect(r1.adr, p('r1').adr);
+  });
+}
+
+void seasonRankTests() {
+  test('seasonTier 取這場賽季的競技牌位', () {
+    expect(seasonTier(seasonalMmrJson('r1', tier: 21), 'season-1'), 21);
+    expect(seasonTier(seasonalMmrJson('r1'), 'season-2'), isNull);
+    expect(seasonTier(seasonalMmrJson('r1', tier: 0), 'season-1'), isNull);
+    expect(seasonTier({'Subject': 'x'}, 'season-1'), isNull);
+    expect(seasonTier(seasonalMmrJson('r1'), ''), isNull);
+  });
+
+  test('摘要帶有這場的賽季', () {
+    expect(mapMatchDetail(matchDetailsJson(), myPuuid).summary.seasonId,
+        'season-1');
   });
 }

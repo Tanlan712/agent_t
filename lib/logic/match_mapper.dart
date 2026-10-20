@@ -54,6 +54,18 @@ RankInfo? mapRank(Map<String, dynamic> mmr) {
   );
 }
 
+/// 他人 MMR 中 [seasonId] 那一季的競技牌位；沒有資料或未定級時為 null。
+/// 一般、超速衝點等場次的 match-details 牌位都是 0，所以另外查詢。
+int? seasonTier(Map<String, dynamic> mmr, String seasonId) {
+  if (seasonId.isEmpty) return null;
+  final seasons = ((mmr['QueueSkills'] as Map<String, dynamic>?)?['competitive']
+          as Map<String, dynamic>?)?['SeasonalInfoBySeasonID']
+      as Map<String, dynamic>?;
+  final tier =
+      _int((seasons?[seasonId] as Map<String, dynamic>?)?['CompetitiveTier']);
+  return tier > 0 ? tier : null;
+}
+
 /// 每位玩家在所有回合的命中部位加總 (head, body, leg) 與總傷害。
 (Map<String, (int, int, int)>, Map<String, int>) _hits(
     Map<String, dynamic> json) {
@@ -226,6 +238,7 @@ MatchDetail mapMatchDetail(Map<String, dynamic> json, String focusPuuid,
           DateTime.fromMillisecondsSinceEpoch(_int(info['gameStartMillis'])),
       queueId: info['queueID'] as String? ?? '',
       mapId: info['mapId'] as String? ?? '',
+      seasonId: info['seasonId'] as String? ?? '',
       durationMs: _int(info['gameLengthMillis']),
       isRanked: info['isRanked'] == true,
       myTeamId: myTeam,
