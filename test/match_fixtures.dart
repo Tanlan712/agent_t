@@ -14,6 +14,7 @@ Map<String, dynamic> _player(
   int assists = 5,
   int tier = 12,
   bool observer = false,
+  double? rating,
 }) =>
     {
       'subject': subject,
@@ -33,6 +34,8 @@ Map<String, dynamic> _player(
       'accountLevel': 100,
       'playerCard': 'card',
       'isObserver': observer,
+      // 實測：遊戲內「表現分數」是 scores.TempValueF。
+      if (rating != null) 'scores': {'TempValueF': rating, 'TempValueA': 1.5},
     };
 
 Map<String, dynamic> _damage(String receiver, int head, int body, int leg) => {
@@ -62,27 +65,43 @@ Map<String, dynamic> matchDetailsJson({bool withTeams = true}) => {
             kills: 20,
             deaths: 12,
             assists: 4,
-            tier: 18),
+            tier: 18,
+            rating: 265.4),
         _player('mate', 'Bravo', 'Blue', party: 'p1', score: 3500),
         _player('b3', 'Charlie', 'Blue', score: 2800),
         _player('b4', 'Delta', 'Blue', score: 2000),
-        _player('b5', 'Echo', 'Blue', score: 1500),
-        _player('r1', 'Foxtrot', 'Red', score: 5000),
+        _player('b5', 'Echo', 'Blue', score: 1500, kills: 7, deaths: 0),
+        _player('r1', 'Foxtrot', 'Red', score: 5000, rating: 452),
         _player('r2', 'Golf', 'Red', score: 3100),
         _player('r3', 'Hotel', 'Red', score: 2500),
         _player('r4', 'India', 'Red', score: 900),
         _player('r5', '', 'Red', score: 0, rounds: 0),
         _player('obs', 'Watcher', 'Neutral', score: 0, observer: true),
       ],
+      // 實測：matchMvp 與 teams[].mvp 都是 puuid。
+      if (withTeams) 'matchMvp': 'r1',
       if (withTeams)
         'teams': [
-          {'teamId': 'Blue', 'won': true, 'roundsWon': 13, 'roundsPlayed': 22},
-          {'teamId': 'Red', 'won': false, 'roundsWon': 9, 'roundsPlayed': 22},
+          {
+            'teamId': 'Blue',
+            'won': true,
+            'roundsWon': 13,
+            'roundsPlayed': 22,
+            'mvp': myPuuid,
+          },
+          {
+            'teamId': 'Red',
+            'won': false,
+            'roundsWon': 9,
+            'roundsPlayed': 22,
+            'mvp': 'r1',
+          },
         ],
       'roundResults': [
         {
           'roundNum': 0,
           'winningTeam': 'Blue',
+          'firstBloodPlayer': myPuuid,
           'playerStats': [
             {
               'subject': myPuuid,
@@ -94,10 +113,29 @@ Map<String, dynamic> matchDetailsJson({bool withTeams = true}) => {
         {
           'roundNum': 1,
           'winningTeam': 'Red',
+          'firstBloodPlayer': 'r1',
           'playerStats': [
             {
               'subject': myPuuid,
               'damage': [_damage('r2', 1, 2, 0)],
+            },
+          ],
+        },
+        // 沒有 firstBloodPlayer 的回合：改用最早的擊殺（roundTime 最小）。
+        {
+          'roundNum': 2,
+          'playerStats': [
+            {
+              'subject': 'mate',
+              'kills': [
+                {'killer': 'mate', 'victim': 'r2', 'roundTime': 5000},
+              ],
+            },
+            {
+              'subject': 'r1',
+              'kills': [
+                {'killer': 'r1', 'victim': 'b3', 'roundTime': 3000},
+              ],
             },
           ],
         },

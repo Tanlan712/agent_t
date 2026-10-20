@@ -1,10 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:valorant_shop_tracker/logic/match_mapper.dart';
+import 'package:valorant_shop_tracker/models/match_models.dart';
 
 import '../match_fixtures.dart';
 
 void main() {
   group('審查修正', reviewFixTests);
+  group('加強版數據', playerStatsTests);
   group('mapMatchDetail', () {
     final d = mapMatchDetail(matchDetailsJson(), myPuuid, rrChange: 18);
     final all = d.teams.values.expand((t) => t).toList();
@@ -108,5 +110,69 @@ void reviewFixTests() {
 
   test('rrByMatch 只保留競技場次', () {
     expect(rrByMatch(competitiveUpdatesJson()).containsKey('m9'), isFalse);
+  });
+}
+
+void playerStatsTests() {
+  final d = mapMatchDetail(matchDetailsJson(), myPuuid);
+  final all = d.teams.values.expand((t) => t).toList();
+  PlayerLine p(String id) => all.singleWhere((l) => l.puuid == id);
+
+  test('K/D 取兩位小數前的原值，deaths 為 0 時等於 kills', () {
+    expect(p(myPuuid).kd, closeTo(1.666, 0.01));
+    expect(p('b5').kd, 7);
+  });
+
+  test('ADR 為總傷害 ÷ roundsPlayed 四捨五入，沒有回合時為 0', () {
+    // 第 0 回合 2×40+4×25+1×20=200，第 1 回合 40+2×25=90，共 290 ÷ 22。
+    expect(p(myPuuid).adr, 13);
+    expect(p('r5').adr, 0);
+  });
+
+  test('首殺優先用 firstBloodPlayer，缺少時取最早的擊殺', () {
+    expect(p(myPuuid).firstKills, 1);
+    expect(p('r1').firstKills, 2);
+    expect(p('mate').firstKills, 0);
+  });
+
+  test('MVP 採用 Riot 的 matchMvp 與 teams[].mvp', () {
+    expect(p('r1').mvp, MvpKind.match);
+    expect(p(myPuuid).mvp, MvpKind.team);
+    expect(p('mate').mvp, MvpKind.none);
+  });
+
+  test('沒有 MVP 欄位時以分數推算', () {
+    final f = mapMatchDetail(matchDetailsJson(withTeams: false), myPuuid);
+    final fa = f.teams.values.expand((t) => t).toList();
+    MvpKind m(String id) => fa.singleWhere((l) => l.puuid == id).mvp;
+    expect(m('r1'), MvpKind.match);
+    expect(m(myPuuid), MvpKind.team);
+    expect(m('r2'), MvpKind.none);
+  });
+
+  test('表現分數取自 scores.TempValueF，沒有時為 null', () {
+    expect(p(myPuuid).rating, closeTo(265.4, 0.001));
+    expect(p('r1').rating, 452);
+    expect(p('mate').rating, isNull);
+  });
+
+  test('summary 以 focusPuuid 為主，isMe 依 selfPuuid', () {
+    final o = mapMatchDetail(matchDetailsJson(), 'r1', selfPuuid: myPuuid);
+    expect(o.summary.myAgentId, 'agent-r1');
+    expect(o.summary.myTeamId, 'Red');
+    expect(o.summary.won, isFalse);
+    final mine = o.teams.values.expand((t) => t).where((l) => l.isMe);
+    expect(mine.single.puuid, myPuuid);
+  });
+
+  test('applyNames 保留新欄位', () {
+    final n = applyNames(d, {'r1': 'X#1'});
+    final r1 = n.teams['Red']!.first;
+    expect(r1.riotId, 'X#1');
+    expect(r1.mvp, MvpKind.match);
+    expect(r1.rating, 452);
+    expect(r1.firstKills, 2);
+    expect(r1.kd, p('r1').kd);
+    expect(r1.adr, p('r1').adr);
   });
 }

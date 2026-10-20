@@ -54,9 +54,11 @@ RankInfo? mapRank(Map<String, dynamic> mmr) {
   );
 }
 
-/// 每位玩家在所有回合的命中部位加總：(head, body, leg)。
-Map<String, (int, int, int)> _hits(Map<String, dynamic> json) {
+/// 每位玩家在所有回合的命中部位加總 (head, body, leg) 與總傷害。
+(Map<String, (int, int, int)>, Map<String, int>) _hits(
+    Map<String, dynamic> json) {
   final totals = <String, (int, int, int)>{};
+  final damage = <String, int>{};
   for (final round in (json['roundResults'] as List<dynamic>? ?? const [])
       .cast<Map<String, dynamic>>()) {
     for (final ps in (round['playerStats'] as List<dynamic>? ?? const [])
@@ -69,11 +71,72 @@ Map<String, (int, int, int)> _hits(Map<String, dynamic> json) {
         h += _int(d['headshots']);
         b += _int(d['bodyshots']);
         l += _int(d['legshots']);
+        damage[id] = (damage[id] ?? 0) + _int(d['damage']);
       }
       totals[id] = (h, b, l);
     }
   }
-  return totals;
+  return (totals, damage);
+}
+
+/// 每回合的首殺：優先用 firstBloodPlayer，沒有時取 roundTime 最小的擊殺。
+Map<String, int> _firstKills(Map<String, dynamic> json) {
+  final counts = <String, int>{};
+  for (final round in (json['roundResults'] as List<dynamic>? ?? const [])
+      .cast<Map<String, dynamic>>()) {
+    var killer = round['firstBloodPlayer'] as String?;
+    if (killer == null || killer.isEmpty) {
+      int? best;
+      for (final ps in (round['playerStats'] as List<dynamic>? ?? const [])
+          .cast<Map<String, dynamic>>()) {
+        for (final k in (ps['kills'] as List<dynamic>? ?? const [])
+            .cast<Map<String, dynamic>>()) {
+          final t = _int(k['roundTime']);
+          if (best == null || t < best) {
+            best = t;
+            killer = k['killer'] as String?;
+          }
+        }
+      }
+    }
+    if (killer != null) counts[killer] = (counts[killer] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/// 實測：遊戲內「表現分數」是 scores.TempValueF。
+double? _rating(Map<String, dynamic> player) {
+  final v = (player['scores'] as Map<String, dynamic>?)?['TempValueF'];
+  return v is num ? v.toDouble() : null;
+}
+
+/// 優先採用 Riot 的 matchMvp 與 teams[].mvp；沒有時以表現分數推算
+/// （實測 matchMvp 都是表現分數最高者），沒有表現分數才用戰鬥分數。
+Map<String, MvpKind> _mvps(Map<String, dynamic> json, List<PlayerLine> lines) {
+  final result = <String, MvpKind>{};
+  final matchMvp = json['matchMvp'] as String?;
+  if (matchMvp != null && matchMvp.isNotEmpty) {
+    result[matchMvp] = MvpKind.match;
+    for (final t in (json['teams'] as List<dynamic>? ?? const [])
+        .cast<Map<String, dynamic>>()) {
+      final id = t['mvp'] as String?;
+      if (id != null && id.isNotEmpty && id != matchMvp) {
+        result[id] = MvpKind.team;
+      }
+    }
+    return result;
+  }
+  if (lines.isEmpty) return result;
+  final useRating = lines.any((l) => l.rating != null);
+  double value(PlayerLine l) =>
+      useRating ? (l.rating ?? double.negativeInfinity) : l.score.toDouble();
+  PlayerLine best(Iterable<PlayerLine> ls) =>
+      ls.reduce((a, b) => value(b) > value(a) ? b : a);
+  final top = best(lines);
+  result[top.puuid] = MvpKind.match;
+  final others = lines.where((l) => l.teamId != top.teamId);
+  if (others.isNotEmpty) result[best(others).puuid] = MvpKind.team;
+  return result;
 }
 
 /// 比分：優先用 teams[].roundsWon，沒有時從 roundResults[].winningTeam 計數。
@@ -91,10 +154,14 @@ Map<String, int> _roundsWon(Map<String, dynamic> json) {
   return counts;
 }
 
-MatchDetail mapMatchDetail(Map<String, dynamic> json, String myPuuid,
-    {int? rrChange}) {
+/// 摘要（勝負、特務、K/D/A）以 [focusPuuid] 為主；isMe 標記
+/// [selfPuuid]（預設與 [focusPuuid] 相同），用於查看其他玩家的場次。
+MatchDetail mapMatchDetail(Map<String, dynamic> json, String focusPuuid,
+    {String? selfPuuid, int? rrChange}) {
   final info = json['matchInfo'] as Map<String, dynamic>? ?? const {};
-  final hits = _hits(json);
+  final (hits, damage) = _hits(json);
+  final firstKills = _firstKills(json);
+  final self = selfPuuid ?? focusPuuid;
 
   final lines = <PlayerLine>[];
   for (final p in (json['players'] as List<dynamic>? ?? const [])
@@ -107,6 +174,8 @@ MatchDetail mapMatchDetail(Map<String, dynamic> json, String myPuuid,
     final name = p['gameName'] as String? ?? '';
     final (h, b, l) = hits[id] ?? (0, 0, 0);
     final shots = h + b + l;
+    final kills = _int(stats['kills']);
+    final deaths = _int(stats['deaths']);
     lines.add(PlayerLine(
       puuid: id,
       riotId: name.isEmpty ? unknownPlayerName : '$name#${p['tagLine'] ?? ''}',
@@ -115,14 +184,23 @@ MatchDetail mapMatchDetail(Map<String, dynamic> json, String myPuuid,
       agentId: p['characterId'] as String? ?? '',
       tier: _int(p['competitiveTier']),
       accountLevel: _int(p['accountLevel']),
-      kills: _int(stats['kills']),
-      deaths: _int(stats['deaths']),
+      kills: kills,
+      deaths: deaths,
       assists: _int(stats['assists']),
       score: score,
       acs: rounds == 0 ? 0 : (score / rounds).round(),
       headshotPercent: shots == 0 ? null : h / shots * 100,
-      isMe: id == myPuuid,
+      isMe: id == self,
+      kd: deaths == 0 ? kills.toDouble() : kills / deaths,
+      adr: rounds == 0 ? 0 : ((damage[id] ?? 0) / rounds).round(),
+      firstKills: firstKills[id] ?? 0,
+      rating: _rating(p),
     ));
+  }
+  final mvps = _mvps(json, lines);
+  for (var i = 0; i < lines.length; i++) {
+    final m = mvps[lines[i].puuid];
+    if (m != null) lines[i] = lines[i].copyWith(mvp: m);
   }
 
   final teams = <String, List<PlayerLine>>{};
@@ -133,7 +211,7 @@ MatchDetail mapMatchDetail(Map<String, dynamic> json, String myPuuid,
     t.sort((a, b) => b.score.compareTo(a.score));
   }
 
-  final me = lines.where((l) => l.isMe).firstOrNull;
+  final me = lines.where((l) => l.puuid == focusPuuid).firstOrNull;
   final myTeam = me?.teamId ?? '';
   final won = _roundsWon(json);
   final myScore = won[myTeam] ?? 0;
@@ -179,23 +257,7 @@ MatchDetail applyNames(MatchDetail d, Map<String, String> names) {
   if (names.isEmpty) return d;
   PlayerLine named(PlayerLine p) {
     final n = names[p.puuid];
-    if (n == null) return p;
-    return PlayerLine(
-      puuid: p.puuid,
-      riotId: n,
-      teamId: p.teamId,
-      partyId: p.partyId,
-      agentId: p.agentId,
-      tier: p.tier,
-      accountLevel: p.accountLevel,
-      kills: p.kills,
-      deaths: p.deaths,
-      assists: p.assists,
-      score: p.score,
-      acs: p.acs,
-      headshotPercent: p.headshotPercent,
-      isMe: p.isMe,
-    );
+    return n == null ? p : p.copyWith(riotId: n);
   }
 
   return MatchDetail(

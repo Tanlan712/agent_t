@@ -8,6 +8,9 @@ class MatchRef {
       {required this.matchId, required this.startTime, required this.queueId});
 }
 
+/// 全場 MVP、隊伍 MVP（另一隊的最佳玩家）或都不是。
+enum MvpKind { none, match, team }
+
 class PlayerLine {
   final String puuid;
 
@@ -26,6 +29,17 @@ class PlayerLine {
   final double? headshotPercent;
   final bool isMe;
 
+  /// deaths 為 0 時等於 kills。
+  final double kd;
+
+  /// 每回合平均傷害；沒有回合時為 0。
+  final int adr;
+  final int firstKills;
+  final MvpKind mvp;
+
+  /// 遊戲內的「表現分數」（scores.TempValueF）；Riot 沒有提供時為 null。
+  final double? rating;
+
   const PlayerLine({
     required this.puuid,
     required this.riotId,
@@ -41,7 +55,34 @@ class PlayerLine {
     required this.acs,
     this.headshotPercent,
     required this.isMe,
+    this.kd = 0,
+    this.adr = 0,
+    this.firstKills = 0,
+    this.mvp = MvpKind.none,
+    this.rating,
   });
+
+  PlayerLine copyWith({String? riotId, MvpKind? mvp}) => PlayerLine(
+        puuid: puuid,
+        riotId: riotId ?? this.riotId,
+        teamId: teamId,
+        partyId: partyId,
+        agentId: agentId,
+        tier: tier,
+        accountLevel: accountLevel,
+        kills: kills,
+        deaths: deaths,
+        assists: assists,
+        score: score,
+        acs: acs,
+        headshotPercent: headshotPercent,
+        isMe: isMe,
+        kd: kd,
+        adr: adr,
+        firstKills: firstKills,
+        mvp: mvp ?? this.mvp,
+        rating: rating,
+      );
 }
 
 class MatchSummary {
