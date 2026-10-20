@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
+import 'live_fixtures.dart';
 import 'match_fixtures.dart';
 
 /// 依社群文件（valapidocs）格式精簡的 storefront 測試資料。
@@ -92,6 +93,9 @@ MockClient riotClient({
   Map<String, int> historyConnectionFail = const {},
   Map<String, int> otherMmrStatus = const {},
   Set<String> otherMmrHidden = const {},
+  int partyStatus = 200,
+  int partyDetailStatus = 200,
+  Map<String, dynamic>? party,
   bool unratedTiers = false,
 }) {
   final throttled = <String, int>{};
@@ -130,6 +134,20 @@ MockClient riotClient({
         'status': 200,
         'data': {'riotClientVersion': 'release-13.08-shipping-19-5698904'},
       });
+    }
+    // 即時對局（glz）：只有 GET。
+    if (host == 'glz-ap-1.ap.a.pvp.net' && req.method == 'GET') {
+      if (path == '/parties/v1/players/puuid-1') {
+        return partyStatus == 200
+            ? json(partyPlayerJson())
+            : json({'httpStatus': partyStatus, 'errorCode': 'x'}, partyStatus);
+      }
+      if (path == '/parties/v1/parties/$testPartyId') {
+        return partyDetailStatus == 200
+            ? json(party ?? partyJson())
+            : json({'httpStatus': partyDetailStatus, 'errorCode': 'x'},
+                partyDetailStatus);
+      }
     }
     if (host == 'pd.ap.a.pvp.net') {
       if (path == '/store/v3/storefront/puuid-1' && req.method == 'POST') {

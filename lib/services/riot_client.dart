@@ -124,6 +124,18 @@ class RiotClient {
           () => _client.get(Uri.https('pd.${s.shard}.a.pvp.net', path, query),
               headers: _pdHeaders(s)));
 
+  /// 即時對局（glz）端點的 GET；依 AGENTS.md 只允許讀取。
+  Future<Map<String, dynamic>> getGlz(
+    RiotSession s,
+    String path, {
+    required String label,
+  }) =>
+      _json(
+          label,
+          () => _client.get(
+              Uri.https('glz-${s.shard}-1.${s.shard}.a.pvp.net', path),
+              headers: _pdHeaders(s)));
+
   /// pd 端點的 PUT，回應為 JSON 陣列（例如 name-service）。
   Future<List<dynamic>> putPdList(
     RiotSession s,
