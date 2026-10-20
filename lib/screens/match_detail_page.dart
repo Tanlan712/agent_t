@@ -7,6 +7,7 @@ import '../providers/match_history_provider.dart';
 import '../providers/match_reference_provider.dart';
 import '../providers/recent_form_loader.dart';
 import '../theme/app_theme.dart';
+import '../widgets/hud/hud.dart';
 import '../widgets/recent_form_cell.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
 import 'match_history_page.dart' show formatMatchTime, resultColor, resultLabel;
@@ -210,8 +211,9 @@ class _TeamTable extends StatelessWidget {
     }
   }
 
+  /// 數字欄：等寬數字，方便對齊。
   DataCell _cell(String key, String text) =>
-      DataCell(Text(text, key: ValueKey(key)));
+      DataCell(Text(text, key: ValueKey(key), style: AppText.tabular(null)));
 
   @override
   Widget build(BuildContext context) {
@@ -245,12 +247,16 @@ class _TeamTable extends StatelessWidget {
                       DataColumn(label: Text(h, style: muted))
                   ],
                   rows: [
-                    for (final p in players)
+                    for (final (i, p) in players.indexed)
                       DataRow(
+                        // 自己那一列較亮；其餘奇數列用淡斑馬紋。
                         color: p.isMe
                             ? const WidgetStatePropertyAll(
                                 AppColors.surfaceHigh)
-                            : null,
+                            : i.isOdd
+                                ? WidgetStatePropertyAll(
+                                    AppColors.surfaceHigh.withOpacity(0.4))
+                                : null,
                         cells: [
                           DataCell(Row(
                             mainAxisSize: MainAxisSize.min,
@@ -344,19 +350,10 @@ class _MvpTag extends StatelessWidget {
   const _MvpTag({super.key, required this.kind});
 
   @override
-  Widget build(BuildContext context) {
-    final color =
-        kind == MvpKind.match ? AppColors.wishlistGold : AppColors.primary;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-      decoration: BoxDecoration(
-        border: Border.all(color: color),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(kind == MvpKind.match ? '全場 MVP' : '隊伍 MVP',
-          style: TextStyle(color: color, fontSize: 11)),
-    );
-  }
+  Widget build(BuildContext context) => kind == MvpKind.match
+      ? const StatusChip(
+          label: '全場 MVP', color: AppColors.warn, icon: Icons.emoji_events)
+      : const StatusChip(label: '隊伍 MVP', color: AppColors.primary);
 }
 
 /// 牌位小圖示：這場有牌位就用這場的，沒有時用背景查到的這季牌位。

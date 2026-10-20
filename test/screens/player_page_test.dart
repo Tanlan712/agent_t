@@ -36,12 +36,16 @@ void main() {
         onGenerateRoute: onGenerateAppRoute));
     await drain(tester);
     expect(find.text('Foxtrot#TW1'), findsOneWidget);
-    expect(find.text('最近 5 場平均 ACS 227'), findsOneWidget);
+    Finder kpi(String t) => find.descendant(
+        of: find.byKey(const ValueKey('player-kpi')), matching: find.text(t));
+    // 平均 ACS 與勝率改成 KPI（r1 在 fixture 每場都是紅隊落敗）。
+    expect(kpi('最近 5 場平均 ACS'), findsOneWidget);
+    expect(kpi('227'), findsOneWidget);
+    expect(kpi('0%'), findsOneWidget);
     expect(find.text('10 / 10 / 5'), findsWidgets);
     expect(find.text('ACS 227'), findsWidgets);
     // 一頁 20 場，頁尾提示要捲到底才會建立。
-    await tester.scrollUntilVisible(
-        find.text('名稱資料來自 Riot，請勿公開或分享他人資訊'), 600,
+    await tester.scrollUntilVisible(find.text('名稱資料來自 Riot，請勿公開或分享他人資訊'), 600,
         scrollable: find.byType(Scrollable).first);
     expect(find.text('名稱資料來自 Riot，請勿公開或分享他人資訊'), findsOneWidget);
   });

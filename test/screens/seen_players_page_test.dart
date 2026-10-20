@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 import 'package:valorant_shop_tracker/app_routes.dart';
 import 'package:valorant_shop_tracker/logic/match_mapper.dart';
 import 'package:valorant_shop_tracker/screens/player_page.dart';
@@ -85,5 +86,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(h.seenPlayers.players, isEmpty);
     expect(find.text('還沒有遇過的玩家'), findsOneWidget);
+  });
+
+  testWidgets('搜尋不到時顯示 EmptyState', (tester) async {
+    setWidth(tester, 1400);
+    final h = await seeded(tester);
+    await open(tester, h);
+    await tester.enterText(find.byType(TextField), 'zzzz');
+    await tester.pumpAndSettle();
+    expect(find.byType(EmptyState), findsOneWidget);
+    expect(find.text('找不到符合的玩家'), findsOneWidget);
   });
 }

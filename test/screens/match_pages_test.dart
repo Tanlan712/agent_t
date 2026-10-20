@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:valorant_shop_tracker/models/match_models.dart';
@@ -401,5 +402,49 @@ void scoreboardTests() {
     expect(rank('r2'), '白金 1');
     expect(requests.where((r) => r.url.path.startsWith('/mmr/v1/players/r')),
         isEmpty);
+  });
+
+  group('戰術 HUD 對戰紀錄', () {
+    testWidgets('history-kpi：近 5 場 RR、勝率、平均 ACS', (tester) async {
+      setWidth(tester, 1400);
+      final h =
+          await Harness.create(tester, riotHttp: riotClient(historyTotal: 3));
+      await tester.runAsync(() => h.riot.login(fakeRedirect));
+      await tester.pumpWidget(h.wrap(home: const MatchHistoryPage()));
+      await tester.pump();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 80)));
+      await tester.pumpAndSettle();
+      Finder kpi(String t) => find.descendant(
+          of: find.byKey(const ValueKey('history-kpi')),
+          matching: find.text(t));
+      expect(kpi('+3'), findsOneWidget);
+      expect(kpi('100%'), findsOneWidget);
+      expect(kpi('191'), findsOneWidget);
+    });
+
+    testWidgets('詳情：數字欄等寬、MVP 是 StatusChip', (tester) async {
+      setWidth(tester, 2000);
+      final h =
+          await Harness.create(tester, riotHttp: riotClient(historyTotal: 3));
+      await tester.runAsync(() async {
+        await h.riot.login(fakeRedirect);
+        await h.matchHistory.loadFirstPage();
+      });
+      await tester
+          .pumpWidget(h.wrap(home: const MatchDetailPage(matchId: 'm1')));
+      await tester.pump();
+      final acs =
+          tester.widget<Text>(find.byKey(const ValueKey('acs-puuid-1')));
+      expect(acs.style?.fontFeatures,
+          contains(const FontFeature.tabularFigures()));
+      expect(find.byKey(const ValueKey('mvp-r1')), findsOneWidget);
+      expect(
+          find.descendant(
+              of: find.byKey(const ValueKey('mvp-r1')),
+              matching: find.byType(StatusChip)),
+          findsOneWidget);
+      await tester.pumpWidget(h.wrap(home: const SizedBox()));
+    });
   });
 }

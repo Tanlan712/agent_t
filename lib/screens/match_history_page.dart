@@ -9,6 +9,7 @@ import '../providers/riot_provider.dart';
 import '../shell/app_shell.dart';
 import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
+import '../widgets/hud/hud.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
 
 String _two(int n) => n.toString().padLeft(2, '0');
@@ -74,6 +75,8 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
         padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
           _RankHeader(rank: history.rank, recentRr: history.recentRr, ref: ref),
+          const SizedBox(height: 8),
+          _HistoryKpi(history: history),
           if (history.error case final e?)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -124,6 +127,43 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
     }
 
     return AppShell(currentRoute: '/matches', title: '對戰紀錄', child: body);
+  }
+}
+
+/// 頁首 KPI：只用已載入的資料計算（近 5 場 RR 合計、勝率、平均 ACS）。
+class _HistoryKpi extends StatelessWidget {
+  final MatchHistoryProvider history;
+
+  const _HistoryKpi({required this.history});
+
+  @override
+  Widget build(BuildContext context) {
+    final details = [
+      for (final e in history.entries)
+        if (e.detail case final d?) d.summary,
+    ];
+    final rr = history.recentRr;
+    final rrSum = rr.fold<int>(0, (a, b) => a + b);
+    final decided = details.where((s) => s.won != null).toList();
+    final wins = decided.where((s) => s.won == true).length;
+    return KpiStrip(key: const ValueKey('history-kpi'), tiles: [
+      KpiTile(
+        label: '近 ${rr.length} 場 RR',
+        value: rr.isEmpty ? '—' : formatRr(rrSum),
+        up: rr.isEmpty ? null : rrSum >= 0,
+      ),
+      KpiTile(
+        label: '勝率（${decided.length} 場）',
+        value:
+            decided.isEmpty ? '—' : '${(wins / decided.length * 100).round()}%',
+      ),
+      KpiTile(
+        label: '平均 ACS',
+        value: details.isEmpty
+            ? '—'
+            : '${(details.fold<int>(0, (a, s) => a + s.acs) / details.length).round()}',
+      ),
+    ]);
   }
 }
 

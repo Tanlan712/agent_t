@@ -9,6 +9,7 @@ import '../providers/riot_provider.dart';
 import '../providers/seen_players_provider.dart';
 import '../services/match_client.dart';
 import '../theme/app_theme.dart';
+import '../widgets/hud/hud.dart';
 import '../shell/responsive_grid.dart';
 import 'match_history_page.dart' show MatchCard;
 
@@ -64,19 +65,24 @@ class _PlayerPageState extends State<PlayerPage> {
       for (final e in h.entries.take(5))
         if (e.detail case final d?) d.summary.acs,
     ];
+    final decided = [
+      for (final e in h.entries)
+        if (e.detail?.summary.won case final won?) won,
+    ];
+    final winRate = decided.isEmpty
+        ? '—'
+        : '${(decided.where((w) => w).length / decided.length * 100).round()}%';
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         if (recent.isNotEmpty)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                  '最近 ${recent.length} 場平均 ACS '
-                  '${(recent.reduce((a, b) => a + b) / recent.length).round()}',
-                  style: Theme.of(context).textTheme.titleMedium),
-            ),
-          ),
+          KpiStrip(key: const ValueKey('player-kpi'), tiles: [
+            KpiTile(
+                label: '最近 ${recent.length} 場平均 ACS',
+                value:
+                    '${(recent.reduce((a, b) => a + b) / recent.length).round()}'),
+            KpiTile(label: '勝率（${decided.length} 場）', value: winRate),
+          ]),
         if (h.error case final e?)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),

@@ -5,6 +5,7 @@ import '../models/match_models.dart';
 import '../providers/seen_players_provider.dart';
 import '../shell/app_shell.dart';
 import '../theme/app_theme.dart';
+import '../widgets/hud/hud.dart';
 import 'match_history_page.dart' show formatMatchTime;
 
 /// 對戰中遇過的玩家（存在這個瀏覽器），點擊可查詢他的對戰紀錄。
@@ -70,7 +71,8 @@ class _SeenPlayersPageState extends State<SeenPlayersPage> {
           ),
           Expanded(
             child: list.isEmpty
-                ? const Center(child: Text('找不到符合的玩家'))
+                ? const EmptyState(
+                    icon: Icons.person_search, message: '找不到符合的玩家')
                 : ListView.builder(
                     itemCount: list.length,
                     itemBuilder: (context, i) {
