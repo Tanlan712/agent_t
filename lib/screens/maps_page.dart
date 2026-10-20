@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../shell/app_shell.dart';
+import '../shell/responsive_grid.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
 class MapsPage extends StatefulWidget {
@@ -66,14 +67,9 @@ class _MapsPageState extends State<MapsPage> {
                     ],
                   ),
                 )
-              : GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 1.2,
-                  ),
+              : ResponsiveGridView.builder(
+                  minTileWidth: 260,
+                  childAspectRatio: 1.6,
                   itemCount: _maps.length,
                   itemBuilder: (context, index) {
                     final map = _maps[index];

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../shell/app_shell.dart';
+import '../shell/responsive_grid.dart';
+import '../theme/app_theme.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
 class BundlesPage extends StatefulWidget {
@@ -66,8 +68,9 @@ class _BundlesPageState extends State<BundlesPage> {
                     ],
                   ),
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
+              : ResponsiveGridView.builder(
+                  minTileWidth: 340,
+                  childAspectRatio: 1.7,
                   itemCount: _bundles.length,
                   itemBuilder: (context, index) {
                     final bundle = _bundles[index];
@@ -80,57 +83,43 @@ class _BundlesPageState extends State<BundlesPage> {
   Widget _buildBundleCard(Map<String, dynamic> bundle) {
     final displayName = bundle['displayName'] as String;
     final displayIcon = bundle['displayIcon'] as String?;
-    final description = bundle['description'] as String?;
 
+    const placeholder = ColoredBox(
+      color: AppColors.surfaceHigh,
+      child: Center(child: Icon(Icons.card_giftcard, size: 48)),
+    );
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        fit: StackFit.expand,
         children: [
           if (displayIcon != null)
             Image.network(
               displayIcon,
-              height: 150,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  height: 150,
-                  color: Colors.grey[800],
-                  child: const Icon(Icons.card_giftcard, size: 64),
-                );
-              },
+              errorBuilder: (context, error, stackTrace) => placeholder,
             )
           else
-            Container(
-              height: 150,
-              color: Colors.grey[800],
-              child: const Icon(Icons.card_giftcard, size: 64),
+            placeholder,
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, AppColors.background],
+                stops: [0.5, 1],
+              ),
             ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  displayName,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (description != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ],
+          ),
+          Positioned(
+            left: 12,
+            right: 12,
+            bottom: 10,
+            child: Text(
+              displayName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
         ],

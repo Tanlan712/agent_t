@@ -146,6 +146,17 @@ void layoutTests() {
     expect(tops.toSet().length, 1);
   });
 
+  testWidgets('帳號列與每日商店標題之間有間距', (tester) async {
+    setWidth(tester, 1400);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+    await tester.pumpAndSettle();
+    final barBottom =
+        tester.getBottomLeft(find.ancestor(of: find.text('登入 Riot 以自動同步'), matching: find.byType(Card))).dy;
+    final headerTop = tester.getTopLeft(find.text('每日商店')).dy;
+    expect(headerTop - barBottom, greaterThanOrEqualTo(16));
+  });
+
   testWidgets('390 寬：每日 4 款各佔一列', (tester) async {
     setWidth(tester, 390);
     final h = await Harness.create(tester, shop: shop);

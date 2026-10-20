@@ -54,7 +54,8 @@ class MyShopPage extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 16),
           children: [
             const _RiotBar(),
-            if (matched.isNotEmpty)
+            const SizedBox(height: 24),
+            if (matched.isNotEmpty) ...[
               Card(
                 color: wishlistGold.withOpacity(0.2),
                 child: ListTile(
@@ -62,6 +63,8 @@ class MyShopPage extends StatelessWidget {
                   title: Text('今天有 ${matched.length} 個願望清單造型上架'),
                 ),
               ),
+              const SizedBox(height: 24),
+            ],
             _Section(
               title: '每日商店',
               status: shop.daily.isEmpty

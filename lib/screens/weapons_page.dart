@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../shell/app_shell.dart';
+import '../shell/responsive_grid.dart';
+import '../theme/app_theme.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
 class WeaponsPage extends StatefulWidget {
@@ -66,8 +68,9 @@ class _WeaponsPageState extends State<WeaponsPage> {
                     ],
                   ),
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
+              : ResponsiveGridView.builder(
+                  minTileWidth: 200,
+                  childAspectRatio: 1.4,
                   itemCount: _weapons.length,
                   itemBuilder: (context, index) {
                     final weapon = _weapons[index];
@@ -85,35 +88,52 @@ class _WeaponsPageState extends State<WeaponsPage> {
     final category = shopData?['category'] as String? ?? '未知';
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: displayIcon != null
-            ? Image.network(
-                displayIcon,
-                width: 60,
-                height: 60,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(Icons.track_changes, size: 40);
-                },
-              )
-            : const Icon(Icons.track_changes, size: 40),
-        title: Text(
-          displayName,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(category),
-        trailing: cost > 0
-            ? Chip(
-                label: Text(
-                  '$cost',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                backgroundColor: Colors.orange[100],
-              )
-            : const Chip(
-                label: Text('免費'),
-                backgroundColor: Colors.green,
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Center(
+                child: displayIcon != null
+                    ? Image.network(
+                        displayIcon,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(Icons.track_changes, size: 40),
+                      )
+                    : const Icon(Icons.track_changes, size: 40),
               ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Text(
+                  cost > 0 ? '\$$cost' : '免費',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              category,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: AppColors.muted, fontSize: 12),
+            ),
+          ],
+        ),
       ),
     );
   }

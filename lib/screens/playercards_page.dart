@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../shell/app_shell.dart';
+import '../shell/responsive_grid.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
 class PlayerCardsPage extends StatefulWidget {
@@ -66,14 +67,9 @@ class _PlayerCardsPageState extends State<PlayerCardsPage> {
                     ],
                   ),
                 )
-              : GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 1.5,
-                  ),
+              : ResponsiveGridView.builder(
+                  minTileWidth: 200,
+                  childAspectRatio: 0.6,
                   itemCount: _playerCards.length,
                   itemBuilder: (context, index) {
                     final card = _playerCards[index];

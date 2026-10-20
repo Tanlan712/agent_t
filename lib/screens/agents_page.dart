@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../shell/app_shell.dart';
+import '../shell/responsive_grid.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
 class AgentsPage extends StatefulWidget {
@@ -66,14 +67,9 @@ class _AgentsPageState extends State<AgentsPage> {
                     ],
                   ),
                 )
-              : GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 0.75,
-                  ),
+              : ResponsiveGridView.builder(
+                  minTileWidth: 140,
+                  childAspectRatio: 0.75,
                   itemCount: _agents.length,
                   itemBuilder: (context, index) {
                     final agent = _agents[index];
@@ -85,7 +81,6 @@ class _AgentsPageState extends State<AgentsPage> {
 
   Widget _buildAgentCard(Map<String, dynamic> agent) {
     final displayName = agent['displayName'] as String;
-    final description = agent['description'] as String;
     final role = agent['role'] as Map<String, dynamic>?;
     final displayIcon = agent['displayIcon'] as String?;
     final background = agent['background'] as String?;
