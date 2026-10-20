@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'models/match_models.dart';
 import 'screens/agents_page.dart';
 import 'screens/bundles_page.dart';
 import 'screens/gamemodes_page.dart';
@@ -7,6 +8,7 @@ import 'screens/maps_page.dart';
 import 'screens/match_detail_page.dart';
 import 'screens/match_history_page.dart';
 import 'screens/my_shop_page.dart';
+import 'screens/player_page.dart';
 import 'screens/playercards_page.dart';
 import 'screens/riot_login_page.dart';
 import 'screens/settings_page.dart';
@@ -53,10 +55,18 @@ Route<dynamic>? onGenerateAppRoute(RouteSettings settings) {
         builder: (_) => const SkinPickerPage(),
       );
     case '/matches/detail':
+      // 參數是自己紀錄的 matchId，或玩家頁帶入的 MatchDetail。
+      final args = settings.arguments;
       return MaterialPageRoute<void>(
         settings: settings,
-        builder: (_) =>
-            MatchDetailPage(matchId: settings.arguments as String? ?? ''),
+        builder: (_) => args is MatchDetail
+            ? MatchDetailPage(matchId: args.summary.matchId, detail: args)
+            : MatchDetailPage(matchId: args as String? ?? ''),
+      );
+    case '/players/detail':
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => PlayerPage(player: settings.arguments as PlayerRef),
       );
     case '/riot-login':
       return MaterialPageRoute<void>(

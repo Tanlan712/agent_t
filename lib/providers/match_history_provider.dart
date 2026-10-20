@@ -39,9 +39,31 @@ class MatchHistoryProvider with ChangeNotifier {
 
   final MatchDetailCache cache;
 
+  /// 要查看的玩家；null 表示自己（含牌位與 RR）。
+  final String? focusPuuid;
+  bool _disposed = false;
+
   MatchHistoryProvider(this._client, this._riot,
-      {MatchDetailCache? cache, this.pageSize = 10, this.maxConcurrent = 4})
+      {MatchDetailCache? cache,
+      this.focusPuuid,
+      this.pageSize = 10,
+      this.maxConcurrent = 4})
       : cache = cache ?? MatchDetailCache();
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
+
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
+  /// 自己的資料 401／403 都視為登入失效；查看他人時 403 只代表 Riot 不提供。
+  bool _isAuthError(RiotApiException e) =>
+      e.statusCode == 401 || (focusPuuid == null && e.statusCode == 403);
 
   List<MatchEntry> get entries => List.unmodifiable(_entries);
   bool get hasMore => _entries.length < _total;
@@ -67,13 +89,15 @@ class MatchHistoryProvider with ChangeNotifier {
     if (s == null) return;
     _loadedFor = s.puuid;
     await _guarded(gen, () async {
-      // 牌位只是頁首資訊：失敗（非登入過期）時留空，不阻擋列表。
-      final rank = await _optional(() => _client.fetchRank(s), null);
-      final rr =
-          await _optional(() => _client.fetchRrChanges(s, 20), <String, int>{});
-      if (gen != _generation) return;
-      _rank = rank;
-      _rr = rr;
+      if (focusPuuid == null) {
+        // 牌位只是頁首資訊：失敗（非登入過期）時留空，不阻擋列表。
+        final rank = await _optional(() => _client.fetchRank(s), null);
+        final rr = await _optional(
+            () => _client.fetchRrChanges(s, 20), <String, int>{});
+        if (gen != _generation) return;
+        _rank = rank;
+        _rr = rr;
+      }
       await _loadPage(s, 0, gen);
     });
   }
@@ -90,7 +114,7 @@ class MatchHistoryProvider with ChangeNotifier {
     try {
       return await call();
     } on RiotApiException catch (e) {
-      if (e.isAuthError) rethrow;
+      if (_isAuthError(e)) rethrow;
       debugPrint('牌位資料取得失敗：${e.message}');
       return fallback;
     }
@@ -113,7 +137,7 @@ class MatchHistoryProvider with ChangeNotifier {
       await body();
     } on RiotApiException catch (e) {
       if (gen == _generation) {
-        if (e.isAuthError) {
+        if (_isAuthError(e)) {
           _riot.logout();
           // 讓同一個帳號重新登入後，頁面能再次觸發載入。
           _loadedFor = null;
@@ -132,7 +156,8 @@ class MatchHistoryProvider with ChangeNotifier {
   }
 
   Future<void> _loadPage(RiotSession s, int start, int gen) async {
-    final (refs, total) = await _client.fetchHistory(s, start, pageSize);
+    final (refs, total) =
+        await _client.fetchHistory(s, start, pageSize, puuid: focusPuuid);
     if (gen != _generation) return;
     _total = total;
     final results = List<MatchEntry?>.filled(refs.length, null);
@@ -147,11 +172,12 @@ class MatchHistoryProvider with ChangeNotifier {
         final ref = refs[i];
         try {
           final json = await cache.json(s, ref.matchId, _client);
-          final d = mapMatchDetail(json, s.puuid, rrChange: _rr[ref.matchId]);
+          final d = mapMatchDetail(json, focusPuuid ?? s.puuid,
+              selfPuuid: s.puuid, rrChange: _rr[ref.matchId]);
           fetched[ref.matchId] = d;
           results[i] = MatchEntry(ref: ref, detail: d);
         } on RiotApiException catch (e) {
-          if (e.isAuthError) authError = e;
+          if (_isAuthError(e)) authError = e;
           results[i] = MatchEntry(ref: ref, failed: true);
         } catch (e) {
           debugPrint('對戰詳情解析失敗：${e.runtimeType}');

@@ -96,7 +96,7 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
             minTileWidth: 420,
             childAspectRatio: 3.4,
             children: [
-              for (final e in history.entries) _MatchCard(entry: e, ref: ref),
+              for (final e in history.entries) MatchCard(entry: e, ref: ref),
             ],
           ),
           if (history.hasMore)
@@ -167,11 +167,17 @@ class _RankHeader extends StatelessWidget {
   }
 }
 
-class _MatchCard extends StatelessWidget {
+/// 一場對戰的卡片；點擊進入單場詳情。[otherPlayer] 用於玩家頁：多顯示 ACS。
+class MatchCard extends StatelessWidget {
   final MatchEntry entry;
   final MatchReferenceProvider ref;
+  final bool otherPlayer;
 
-  const _MatchCard({required this.entry, required this.ref});
+  const MatchCard(
+      {super.key,
+      required this.entry,
+      required this.ref,
+      this.otherPlayer = false});
 
   @override
   Widget build(BuildContext context) {
@@ -192,8 +198,9 @@ class _MatchCard extends StatelessWidget {
       key: ValueKey('match-card-${s.matchId}'),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
+        // 玩家頁的場次不在自己的紀錄裡，直接把詳情傳給詳情頁。
         onTap: () => Navigator.pushNamed(context, '/matches/detail',
-            arguments: entry.ref.matchId),
+            arguments: otherPlayer ? d : entry.ref.matchId),
         child: Row(
           children: [
             Container(width: 6, color: resultColor(s.won)),
@@ -236,6 +243,10 @@ class _MatchCard extends StatelessWidget {
                     ],
                   ),
                   Text('${s.kills} / ${s.deaths} / ${s.assists}'),
+                  if (otherPlayer)
+                    Text('ACS ${s.acs}',
+                        style: const TextStyle(
+                            color: AppColors.muted, fontSize: 12)),
                   if (s.rrChange case final rr?)
                     Text(formatRr(rr),
                         style: TextStyle(

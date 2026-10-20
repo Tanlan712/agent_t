@@ -102,6 +102,7 @@ class MatchSummary {
   final int kills;
   final int deaths;
   final int assists;
+  final int acs;
   final int? rrChange;
 
   const MatchSummary({
@@ -119,6 +120,7 @@ class MatchSummary {
     required this.kills,
     required this.deaths,
     required this.assists,
+    this.acs = 0,
     this.rrChange,
   });
 }

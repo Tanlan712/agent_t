@@ -14,7 +14,10 @@ import 'match_history_page.dart' show formatMatchTime, resultColor, resultLabel;
 class MatchDetailPage extends StatefulWidget {
   final String matchId;
 
-  const MatchDetailPage({super.key, required this.matchId});
+  /// 從玩家頁打開時直接帶入（不在自己的紀錄裡）；null 時查自己的紀錄。
+  final MatchDetail? detail;
+
+  const MatchDetailPage({super.key, required this.matchId, this.detail});
 
   @override
   State<MatchDetailPage> createState() => _MatchDetailPageState();
@@ -30,7 +33,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     // 畫面先出現，下一個 frame 才開始排隊載入。
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final detail =
+      final detail = widget.detail ??
           context.read<MatchHistoryProvider>().detail(widget.matchId);
       if (detail == null) return;
       final me = detail.summary.myTeamId;
@@ -51,7 +54,8 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final detail = context.watch<MatchHistoryProvider>().detail(widget.matchId);
+    final detail = widget.detail ??
+        context.watch<MatchHistoryProvider>().detail(widget.matchId);
     final ref = context.watch<MatchReferenceProvider>();
     return Scaffold(
       appBar: AppBar(title: const Text('對戰詳情')),

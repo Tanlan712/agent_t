@@ -171,12 +171,13 @@ MockClient riotClient({
         }
         final status = otherHistoryStatus[p] ?? 200;
         if (status != 200) return json({'errorCode': 'x'}, status);
+        final start = int.parse(req.url.queryParameters['startIndex'] ?? '0');
         final end = int.parse(req.url.queryParameters['endIndex'] ?? '5');
         return json({
           'Subject': p,
           'Total': 30,
           'History': [
-            for (var i = 0; i < end; i++)
+            for (var i = start; i < end && i < 30; i++)
               {
                 'MatchID': i == 0 ? 'm1' : '$p-g$i',
                 'GameStartTime': 1760900000000 - i * 3600000,
