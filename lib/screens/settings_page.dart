@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:valorant_shop_tracker/services/riot_api_key_manager.dart';
+import 'package:valorant_shop_tracker/widgets/my_shop_settings_card.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -63,6 +64,8 @@ class _SettingsPageState extends State<SettingsPage> {
           _buildRenewalInstructionsSection(),
           const SizedBox(height: 24),
           _buildAlternativeApiSection(),
+          const SizedBox(height: 24),
+          const MyShopSettingsCard(),
         ],
       ),
     );
