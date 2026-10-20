@@ -378,29 +378,28 @@ void scoreboardTests() {
     await tester.pump();
     Tooltip rank(String id) =>
         tester.widget<Tooltip>(find.byKey(ValueKey('rank-$id')));
-    // 確認公開前不顯示任何牌位。
-    expect(rank('r1').message, '確認牌位是否公開中');
+    expect(rank('r1').message, '牌階未定');
     await drain(tester);
     expect(rank('r1').message, '超凡 1');
     expect(rank('mate').message, '超凡 1');
   });
 
-  testWidgets('他人牌位：確認公開才顯示，隱藏或無法確認都不顯示，自己永遠顯示', (tester) async {
+  testWidgets('使用者決定：他人牌位直接顯示比賽資料，有牌位的人不另外查 MMR', (tester) async {
     setWidth(tester, 2000);
-    final h = await detailHarness(tester,
-        otherMmrHidden: {'r2'}, otherMmrStatus: {'r3': 403});
+    final requests = <http.Request>[];
+    final h =
+        await detailHarness(tester, requests: requests, otherMmrHidden: {'r2'});
+    requests.clear();
     await tester.pumpWidget(h.wrap(home: const MatchDetailPage(matchId: 'm1')));
     await tester.pump();
     String rank(String id) =>
         tester.widget<Tooltip>(find.byKey(ValueKey('rank-$id'))).message!;
-    // 還沒查到 MMR：不先顯示比賽裡的牌位。
-    expect(rank('r1'), '確認牌位是否公開中');
+    expect(rank('r1'), '白金 1');
+    expect(rank('r2'), '白金 1');
     expect(rank(myPuuid), '鑽石 2');
     await drain(tester);
-    expect(rank('r1'), '白金 1');
-    expect(rank('r2'), '玩家已隱藏牌位');
-    expect(rank('r3'), '無法確認是否公開，不顯示');
-    expect(rank(myPuuid), '鑽石 2');
-    expect(find.byKey(const ValueKey('rank-hidden-r2')), findsOneWidget);
+    expect(rank('r2'), '白金 1');
+    expect(requests.where((r) => r.url.path.startsWith('/mmr/v1/players/r')),
+        isEmpty);
   });
 }

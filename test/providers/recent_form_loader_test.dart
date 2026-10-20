@@ -115,14 +115,14 @@ void main() {
       expect(env.requestsFor('/mmr/v1/players/r1'), 1);
     });
 
-    test('對方隱藏牌位時 status 為 hidden，不提供牌位', () async {
+    test('使用者決定：對方隱藏牌位也直接提供這季牌位', () async {
       env = await setup(otherMmrHidden: {'r1'});
       env.loader.request(['r1'],
           queue: 'unrated', seasonId: 'season-1', rankFor: {'r1'});
       await _settle(env.loader, ['r1'], queue: 'unrated');
       final r1 = env.loader.rank('r1', 'season-1');
-      expect(r1.status, RankStatus.hidden);
-      expect(r1.seasonTier, isNull);
+      expect(r1.status, RankStatus.visible);
+      expect(r1.seasonTier, 21);
     });
 
     test('MMR 403 時無法確認（unavailable），最近戰績照常完成', () async {

@@ -70,23 +70,23 @@ void main() {
     await leave(tester, h);
   });
 
-  testWidgets('隱藏名稱、隱藏等級、隱藏牌位都不顯示', (tester) async {
+  testWidgets('使用者決定：隱藏的名稱、等級、牌位也直接顯示，並標示隱藏名稱', (tester) async {
     setWidth(tester, 1400);
     final h = await harness(tester, otherMmrHidden: {'mate'});
     await tester.pumpWidget(h.wrap(home: const LivePage()));
     await drain(tester);
-    expect(inKey('live-name-ghost', '已隱藏名稱'), findsOneWidget);
-    expect(find.byKey(const ValueKey('live-level-shy')), findsNothing);
-    expect(inKey('live-level-mate', 'Lv 100'), findsOneWidget);
+    expect(inKey('live-name-ghost', 'N-ghost#TW1'), findsOneWidget);
+    expect(find.byKey(const ValueKey('live-incognito-ghost')), findsOneWidget);
+    expect(find.byKey(const ValueKey('live-incognito-mate')), findsNothing);
+    expect(inKey('live-level-shy', 'Lv 100'), findsOneWidget);
     String rank(String id) =>
         tester.widget<Tooltip>(find.byKey(ValueKey('live-rank-$id'))).message!;
-    expect(rank('mate'), '玩家已隱藏牌位');
+    expect(rank('mate'), '鑽石 2');
     expect(rank('shy'), '白金 1');
-    expect(rank(myPuuid), isNot('玩家已隱藏牌位'));
     await leave(tester, h);
   });
 
-  testWidgets('點隊友進入玩家頁，點自己到對戰紀錄，隱藏名稱的不能點', (tester) async {
+  testWidgets('點隊友（含隱藏名稱的）進入玩家頁，點自己到對戰紀錄', (tester) async {
     setWidth(tester, 1400);
     // 導頁會移除頁面；不載入玩家卡圖片，避免測試環境的網路圖片錯誤。
     final h = await harness(tester, party: partyJson(cards: false));
@@ -95,7 +95,9 @@ void main() {
     await drain(tester);
     await tester.tap(find.byKey(const ValueKey('live-member-ghost')));
     await tester.pumpAndSettle();
-    expect(find.textContaining('route:'), findsNothing);
+    expect(find.text('route:/players/detail ghost'), findsOneWidget);
+    tester.state<NavigatorState>(find.byType(Navigator)).pop();
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('live-member-mate')));
     await tester.pumpAndSettle();
     expect(find.text('route:/players/detail mate'), findsOneWidget);
@@ -146,7 +148,7 @@ void main() {
     await leave(tester, h);
   });
 
-  testWidgets('自己的等級永遠顯示，即使開了隱藏等級', (tester) async {
+  testWidgets('開了隱藏等級也顯示等級（自己和隊友）', (tester) async {
     setWidth(tester, 1400);
     final party = partyJson();
     for (final m in (party['Members'] as List).cast<Map<String, dynamic>>()) {
@@ -156,7 +158,8 @@ void main() {
     await tester.pumpWidget(h.wrap(home: const LivePage()));
     await drain(tester);
     expect(inKey('live-level-$myPuuid', 'Lv 100'), findsOneWidget);
-    expect(find.byKey(const ValueKey('live-level-mate')), findsNothing);
+    // 使用者決定：他人隱藏等級也照樣顯示。
+    expect(inKey('live-level-mate', 'Lv 100'), findsOneWidget);
     await leave(tester, h);
   });
 }

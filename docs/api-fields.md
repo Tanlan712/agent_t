@@ -111,7 +111,7 @@
 ### `GET /mmr/v1/players/{puuid}` 🧩
 - `LatestCompetitiveUpdate{MatchID, TierAfterUpdate, RankedRatingAfterUpdate}`：自己的頁首牌位用這個 ✅。
 - `QueueSkills.competitive.SeasonalInfoBySeasonID[seasonId]{SeasonID, CompetitiveTier, RankedRating, NumberOfWins}`：他人的這季牌位用這個 ✅ 2026-10-21（他人可以查詢）。
-- `IsActRankBadgeHidden` ✅ 2026-10-21：實測有這個欄位，隱藏牌位的玩家為 true，App 依此不顯示他的牌位 🧩。
+- `IsActRankBadgeHidden` ✅ 2026-10-21：實測有這個欄位，隱藏牌位的玩家為 true。使用者決定忽略這個欄位，照樣顯示牌位。
 - `IsLeaderboardAnonymized` 📄：尚未實測。
 
 ### `PUT /name-service/v2/players`（body：puuid 陣列）✅ 🧩
@@ -130,8 +130,8 @@
   - `CheatData`：只記錄欄位名稱，**不讀取、不使用**。
 - `Members[]`：`Subject, CompetitiveTier, PlayerIdentity, SeasonalBadgeInfo, IsOwner, QueueEligibleRemainingAccountLevels, Pings, IsReady, IsModerator, UseBroadcastHUD, PlatformType, PreferredAgentInfo, PremierPrestige, JoinedAt`
   - `PlayerIdentity`：`Subject, PlayerCardID, PlayerTitleID, AccountLevel, PreferredLevelBorderID, Incognito, HideAccountLevel`
-    - `Incognito`：成員隱藏名稱。顯示「已隱藏名稱」，不查名稱。
-    - `HideAccountLevel`：成員隱藏等級，不顯示等級。這個開關也會出現在自己的資料上；依規格，自己的等級仍然要顯示。
+    - `Incognito`：成員隱藏名稱。使用者決定照樣查詢並顯示名稱，只加上「隱藏名稱」標籤。
+    - `HideAccountLevel`：成員隱藏等級。使用者決定照樣顯示（自己的資料上也會出現這個開關）。
 
 ### `GET /pregame/v1/players/{puuid}`、`GET /core-game/v1/players/{puuid}` ✅ 2026-10-21
 - 不在該階段時回 404：`{httpStatus, errorCode, message}`。

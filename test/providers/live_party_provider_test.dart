@@ -5,8 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:valorant_shop_tracker/providers/live_party_provider.dart';
-import 'package:valorant_shop_tracker/providers/recent_form_loader.dart'
-    show RankStatus;
 import 'package:valorant_shop_tracker/providers/riot_provider.dart';
 import 'package:valorant_shop_tracker/services/live_client.dart';
 import 'package:valorant_shop_tracker/services/match_client.dart';
@@ -78,36 +76,28 @@ void main() {
     expect(p.name('mate'), 'N-mate#TW1');
   });
 
-  test('隱藏名稱的成員不送去 name-service，也沒有名稱', () async {
+  test('使用者決定（2026-10-21）：隱藏名稱的成員也查名稱並顯示', () async {
     final (p, _) = await setup();
     await p.refresh();
-    expect(p.name('ghost'), isNull);
+    expect(p.name('ghost'), 'N-ghost#TW1');
     final asked = [
       for (final r in where('/name-service/'))
         ...(jsonDecode(r.body) as List).cast<String>(),
     ];
-    expect(asked, isNot(contains('ghost')));
+    expect(asked, containsAll(['mate', 'ghost', 'shy']));
     expect(asked, isNot(contains(myPuuid)));
-    expect(asked, contains('mate'));
   });
 
-  test('他人牌位確認公開才給；隱藏、查詢失敗都不給；自己不查', () async {
-    final (p, _) =
-        await setup(otherMmrHidden: {'shy'}, otherMmrStatus: {'ghost': 403});
+  test('牌位直接用隊伍資料，不查任何人的 MMR', () async {
+    final (p, _) = await setup(otherMmrHidden: {'shy'});
     await p.refresh();
-    expect(p.rankStatus('mate'), RankStatus.visible);
-    expect(p.rankStatus('shy'), RankStatus.hidden);
-    expect(p.rankStatus('ghost'), RankStatus.unavailable);
-    expect(p.rankStatus(myPuuid), RankStatus.visible);
-    expect(where('/mmr/v1/players/puuid-1'), isEmpty);
+    expect(where('/mmr/v1/players/'), isEmpty);
   });
 
-  test('名稱與公開的牌位只查一次；查詢失敗的下一輪再試', () async {
-    final (p, _) = await setup(otherMmrStatus: {'ghost': 403});
+  test('名稱只查一次', () async {
+    final (p, _) = await setup();
     await p.refresh();
     await p.refresh();
-    expect(where('/mmr/v1/players/mate').length, 1);
-    expect(where('/mmr/v1/players/ghost').length, 2);
     expect(where('/name-service/').length, 1);
   });
 

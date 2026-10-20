@@ -211,9 +211,8 @@ class RecentFormLoader with ChangeNotifier {
     if (_ranks.containsKey(k)) return;
     try {
       final mmr = await _retry(() => _client.fetchMmrJson(s, puuid));
-      _ranks[k] = rankHidden(mmr)
-          ? const PlayerRank(RankStatus.hidden)
-          : PlayerRank(RankStatus.visible, seasonTier(mmr, season));
+      // 使用者決定（2026-10-21）：隱藏牌位的玩家也直接顯示。
+      _ranks[k] = PlayerRank(RankStatus.visible, seasonTier(mmr, season));
     } on RiotApiException catch (e) {
       if (e.statusCode == 401) rethrow;
       // 無法確認對方是否公開：一律不顯示。

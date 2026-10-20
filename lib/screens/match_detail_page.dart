@@ -46,12 +46,11 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
           ],
           owner: this,
           queue: detail.summary.queueId,
-          // 他人的牌位要先確認沒有隱藏才顯示（開發者政策：不得去匿名化），
-          // 一般模式場次也靠這裡取得這季牌位。
+          // 一般、超速衝點等場次沒有牌位資料，另外查這季的牌位。
           seasonId: detail.summary.seasonId,
           rankFor: {
             for (final p in detail.teams.values.expand((t) => t))
-              if (!p.isMe) p.puuid,
+              if (p.tier == 0) p.puuid,
           });
     });
   }
@@ -409,8 +408,8 @@ class _FormCell extends StatelessWidget {
   }
 }
 
-/// 牌位小圖示。自己永遠顯示；他人要確認公開才顯示（隱藏、無法確認、
-/// 確認中都不顯示，連比賽裡的牌位也不先顯示）。
+/// 牌位小圖示：這場有牌位就用這場的，沒有時用背景查到的這季牌位。
+/// 使用者決定（2026-10-21）：隱藏牌位的玩家也直接顯示。
 class _RankIcon extends StatelessWidget {
   final PlayerLine player;
   final String seasonId;
@@ -422,7 +421,15 @@ class _RankIcon extends StatelessWidget {
       required this.seasonId,
       required this.ref});
 
-  Widget _tier(int tier) {
+  @override
+  Widget build(BuildContext context) {
+    final tier = player.tier > 0
+        ? player.tier
+        : (context
+                .watch<RecentFormLoader>()
+                .rank(player.puuid, seasonId)
+                .seasonTier ??
+            0);
     final item = ref.tier(tier);
     return Tooltip(
       key: ValueKey('rank-${player.puuid}'),
@@ -430,34 +437,5 @@ class _RankIcon extends StatelessWidget {
       child:
           SizedBox(width: 24, height: 24, child: SkinIcon(url: item.iconUrl)),
     );
-  }
-
-  Widget _masked(String message, IconData? icon, String keyName) => Tooltip(
-        key: ValueKey('rank-${player.puuid}'),
-        message: message,
-        child: SizedBox(
-          key: ValueKey('$keyName-${player.puuid}'),
-          width: 24,
-          height: 24,
-          child: icon == null
-              ? null
-              : Icon(icon, size: 18, color: AppColors.muted),
-        ),
-      );
-
-  @override
-  Widget build(BuildContext context) {
-    if (player.isMe) return _tier(player.tier);
-    final r = context.watch<RecentFormLoader>().rank(player.puuid, seasonId);
-    switch (r.status) {
-      case RankStatus.pending:
-        return _masked('確認牌位是否公開中', null, 'rank-pending');
-      case RankStatus.hidden:
-        return _masked('玩家已隱藏牌位', Icons.visibility_off, 'rank-hidden');
-      case RankStatus.unavailable:
-        return _masked('無法確認是否公開，不顯示', Icons.remove, 'rank-unknown');
-      case RankStatus.visible:
-        return _tier(player.tier > 0 ? player.tier : (r.seasonTier ?? 0));
-    }
   }
 }

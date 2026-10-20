@@ -7,7 +7,6 @@ import '../models/live_models.dart';
 import '../models/match_models.dart';
 import '../providers/live_party_provider.dart';
 import '../providers/match_reference_provider.dart';
-import '../providers/recent_form_loader.dart' show RankStatus;
 import '../providers/riot_provider.dart';
 import '../services/live_client.dart';
 import '../services/match_client.dart';
@@ -115,7 +114,7 @@ class _LivePageState extends State<LivePage> {
         ),
         const SizedBox(height: 24),
         const Center(
-          child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊；隱藏名稱、等級或牌位的成員不會顯示。',
+          child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊（包含隱藏名稱的成員）。',
               style: TextStyle(color: AppColors.muted, fontSize: 12)),
         ),
       ],
@@ -178,44 +177,23 @@ class _MemberCard extends StatelessWidget {
   }
 
   Widget _rank() {
-    final key = ValueKey('live-rank-${member.puuid}');
-    switch (live.rankStatus(member.puuid)) {
-      case RankStatus.visible:
-        final tier = ref.tier(member.tier);
-        return Tooltip(
-            key: key,
-            message: tier.name,
-            child: SizedBox(
-                width: 28, height: 28, child: SkinIcon(url: tier.iconUrl)));
-      case RankStatus.hidden:
-        return Tooltip(
-            key: key,
-            message: '玩家已隱藏牌位',
-            child: const Icon(Icons.visibility_off,
-                size: 20, color: AppColors.muted));
-      case RankStatus.unavailable:
-        return Tooltip(
-            key: key,
-            message: '無法確認是否公開，不顯示',
-            child: const Icon(Icons.remove, size: 20, color: AppColors.muted));
-      case RankStatus.pending:
-        return Tooltip(
-            key: key,
-            message: '確認牌位是否公開中',
-            child: const SizedBox(width: 28, height: 28));
-    }
+    final tier = ref.tier(member.tier);
+    return Tooltip(
+        key: ValueKey('live-rank-${member.puuid}'),
+        message: tier.name,
+        child: SizedBox(
+            width: 28, height: 28, child: SkinIcon(url: tier.iconUrl)));
   }
 
   @override
   Widget build(BuildContext context) {
-    final name = member.incognito ? '已隱藏名稱' : (live.name(member.puuid) ?? '…');
+    final name = live.name(member.puuid) ?? '…';
     return Card(
       key: ValueKey('live-member-${member.puuid}'),
       clipBehavior: Clip.antiAlias,
       color: member.isMe ? AppColors.surfaceHigh : null,
       child: InkWell(
-        // 隱藏名稱的成員不能點（AGENTS.md：不得去匿名化）。
-        onTap: member.incognito ? null : () => _open(context),
+        onTap: () => _open(context),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
@@ -236,12 +214,17 @@ class _MemberCard extends StatelessWidget {
                           child: Text(name,
                               key: ValueKey('live-name-${member.puuid}'),
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: member.incognito
-                                      ? AppColors.muted
-                                      : null)),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
                         ),
+                        // 使用者決定：隱藏名稱的成員照樣顯示名稱，只加上標籤。
+                        if (member.incognito) ...[
+                          const SizedBox(width: 6),
+                          Text('隱藏名稱',
+                              key: ValueKey('live-incognito-${member.puuid}'),
+                              style: const TextStyle(
+                                  color: AppColors.muted, fontSize: 11)),
+                        ],
                         if (member.isOwner) ...[
                           const SizedBox(width: 6),
                           Icon(Icons.star,
@@ -254,8 +237,7 @@ class _MemberCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        // 自己的資料永遠顯示；他人隱藏等級時不顯示。
-                        if (member.isMe || !member.hideLevel) ...[
+                        ...[
                           Text('Lv ${member.level}',
                               key: ValueKey('live-level-${member.puuid}'),
                               style: const TextStyle(
