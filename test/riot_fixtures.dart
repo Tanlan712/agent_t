@@ -74,11 +74,18 @@ MockClient riotClient({
   int storefrontV3Status = 200,
   int storefrontV2Status = 200,
   int walletStatus = 200,
+  bool corsBlocked = false,
 }) {
   return MockClient((req) async {
     requests?.add(req);
     final host = req.url.host;
     final path = req.url.path;
+    // 瀏覽器實測：userinfo 與 riot-geo 的實際回應沒有 CORS 標頭，會被擋下。
+    if (corsBlocked &&
+        ((host == 'auth.riotgames.com' && path == '/userinfo') ||
+            host == 'riot-geo.pas.si.riotgames.com')) {
+      throw http.ClientException('XMLHttpRequest error.');
+    }
     http.Response json(Object body, [int status = 200]) =>
         http.Response.bytes(utf8.encode(jsonEncode(body)), status,
             headers: {'content-type': 'application/json'});
@@ -136,5 +143,17 @@ MockClient riotClient({
   });
 }
 
-const fakeRedirect = 'https://playvalorant.com/opt_in'
-    '#access_token=fake-access&id_token=fake-id&expires_in=3600';
+/// 測試用的假 JWT（簽章是假的；App 只解碼 payload，不驗證簽章）。
+String fakeJwt(Map<String, dynamic> payload) {
+  String part(Object o) =>
+      base64Url.encode(utf8.encode(jsonEncode(o))).replaceAll('=', '');
+  return '${part({'alg': 'RS256'})}.${part(payload)}.fake-signature';
+}
+
+final fakeAccessToken = fakeJwt({'sub': 'puuid-1'});
+final fakeIdToken = fakeJwt({
+  'sub': 'puuid-1',
+  'acct': {'game_name': 'Tester', 'tag_line': 'TW1'},
+});
+final fakeRedirect = 'https://playvalorant.com/opt_in'
+    '#access_token=$fakeAccessToken&id_token=$fakeIdToken&expires_in=3600';

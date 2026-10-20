@@ -39,7 +39,17 @@ class RiotClient {
 
   RiotClient({http.Client? client}) : _client = client ?? http.Client();
 
-  Future<RiotSession> createSession(RiotTokens tokens, DateTime now) async {
+  /// 瀏覽器實測：userinfo 與 riot-geo 的實際回應沒有 CORS 標頭會被擋下，
+  /// 所以 puuid 從 access_token（JWT）解出，名稱優先取 id_token 的 acct，
+  /// 區域偵測失敗時使用 [fallbackShard]。
+  Future<RiotSession> createSession(
+    RiotTokens tokens,
+    DateTime now, {
+    String fallbackShard = 'ap',
+  }) async {
+    final access = _jwtPayload(tokens.accessToken);
+    final puuid = access?['sub'] as String?;
+    if (puuid == null) throw RiotApiException(null, '登入資訊格式不符');
     final bearer = {'Authorization': 'Bearer ${tokens.accessToken}'};
 
     final ent = await _json(
@@ -49,30 +59,32 @@ class RiotClient {
               headers: {...bearer, 'Content-Type': 'application/json'},
               body: '{}',
             ));
-    final user = await _json(
-        '取得帳號資訊',
-        () => _client.get(Uri.https('auth.riotgames.com', '/userinfo'),
-            headers: bearer));
-    final geo = await _json(
-        '取得伺服器區域',
-        () => _client.put(
-              Uri.https(
-                  'riot-geo.pas.si.riotgames.com', '/pas/v1/product/valorant'),
-              headers: {...bearer, 'Content-Type': 'application/json'},
-              body: jsonEncode({'id_token': tokens.idToken}),
-            ));
+
+    var acct = _jwtPayload(tokens.idToken)?['acct'] as Map<String, dynamic>?;
+    if (acct == null) {
+      final user = await _optionalJson(() => _client
+          .get(Uri.https('auth.riotgames.com', '/userinfo'), headers: bearer));
+      acct = user?['acct'] as Map<String, dynamic>?;
+    }
+    final geo = await _optionalJson(() => _client.put(
+          Uri.https(
+              'riot-geo.pas.si.riotgames.com', '/pas/v1/product/valorant'),
+          headers: {...bearer, 'Content-Type': 'application/json'},
+          body: jsonEncode({'id_token': tokens.idToken}),
+        ));
     final version = await _json('取得遊戲版本',
         () => _client.get(Uri.https('valorant-api.com', '/v1/version')));
 
-    final acct = user['acct'] as Map<String, dynamic>? ?? const {};
     return RiotSession(
       accessToken: tokens.accessToken,
       idToken: tokens.idToken,
       entitlementsToken: ent['entitlements_token'] as String,
-      puuid: user['sub'] as String,
-      gameName: acct['game_name'] as String? ?? '',
-      tagLine: acct['tag_line'] as String? ?? '',
-      shard: (geo['affinities'] as Map<String, dynamic>)['live'] as String,
+      puuid: puuid,
+      gameName: acct?['game_name'] as String? ?? '',
+      tagLine: acct?['tag_line'] as String? ?? '',
+      shard:
+          (geo?['affinities'] as Map<String, dynamic>?)?['live'] as String? ??
+              fallbackShard,
       clientVersion: (version['data']
           as Map<String, dynamic>)['riotClientVersion'] as String,
       expiresAt: now.add(Duration(seconds: tokens.expiresIn)),
@@ -120,6 +132,28 @@ class RiotClient {
       for (final e in (json['Entitlements'] as List<dynamic>? ?? const []))
         (e as Map<String, dynamic>)['ItemID'] as String,
     };
+  }
+
+  /// 解碼 JWT 的 payload（不驗證簽章，只讀取欄位）；格式不符回傳 null。
+  static Map<String, dynamic>? _jwtPayload(String token) {
+    final parts = token.split('.');
+    if (parts.length != 3) return null;
+    try {
+      final json = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+      return jsonDecode(json) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 失敗也不影響登入的請求（例如被瀏覽器 CORS 擋下）；失敗回傳 null。
+  Future<Map<String, dynamic>?> _optionalJson(
+      Future<http.Response> Function() send) async {
+    try {
+      return await _json('', send);
+    } on RiotApiException {
+      return null;
+    }
   }
 
   Uri _pd(RiotSession s, String path) =>

@@ -7,6 +7,7 @@ import '../app_harness.dart';
 import '../riot_fixtures.dart';
 
 void main() {
+  group('區域選單', regionTests);
   testWidgets('顯示免責聲明與操作按鈕', (tester) async {
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(home: const RiotLoginPage()));
@@ -39,5 +40,16 @@ void main() {
     expect(h.riot.isLoggedIn, isTrue);
     expect(find.text('已登入：Tester#TW1（ap）'), findsOneWidget);
     expect(find.text('登出'), findsOneWidget);
+  });
+}
+
+void regionTests() {
+  testWidgets('區域選單預設亞太，可切換', (tester) async {
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(home: const RiotLoginPage()));
+    expect(find.text('亞太（ap）'), findsOneWidget);
+    await tester.tap(find.text('亞太（ap）'));
+    await tester.pumpAndSettle();
+    expect(find.text('韓國（kr）').last, findsOneWidget);
   });
 }

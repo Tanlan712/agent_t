@@ -34,7 +34,7 @@ class RiotProvider with ChangeNotifier {
   bool get isBusy => _isBusy;
 
   /// 成功回傳 null，否則回傳可顯示的錯誤訊息。
-  Future<String?> login(String pastedUrl) async {
+  Future<String?> login(String pastedUrl, {String fallbackShard = 'ap'}) async {
     final tokens = parseRiotRedirect(pastedUrl);
     if (tokens == null) return badUrlMessage;
     // 換帳號時不能留著前一個帳號的錢包與已擁有資料。
@@ -42,7 +42,8 @@ class RiotProvider with ChangeNotifier {
     _owned = {};
     return _run(
       () async {
-        _session = await _client.createSession(tokens, _now());
+        _session = await _client.createSession(tokens, _now(),
+            fallbackShard: fallbackShard);
       },
       failurePrefix: '登入失敗',
       authErrorMessage: invalidLoginMessage,

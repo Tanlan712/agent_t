@@ -17,6 +17,14 @@ class RiotLoginPage extends StatefulWidget {
 class _RiotLoginPageState extends State<RiotLoginPage> {
   final _controller = TextEditingController();
   String? _error;
+  String _shard = 'ap';
+
+  static const _shards = {
+    'ap': '亞太（ap）',
+    'kr': '韓國（kr）',
+    'na': '北美／拉美／巴西（na）',
+    'eu': '歐洲（eu）',
+  };
 
   @override
   void dispose() {
@@ -40,7 +48,9 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
   }
 
   Future<void> _submit() async {
-    final error = await context.read<RiotProvider>().login(_controller.text);
+    final error = await context
+        .read<RiotProvider>()
+        .login(_controller.text, fallbackShard: _shard);
     if (!mounted) return;
     setState(() => _error = error);
     if (error == null) _controller.clear();
@@ -107,6 +117,18 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
                 errorMaxLines: 3,
               ),
               maxLines: 2,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: _shard,
+              decoration: const InputDecoration(
+                labelText: '伺服器區域（自動偵測失敗時使用）',
+              ),
+              items: [
+                for (final e in _shards.entries)
+                  DropdownMenuItem(value: e.key, child: Text(e.value)),
+              ],
+              onChanged: (v) => setState(() => _shard = v ?? 'ap'),
             ),
             const SizedBox(height: 12),
             FilledButton(

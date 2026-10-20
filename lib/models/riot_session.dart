@@ -22,7 +22,7 @@ class RiotSession {
     required this.expiresAt,
   });
 
-  String get displayName => '$gameName#$tagLine';
+  String get displayName => gameName.isEmpty ? '已登入玩家' : '$gameName#$tagLine';
 
   @override
   String toString() => 'RiotSession($displayName, $shard)';

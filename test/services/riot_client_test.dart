@@ -6,6 +6,7 @@ import 'package:valorant_shop_tracker/services/riot_client.dart';
 import '../riot_fixtures.dart';
 
 void main() {
+  group('CORS 限制', corsTests);
   final now = DateTime(2026, 10, 20, 10);
   final tokens = parseRiotRedirect(fakeRedirect)!;
 
@@ -28,7 +29,7 @@ void main() {
     expect(store.method, 'POST');
     expect(store.url.toString(),
         'https://pd.ap.a.pvp.net/store/v3/storefront/puuid-1');
-    expect(store.headers['Authorization'], 'Bearer fake-access');
+    expect(store.headers['Authorization'], 'Bearer $fakeAccessToken');
     expect(store.headers['X-Riot-Entitlements-JWT'], 'fake-ent');
     expect(store.headers['X-Riot-ClientVersion'],
         'release-13.08-shipping-19-5698904');
@@ -72,8 +73,43 @@ void main() {
     } on RiotApiException catch (e) {
       expect(e.statusCode, 401);
       expect(e.isAuthError, isTrue);
-      expect(e.message.contains('fake-access'), isFalse);
-      expect(e.toString().contains('fake-access'), isFalse);
+      expect(e.message.contains(fakeAccessToken), isFalse);
+      expect(e.toString().contains(fakeAccessToken), isFalse);
     }
+  });
+}
+
+void corsTests() {
+  final now = DateTime(2026, 10, 20, 10);
+
+  test('userinfo 與 riot-geo 被 CORS 擋下時：puuid 取自 JWT、名稱取自 id_token、區域用預設 ap', () async {
+    final tokens = parseRiotRedirect(fakeRedirect)!;
+    final s = await RiotClient(client: riotClient(corsBlocked: true)).createSession(tokens, now);
+    expect(s.puuid, 'puuid-1');
+    expect(s.displayName, 'Tester#TW1');
+    expect(s.shard, 'ap');
+  });
+
+  test('區域偵測失敗時使用指定的備用區域', () async {
+    final requests = <http.Request>[];
+    final c = RiotClient(client: riotClient(corsBlocked: true, requests: requests));
+    final s = await c.createSession(parseRiotRedirect(fakeRedirect)!, now, fallbackShard: 'kr');
+    expect(s.shard, 'kr');
+  });
+
+  test('id_token 沒有名稱且 userinfo 被擋時仍可登入', () async {
+    final url = 'https://playvalorant.com/opt_in#access_token=$fakeAccessToken'
+        '&id_token=${fakeJwt({'sub': 'puuid-1'})}&expires_in=3600';
+    final s = await RiotClient(client: riotClient(corsBlocked: true))
+        .createSession(parseRiotRedirect(url)!, now);
+    expect(s.puuid, 'puuid-1');
+    expect(s.displayName, '已登入玩家');
+  });
+
+  test('access_token 不是 JWT 時丟出格式錯誤', () async {
+    final tokens = parseRiotRedirect(
+        'https://x/#access_token=not-a-jwt&id_token=$fakeIdToken')!;
+    expect(RiotClient(client: riotClient(corsBlocked: true)).createSession(tokens, now),
+        throwsA(isA<RiotApiException>().having((e) => e.message, 'message', '登入資訊格式不符')));
   });
 }

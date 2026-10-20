@@ -233,3 +233,11 @@ lib/
 ### 10.9 已知限制
 - token 大約 1 小時後失效，重新整理頁面也要重新登入。
 - 依賴 Riot 未公開的 API，可能隨時失效。
+
+### 10.10 實測修正（2026-10-20）
+- 瀏覽器實測發現：`auth.riotgames.com/userinfo` 與 `riot-geo.pas.si.riotgames.com` 只有預檢（OPTIONS）回應帶 CORS 標頭，**實際回應沒有**，所以會被瀏覽器擋下。`entitlements` 和 `pd.*` 端點可以正常呼叫。
+- 因此改成：
+  - puuid 從 access_token（JWT）的 `sub` 解出，不呼叫 userinfo。
+  - 玩家名稱優先取 id_token 的 `acct.game_name`、`acct.tag_line`；讀不到時試 userinfo，失敗不影響登入，名稱顯示「已登入玩家」。
+  - 伺服器區域先試 riot-geo；失敗時使用登入頁選擇的區域（預設 `ap`）。
+- App 只解碼 JWT 的 payload 來讀欄位，不驗證簽章（驗證由 Riot 的伺服器負責）。

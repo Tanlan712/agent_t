@@ -15,6 +15,7 @@ import '../fixtures.dart';
 import '../riot_fixtures.dart';
 
 void main() {
+  group('區域', shardTests);
   group('審查修正', reviewFixTests);
   final now = DateTime(2026, 10, 20, 10);
   late ShopProvider shop;
@@ -143,5 +144,14 @@ void reviewFixTests() {
         now: () => now);
     expect(await p.login(fakeRedirect), RiotProvider.invalidLoginMessage);
     expect(p.isLoggedIn, isFalse);
+  });
+}
+
+void shardTests() {
+  test('login 傳入的區域在偵測失敗時生效', () async {
+    final p = RiotProvider(RiotClient(client: riotClient(corsBlocked: true)),
+        now: () => DateTime(2026, 10, 20, 10));
+    expect(await p.login(fakeRedirect, fallbackShard: 'kr'), isNull);
+    expect(p.session!.shard, 'kr');
   });
 }
