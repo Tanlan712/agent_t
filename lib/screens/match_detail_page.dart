@@ -7,6 +7,7 @@ import '../providers/match_history_provider.dart';
 import '../providers/match_reference_provider.dart';
 import '../providers/recent_form_loader.dart';
 import '../theme/app_theme.dart';
+import '../widgets/recent_form_cell.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
 import 'match_history_page.dart' show formatMatchTime, resultColor, resultLabel;
 
@@ -309,7 +310,7 @@ class _TeamTable extends StatelessWidget {
                           DataCell(Text(p.headshotPercent == null
                               ? '—'
                               : '${p.headshotPercent!.round()}%')),
-                          DataCell(_FormCell(
+                          DataCell(RecentFormCell(
                               key: ValueKey('form-${p.puuid}'),
                               puuid: p.puuid,
                               queue: queueId)),
@@ -354,56 +355,6 @@ class _MvpTag extends StatelessWidget {
       ),
       child: Text(kind == MvpKind.match ? '全場 MVP' : '隊伍 MVP',
           style: TextStyle(color: color, fontSize: 11)),
-    );
-  }
-}
-
-/// 最近 5 場：勝敗顏色的小方塊（寫 ACS）與平均 ACS。
-class _FormCell extends StatelessWidget {
-  final String puuid;
-  final String queue;
-
-  const _FormCell({super.key, required this.puuid, required this.queue});
-
-  @override
-  Widget build(BuildContext context) {
-    final loader = context.watch<RecentFormLoader>();
-    const muted = TextStyle(color: AppColors.muted);
-    switch (loader.status(puuid, queue: queue)) {
-      case FormStatus.pending:
-      case FormStatus.loading:
-        return const Text('…', style: muted);
-      case FormStatus.failed:
-        return const Text('—', style: muted);
-      case FormStatus.done:
-        break;
-    }
-    final form = loader.form(puuid, queue: queue);
-    if (form == null || form.games.isEmpty) {
-      return const Text('—', style: muted);
-    }
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < form.games.length; i++)
-          Container(
-            key: ValueKey('form-$puuid-$i'),
-            width: 30,
-            margin: const EdgeInsets.only(right: 3),
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            decoration: BoxDecoration(
-              color: resultColor(form.games[i].won).withOpacity(0.25),
-              border: Border(
-                  bottom: BorderSide(
-                      color: resultColor(form.games[i].won), width: 2)),
-            ),
-            child: Text('${form.games[i].acs}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 11)),
-          ),
-        const SizedBox(width: 6),
-        Text('平均 ${form.avgAcs!.round()}', style: muted),
-      ],
     );
   }
 }
