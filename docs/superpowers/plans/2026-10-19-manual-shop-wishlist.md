@@ -588,3 +588,141 @@ testWidgets('首頁顯示瀏覽分類', (tester) async {
   commit 訊息為 `docs: update progress for web manual shop + wishlist`。
 - [ ] **Step 4：回報**
   列出修改內容、驗證結果和已知限制。
+
+---
+
+## 第 3 版：Riot 登入與連動（2026-10-20 核准）
+
+執行順序：W2 → W3 → W4 → W5 → R1 → R2 → R3 → W6 → 最終審查，**中間不停頓**（使用者要求一次完成）。規格見 spec 第 10 節。
+
+### 第 3 版 Global Constraints
+- 新增套件 `url_launcher: ^6.3.1`（已用 dry-run 確認相容）。
+- Riot token 只存在記憶體，不寫進 shared_preferences，不印到 log，也不放進錯誤訊息。
+- 測試裡的 token 一律使用假字串，例如 `'fake-access'`。
+- 實測登入由使用者自己操作，Claude 不讀取、不輸出 token 或密碼。
+
+### 第 3 版 Review Focus
+7. **貼上不完整或錯誤的網址**（沒有 `#`、少了 `access_token`、貼成登入頁本身的網址）：顯示提示，不送出任何請求。（R1）
+8. **同步中途 token 過期**（storefront 回應 401）：清除 session，原本的商店資料不受影響。（R2）
+9. **商店回傳的 ItemID 對不到目錄**：顯示「未知造型」，不崩潰。（R1）
+
+---
+
+### Task R1：目錄等級 uuid、登入網址解析、商店轉換
+
+**Files：**
+- Modify：`lib/models/skin_info.dart`（加上 `String? levelUuid`）、`lib/services/catalog_api.dart`（填入 `levels[0].uuid`）、`lib/storage/catalog_cache.dart`（key 改為 `catalog_v2`）、`lib/providers/catalog_provider.dart`（加上 `SkinInfo? skinByItemId(String id)`，同時比對造型 uuid 和等級 uuid）
+- Create：`lib/services/riot_auth.dart`、`lib/models/riot_session.dart`、`lib/logic/storefront_mapper.dart`
+- Modify：`lib/providers/shop_provider.dart`（加上 `Future<void> replaceShop(CurrentShop shop)`，不做筆數驗證）
+- Test：`test/services/riot_auth_test.dart`、`test/logic/storefront_mapper_test.dart`，以及更新 models、catalog_api、providers 測試
+
+**Interfaces：**
+- `const String riotLoginUrl`：spec 10.3 的網址。
+- `class RiotTokens { final String accessToken; final String idToken; final int expiresIn; }`
+- `RiotTokens? parseRiotRedirect(String url)`：解析 `#` 之後的參數；`access_token` 或 `id_token` 缺任何一個就回傳 null；`expires_in` 預設 3600。
+- `class RiotSession { accessToken, idToken, entitlementsToken, puuid, gameName, tagLine, shard, clientVersion, DateTime expiresAt; String get displayName => '$gameName#$tagLine'; }`
+- `class RiotWallet { final int vp; final int radianite; final int kingdom; }`
+- `CurrentShop mapStorefront(Map<String, dynamic> json, String Function(String itemId) resolveSkinUuid, DateTime now)`
+
+- [ ] **Step 1：寫失敗的測試**
+  - `parseRiotRedirect`：
+    - 完整網址 `https://playvalorant.com/opt_in#access_token=A&scope=x&id_token=I&token_type=Bearer&expires_in=3600` → `A`、`I`、`3600`
+    - 沒有 `#` → null
+    - 少了 `id_token` → null
+    - 網址前後有空白 → 仍可解析
+  - `mapStorefront`：
+    - fixture 有 4 筆 daily（第 4 筆的 ItemID 對不到）、2 筆夜市、1 個組合包；`now` 固定。驗證：
+      - `daily` 價格取 VP
+      - `dailyExpiresAt == now + 剩餘秒數`
+      - 對不到的 ItemID 原樣保留
+      - 夜市的原價和折扣價正確
+      - `nightMarketEndsAt` 正確
+      - `featuredBundle.bundleUuid == DataAssetID`，價格取 `TotalDiscountedCost[VP]`
+    - 沒有 `BonusStore` → `nightMarket` 是空的
+  - `CatalogApi`：fixture 的 levels 加上 uuid，驗證 `levelUuid`。
+  - `CatalogProvider.skinByItemId`：等級 uuid 和造型 uuid 都查得到。
+  - `ShopProvider.replaceShop`：3 筆 daily 也可以存，而且重新建立 provider 後讀得到。
+- [ ] **Step 2：執行測試**
+  預期 FAIL。
+- [ ] **Step 3：實作**
+- [ ] **Step 4：執行** `flutter test`、`flutter analyze`、`flutter build web`
+  預期全部通過。
+- [ ] **Step 5：Commit**
+  commit 訊息為 `feat: add riot redirect parsing and storefront mapping`。
+
+---
+
+### Task R2：RiotClient 與 RiotProvider
+
+**Files：**
+- Create：`lib/services/riot_client.dart`、`lib/providers/riot_provider.dart`
+- Test：`test/services/riot_client_test.dart`、`test/providers/riot_provider_test.dart`
+
+**Interfaces：**
+- `class RiotApiException implements Exception { final int? statusCode; final String message; bool get isAuthError => statusCode == 401 || statusCode == 403; }`
+- `RiotClient({http.Client? client})`：
+  - `Future<RiotSession> createSession(RiotTokens tokens, DateTime now)`
+    - `POST https://entitlements.auth.riotgames.com/api/token/v1`（標頭 `Authorization: Bearer`，body `{}`）→ 取 `entitlements_token`
+    - `GET https://auth.riotgames.com/userinfo` → 取 `sub`、`acct.game_name`、`acct.tag_line`
+    - `PUT https://riot-geo.pas.si.riotgames.com/pas/v1/product/valorant`（body `{"id_token": …}`）→ 取 `affinities.live`
+    - `GET https://valorant-api.com/v1/version` → 取 `data.riotClientVersion`
+    - `expiresAt = now + expiresIn`
+  - `Future<Map<String, dynamic>> fetchStorefront(RiotSession s)`：`POST https://pd.{shard}.a.pvp.net/store/v3/storefront/{puuid}`，body `{}`；回應 404 或 405 時，改用 `GET /store/v2/storefront/{puuid}`。
+  - `Future<RiotWallet> fetchWallet(RiotSession s)`：`GET /store/v1/wallet/{puuid}`
+  - `Future<Set<String>> fetchOwnedSkinLevels(RiotSession s)`：`GET /store/v1/entitlements/{puuid}/e7c63390-eda7-46e0-bb7a-a6abdacd2433` → 取 `Entitlements[].ItemID`
+  - pd 請求都帶上 4 個標頭：`Authorization`、`X-Riot-Entitlements-JWT`、`X-Riot-ClientVersion`、`X-Riot-ClientPlatform`。非 2xx 時丟出 `RiotApiException`，訊息不可以包含 token。
+- `RiotProvider(RiotClient client, {DateTime Function() now = DateTime.now}) extends ChangeNotifier`：
+  - getter：`RiotSession? session`、`bool isLoggedIn`（有 session 而且還沒過期）、`RiotWallet? wallet`、`Set<String> ownedSkinUuids`、`bool isBusy`
+  - `Future<String?> login(String pastedUrl)`：回傳錯誤訊息，成功時回傳 null。
+  - `Future<String?> sync({required ShopProvider shop, required CatalogProvider catalog})`：取得 storefront → `mapStorefront`（resolve 用 `catalog.skinByItemId(id)?.uuid ?? id`）→ `shop.replaceShop`；同時更新 wallet 和 owned。成功時回傳 null。
+  - `void logout()`
+  - 遇到 `isAuthError` 時呼叫 `logout()`，並回傳「登入已過期，請重新登入」。
+
+- [ ] **Step 1：寫失敗的測試**（用 `MockClient` 依 host 和 path 回應 fixture）
+  - `createSession` 組出正確的 puuid、displayName、shard、clientVersion；pd 請求帶齊 4 個標頭。
+  - storefront v3 回應 404 → 改用 v2 GET 成功。
+  - wallet 解析 3 種貨幣。
+  - owned 解析出等級 uuid 集合。
+  - 401 時丟出 `RiotApiException`，`isAuthError` 為 true，而且 `message` 不包含 `fake-access`。
+  - provider：
+    - `login` 貼錯網址 → 回傳提示訊息，而且 MockClient 沒有收到任何請求。
+    - `login` 成功後 `isLoggedIn` 為 true。
+    - `sync` 成功 → `shop.shop.daily` 有資料、`wallet.vp` 正確、`ownedSkinUuids` 是對應後的造型 uuid。
+    - storefront 回應 401 → 回傳「登入已過期，請重新登入」、`isLoggedIn` 為 false、商店資料不變。
+    - `logout` 後 `session` 是 null。
+- [ ] **Step 2：執行測試**
+  預期 FAIL。
+- [ ] **Step 3：實作**
+- [ ] **Step 4：執行** `flutter test`、`flutter analyze`、`flutter build web`
+  預期全部通過。
+- [ ] **Step 5：Commit**
+  commit 訊息為 `feat: add riot client and provider for store sync`。
+
+---
+
+### Task R3：登入頁與 UI 整合、真實 API 實測
+
+**Files：**
+- Create：`lib/screens/riot_login_page.dart`
+- Modify：`pubspec.yaml`（加入 url_launcher）、`lib/main.dart`（加入 `RiotProvider` 和 `/riot-login` 路由）、`lib/screens/my_shop_page.dart`（帳號列、錢包、「從 Riot 同步」）、`lib/screens/skin_picker_page.dart` 和 `lib/screens/wishlist_page.dart`（「已擁有」標籤）、`lib/widgets/skin_tile.dart`（加上 `bool owned = false` 參數，顯示「已擁有」）、`lib/screens/settings_page.dart`（「Riot 帳號」入口）
+- Test：`test/screens/riot_login_page_test.dart`，並在 `my_shop_page_test` 加測試
+
+- [ ] **Step 1：寫失敗的 widget test**
+  - 登入頁：看得到免責聲明「使用 Riot 未公開 API，可能違反服務條款」，以及「開啟 Riot 登入頁」和「完成登入」；貼上錯誤網址後按完成 → 看得到網址錯誤的提示。
+  - `MyShopPage`：未登入時看得到「登入 Riot 以自動同步」；已登入時（用假 client 建立 session）看得到「已登入：名稱#Tag（ap）」、「從 Riot 同步」，以及 VP 餘額。
+  - `SkinTile(owned: true)` 顯示「已擁有」。
+- [ ] **Step 2：執行測試**
+  預期 FAIL。
+- [ ] **Step 3：實作**
+  執行 `flutter pub add url_launcher:^6.3.1`，再寫 UI。
+- [ ] **Step 4：執行** `flutter test`、`flutter analyze`、`flutter build web`
+  預期全部通過。
+- [ ] **Step 5：真實 API 實測**
+  用 `.claude/launch.json` 的 web-server 設定，在內建瀏覽器開啟 App：
+  1. 確認造型目錄是從真實 valorant-api.com 下載的。
+  2. 進入 `/riot-login`，請使用者**自己**在 Riot 頁面登入，並把跳轉後的網址貼進 App。
+  3. 驗證帳號列、錢包、同步後的每日、夜市、組合包，以及「已擁有」標示。
+  4. 實測中發現的問題要先寫測試重現，再修正。
+  5. 截圖時不可以拍到 token。
+- [ ] **Step 6：Commit**
+  commit 訊息為 `feat: add riot login page and store sync UI`。

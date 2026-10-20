@@ -1,10 +1,12 @@
 # 手動商店輸入＋願望清單 設計規格（網頁版）
 
 - 日期：2026-10-19；第 2 版 2026-10-20
-- 狀態：第 2 版，待使用者審閱
+- 狀態：第 3 版，已核准（2026-10-20）
 - 取代：`2026-10-19-riot-api-integration-design.md`（Riot 登入方案，已放棄）
 
 ## 修訂紀錄
+
+- **第 3 版（2026-10-20）**：使用者要求加入 Riot 登入並連動 VALORANT 資料（見第 10 節）。使用者已了解並接受使用 Riot 未公開 API 的風險。第 1 節「不使用 Riot 登入」的限制由第 10 節取代；手動輸入保留作為備援。
 
 - **第 2 版（2026-10-20）**：使用者把目標平台從 Android 改為**網頁**，並決定**不做提醒**。異動如下：
   - 移除每日系統通知，以及相關的設定、套件和 Android 設定。
@@ -172,3 +174,62 @@ lib/
 - 資料只存在這台電腦的這個瀏覽器裡。清除瀏覽資料或換瀏覽器，資料就會不見。
 - 預設價格是推估值，可能不準。
 - **安全**：`pubspec.yaml` 目前把 `.env` 列成 asset，網頁建置後 `.env` 會成為可以公開下載的檔案。只在本機執行時影響有限，但**部署前必須先處理**。這不在本次範圍內。
+
+## 10. Riot 登入與 VALORANT 資料連動（第 3 版新增）
+
+### 10.1 使用者決定
+- 登入方式：開啟 Riot 官方登入頁，使用者自己登入後，把跳轉後的網址貼回 App。App 不接觸密碼，也不需要後端。
+- 連動資料：每日、夜市、精選組合包自動帶入，錢包餘額，已擁有的造型，玩家名稱與區域。
+- 使用者已了解並接受：`pd.*.a.pvp.net` 是 Riot 未公開的 API，可能違反服務條款、帳號可能受處分，API 也可能隨時失效。
+
+### 10.2 2026-10-20 實測的事實
+- `auth.riotgames.com/api/v1/authorization`（帳密登入 API）**沒有 CORS 標頭**，瀏覽器不能呼叫，所以採用貼上網址的方式。
+- 下列端點都允許瀏覽器呼叫：`auth.riotgames.com/userinfo`、`entitlements.auth.riotgames.com/api/token/v1`、`riot-geo.pas.si.riotgames.com/pas/v1/product/valorant`、`pd.{shard}.a.pvp.net/store/v3/storefront/*`、`/store/v1/wallet/*`、`/store/v1/entitlements/*`。
+- 貨幣 ID（valorant-api.com `/v1/currencies`）：
+  - 特務幣 VP：`85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741`
+  - 輻能點數：`e59aa87c-4cbf-517a-5983-6e81511be9b7`
+  - 王國幣：`85ca954a-41f2-ce94-9b45-8ca3dd39a00d`
+- 造型等級的 ItemType 是 `e7c63390-eda7-46e0-bb7a-a6abdacd2433`。
+- 客戶端版本號：valorant-api.com `/v1/version` 的 `data.riotClientVersion`。
+
+### 10.3 推定（實測時驗證）
+- 登入網址：`https://auth.riotgames.com/authorize?redirect_uri=https%3A%2F%2Fplayvalorant.com%2Fopt_in&client_id=play-valorant-web-prod&response_type=token%20id_token&nonce=1&scope=account%20openid`。這是社群通用的參數，不是官方文件。
+- storefront 先用 v3（`POST`，body `{}`）；回應 404 或 405 時，改用 v2（`GET`）。
+- 商店的 `OfferID` 和 `Rewards[].ItemID` 是造型等級 uuid（`levels[0].uuid`）。對應時同時比對造型 uuid 和等級 uuid。
+- `X-Riot-ClientPlatform` 使用社群通用的固定 base64 值（PC／Windows）。
+
+### 10.4 流程
+1. `RiotLoginPage`（`/riot-login`）：顯示免責聲明，並提供「開啟 Riot 登入頁」按鈕（用 `url_launcher` 開新分頁）、網址貼上欄、「完成登入」按鈕。
+2. 解析貼上網址的 fragment，取得 `access_token`、`id_token`、`expires_in`。找不到時顯示「網址中找不到登入資訊，請貼上登入後跳轉的完整網址」。
+3. 依序呼叫 entitlements、userinfo（取得 `sub` 作為 puuid，以及 `acct.game_name`、`acct.tag_line`）、riot-geo（取得 `affinities.live` 作為 shard）、valorant-api 版本號，組成 `RiotSession`。
+4. `RiotSession` **只存在記憶體**。重新整理頁面、按「登出」、或 token 過期後都要重新登入。
+5. 登入後：
+   - 「我的商店」顯示「已登入：名稱#Tag（shard）」、錢包餘額，以及「從 Riot 同步」按鈕。
+   - 按下同步後，取得 storefront、wallet 和擁有的造型等級。
+   - 商店轉成 `CurrentShop` 後，透過 `ShopProvider` 儲存（等同於手動輸入的結果，之後仍可手動修改）。
+
+### 10.5 轉換規則（`logic/storefront_mapper.dart`，純函式）
+- 每日：`SkinsPanelLayout.SingleItemStoreOffers[]` → `ShopEntry(skinUuid, Cost[VP])`；`dailyExpiresAt = now + SingleItemOffersRemainingDurationInSeconds`。
+- 夜市：`BonusStore.BonusStoreOffers[]` → `NightMarketEntry(skinUuid, Offer.Cost[VP], DiscountCosts[VP])`；`nightMarketEndsAt = now + BonusStoreRemainingDurationInSeconds`。沒有 `BonusStore` 時清空夜市區塊。
+- 精選組合包：取 `FeaturedBundle.Bundle`（沒有的話取 `Bundles[0]`），轉成 `BundleEntry(DataAssetID, TotalDiscountedCost[VP] ?? TotalBaseCost[VP])`。
+- `skinUuid`：用 `ItemID` 透過目錄對應回造型 uuid；對不到時直接保留 `ItemID`，UI 會顯示「未知造型」。
+- 同步時不套用手動輸入的「4 筆／6 筆」驗證，因為 Riot 的資料筆數以實際回傳為準。
+
+### 10.6 已擁有標示
+擁有清單只存在記憶體，內容是等級 uuid 對應回造型 uuid 的集合。搜尋器、願望清單和商店卡片會顯示「已擁有」標籤。
+
+### 10.7 錯誤處理
+| 情況 | 行為 |
+|---|---|
+| 貼上的網址裡沒有 token | 顯示上述提示，不送出任何請求 |
+| 任何 Riot API 回應 401 或 403 | 清除 session，顯示「登入已過期，請重新登入」 |
+| 其他錯誤（網路、5xx、格式不符） | SnackBar 顯示「同步失敗：…」，現有商店資料不變 |
+
+### 10.8 測試
+- 單元測試：網址解析、storefront 轉換（含沒有夜市、ID 對不到的情況）、`RiotClient` 的請求（用 `MockClient` 驗證 URL、標頭、方法，以及 v3 失敗改用 v2）、401 自動登出。
+- Widget 測試：登入頁的錯誤提示、登入後的帳號資訊與同步按鈕。
+- 實測：使用者在內建瀏覽器自己登入 Riot，貼上網址後由 Claude 驗證同步結果。Claude 不讀取、不輸出 token。
+
+### 10.9 已知限制
+- token 大約 1 小時後失效，重新整理頁面也要重新登入。
+- 依賴 Riot 未公開的 API，可能隨時失效。
