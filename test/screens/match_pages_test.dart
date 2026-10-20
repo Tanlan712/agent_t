@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:valorant_shop_tracker/screens/match_detail_page.dart';
 import 'package:valorant_shop_tracker/screens/match_history_page.dart';
 
@@ -8,6 +10,7 @@ import '../riot_fixtures.dart';
 import '../shell/app_shell_test.dart' show setWidth;
 
 void main() {
+  group('重試', retryTests);
   group('路由', routingTests);
   Future<Harness> loggedIn(WidgetTester tester,
       {int total = 3, Set<String> fail = const {}}) async {
@@ -153,5 +156,42 @@ void routingTests() {
     await tester.tap(find.text('對戰紀錄'));
     await tester.pumpAndSettle();
     expect(find.text('登入 Riot 以查看對戰紀錄'), findsOneWidget);
+  });
+}
+
+void retryTests() {
+  testWidgets('第一頁失敗時顯示重試，按下後重新載入', (tester) async {
+    setWidth(tester, 1400);
+    var historyCalls = 0;
+    var fail = true;
+    final inner = riotClient();
+    final client = MockClient((req) async {
+      if (req.url.path.contains('match-history')) {
+        historyCalls++;
+        if (fail) return http.Response('{}', 500);
+      }
+      final copy = http.Request(req.method, req.url)
+        ..headers.addAll(req.headers)
+        ..bodyBytes = req.bodyBytes;
+      return inner.send(copy).then(http.Response.fromStream);
+    });
+    final h = await Harness.create(tester, riotHttp: client);
+    await tester.runAsync(() => h.riot.login(fakeRedirect));
+    await tester.pumpWidget(h.wrap(home: const MatchHistoryPage()));
+    await tester.pump();
+    await tester
+        .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pumpAndSettle();
+    expect(find.text('重試'), findsOneWidget);
+    final before = historyCalls;
+    fail = false;
+    await tester.tap(find.text('重試'));
+    await tester.pump();
+    await tester
+        .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pumpAndSettle();
+    expect(historyCalls, before + 1);
+    expect(find.text('重試'), findsNothing);
+    expect(find.text('13 : 9'), findsWidgets);
   });
 }

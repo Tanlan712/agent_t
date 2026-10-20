@@ -36,7 +36,9 @@ Map<String, int> rrByMatch(Map<String, dynamic> competitiveUpdates) => {
       for (final m
           in (competitiveUpdates['Matches'] as List<dynamic>? ?? const [])
               .cast<Map<String, dynamic>>())
-        if (m['QueueID'] == 'competitive' && _int(m['TierBeforeUpdate']) > 0)
+        if (m['QueueID'] == 'competitive' &&
+            _int(m['TierBeforeUpdate']) > 0 &&
+            _int(m['TierAfterUpdate']) > 0)
           m['MatchID'] as String:
               (_int(m['TierAfterUpdate']) - _int(m['TierBeforeUpdate'])) * 100 +
                   _int(m['RankedRatingAfterUpdate']) -

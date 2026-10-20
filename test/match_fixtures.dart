@@ -151,6 +151,13 @@ Map<String, dynamic> competitiveUpdatesJson() => {
           'RankedRatingBeforeUpdate': 5,
           'RankedRatingAfterUpdate': 90
         },
+        // TierAfterUpdate 缺漏：不可算出極端值，應排除。
+        {
+          'MatchID': 'm11',
+          'QueueID': 'competitive',
+          'TierBeforeUpdate': 18,
+          'RankedRatingBeforeUpdate': 27
+        },
         // 定級中：TierBeforeUpdate 為 0，不顯示 RR。
         {
           'MatchID': 'm10',

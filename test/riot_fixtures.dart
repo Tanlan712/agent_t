@@ -85,6 +85,7 @@ MockClient riotClient({
   Duration matchDelay = Duration.zero,
   bool blankNames = false,
   int nameStatus = 200,
+  bool nameMalformed = false,
 }) {
   return MockClient((req) async {
     requests?.add(req);
@@ -173,6 +174,10 @@ MockClient riotClient({
       }
       if (path == '/name-service/v2/players' && req.method == 'PUT') {
         if (nameStatus != 200) return json({'errorCode': 'x'}, nameStatus);
+        if (nameMalformed)
+          return json([
+            {'Subject': 5, 'GameName': 'X'}
+          ]);
         final ids = (jsonDecode(req.body) as List).cast<String>();
         return http.Response.bytes(
             utf8.encode(jsonEncode([

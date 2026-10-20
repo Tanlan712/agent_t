@@ -111,6 +111,8 @@ class MatchHistoryProvider with ChangeNotifier {
       if (gen == _generation) {
         if (e.isAuthError) {
           _riot.logout();
+          // 讓同一個帳號重新登入後，頁面能再次觸發載入。
+          _loadedFor = null;
           _error = expiredMessage;
         } else {
           _error = e.message;

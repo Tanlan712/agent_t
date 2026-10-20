@@ -36,6 +36,7 @@ class _Counting {
 }
 
 void main() {
+  group('第二階段修正', phase2FixTests);
   group('名稱補查', nameTests);
   group('審查修正', reviewFixTests);
   Future<(MatchHistoryProvider, RiotProvider, _Counting)> setup({
@@ -206,5 +207,29 @@ void nameTests() {
         .expand((t) => t)
         .singleWhere((l) => l.isMe);
     expect(me.riotId, '未知玩家');
+  });
+}
+
+void phase2FixTests() {
+  Future<(MatchHistoryProvider, RiotProvider)> make(http.Client client) async {
+    final rc = RiotClient(client: client);
+    final riot = RiotProvider(rc);
+    await riot.login(fakeRedirect);
+    return (MatchHistoryProvider(MatchClient(rc), riot, pageSize: 2), riot);
+  }
+
+  test('401 後清除 loadedFor，同帳號重新登入時會重新載入', () async {
+    final (p, riot) = await make(riotClient(historyStatus: 401));
+    await p.loadFirstPage();
+    expect(riot.isLoggedIn, isFalse);
+    expect(p.loadedFor, isNull);
+  });
+
+  test('name-service 回應格式不符時保留列表', () async {
+    final (p, _) =
+        await make(riotClient(blankNames: true, nameMalformed: true));
+    await p.loadFirstPage();
+    expect(p.entries.length, 2);
+    expect(p.error, isNull);
   });
 }

@@ -36,10 +36,15 @@ class MatchClient {
     if (ids.isEmpty) return const {};
     final list = await _riot.putPdList(s, '/name-service/v2/players', ids,
         label: '取得玩家名稱');
+    // 名稱只是補充資訊：格式不符的項目直接略過，不讓整頁失敗。
     return {
-      for (final e in list.cast<Map<String, dynamic>>())
-        if ((e['GameName'] as String? ?? '').isNotEmpty)
-          e['Subject'] as String: '${e['GameName']}#${e['TagLine'] ?? ''}',
+      for (final e in list)
+        if (e is Map &&
+            e['Subject'] is String &&
+            e['GameName'] is String &&
+            (e['GameName'] as String).isNotEmpty)
+          e['Subject'] as String:
+              '${e['GameName']}#${e['TagLine'] is String ? e['TagLine'] : ''}',
     };
   }
 

@@ -77,7 +77,19 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
           if (history.error case final e?)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(e, style: const TextStyle(color: AppColors.error)),
+              child: Wrap(
+                spacing: 12,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(e, style: const TextStyle(color: AppColors.error)),
+                  // 第一頁失敗時頁面不會自動重試，給使用者手動重試的入口。
+                  if (history.entries.isEmpty && !history.isLoading)
+                    OutlinedButton(
+                      onPressed: history.loadFirstPage,
+                      child: const Text('重試'),
+                    ),
+                ],
+              ),
             ),
           const SizedBox(height: 16),
           ResponsiveGrid(
