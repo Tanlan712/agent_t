@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:valorant_shop_tracker/models/match_models.dart';
 import 'package:valorant_shop_tracker/screens/match_detail_page.dart';
 import 'package:valorant_shop_tracker/screens/match_history_page.dart';
 
@@ -12,6 +13,7 @@ import '../shell/app_shell_test.dart' show setWidth;
 void main() {
   group('重試', retryTests);
   group('路由', routingTests);
+  group('計分板加強版', scoreboardTests);
   Future<Harness> loggedIn(WidgetTester tester,
       {int total = 3, Set<String> fail = const {}}) async {
     final h = await Harness.create(tester,
@@ -107,7 +109,13 @@ void main() {
       expect(find.text('ACS'), findsNWidgets(2));
       expect(find.text('爆頭率'), findsNWidgets(2));
       expect(find.text('30%'), findsOneWidget);
-      expect(find.text('191'), findsOneWidget);
+      // 最近 5 場也會顯示 ACS，所以只檢查 ACS 欄。
+      expect(
+          find.descendant(
+              of: find.byKey(const ValueKey('acs-puuid-1')),
+              matching: find.text('191'),
+              matchRoot: true),
+          findsOneWidget);
     });
 
     testWidgets('同一組隊的玩家標記顏色相同', (tester) async {
@@ -193,5 +201,111 @@ void retryTests() {
     expect(historyCalls, before + 1);
     expect(find.text('重試'), findsNothing);
     expect(find.text('13 : 9'), findsWidgets);
+  });
+}
+
+void scoreboardTests() {
+  Future<Harness> detailHarness(WidgetTester tester,
+      {List<http.Request>? requests,
+      Map<String, int> otherHistoryStatus = const {}}) async {
+    final h = await Harness.create(tester,
+        riotHttp: riotClient(
+            historyTotal: 3,
+            requests: requests,
+            otherHistoryStatus: otherHistoryStatus));
+    await tester.runAsync(() async {
+      await h.riot.login(fakeRedirect);
+      await h.matchHistory.loadFirstPage();
+    });
+    return h;
+  }
+
+  Route<dynamic> recordRoute(RouteSettings s) => MaterialPageRoute<void>(
+        settings: s,
+        builder: (_) =>
+            Text('route:${s.name} ${(s.arguments as PlayerRef?)?.puuid ?? ''}'),
+      );
+
+  /// HTTP 回應要靠真實事件迴圈推進：輪流讓出時間與 pump，直到背景載入結束。
+  Future<void> drain(WidgetTester tester) async {
+    for (var i = 0; i < 40; i++) {
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 5)));
+      await tester.pump();
+    }
+  }
+
+  Finder inCell(String key, String text) => find.descendant(
+      of: find.byKey(ValueKey(key)),
+      matching: find.text(text),
+      matchRoot: true);
+
+  testWidgets('新欄位、表現分數、K/D 與 MVP 標籤', (tester) async {
+    setWidth(tester, 2000);
+    final h = await detailHarness(tester);
+    await tester.pumpWidget(h.wrap(home: const MatchDetailPage(matchId: 'm1')));
+    await tester.pumpAndSettle();
+    for (final t in ['表現分數', 'K/D', 'ADR', '首殺', '最近 5 場']) {
+      expect(find.text(t), findsNWidgets(2));
+    }
+    expect(inCell('mvp-r1', '全場 MVP'), findsOneWidget);
+    expect(inCell('mvp-puuid-1', '隊伍 MVP'), findsOneWidget);
+    expect(find.byKey(const ValueKey('mvp-mate')), findsNothing);
+    expect(inCell('rating-puuid-1', '265'), findsOneWidget);
+    expect(inCell('rating-mate', '—'), findsOneWidget);
+    expect(inCell('kd-puuid-1', '1.67'), findsOneWidget);
+    expect(inCell('adr-puuid-1', '13'), findsOneWidget);
+    expect(inCell('fk-r1', '2'), findsOneWidget);
+  });
+
+  testWidgets('最近 5 場：載入中、完成、失敗', (tester) async {
+    setWidth(tester, 2000);
+    final h = await detailHarness(tester, otherHistoryStatus: {'r2': 403});
+    await tester.pumpWidget(h.wrap(home: const MatchDetailPage(matchId: 'm1')));
+    await tester.pump();
+    await tester.pump();
+    expect(inCell('form-r1', '…'), findsOneWidget);
+    await drain(tester);
+    expect(find.byKey(const ValueKey('form-r1-0')), findsOneWidget);
+    expect(find.byKey(const ValueKey('form-r1-4')), findsOneWidget);
+    expect(inCell('form-r1', '平均 227'), findsOneWidget);
+    expect(inCell('form-r2', '—'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('點其他玩家進入玩家頁，點自己切到對戰紀錄', (tester) async {
+    setWidth(tester, 2000);
+    final h = await detailHarness(tester);
+    await tester.pumpWidget(h.wrap(
+        home: const MatchDetailPage(matchId: 'm1'),
+        onGenerateRoute: recordRoute));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Bravo#TW1'));
+    await tester.pumpAndSettle();
+    expect(find.text('route:/players/detail mate'), findsOneWidget);
+
+    tester.state<NavigatorState>(find.byType(Navigator)).pop();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Alpha#TW1'));
+    await tester.pumpAndSettle();
+    expect(find.text('route:/matches '), findsOneWidget);
+    expect(find.byType(MatchDetailPage), findsNothing);
+  });
+
+  testWidgets('離開詳情頁後不再開始新玩家的請求', (tester) async {
+    setWidth(tester, 2000);
+    final requests = <http.Request>[];
+    final h = await detailHarness(tester, requests: requests);
+    requests.clear();
+    await tester.pumpWidget(h.wrap(home: const MatchDetailPage(matchId: 'm1')));
+    await tester.pump();
+    await tester.pump();
+    await tester.pumpWidget(h.wrap(home: const SizedBox()));
+    await drain(tester);
+    final histories = requests
+        .where((r) => r.url.path.startsWith('/match-history/v1/history/'))
+        .length;
+    expect(histories, lessThanOrEqualTo(2));
+    expect(tester.takeException(), isNull);
   });
 }

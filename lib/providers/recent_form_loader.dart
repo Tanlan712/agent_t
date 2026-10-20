@@ -75,13 +75,13 @@ class RecentFormLoader with ChangeNotifier {
     _notify();
   }
 
-  /// 清空尚未開始的工作；之後可以再次 request。
+  /// 清空尚未開始的工作；之後可以再次 request。被取消的玩家狀態仍是
+  /// pending，畫面不變，所以不通知（頁面 dispose 時呼叫，樹已鎖定）。
   void cancelPending() {
     for (final p in _queue) {
       _status.remove(p);
     }
     _queue.clear();
-    _notify();
   }
 
   @override

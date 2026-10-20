@@ -7,6 +7,7 @@ import 'providers/catalog_provider.dart';
 import 'providers/match_detail_cache.dart';
 import 'providers/match_history_provider.dart';
 import 'providers/match_reference_provider.dart';
+import 'providers/recent_form_loader.dart';
 import 'providers/riot_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/shop_provider.dart';
@@ -60,6 +61,8 @@ Future<void> main() async {
         ChangeNotifierProvider.value(value: riot),
         Provider.value(value: matchClient),
         Provider.value(value: matchCache),
+        ChangeNotifierProvider(
+            create: (_) => RecentFormLoader(matchClient, riot, matchCache)),
         ChangeNotifierProvider(
             create: (_) =>
                 MatchHistoryProvider(matchClient, riot, cache: matchCache)),

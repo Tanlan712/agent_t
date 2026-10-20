@@ -132,6 +132,14 @@ class MatchDetail {
   const MatchDetail({required this.summary, required this.teams});
 }
 
+/// 玩家頁的參數：要查看的玩家。
+class PlayerRef {
+  final String puuid;
+  final String riotId;
+
+  const PlayerRef({required this.puuid, required this.riotId});
+}
+
 class RankInfo {
   final int tier;
   final int rr;

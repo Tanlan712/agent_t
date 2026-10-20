@@ -11,6 +11,7 @@ import 'package:valorant_shop_tracker/providers/catalog_provider.dart';
 import 'package:valorant_shop_tracker/providers/match_detail_cache.dart';
 import 'package:valorant_shop_tracker/providers/match_history_provider.dart';
 import 'package:valorant_shop_tracker/providers/match_reference_provider.dart';
+import 'package:valorant_shop_tracker/providers/recent_form_loader.dart';
 import 'package:valorant_shop_tracker/providers/riot_provider.dart';
 import 'package:valorant_shop_tracker/providers/settings_provider.dart';
 import 'package:valorant_shop_tracker/providers/shop_provider.dart';
@@ -50,6 +51,8 @@ class Harness {
   final SharedPreferences prefs;
   final MatchClient matchClient;
   final MatchDetailCache matchCache;
+  late final RecentFormLoader recentForm =
+      RecentFormLoader(matchClient, riot, matchCache);
 
   Harness(
       this.catalog,
@@ -119,6 +122,7 @@ class Harness {
         ChangeNotifierProvider.value(value: riot),
         Provider.value(value: matchClient),
         Provider.value(value: matchCache),
+        ChangeNotifierProvider.value(value: recentForm),
         ChangeNotifierProvider.value(value: matchHistory),
         ChangeNotifierProvider.value(value: matchReference),
       ],
