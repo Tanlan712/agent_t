@@ -36,6 +36,20 @@ class RecentForm {
 
 enum FormStatus { pending, loading, done, failed }
 
+/// 他人牌位能不能顯示：還沒查、確認公開、對方隱藏、無法確認。
+enum RankStatus { pending, visible, hidden, unavailable }
+
+class PlayerRank {
+  final RankStatus status;
+
+  /// 確認公開時這季的競技牌位；沒有打競技時為 null。
+  final int? seasonTier;
+
+  const PlayerRank(this.status, [this.seasonTier]);
+
+  static const pending = PlayerRank(RankStatus.pending);
+}
+
 /// 背景依序載入每位玩家最近幾場的表現：同時最多 [maxConcurrent] 個請求，
 /// 429 與連線失敗依 Retry-After（沒有時 2s、4s、8s）重試最多 [maxRetries] 次。
 class RecentFormLoader with ChangeNotifier {
@@ -53,8 +67,8 @@ class RecentFormLoader with ChangeNotifier {
   final Map<String, Set<Object>> _owners = {};
   final Map<String, (String, String?)> _targets = {};
 
-  /// 「賽季|玩家」→ 這季的競技牌位（null 表示查過但沒有）。
-  final Map<String, int?> _ranks = {};
+  /// 「賽季|玩家」→ 這季的牌位與是否公開。
+  final Map<String, PlayerRank> _ranks = {};
 
   /// 佇列鍵 → 需要另外查牌位的賽季。
   final Map<String, String> _rankSeason = {};
@@ -77,14 +91,15 @@ class RecentFormLoader with ChangeNotifier {
       _status[_key(puuid, queue)] ?? FormStatus.pending;
   RecentForm? form(String puuid, {String? queue}) => _forms[_key(puuid, queue)];
 
-  /// 玩家在 [seasonId] 那季的競技牌位；尚未查到或沒有時為 null。
-  int? rankTier(String puuid, String seasonId) => _ranks['$seasonId|$puuid'];
+  /// 玩家在 [seasonId] 那季的牌位狀態；還沒查時為 pending。
+  PlayerRank rank(String puuid, String seasonId) =>
+      _ranks['$seasonId|$puuid'] ?? PlayerRank.pending;
 
   /// 把 [puuids] 依序排到佇列最前面（目前畫面上的頁面優先）。
   /// 載入中或已完成的玩家略過；失敗的玩家重新排隊。
   /// [owner] 通常是頁面，[cancelPending] 只取消該頁要求的玩家。
   /// [queue] 指定時只查該模式的最近幾場（match-history 的 queue 參數）。
-  /// [rankFor] 裡的玩家（這場沒有牌位資料的人）會另外查 [seasonId] 那季的牌位。
+  /// [rankFor] 裡的玩家（除了自己的所有人）會另外查 [seasonId] 那季的牌位與是否公開。
   void request(List<String> puuids,
       {Object? owner,
       String? queue,
@@ -196,10 +211,15 @@ class RecentFormLoader with ChangeNotifier {
     if (_ranks.containsKey(k)) return;
     try {
       final mmr = await _retry(() => _client.fetchMmrJson(s, puuid));
-      _ranks[k] = seasonTier(mmr, season);
+      _ranks[k] = rankHidden(mmr)
+          ? const PlayerRank(RankStatus.hidden)
+          : PlayerRank(RankStatus.visible, seasonTier(mmr, season));
     } on RiotApiException catch (e) {
       if (e.statusCode == 401) rethrow;
-      _ranks[k] = null;
+      // 無法確認對方是否公開：一律不顯示。
+      _ranks[k] = const PlayerRank(RankStatus.unavailable);
+    } catch (_) {
+      _ranks[k] = const PlayerRank(RankStatus.unavailable);
     }
     _notify();
   }

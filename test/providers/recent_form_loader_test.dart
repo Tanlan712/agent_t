@@ -48,6 +48,7 @@ void main() {
     Map<String, int> otherHistoryStatus = const {},
     Map<String, int> historyConnectionFail = const {},
     Map<String, int> otherMmrStatus = const {},
+    Set<String> otherMmrHidden = const {},
     int maxConcurrent = 2,
   }) async {
     final waits = <Duration>[];
@@ -62,6 +63,7 @@ void main() {
       otherHistoryStatus: otherHistoryStatus,
       historyConnectionFail: historyConnectionFail,
       otherMmrStatus: otherMmrStatus,
+      otherMmrHidden: otherMmrHidden,
       matchDelay: const Duration(milliseconds: 5),
     );
     final client = MockClient((req) async {
@@ -101,8 +103,10 @@ void main() {
       env.loader.request(['r1', 'mate'],
           queue: 'unrated', seasonId: 'season-1', rankFor: {'r1'});
       await _settle(env.loader, ['r1', 'mate'], queue: 'unrated');
-      expect(env.loader.rankTier('r1', 'season-1'), 21);
-      expect(env.loader.rankTier('mate', 'season-1'), isNull);
+      final r1 = env.loader.rank('r1', 'season-1');
+      expect(r1.status, RankStatus.visible);
+      expect(r1.seasonTier, 21);
+      expect(env.loader.rank('mate', 'season-1').status, RankStatus.pending);
       expect(env.requestsFor('/mmr/v1/players/r1'), 1);
       expect(env.requestsFor('/mmr/v1/players/mate'), 0);
       env.loader.request(['r1'],
@@ -111,12 +115,23 @@ void main() {
       expect(env.requestsFor('/mmr/v1/players/r1'), 1);
     });
 
-    test('MMR 403 時牌位維持未知，最近戰績照常完成', () async {
+    test('對方隱藏牌位時 status 為 hidden，不提供牌位', () async {
+      env = await setup(otherMmrHidden: {'r1'});
+      env.loader.request(['r1'],
+          queue: 'unrated', seasonId: 'season-1', rankFor: {'r1'});
+      await _settle(env.loader, ['r1'], queue: 'unrated');
+      final r1 = env.loader.rank('r1', 'season-1');
+      expect(r1.status, RankStatus.hidden);
+      expect(r1.seasonTier, isNull);
+    });
+
+    test('MMR 403 時無法確認（unavailable），最近戰績照常完成', () async {
       env = await setup(otherMmrStatus: {'r1': 403});
       env.loader.request(['r1'],
           queue: 'unrated', seasonId: 'season-1', rankFor: {'r1'});
       await _settle(env.loader, ['r1'], queue: 'unrated');
-      expect(env.loader.rankTier('r1', 'season-1'), isNull);
+      expect(env.loader.rank('r1', 'season-1').status, RankStatus.unavailable);
+      expect(env.loader.rank('r1', 'season-1').seasonTier, isNull);
       expect(env.loader.status('r1', queue: 'unrated'), FormStatus.done);
       expect(env.riot.isLoggedIn, isTrue);
     });

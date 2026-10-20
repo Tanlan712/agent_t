@@ -222,10 +222,13 @@ Map<String, dynamic> mmrJson({bool empty = false}) => {
 
 /// 依社群文件格式的他人 MMR：QueueSkills.competitive.SeasonalInfoBySeasonID。
 Map<String, dynamic> seasonalMmrJson(String subject,
-        {String season = 'season-1', int tier = 21}) =>
+        {String season = 'season-1', int tier = 21, bool hidden = false}) =>
     {
       'Version': 1,
       'Subject': subject,
+      // 依社群文件：玩家在遊戲中選擇隱藏本季牌位時為 true。
+      'IsActRankBadgeHidden': hidden,
+      'IsLeaderboardAnonymized': false,
       'QueueSkills': {
         'competitive': {
           'SeasonalInfoBySeasonID': {

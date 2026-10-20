@@ -187,6 +187,12 @@ void seasonRankTests() {
     expect(seasonTier(seasonalMmrJson('r1'), ''), isNull);
   });
 
+  test('rankHidden 依 IsActRankBadgeHidden 判斷，欄位缺少時視為公開', () {
+    expect(rankHidden(seasonalMmrJson('r1', hidden: true)), isTrue);
+    expect(rankHidden(seasonalMmrJson('r1')), isFalse);
+    expect(rankHidden({'Subject': 'x'}), isFalse);
+  });
+
   test('摘要帶有這場的賽季', () {
     expect(mapMatchDetail(matchDetailsJson(), myPuuid).summary.seasonId,
         'season-1');

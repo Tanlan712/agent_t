@@ -8,6 +8,7 @@ import 'package:valorant_shop_tracker/screens/match_detail_page.dart';
 import 'package:valorant_shop_tracker/screens/match_history_page.dart';
 
 import '../app_harness.dart';
+import '../match_fixtures.dart' show myPuuid;
 import '../riot_fixtures.dart';
 import '../shell/app_shell_test.dart' show setWidth;
 
@@ -209,13 +210,17 @@ void scoreboardTests() {
   Future<Harness> detailHarness(WidgetTester tester,
       {List<http.Request>? requests,
       Map<String, int> otherHistoryStatus = const {},
-      bool unratedTiers = false}) async {
+      bool unratedTiers = false,
+      Set<String> otherMmrHidden = const {},
+      Map<String, int> otherMmrStatus = const {}}) async {
     final h = await Harness.create(tester,
         riotHttp: riotClient(
             historyTotal: 3,
             requests: requests,
             otherHistoryStatus: otherHistoryStatus,
-            unratedTiers: unratedTiers));
+            unratedTiers: unratedTiers,
+            otherMmrHidden: otherMmrHidden,
+            otherMmrStatus: otherMmrStatus));
     await tester.runAsync(() async {
       await h.riot.login(fakeRedirect);
       await h.matchHistory.loadFirstPage();
@@ -373,9 +378,29 @@ void scoreboardTests() {
     await tester.pump();
     Tooltip rank(String id) =>
         tester.widget<Tooltip>(find.byKey(ValueKey('rank-$id')));
-    expect(rank('r1').message, '牌階未定');
+    // 確認公開前不顯示任何牌位。
+    expect(rank('r1').message, '確認牌位是否公開中');
     await drain(tester);
     expect(rank('r1').message, '超凡 1');
     expect(rank('mate').message, '超凡 1');
+  });
+
+  testWidgets('他人牌位：確認公開才顯示，隱藏或無法確認都不顯示，自己永遠顯示', (tester) async {
+    setWidth(tester, 2000);
+    final h = await detailHarness(tester,
+        otherMmrHidden: {'r2'}, otherMmrStatus: {'r3': 403});
+    await tester.pumpWidget(h.wrap(home: const MatchDetailPage(matchId: 'm1')));
+    await tester.pump();
+    String rank(String id) =>
+        tester.widget<Tooltip>(find.byKey(ValueKey('rank-$id'))).message!;
+    // 還沒查到 MMR：不先顯示比賽裡的牌位。
+    expect(rank('r1'), '確認牌位是否公開中');
+    expect(rank(myPuuid), '鑽石 2');
+    await drain(tester);
+    expect(rank('r1'), '白金 1');
+    expect(rank('r2'), '玩家已隱藏牌位');
+    expect(rank('r3'), '無法確認是否公開，不顯示');
+    expect(rank(myPuuid), '鑽石 2');
+    expect(find.byKey(const ValueKey('rank-hidden-r2')), findsOneWidget);
   });
 }

@@ -54,6 +54,11 @@ RankInfo? mapRank(Map<String, dynamic> mmr) {
   );
 }
 
+/// 玩家是否在遊戲中隱藏了本季牌位（MMR 的 IsActRankBadgeHidden）。
+/// 依開發者政策不得揭露；欄位缺少時視為公開。
+bool rankHidden(Map<String, dynamic> mmr) =>
+    mmr['IsActRankBadgeHidden'] == true;
+
 /// 他人 MMR 中 [seasonId] 那一季的競技牌位；沒有資料或未定級時為 null。
 /// 一般、超速衝點等場次的 match-details 牌位都是 0，所以另外查詢。
 int? seasonTier(Map<String, dynamic> mmr, String seasonId) {

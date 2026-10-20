@@ -91,6 +91,7 @@ MockClient riotClient({
   Map<String, int> otherHistoryStatus = const {},
   Map<String, int> historyConnectionFail = const {},
   Map<String, int> otherMmrStatus = const {},
+  Set<String> otherMmrHidden = const {},
   bool unratedTiers = false,
 }) {
   final throttled = <String, int>{};
@@ -247,7 +248,7 @@ MockClient riotClient({
         final p = path.split('/').last;
         final status = otherMmrStatus[p] ?? 200;
         if (status != 200) return json({'errorCode': 'x'}, status);
-        return json(seasonalMmrJson(p));
+        return json(seasonalMmrJson(p, hidden: otherMmrHidden.contains(p)));
       }
       if (path == '/mmr/v1/players/puuid-1') {
         if (mmrStatus != 200) return json({'errorCode': 'x'}, mmrStatus);
