@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:valorant_shop_tracker/models/app_settings.dart';
@@ -7,26 +6,19 @@ import 'package:valorant_shop_tracker/providers/riot_provider.dart';
 import 'package:valorant_shop_tracker/screens/riot_login_page.dart';
 import 'package:valorant_shop_tracker/screens/wishlist_page.dart';
 import 'package:valorant_shop_tracker/services/riot_client.dart';
+import 'package:valorant_shop_tracker/storage/session_storage.dart';
 
 import '../app_harness.dart';
 import '../riot_fixtures.dart';
 
-/// 模擬系統剪貼簿（Flutter Web 一樣走 Clipboard 平台通道）。
-void mockClipboard(WidgetTester tester, String? text) {
-  tester.binding.defaultBinaryMessenger
-      .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-    if (call.method == 'Clipboard.getData') {
-      return text == null ? null : {'text': text};
-    }
-    return null;
-  });
+Future<SharedPreferences> freshPrefs([Map<String, Object> values = const {}]) {
+  SharedPreferences.setMockInitialValues(values);
+  return SharedPreferences.getInstance();
 }
 
-Future<void> settle(WidgetTester tester) async {
-  await tester
-      .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
-  await tester.pumpAndSettle();
-}
+RiotProvider riotWith(SharedPreferences prefs, DateTime Function() now) =>
+    RiotProvider(RiotClient(client: riotClient()),
+        now: now, storage: SessionStorage(prefs));
 
 void main() {
   group('記住區域', () {
@@ -52,36 +44,60 @@ void main() {
     });
   });
 
-  group('從剪貼簿貼上並登入', () {
-    testWidgets('剪貼簿有登入網址時一鍵完成登入，且不保存 token', (tester) async {
+  group('保持登入', () {
+    final start = DateTime(2026, 10, 21, 12);
+
+    testWidgets('登入頁沒有「從剪貼簿貼上並登入」，並提示會保存登入資訊', (tester) async {
       final h = await Harness.create(tester);
-      mockClipboard(tester, fakeRedirect);
       await tester.pumpWidget(h.wrap(home: const RiotLoginPage()));
-      await tester.tap(find.text('從剪貼簿貼上並登入'));
-      await settle(tester);
-      expect(h.riot.isLoggedIn, isTrue);
-      expect(find.text('已登入：Tester#TW1（ap）'), findsOneWidget);
-      // AGENTS.md 第 4 節：token 不得寫入 localStorage。
-      final prefs = await SharedPreferences.getInstance();
-      for (final k in prefs.getKeys()) {
-        expect('${prefs.get(k)}', isNot(contains(fakeAccessToken)), reason: k);
-      }
+      expect(find.text('從剪貼簿貼上並登入'), findsNothing);
+      expect(find.textContaining('保存在這個瀏覽器'), findsOneWidget);
     });
 
-    testWidgets('剪貼簿沒有登入網址時提示，不登入', (tester) async {
-      final h = await Harness.create(tester);
-      mockClipboard(tester, 'hello');
-      await tester.pumpWidget(h.wrap(home: const RiotLoginPage()));
-      await tester.tap(find.text('從剪貼簿貼上並登入'));
-      await settle(tester);
-      expect(h.riot.isLoggedIn, isFalse);
-      expect(find.text(RiotLoginPage.clipboardMissingMessage), findsOneWidget);
+    test('登入成功後保存，重新開啟時自動還原登入', () async {
+      final prefs = await freshPrefs();
+      final riot = riotWith(prefs, () => start);
+      expect(await riot.login(fakeRedirect), isNull);
+      expect(prefs.getString(SessionStorage.key), contains(fakeAccessToken));
+
+      final reopened =
+          riotWith(prefs, () => start.add(const Duration(minutes: 30)));
+      expect(reopened.isLoggedIn, isTrue);
+      expect(reopened.session!.displayName, 'Tester#TW1');
+      expect(reopened.session!.accessToken, fakeAccessToken);
+      expect(reopened.session!.shard, riot.session!.shard);
+      expect(reopened.session!.expiresAt, riot.session!.expiresAt);
     });
 
-    testWidgets('提示在 Riot 登入頁勾選保持登入', (tester) async {
-      final h = await Harness.create(tester);
-      await tester.pumpWidget(h.wrap(home: const RiotLoginPage()));
-      expect(find.textContaining('保持登入'), findsOneWidget);
+    test('重新開啟時已過期：不登入並刪除保存的資料', () async {
+      final prefs = await freshPrefs();
+      await riotWith(prefs, () => start).login(fakeRedirect);
+
+      final reopened = riotWith(prefs, () => start.add(const Duration(hours: 2)));
+      expect(reopened.isLoggedIn, isFalse);
+      expect(prefs.containsKey(SessionStorage.key), isFalse);
+    });
+
+    test('登出時刪除保存的資料', () async {
+      final prefs = await freshPrefs();
+      final riot = riotWith(prefs, () => start);
+      await riot.login(fakeRedirect);
+      riot.logout();
+      expect(prefs.containsKey(SessionStorage.key), isFalse);
+    });
+
+    test('保存的資料損毀時不登入並刪除', () async {
+      final prefs = await freshPrefs({SessionStorage.key: '{bad'});
+      final riot = riotWith(prefs, () => start);
+      expect(riot.isLoggedIn, isFalse);
+      expect(prefs.containsKey(SessionStorage.key), isFalse);
+    });
+
+    test('網址無效時不保存', () async {
+      final prefs = await freshPrefs();
+      final riot = riotWith(prefs, () => start);
+      expect(await riot.login('https://example.com'), isNotNull);
+      expect(prefs.containsKey(SessionStorage.key), isFalse);
     });
   });
 
