@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../shell/app_shell.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
 class PlayerCardsPage extends StatefulWidget {
@@ -37,12 +39,10 @@ class _PlayerCardsPageState extends State<PlayerCardsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('玩家卡片'),
-        backgroundColor: Colors.teal,
-      ),
-      body: _isLoading
+    return AppShell(
+      currentRoute: '/playercards',
+      title: '玩家卡片',
+      child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(

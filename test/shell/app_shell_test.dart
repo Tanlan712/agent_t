@@ -57,6 +57,18 @@ void main() {
     expect(find.byIcon(Icons.menu), findsOneWidget);
   });
 
+  testWidgets('矮視窗（900×500、1400×500）導覽列不溢出', (tester) async {
+    for (final width in [900.0, 1400.0]) {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = Size(width, 500);
+      addTearDown(tester.view.reset);
+      final h = await Harness.create(tester);
+      await tester.pumpWidget(h.wrap(home: shell()));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: '$width');
+    }
+  });
+
   testWidgets('導覽底部顯示 Riot 登入狀態', (tester) async {
     setWidth(tester, 1400);
     final h = await Harness.create(tester);

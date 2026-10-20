@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:valorant_shop_tracker/services/riot_api_key_manager.dart';
+import 'package:valorant_shop_tracker/shell/app_shell.dart';
 import 'package:valorant_shop_tracker/widgets/my_shop_settings_card.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -51,13 +52,11 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('API 設定'),
-        backgroundColor: Colors.indigo,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+    return AppShell(
+      currentRoute: '/settings',
+      title: '設定',
+      child: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
           _buildApiKeySection(),
           const SizedBox(height: 24),

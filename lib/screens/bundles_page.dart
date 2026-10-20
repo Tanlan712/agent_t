@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../shell/app_shell.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
 class BundlesPage extends StatefulWidget {
@@ -37,12 +39,10 @@ class _BundlesPageState extends State<BundlesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('組合包'),
-        backgroundColor: Colors.purple,
-      ),
-      body: _isLoading
+    return AppShell(
+      currentRoute: '/bundles',
+      title: '組合包',
+      child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(

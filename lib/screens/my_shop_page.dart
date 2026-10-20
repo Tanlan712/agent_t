@@ -8,6 +8,7 @@ import '../providers/riot_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/shop_provider.dart';
 import '../providers/wishlist_provider.dart';
+import '../shell/app_shell.dart';
 import '../widgets/bundle_tile.dart';
 import '../widgets/catalog_gate.dart';
 import '../widgets/skin_tile.dart';
@@ -39,11 +40,12 @@ class MyShopPage extends StatelessWidget {
     void edit(ShopSection section) =>
         Navigator.pushNamed(context, '/my-shop/edit', arguments: section);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('我的商店')),
-      body: CatalogGate(
+    return AppShell(
+      currentRoute: '/',
+      title: '我的商店',
+      child: CatalogGate(
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 16),
           children: [
             const _RiotBar(),
             if (matched.isNotEmpty)

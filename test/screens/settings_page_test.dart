@@ -54,7 +54,7 @@ void main() {
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(home: const SettingsPage()));
     await tester.scrollUntilVisible(find.byType(MyShopSettingsCard), 300,
-        scrollable: find.byType(Scrollable).first);
+        scrollable: find.byType(Scrollable).last);
     expect(find.byType(MyShopSettingsCard), findsOneWidget);
   });
 }

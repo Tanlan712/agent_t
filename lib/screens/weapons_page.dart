@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../shell/app_shell.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
 class WeaponsPage extends StatefulWidget {
@@ -37,12 +39,10 @@ class _WeaponsPageState extends State<WeaponsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('武器'),
-        backgroundColor: Colors.orange,
-      ),
-      body: _isLoading
+    return AppShell(
+      currentRoute: '/weapons',
+      title: '武器',
+      child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(

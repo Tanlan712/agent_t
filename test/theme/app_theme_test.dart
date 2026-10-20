@@ -39,9 +39,13 @@ void main() {
       expect(contrast(tier.color, AppColors.surface), greaterThanOrEqualTo(4.5),
           reason: tier.devName);
     }
-    expect(contrast(AppColors.text, AppColors.surface), greaterThanOrEqualTo(4.5));
-    expect(contrast(AppColors.muted, AppColors.surface), greaterThanOrEqualTo(4.5));
-    expect(contrast(AppColors.onPrimary, AppColors.buttonRed), greaterThanOrEqualTo(4.5));
-    expect(contrast(AppColors.primary, AppColors.background), greaterThanOrEqualTo(4.5));
+    expect(
+        contrast(AppColors.text, AppColors.surface), greaterThanOrEqualTo(4.5));
+    expect(contrast(AppColors.muted, AppColors.surface),
+        greaterThanOrEqualTo(4.5));
+    expect(contrast(AppColors.onPrimary, AppColors.buttonRed),
+        greaterThanOrEqualTo(4.5));
+    expect(contrast(AppColors.primary, AppColors.background),
+        greaterThanOrEqualTo(4.5));
   });
 }

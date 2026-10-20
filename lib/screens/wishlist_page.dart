@@ -7,6 +7,7 @@ import '../providers/catalog_provider.dart';
 import '../providers/riot_provider.dart';
 import '../providers/shop_provider.dart';
 import '../providers/wishlist_provider.dart';
+import '../shell/app_shell.dart';
 import '../widgets/catalog_gate.dart';
 import '../widgets/skin_tile.dart';
 
@@ -30,22 +31,21 @@ class WishlistPage extends StatelessWidget {
     final shop = context.watch<ShopProvider>().shop;
     final onSale = wishlistUuidsInShop(shop, wishlist.uuids, now());
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('願望清單'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: '加入造型',
-            onPressed: () => _add(context),
-          ),
-        ],
-      ),
-      body: CatalogGate(
+    return AppShell(
+      currentRoute: '/wishlist',
+      title: '願望清單',
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.add),
+          tooltip: '加入造型',
+          onPressed: () => _add(context),
+        ),
+      ],
+      child: CatalogGate(
         child: wishlist.items.isEmpty
             ? const Center(child: Text('願望清單是空的，按 ＋ 加入造型'))
             : ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 children: [
                   for (final item in wishlist.items)
                     Dismissible(

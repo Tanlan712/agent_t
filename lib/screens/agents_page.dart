@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../shell/app_shell.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
 class AgentsPage extends StatefulWidget {
@@ -37,12 +39,10 @@ class _AgentsPageState extends State<AgentsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('角色'),
-        backgroundColor: Colors.red,
-      ),
-      body: _isLoading
+    return AppShell(
+      currentRoute: '/agents',
+      title: '角色',
+      child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(

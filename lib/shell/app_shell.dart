@@ -61,42 +61,55 @@ class AppShell extends StatelessWidget {
             Container(
               width: extended ? 240 : 88,
               color: AppColors.surface,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: NavigationRail(
-                      extended: extended,
-                      minExtendedWidth: 240,
-                      labelType: extended
-                          ? NavigationRailLabelType.none
-                          : NavigationRailLabelType.all,
-                      selectedIndex: _selectedIndex,
-                      leading: extended
-                          ? const Padding(
-                              padding: EdgeInsets.fromLTRB(8, 16, 8, 8),
-                              child: Text(appName,
-                                  style: TextStyle(
-                                      color: AppColors.primary,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold)),
-                            )
-                          : const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              child: Icon(Icons.local_fire_department,
-                                  color: AppColors.primary),
+              // 視窗太矮時導覽可捲動；夠高時 Riot 狀態仍貼在底部。
+              child: LayoutBuilder(
+                builder: (context, navConstraints) => SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints:
+                        BoxConstraints(minHeight: navConstraints.maxHeight),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: NavigationRail(
+                              extended: extended,
+                              minExtendedWidth: 240,
+                              labelType: extended
+                                  ? NavigationRailLabelType.none
+                                  : NavigationRailLabelType.all,
+                              selectedIndex: _selectedIndex,
+                              leading: extended
+                                  ? const Padding(
+                                      padding: EdgeInsets.fromLTRB(8, 16, 8, 8),
+                                      child: Text(appName,
+                                          style: TextStyle(
+                                              color: AppColors.primary,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold)),
+                                    )
+                                  : const Padding(
+                                      padding:
+                                          EdgeInsets.symmetric(vertical: 16),
+                                      child: Icon(Icons.local_fire_department,
+                                          color: AppColors.primary),
+                                    ),
+                              destinations: [
+                                for (final item in navItems)
+                                  NavigationRailDestination(
+                                    icon: Icon(item.icon),
+                                    label: Text(item.label),
+                                  ),
+                              ],
+                              onDestinationSelected: (i) =>
+                                  _go(context, navItems[i]),
                             ),
-                      destinations: [
-                        for (final item in navItems)
-                          NavigationRailDestination(
-                            icon: Icon(item.icon),
-                            label: Text(item.label),
                           ),
-                      ],
-                      onDestinationSelected: (i) => _go(context, navItems[i]),
+                          _RiotStatus(compact: !extended),
+                        ],
+                      ),
                     ),
                   ),
-                  _RiotStatus(compact: !extended),
-                ],
+                ),
               ),
             ),
             const VerticalDivider(width: 1),

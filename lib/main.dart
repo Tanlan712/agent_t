@@ -8,19 +8,7 @@ import 'providers/riot_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/shop_provider.dart';
 import 'providers/wishlist_provider.dart';
-import 'screens/agents_page.dart';
-import 'screens/bundles_page.dart';
-import 'screens/gamemodes_page.dart';
-import 'screens/home_page.dart';
-import 'screens/maps_page.dart';
-import 'screens/my_shop_page.dart';
-import 'screens/playercards_page.dart';
-import 'screens/riot_login_page.dart';
-import 'screens/settings_page.dart';
-import 'screens/shop_edit_page.dart';
-import 'screens/skin_picker_page.dart';
-import 'screens/weapons_page.dart';
-import 'screens/wishlist_page.dart';
+import 'app_routes.dart';
 import 'services/catalog_api.dart';
 import 'services/riot_client.dart';
 import 'storage/catalog_cache.dart';
@@ -69,31 +57,7 @@ class MyApp extends StatelessWidget {
       title: 'VALORANT 商店追蹤',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
-      home: const HomePage(),
-      routes: {
-        '/agents': (context) => const AgentsPage(),
-        '/weapons': (context) => const WeaponsPage(),
-        '/maps': (context) => const MapsPage(),
-        '/bundles': (context) => const BundlesPage(),
-        '/gamemodes': (context) => const GamemodesPage(),
-        '/playercards': (context) => const PlayerCardsPage(),
-        '/settings': (context) => const SettingsPage(),
-        '/my-shop': (context) => const MyShopPage(),
-        '/wishlist': (context) => const WishlistPage(),
-        '/skin-picker': (context) => const SkinPickerPage(),
-        '/riot-login': (context) => const RiotLoginPage(),
-      },
-      onGenerateRoute: (settings) {
-        if (settings.name == '/my-shop/edit') {
-          final section =
-              settings.arguments as ShopSection? ?? ShopSection.daily;
-          return MaterialPageRoute(
-            builder: (_) => ShopEditPage(section: section),
-            settings: settings,
-          );
-        }
-        return null;
-      },
+      onGenerateRoute: onGenerateAppRoute,
     );
   }
 }
