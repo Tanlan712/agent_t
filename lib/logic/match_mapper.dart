@@ -26,13 +26,18 @@ List<MatchRef> mapHistory(Map<String, dynamic> json) => [
         ),
     ];
 
+/// 每場競技的 RR 變化。實測 RankedRatingEarned 常為 0，所以改用前後牌位計算：
+/// (TierAfter − TierBefore) × 100 + (RRAfter − RRBefore)，升降牌也正確。
+/// 非競技場次與定級中（TierBeforeUpdate 為 0）不列入。
 Map<String, int> rrByMatch(Map<String, dynamic> competitiveUpdates) => {
       for (final m
           in (competitiveUpdates['Matches'] as List<dynamic>? ?? const [])
               .cast<Map<String, dynamic>>())
-        // 只保留競技場次：其他模式的 RankedRatingEarned 固定為 0，會誤導 RR 趨勢。
-        if (m['QueueID'] == 'competitive')
-          m['MatchID'] as String: _int(m['RankedRatingEarned']),
+        if (m['QueueID'] == 'competitive' && _int(m['TierBeforeUpdate']) > 0)
+          m['MatchID'] as String:
+              (_int(m['TierAfterUpdate']) - _int(m['TierBeforeUpdate'])) * 100 +
+                  _int(m['RankedRatingAfterUpdate']) -
+                  _int(m['RankedRatingBeforeUpdate']),
     };
 
 RankInfo? mapRank(Map<String, dynamic> mmr) {

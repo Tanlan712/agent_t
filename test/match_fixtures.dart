@@ -126,9 +126,41 @@ Map<String, dynamic> competitiveUpdatesJson() => {
       'Version': 1,
       'Subject': myPuuid,
       'Matches': [
-        {'MatchID': 'm1', 'QueueID': 'competitive', 'RankedRatingEarned': 18, 'TierAfterUpdate': 18},
-        {'MatchID': 'm9', 'QueueID': 'unrated', 'RankedRatingEarned': 0, 'TierAfterUpdate': 0},
-        {'MatchID': 'm2', 'QueueID': 'competitive', 'RankedRatingEarned': -15, 'TierAfterUpdate': 18},
+        // 實測：RankedRatingEarned 為 0，實際變化要從前後牌位計算。
+        {
+          'MatchID': 'm1',
+          'QueueID': 'competitive',
+          'RankedRatingEarned': 0,
+          'TierBeforeUpdate': 18,
+          'TierAfterUpdate': 18,
+          'RankedRatingBeforeUpdate': 27,
+          'RankedRatingAfterUpdate': 45
+        },
+        {
+          'MatchID': 'm9',
+          'QueueID': 'unrated',
+          'RankedRatingEarned': 0,
+          'TierAfterUpdate': 0
+        },
+        {
+          'MatchID': 'm2',
+          'QueueID': 'competitive',
+          'RankedRatingEarned': 0,
+          'TierBeforeUpdate': 19,
+          'TierAfterUpdate': 18,
+          'RankedRatingBeforeUpdate': 5,
+          'RankedRatingAfterUpdate': 90
+        },
+        // 定級中：TierBeforeUpdate 為 0，不顯示 RR。
+        {
+          'MatchID': 'm10',
+          'QueueID': 'competitive',
+          'RankedRatingEarned': 0,
+          'TierBeforeUpdate': 0,
+          'TierAfterUpdate': 18,
+          'RankedRatingBeforeUpdate': 0,
+          'RankedRatingAfterUpdate': 27
+        },
       ],
     };
 
