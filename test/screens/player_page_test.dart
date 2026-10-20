@@ -38,10 +38,10 @@ void main() {
     expect(find.text('Foxtrot#TW1'), findsOneWidget);
     Finder kpi(String t) => find.descendant(
         of: find.byKey(const ValueKey('player-kpi')), matching: find.text(t));
-    // 平均 ACS 與勝率改成 KPI（r1 在 fixture 每場都是紅隊落敗）。
+    // 平均 ACS 改成 KPI；他人勝率不顯示（AGENTS.md 第 7 節，使用者 2026-10-21 決定）。
     expect(kpi('最近 5 場平均 ACS'), findsOneWidget);
     expect(kpi('227'), findsOneWidget);
-    expect(kpi('0%'), findsOneWidget);
+    expect(find.textContaining('勝率'), findsNothing);
     expect(find.text('10 / 10 / 5'), findsWidgets);
     expect(find.text('ACS 227'), findsWidgets);
     // 一頁 20 場，頁尾提示要捲到底才會建立。

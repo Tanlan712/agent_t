@@ -16,7 +16,7 @@
 
 - `AppColors` 補齊第 1 節的語意色：新增 `info`，加上 `win`、`loss`、`warn` 別名。舊名稱保留，避免一次改動太多檔案。
 - `buildAppTheme()`：
-  - 字體：`GoogleFonts.notoSansTcTextTheme()` 作為基底；`displayX`／`headlineX`／`titleLarge` 改用 Chakra Petch。
+  - 字體：系統字體作為基底（2026-10-21 改：不下載約 14MB 的 Noto Sans TC）；`displayX`／`headlineX`／`titleLarge` 改用 Chakra Petch。
   - 新增 `AppText.kpi`、`AppText.tabular`（等寬數字），供數字欄位使用。
   - 元件主題：Card（邊框、圓角 4）、FilledButton（buttonRed）、OutlinedButton、Chip、DataTable（表頭色、列高）、Tooltip、焦點顏色（info）。
 - 字體載入失敗（離線）時退回系統字體，畫面不可以壞掉。

@@ -11,6 +11,15 @@ import '../theme/app_theme_test.dart' show contrast;
 void main() {
   final theme = buildAppTheme(useGoogleFonts: false);
 
+  testWidgets('內文用系統字體，不下載 Noto Sans TC（約 14MB）', (tester) async {
+    final t = buildAppTheme();
+    for (final s in [t.textTheme.bodyMedium, t.textTheme.labelLarge]) {
+      expect(s?.fontFamily ?? '', isNot(contains('Noto')));
+    }
+    expect(t.textTheme.titleLarge?.fontFamilyFallback ?? const <String>[],
+        isNot(contains(predicate<String>((f) => f.contains('Noto')))));
+  });
+
   test('焦點高亮半透明，文字在高亮上仍清楚可讀', () {
     final bg = Color.alphaBlend(theme.focusColor, AppColors.surface);
     expect(contrast(AppColors.text, bg), greaterThanOrEqualTo(4.5));

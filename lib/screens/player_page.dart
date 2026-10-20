@@ -65,13 +65,7 @@ class _PlayerPageState extends State<PlayerPage> {
       for (final e in h.entries.take(5))
         if (e.detail case final d?) d.summary.acs,
     ];
-    final decided = [
-      for (final e in h.entries)
-        if (e.detail?.summary.won case final won?) won,
-    ];
-    final winRate = decided.isEmpty
-        ? '—'
-        : '${(decided.where((w) => w).length / decided.length * 100).round()}%';
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -81,7 +75,6 @@ class _PlayerPageState extends State<PlayerPage> {
                 label: '最近 ${recent.length} 場平均 ACS',
                 value:
                     '${(recent.reduce((a, b) => a + b) / recent.length).round()}'),
-            KpiTile(label: '勝率（${decided.length} 場）', value: winRate),
           ]),
         if (h.error case final e?)
           Padding(

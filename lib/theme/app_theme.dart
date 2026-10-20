@@ -62,15 +62,13 @@ abstract final class AppText {
       TextStyle(color: AppColors.muted, fontSize: 12, letterSpacing: 0.4);
 }
 
-/// 標題用 Chakra Petch、內文用 Noto Sans TC（中文退回 Noto Sans TC）。
+/// 標題用 Chakra Petch；內文與中文用系統字體（Noto Sans TC 約 14MB，使用者 2026-10-21 決定不下載）。
 /// [useGoogleFonts] 為 false 時用系統字體（測試、或字體載入失敗時）。
 TextTheme _textTheme(bool useGoogleFonts) {
   final base = ThemeData(brightness: Brightness.dark).textTheme;
   if (!useGoogleFonts) return base;
-  final body = GoogleFonts.notoSansTcTextTheme(base);
-  final cjk = GoogleFonts.notoSansTc().fontFamily;
-  TextStyle? head(TextStyle? s) => GoogleFonts.chakraPetch(textStyle: s)
-      .copyWith(fontFamilyFallback: [if (cjk != null) cjk]);
+  final body = base;
+  TextStyle? head(TextStyle? s) => GoogleFonts.chakraPetch(textStyle: s);
   return body.copyWith(
     displayLarge: head(body.displayLarge),
     displayMedium: head(body.displayMedium),
