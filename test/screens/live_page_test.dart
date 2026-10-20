@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:valorant_shop_tracker/models/match_models.dart';
 import 'package:valorant_shop_tracker/screens/live_page.dart';
 import 'package:valorant_shop_tracker/shell/nav_items.dart';
@@ -13,11 +14,15 @@ import '../shell/app_shell_test.dart' show setWidth;
 void main() {
   Future<Harness> harness(WidgetTester tester,
       {int partyStatus = 200,
+      int coreStatus = 404,
+      int pregameStatus = 404,
       Set<String> otherMmrHidden = const {},
       Map<String, dynamic>? party}) async {
     final h = await Harness.create(tester,
         riotHttp: riotClient(
             partyStatus: partyStatus,
+            coreStatus: coreStatus,
+            pregameStatus: pregameStatus,
             otherMmrHidden: otherMmrHidden,
             party: party));
     await tester.runAsync(() => h.riot.login(fakeRedirect));
@@ -161,5 +166,71 @@ void main() {
     // 使用者決定：他人隱藏等級也照樣顯示。
     expect(inKey('live-level-mate', 'Lv 100'), findsOneWidget);
     await leave(tester, h);
+  });
+
+  group('即時對戰', () {
+    testWidgets('對局中自動切換：地圖、模式、雙方隊伍、名稱、特務、牌位、教練', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester, coreStatus: 200);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      expect(find.text('亞海懸城'), findsOneWidget);
+      expect(find.text('競技'), findsOneWidget);
+      expect(find.text('我方'), findsOneWidget);
+      expect(find.text('敵方'), findsOneWidget);
+      expect(find.text('隊伍・大廳'), findsNothing);
+      expect(inKey('live-name-r1', 'N-r1#TW1'), findsOneWidget);
+      expect(inKey('live-name-r2', 'N-r2#TW1'), findsOneWidget);
+      expect(inKey('live-name-$myPuuid', 'Tester#TW1'), findsOneWidget);
+      String tip(String key) =>
+          tester.widget<Tooltip>(find.byKey(ValueKey(key))).message!;
+      expect(tip('live-agent-$myPuuid'), '蓋克');
+      expect(tip('live-rank-r1'), '鑽石 2');
+      expect(find.text('教練'), findsOneWidget);
+      await leave(tester, h);
+    });
+
+    testWidgets('每位玩家的最近 5 場與平均 ACS（同模式），教練不查', (tester) async {
+      setWidth(tester, 1400);
+      final requests = <http.Request>[];
+      final h = await Harness.create(tester,
+          riotHttp: riotClient(coreStatus: 200, requests: requests));
+      await tester.runAsync(() => h.riot.login(fakeRedirect));
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      await drain(tester);
+      expect(find.byKey(const ValueKey('form-r1-0')), findsOneWidget);
+      expect(inKey('form-r1', '平均 227'), findsOneWidget);
+      final histories = requests
+          .where((r) => r.url.path.startsWith('/match-history/v1/history/'))
+          .toList();
+      expect(
+          histories
+              .every((r) => r.url.queryParameters['queue'] == 'competitive'),
+          isTrue);
+      expect(histories.any((r) => r.url.path.endsWith('/coach')), isFalse);
+      await leave(tester, h);
+    });
+
+    testWidgets('點對局中的玩家進入玩家頁', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester, coreStatus: 200);
+      await tester.pumpWidget(
+          h.wrap(home: const LivePage(), onGenerateRoute: recordRoute));
+      await drain(tester);
+      await tester.tap(find.byKey(const ValueKey('live-player-r1')));
+      await tester.pumpAndSettle();
+      expect(find.text('route:/players/detail r1'), findsOneWidget);
+      await leave(tester, h);
+    });
+
+    testWidgets('選角中顯示選角提示', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester, pregameStatus: 200);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      expect(find.textContaining('選角中'), findsOneWidget);
+      await leave(tester, h);
+    });
   });
 }

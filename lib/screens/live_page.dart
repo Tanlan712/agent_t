@@ -7,12 +7,14 @@ import '../models/live_models.dart';
 import '../models/match_models.dart';
 import '../providers/live_party_provider.dart';
 import '../providers/match_reference_provider.dart';
+import '../providers/recent_form_loader.dart';
 import '../providers/riot_provider.dart';
 import '../services/live_client.dart';
 import '../services/match_client.dart';
 import '../shell/app_shell.dart';
 import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
+import '../widgets/recent_form_cell.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
 
 /// 即時對局（目前只有隊伍階段）。只有 GET，頁面開著時每 10 秒更新。
@@ -25,19 +27,41 @@ class LivePage extends StatefulWidget {
 
 class _LivePageState extends State<LivePage> {
   late final LivePartyProvider _live;
+  late final RecentFormLoader _forms;
+  String? _formsFor;
 
   @override
   void initState() {
     super.initState();
     _live = LivePartyProvider(context.read<LiveClient>(),
         context.read<MatchClient>(), context.read<RiotProvider>());
+    _forms = context.read<RecentFormLoader>();
+    _live.addListener(_requestForms);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && context.read<RiotProvider>().isLoggedIn) _live.start();
     });
   }
 
+  /// 使用者決定（AGENTS.md 第 2 節）：對局中查每位玩家的最近 5 場（同模式，教練除外）。
+  void _requestForms() {
+    final m = _live.match;
+    if (_live.phase != LivePhase.inGame ||
+        m == null ||
+        m.matchId == _formsFor) {
+      return;
+    }
+    _formsFor = m.matchId;
+    _forms.request([
+      for (final id in m.teamIds)
+        for (final p in m.team(id))
+          if (!p.isCoach) p.puuid,
+    ], owner: this, queue: m.queueId);
+  }
+
   @override
   void dispose() {
+    _live.removeListener(_requestForms);
+    _forms.cancelPending(owner: this);
     _live.dispose();
     super.dispose();
   }
@@ -79,6 +103,13 @@ class _LivePageState extends State<LivePage> {
   }
 
   Widget _body(BuildContext context) {
+    final ref = context.watch<MatchReferenceProvider>();
+    if (_live.phase == LivePhase.inGame && _live.match != null) {
+      return _MatchView(match: _live.match!, live: _live, ref: ref);
+    }
+    if (_live.phase == LivePhase.pregame) {
+      return const Center(child: Text('選角中…（對局開始後會自動切換成即時對戰）'));
+    }
     final party = _live.party;
     if (party == null) {
       switch (_live.status) {
@@ -93,7 +124,6 @@ class _LivePageState extends State<LivePage> {
           return const Center(child: CircularProgressIndicator());
       }
     }
-    final ref = context.watch<MatchReferenceProvider>();
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
@@ -250,6 +280,153 @@ class _MemberCard extends StatelessWidget {
               _rank(),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 對局中（core-game）的即時對戰畫面：雙方 10 人，我方在上。
+class _MatchView extends StatelessWidget {
+  final LiveMatch match;
+  final LivePartyProvider live;
+  final MatchReferenceProvider ref;
+
+  const _MatchView(
+      {required this.match, required this.live, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(ref.map(match.mapId).name,
+                    style: Theme.of(context).textTheme.titleLarge),
+                if (match.queueId.isNotEmpty) Text(queueName(match.queueId)),
+                Text(match.state == 'IN_PROGRESS' ? '進行中' : match.state,
+                    style: const TextStyle(color: AppColors.owned)),
+              ],
+            ),
+          ),
+        ),
+        for (final teamId in match.teamIds) ...[
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(teamId == match.myTeamId ? '我方' : '敵方',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: teamId == match.myTeamId
+                        ? AppColors.owned
+                        : AppColors.error)),
+          ),
+          Card(
+            child: Column(
+              children: [
+                for (final p in match.team(teamId))
+                  _PlayerRow(
+                      player: p, live: live, ref: ref, queue: match.queueId),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 24),
+        const Center(
+          child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊。',
+              style: TextStyle(color: AppColors.muted, fontSize: 12)),
+        ),
+      ],
+    );
+  }
+}
+
+class _PlayerRow extends StatelessWidget {
+  final LivePlayer player;
+  final LivePartyProvider live;
+  final MatchReferenceProvider ref;
+  final String queue;
+
+  const _PlayerRow(
+      {required this.player,
+      required this.live,
+      required this.ref,
+      required this.queue});
+
+  void _open(BuildContext context) {
+    final nav = Navigator.of(context);
+    if (player.isMe) {
+      nav.pushNamedAndRemoveUntil('/matches', (_) => false);
+    } else {
+      nav.pushNamed('/players/detail',
+          arguments: PlayerRef(
+              puuid: player.puuid, riotId: live.name(player.puuid) ?? '玩家'));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final agent = ref.agent(player.agentId);
+    final tier = ref.tier(player.tier);
+    return InkWell(
+      key: ValueKey('live-player-${player.puuid}'),
+      onTap: () => _open(context),
+      child: Container(
+        color: player.isMe ? AppColors.surfaceHigh : null,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            Tooltip(
+              key: ValueKey('live-rank-${player.puuid}'),
+              message: tier.name,
+              child: SizedBox(
+                  width: 24, height: 24, child: SkinIcon(url: tier.iconUrl)),
+            ),
+            const SizedBox(width: 8),
+            Tooltip(
+              key: ValueKey('live-agent-${player.puuid}'),
+              message: agent.name,
+              child: SizedBox(
+                  width: 32, height: 32, child: SkinIcon(url: agent.iconUrl)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(live.name(player.puuid) ?? '…',
+                        key: ValueKey('live-name-${player.puuid}'),
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontWeight: player.isMe
+                                ? FontWeight.bold
+                                : FontWeight.normal)),
+                  ),
+                  const SizedBox(width: 6),
+                  Text('Lv ${player.level}',
+                      style: const TextStyle(
+                          color: AppColors.muted, fontSize: 12)),
+                  if (player.isCoach) ...[
+                    const SizedBox(width: 6),
+                    const Text('教練',
+                        style: TextStyle(color: AppColors.muted, fontSize: 12)),
+                  ],
+                ],
+              ),
+            ),
+            if (!player.isCoach)
+              RecentFormCell(
+                  key: ValueKey('form-${player.puuid}'),
+                  puuid: player.puuid,
+                  queue: queue),
+          ],
         ),
       ),
     );
