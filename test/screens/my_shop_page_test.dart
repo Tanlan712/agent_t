@@ -106,6 +106,7 @@ void riotTests() {
         .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     await tester.pumpAndSettle();
     expect(find.text('VP 1500 · 輻能點數 120 · 王國幣 3000'), findsOneWidget);
+    expect(find.text('已擁有 2 款造型'), findsOneWidget);
     expect(find.text('已擁有'), findsWidgets);
     expect(h.shop.shop.daily.first.skinUuid, 'skin-odin');
   });

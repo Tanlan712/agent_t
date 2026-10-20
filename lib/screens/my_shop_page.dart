@@ -202,6 +202,8 @@ class _RiotBar extends StatelessWidget {
                   if (wallet != null)
                     Text(
                         'VP ${wallet.vp} · 輻能點數 ${wallet.radianite} · 王國幣 ${wallet.kingdom}'),
+                  if (wallet != null)
+                    Text('已擁有 ${riot.ownedSkinUuids.length} 款造型'),
                 ],
               ),
             ),
