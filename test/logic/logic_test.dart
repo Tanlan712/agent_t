@@ -36,9 +36,12 @@ void main() {
   });
 
   group('searchSkins', () {
-    const odin = SkinInfo(uuid: 'o', name: '凌空之志 奧丁', weaponName: '奧丁', tier: Tier.deluxe);
-    const prime = SkinInfo(uuid: 'p', name: 'Prime 幻象', weaponName: '幻象', tier: Tier.premium);
-    const ion = SkinInfo(uuid: 'i', name: '離子 幻象', weaponName: '幻象', tier: Tier.premium);
+    const odin = SkinInfo(
+        uuid: 'o', name: '凌空之志 奧丁', weaponName: '奧丁', tier: Tier.deluxe);
+    const prime = SkinInfo(
+        uuid: 'p', name: 'Prime 幻象', weaponName: '幻象', tier: Tier.premium);
+    const ion = SkinInfo(
+        uuid: 'i', name: '離子 幻象', weaponName: '幻象', tier: Tier.premium);
     const all = [odin, prime, ion];
 
     test('中文部分比對、忽略空白', () {
@@ -50,7 +53,8 @@ void main() {
       expect(searchSkins(all, 'prime').map((s) => s.uuid), ['p']);
     });
     test('空字串＋武器篩選', () {
-      expect(searchSkins(all, '', weaponName: '幻象').map((s) => s.uuid), ['p', 'i']);
+      expect(searchSkins(all, '', weaponName: '幻象').map((s) => s.uuid),
+          ['p', 'i']);
     });
     test('找不到', () {
       expect(searchSkins(all, '不存在'), isEmpty);
@@ -72,11 +76,14 @@ void main() {
     );
 
     test('兩區都有效', () {
-      expect(wishlistUuidsInShop(shop, {'A', 'C', 'D'}, DateTime(2026, 10, 19, 10)),
+      expect(
+          wishlistUuidsInShop(
+              shop, {'A', 'C', 'D'}, DateTime(2026, 10, 19, 10)),
           {'A', 'C'});
     });
     test('每日已過期', () {
-      expect(wishlistUuidsInShop(shop, {'A', 'C', 'D'}, DateTime(2026, 10, 20, 9)),
+      expect(
+          wishlistUuidsInShop(shop, {'A', 'C', 'D'}, DateTime(2026, 10, 20, 9)),
           {'C'});
     });
     test('剛好等於到期時刻視為過期', () {
@@ -84,7 +91,8 @@ void main() {
       expect(isDailyActive(shop, expires), isFalse);
     });
     test('空區塊不算有效', () {
-      expect(isNightMarketActive(const CurrentShop(), DateTime(2026, 10, 19)), isFalse);
+      expect(isNightMarketActive(const CurrentShop(), DateTime(2026, 10, 19)),
+          isFalse);
     });
   });
 }

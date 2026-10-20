@@ -26,7 +26,8 @@ class Harness {
   final RiotProvider riot;
   final SharedPreferences prefs;
 
-  Harness(this.catalog, this.shop, this.wishlist, this.settings, this.riot, this.prefs);
+  Harness(this.catalog, this.shop, this.wishlist, this.settings, this.riot,
+      this.prefs);
 
   static Future<Harness> create(
     WidgetTester tester, {
@@ -38,7 +39,8 @@ class Harness {
     final prefs = await SharedPreferences.getInstance();
     await ShopStorage(prefs).save(shop);
     await WishlistStorage(prefs).save([
-      for (final id in wishlist) WishlistItem(skinUuid: id, addedAt: DateTime(2026, 10, 1)),
+      for (final id in wishlist)
+        WishlistItem(skinUuid: id, addedAt: DateTime(2026, 10, 1)),
     ]);
     return Harness(
       c,
@@ -63,7 +65,8 @@ class Harness {
         ChangeNotifierProvider.value(value: settings),
         ChangeNotifierProvider.value(value: riot),
       ],
-      child: MaterialApp(home: home, routes: routes, onGenerateRoute: onGenerateRoute),
+      child: MaterialApp(
+          home: home, routes: routes, onGenerateRoute: onGenerateRoute),
     );
   }
 }

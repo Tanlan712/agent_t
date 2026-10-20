@@ -11,6 +11,7 @@ import 'shop_provider.dart';
 class RiotProvider with ChangeNotifier {
   static const badUrlMessage = '網址中找不到登入資訊，請貼上登入後跳轉的完整網址';
   static const expiredMessage = '登入已過期，請重新登入';
+  static const invalidLoginMessage = '登入資訊無效，請重新登入並貼上完整網址';
 
   final RiotClient _client;
   final DateTime Function() _now;
@@ -26,18 +27,26 @@ class RiotProvider with ChangeNotifier {
   RiotSession? get session => _session;
   bool get isLoggedIn =>
       _session != null && _now().isBefore(_session!.expiresAt);
-  RiotWallet? get wallet => _wallet;
-  Set<String> get ownedSkinUuids => Set.unmodifiable(_owned);
-  bool isOwned(String skinUuid) => _owned.contains(skinUuid);
+  RiotWallet? get wallet => isLoggedIn ? _wallet : null;
+  Set<String> get ownedSkinUuids =>
+      isLoggedIn ? Set.unmodifiable(_owned) : const <String>{};
+  bool isOwned(String skinUuid) => isLoggedIn && _owned.contains(skinUuid);
   bool get isBusy => _isBusy;
 
   /// 成功回傳 null，否則回傳可顯示的錯誤訊息。
   Future<String?> login(String pastedUrl) async {
     final tokens = parseRiotRedirect(pastedUrl);
     if (tokens == null) return badUrlMessage;
-    return _run(() async {
-      _session = await _client.createSession(tokens, _now());
-    });
+    // 換帳號時不能留著前一個帳號的錢包與已擁有資料。
+    _wallet = null;
+    _owned = {};
+    return _run(
+      () async {
+        _session = await _client.createSession(tokens, _now());
+      },
+      failurePrefix: '登入失敗',
+      authErrorMessage: invalidLoginMessage,
+    );
   }
 
   /// 取得商店、錢包與已擁有造型；成功回傳 null。
@@ -66,7 +75,11 @@ class RiotProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String?> _run(Future<void> Function() body) async {
+  Future<String?> _run(
+    Future<void> Function() body, {
+    String failurePrefix = '同步失敗',
+    String authErrorMessage = expiredMessage,
+  }) async {
     _isBusy = true;
     notifyListeners();
     try {
@@ -75,12 +88,12 @@ class RiotProvider with ChangeNotifier {
     } on RiotApiException catch (e) {
       if (e.isAuthError) {
         logout();
-        return expiredMessage;
+        return authErrorMessage;
       }
-      return '同步失敗：${e.message}';
+      return '$failurePrefix：${e.message}';
     } catch (e) {
       debugPrint('Riot 資料處理失敗：${e.runtimeType}');
-      return '同步失敗：資料格式不符';
+      return '$failurePrefix：資料格式不符';
     } finally {
       _isBusy = false;
       notifyListeners();

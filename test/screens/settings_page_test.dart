@@ -12,8 +12,9 @@ import '../catalog_helpers.dart';
 void main() {
   setUp(() => dotenv.testLoad(fileInput: ''));
 
-  Widget card(Harness h) =>
-      h.wrap(home: const Scaffold(body: SingleChildScrollView(child: MyShopSettingsCard())));
+  Widget card(Harness h) => h.wrap(
+      home: const Scaffold(
+          body: SingleChildScrollView(child: MyShopSettingsCard())));
 
   testWidgets('顯示刷新時間、標示開關、重新下載與上次下載時間', (tester) async {
     final h = await Harness.create(tester);
@@ -39,10 +40,12 @@ void main() {
       requests++;
       return http.Response('', 503);
     });
-    final h = await Harness.create(tester, catalog: await loadedCatalog(tester, client: client));
+    final h = await Harness.create(tester,
+        catalog: await loadedCatalog(tester, client: client));
     await tester.pumpWidget(card(h));
     await tester.tap(find.text('重新下載造型目錄'));
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester
+        .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     await tester.pump();
     expect(requests, greaterThan(0));
   });

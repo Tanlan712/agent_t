@@ -16,7 +16,8 @@ void main() {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: catalog),
-        ChangeNotifierProvider(create: (_) => RiotProvider(RiotClient(client: riotClient()))),
+        ChangeNotifierProvider(
+            create: (_) => RiotProvider(RiotClient(client: riotClient()))),
       ],
       child: MaterialApp(
         routes: {'/skin-picker': (_) => const SkinPickerPage()},
@@ -62,7 +63,8 @@ void main() {
 
   testWidgets('點選後回傳該造型', (tester) async {
     SkinInfo? result;
-    await tester.pumpWidget(app(await loadedCatalog(tester), onResult: (r) => result = r));
+    await tester.pumpWidget(
+        app(await loadedCatalog(tester), onResult: (r) => result = r));
     await open(tester);
     await tester.tap(find.text('Prime 幻象'));
     await tester.pumpAndSettle();

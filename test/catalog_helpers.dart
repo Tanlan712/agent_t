@@ -10,10 +10,14 @@ import 'package:valorant_shop_tracker/providers/catalog_provider.dart';
 import 'package:valorant_shop_tracker/services/catalog_api.dart';
 import 'package:valorant_shop_tracker/storage/catalog_cache.dart';
 
-const odin = SkinInfo(uuid: 'o', name: '凌空之志 奧丁', weaponName: '奧丁', tier: Tier.deluxe);
-const prime = SkinInfo(uuid: 'p', name: 'Prime 幻象', weaponName: '幻象', tier: Tier.premium);
-const ion = SkinInfo(uuid: 'i', name: '離子 幻象', weaponName: '幻象', tier: Tier.premium);
-const reaver = SkinInfo(uuid: 'r', name: '掠奪者 暴徒', weaponName: '暴徒', tier: Tier.ultra);
+const odin =
+    SkinInfo(uuid: 'o', name: '凌空之志 奧丁', weaponName: '奧丁', tier: Tier.deluxe);
+const prime =
+    SkinInfo(uuid: 'p', name: 'Prime 幻象', weaponName: '幻象', tier: Tier.premium);
+const ion =
+    SkinInfo(uuid: 'i', name: '離子 幻象', weaponName: '幻象', tier: Tier.premium);
+const reaver =
+    SkinInfo(uuid: 'r', name: '掠奪者 暴徒', weaponName: '暴徒', tier: Tier.ultra);
 const rgx = BundleInfo(uuid: 'b', name: 'RGX 11z Pro');
 
 final catalogFetchedAt = DateTime(2026, 10, 19, 12);
@@ -31,8 +35,10 @@ Future<CatalogProvider> loadedCatalog(
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   final cache = CatalogCache(prefs);
-  await cache.save(SkinCatalog(skins: skins, bundles: bundles, fetchedAt: catalogFetchedAt));
-  final provider = CatalogProvider(CatalogApi(client: client ?? _downClient()), cache);
+  await cache.save(
+      SkinCatalog(skins: skins, bundles: bundles, fetchedAt: catalogFetchedAt));
+  final provider =
+      CatalogProvider(CatalogApi(client: client ?? _downClient()), cache);
   await tester.runAsync(provider.init);
   return provider;
 }

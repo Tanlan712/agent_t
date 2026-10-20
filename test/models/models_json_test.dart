@@ -31,7 +31,8 @@ void main() {
     });
 
     test('SkinInfo 無圖示', () {
-      final s = SkinInfo(uuid: 'a', name: 'n', weaponName: 'w', tier: Tier.ultra);
+      final s =
+          SkinInfo(uuid: 'a', name: 'n', weaponName: 'w', tier: Tier.ultra);
       expect(SkinInfo.fromJson(s.toJson()).iconUrl, isNull);
     });
 
@@ -45,7 +46,9 @@ void main() {
 
     test('SkinCatalog', () {
       final c = SkinCatalog(
-        skins: [SkinInfo(uuid: 'a', name: 'n', weaponName: 'w', tier: Tier.select)],
+        skins: [
+          SkinInfo(uuid: 'a', name: 'n', weaponName: 'w', tier: Tier.select)
+        ],
         bundles: [BundleInfo(uuid: 'b', name: 'B')],
         fetchedAt: t1,
       );
@@ -74,7 +77,8 @@ void main() {
         dailyExpiresAt: t2,
         dailyUpdatedAt: t1,
         nightMarket: [
-          NightMarketEntry(skinUuid: 'c', originalPrice: 1775, discountedPrice: 900),
+          NightMarketEntry(
+              skinUuid: 'c', originalPrice: 1775, discountedPrice: 900),
         ],
         nightMarketEndsAt: t2,
         nightMarketUpdatedAt: t1,
@@ -101,7 +105,9 @@ void main() {
         daily: [ShopEntry(skinUuid: 'a', price: 1)],
         dailyExpiresAt: t2,
         dailyUpdatedAt: t1,
-        nightMarket: [NightMarketEntry(skinUuid: 'c', originalPrice: 2, discountedPrice: 1)],
+        nightMarket: [
+          NightMarketEntry(skinUuid: 'c', originalPrice: 2, discountedPrice: 1)
+        ],
         nightMarketEndsAt: t2,
         nightMarketUpdatedAt: t1,
         featuredBundle: BundleEntry(bundleUuid: 'b', price: 1),
@@ -122,7 +128,8 @@ void main() {
     });
 
     test('WishlistItem', () {
-      final r = WishlistItem.fromJson(WishlistItem(skinUuid: 'a', addedAt: t1).toJson());
+      final r = WishlistItem.fromJson(
+          WishlistItem(skinUuid: 'a', addedAt: t1).toJson());
       expect(r.skinUuid, 'a');
       expect(r.addedAt, t1);
     });

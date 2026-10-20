@@ -16,7 +16,8 @@ void main() {
     final cache = await cacheWith({});
     await cache.save(SkinCatalog(
       skins: const [
-        SkinInfo(uuid: 'a', name: '凌空之志 奧丁', weaponName: '奧丁', tier: Tier.deluxe),
+        SkinInfo(
+            uuid: 'a', name: '凌空之志 奧丁', weaponName: '奧丁', tier: Tier.deluxe),
       ],
       bundles: const [BundleInfo(uuid: 'b', name: 'RGX')],
       fetchedAt: DateTime(2026, 10, 19, 12),
@@ -29,8 +30,10 @@ void main() {
 
   test('寫入時刪除舊版快取', () async {
     final cache = await cacheWith({'catalog': '{"old":true}'});
-    await cache.save(SkinCatalog(skins: const [], bundles: const [], fetchedAt: DateTime(2026)));
-    expect((await SharedPreferences.getInstance()).containsKey('catalog'), isFalse);
+    await cache.save(SkinCatalog(
+        skins: const [], bundles: const [], fetchedAt: DateTime(2026)));
+    expect((await SharedPreferences.getInstance()).containsKey('catalog'),
+        isFalse);
   });
 
   test('沒有資料時回傳 null', () async {

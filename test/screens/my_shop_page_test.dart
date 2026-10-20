@@ -88,15 +88,22 @@ void riotTests() {
   });
 
   testWidgets('已登入時顯示帳號、同步按鈕，同步後顯示錢包與已擁有', (tester) async {
-    final h = await Harness.create(tester, catalog: await loadedCatalog(tester, skins: const [
-      SkinInfo(uuid: 'skin-odin', name: '凌空之志 奧丁', weaponName: '奧丁', tier: Tier.deluxe, levelUuid: 'lvl-odin'),
-    ]));
+    final h = await Harness.create(tester,
+        catalog: await loadedCatalog(tester, skins: const [
+          SkinInfo(
+              uuid: 'skin-odin',
+              name: '凌空之志 奧丁',
+              weaponName: '奧丁',
+              tier: Tier.deluxe,
+              levelUuid: 'lvl-odin'),
+        ]));
     await tester.runAsync(() => h.riot.login(fakeRedirect));
     await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
     await tester.pumpAndSettle();
     expect(find.text('已登入：Tester#TW1（ap）'), findsOneWidget);
     await tester.tap(find.text('從 Riot 同步'));
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester
+        .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     await tester.pumpAndSettle();
     expect(find.text('VP 1500 · 輻能點數 120 · 王國幣 3000'), findsOneWidget);
     expect(find.text('已擁有'), findsWidgets);

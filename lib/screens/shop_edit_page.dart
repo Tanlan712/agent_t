@@ -184,11 +184,20 @@ class _ShopEditPageState extends State<ShopEditPage> {
 
   Future<void> _pickEndDate() async {
     final now = widget.now();
+    // 結束日最早是明天：選今天的話，結束時刻（今天的刷新時間）可能已經過去。
+    final first = DateTime(now.year, now.month, now.day + 1);
+    final last = DateTime(now.year, now.month, now.day + 60);
+    final saved = _nightEndDate;
+    // 已存的日期可能已過期（或超出範圍），showDatePicker 會 assert，所以先修正初值。
+    final initial =
+        (saved == null || saved.isBefore(first) || saved.isAfter(last))
+            ? DateTime(now.year, now.month, now.day + 7)
+            : saved;
     final picked = await showDatePicker(
       context: context,
-      initialDate: _nightEndDate ?? now.add(const Duration(days: 7)),
-      firstDate: now,
-      lastDate: now.add(const Duration(days: 60)),
+      initialDate: initial,
+      firstDate: first,
+      lastDate: last,
     );
     if (picked != null) setState(() => _nightEndDate = picked);
   }

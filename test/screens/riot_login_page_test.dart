@@ -19,7 +19,8 @@ void main() {
   testWidgets('貼錯網址顯示提示', (tester) async {
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(home: const RiotLoginPage()));
-    await tester.enterText(find.byKey(const ValueKey('redirect-field')), 'https://playvalorant.com/');
+    await tester.enterText(find.byKey(const ValueKey('redirect-field')),
+        'https://playvalorant.com/');
     await tester.tap(find.text('完成登入'));
     await tester.pumpAndSettle();
     expect(find.text(RiotProvider.badUrlMessage), findsOneWidget);
@@ -29,9 +30,11 @@ void main() {
   testWidgets('貼上正確網址後登入並顯示帳號', (tester) async {
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(home: const RiotLoginPage()));
-    await tester.enterText(find.byKey(const ValueKey('redirect-field')), fakeRedirect);
+    await tester.enterText(
+        find.byKey(const ValueKey('redirect-field')), fakeRedirect);
     await tester.tap(find.text('完成登入'));
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester
+        .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     await tester.pumpAndSettle();
     expect(h.riot.isLoggedIn, isTrue);
     expect(find.text('已登入：Tester#TW1（ap）'), findsOneWidget);

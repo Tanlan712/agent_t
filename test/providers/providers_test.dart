@@ -1,4 +1,3 @@
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -58,8 +57,8 @@ void main() {
     });
 
     test('有快取時 init 不呼叫 API', () async {
-      await CatalogCache(prefs)
-          .save(SkinCatalog(skins: const [], bundles: const [], fetchedAt: now));
+      await CatalogCache(prefs).save(
+          SkinCatalog(skins: const [], bundles: const [], fetchedAt: now));
       await provider.init();
       expect(requests, 0);
       expect(provider.catalog, isNotNull);
@@ -101,20 +100,26 @@ void main() {
 
     test('每日不足 4 筆丟出 ArgumentError', () async {
       final p = ShopProvider(ShopStorage(prefs));
-      expect(() => p.saveDaily(entries(['a', 'b', 'c']), expires, now),
-          throwsA(isA<ArgumentError>().having((e) => e.message, 'message', '每日商店需要 4 個造型')));
+      expect(
+          () => p.saveDaily(entries(['a', 'b', 'c']), expires, now),
+          throwsA(isA<ArgumentError>()
+              .having((e) => e.message, 'message', '每日商店需要 4 個造型')));
     });
 
     test('重複造型丟出 ArgumentError', () async {
       final p = ShopProvider(ShopStorage(prefs));
-      expect(() => p.saveDaily(entries(['a', 'a', 'c', 'd']), expires, now),
-          throwsA(isA<ArgumentError>().having((e) => e.message, 'message', '同一造型不能重複')));
+      expect(
+          () => p.saveDaily(entries(['a', 'a', 'c', 'd']), expires, now),
+          throwsA(isA<ArgumentError>()
+              .having((e) => e.message, 'message', '同一造型不能重複')));
     });
 
     test('夜市不足 6 筆丟出 ArgumentError', () async {
       final p = ShopProvider(ShopStorage(prefs));
       final night = List.generate(
-          5, (i) => NightMarketEntry(skinUuid: '$i', originalPrice: 2, discountedPrice: 1));
+          5,
+          (i) => NightMarketEntry(
+              skinUuid: '$i', originalPrice: 2, discountedPrice: 1));
       expect(() => p.saveNightMarket(night, expires, now), throwsArgumentError);
     });
 
@@ -132,14 +137,16 @@ void main() {
 
     test('replaceShop 不驗證筆數並可持久化', () async {
       final p = ShopProvider(ShopStorage(prefs));
-      await p.replaceShop(CurrentShop(daily: entries(['a', 'b', 'c']), dailyExpiresAt: expires));
+      await p.replaceShop(CurrentShop(
+          daily: entries(['a', 'b', 'c']), dailyExpiresAt: expires));
       expect(ShopProvider(ShopStorage(prefs)).shop.daily.length, 3);
     });
 
     test('clearDaily 清空每日區塊', () async {
       final p = ShopProvider(ShopStorage(prefs));
       await p.saveDaily(entries(['a', 'b', 'c', 'd']), expires, now);
-      await p.saveFeaturedBundle(const BundleEntry(bundleUuid: 'b', price: 7100), now);
+      await p.saveFeaturedBundle(
+          const BundleEntry(bundleUuid: 'b', price: 7100), now);
       await p.clearDaily();
       expect(p.shop.daily, isEmpty);
       expect(p.shop.dailyExpiresAt, isNull);

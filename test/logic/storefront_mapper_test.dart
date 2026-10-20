@@ -5,11 +5,13 @@ import '../riot_fixtures.dart';
 
 void main() {
   final now = DateTime(2026, 10, 20, 10);
-  String resolve(String id) => const {
+  String resolve(String id) =>
+      const {
         'lvl-odin': 'skin-odin',
         'lvl-noicon': 'skin-noicon',
         'lvl-a': 'skin-a',
-      }[id] ?? id;
+      }[id] ??
+      id;
 
   test('每日商店：價格取 VP、到期時間、對不到的保留原 ID', () {
     final shop = mapStorefront(storefrontJson(), resolve, now);
@@ -36,15 +38,18 @@ void main() {
   });
 
   test('沒有 BonusStore 時夜市為空', () {
-    final shop = mapStorefront(storefrontJson(withNightMarket: false), resolve, now);
+    final shop =
+        mapStorefront(storefrontJson(withNightMarket: false), resolve, now);
     expect(shop.nightMarket, isEmpty);
     expect(shop.nightMarketEndsAt, isNull);
   });
 
   test('只有 Bundles 陣列時取第一個', () {
     final json = storefrontJson();
-    final bundle = (json['FeaturedBundle'] as Map<String, dynamic>).remove('Bundle');
+    final bundle =
+        (json['FeaturedBundle'] as Map<String, dynamic>).remove('Bundle');
     (json['FeaturedBundle'] as Map<String, dynamic>)['Bundles'] = [bundle];
-    expect(mapStorefront(json, resolve, now).featuredBundle!.bundleUuid, 'bundle-rgx');
+    expect(mapStorefront(json, resolve, now).featuredBundle!.bundleUuid,
+        'bundle-rgx');
   });
 }

@@ -26,20 +26,25 @@ void main() {
     await c.fetchStorefront(s);
     final store = requests.firstWhere((r) => r.url.path.contains('storefront'));
     expect(store.method, 'POST');
-    expect(store.url.toString(), 'https://pd.ap.a.pvp.net/store/v3/storefront/puuid-1');
+    expect(store.url.toString(),
+        'https://pd.ap.a.pvp.net/store/v3/storefront/puuid-1');
     expect(store.headers['Authorization'], 'Bearer fake-access');
     expect(store.headers['X-Riot-Entitlements-JWT'], 'fake-ent');
-    expect(store.headers['X-Riot-ClientVersion'], 'release-13.08-shipping-19-5698904');
+    expect(store.headers['X-Riot-ClientVersion'],
+        'release-13.08-shipping-19-5698904');
     expect(store.headers['X-Riot-ClientPlatform'], isNotEmpty);
   });
 
   test('storefront v3 回應 404 時改用 v2 GET', () async {
     final requests = <http.Request>[];
-    final c = RiotClient(client: riotClient(requests: requests, storefrontV3Status: 404));
+    final c = RiotClient(
+        client: riotClient(requests: requests, storefrontV3Status: 404));
     final s = await c.createSession(tokens, now);
     final json = await c.fetchStorefront(s);
     expect(json.containsKey('SkinsPanelLayout'), isTrue);
-    expect(requests.any((r) => r.method == 'GET' && r.url.path == '/store/v2/storefront/puuid-1'),
+    expect(
+        requests.any((r) =>
+            r.method == 'GET' && r.url.path == '/store/v2/storefront/puuid-1'),
         isTrue);
   });
 
@@ -53,7 +58,8 @@ void main() {
 
   test('擁有的造型等級', () async {
     final c = RiotClient(client: riotClient());
-    final owned = await c.fetchOwnedSkinLevels(await c.createSession(tokens, now));
+    final owned =
+        await c.fetchOwnedSkinLevels(await c.createSession(tokens, now));
     expect(owned, {'lvl-odin', 'lvl-not-in-catalog'});
   });
 

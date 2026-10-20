@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:valorant_shop_tracker/models/current_shop.dart';
 import 'package:valorant_shop_tracker/models/skin_info.dart';
 import 'package:valorant_shop_tracker/screens/shop_edit_page.dart';
 
@@ -7,6 +8,7 @@ import '../app_harness.dart';
 import '../catalog_helpers.dart';
 
 void main() {
+  group('夜市日期', nightMarketDateTests);
   final now = DateTime(2026, 10, 19, 10);
 
   /// 假的 '/skin-picker'：依序回傳 [picks] 中的造型。
@@ -80,5 +82,40 @@ void main() {
     expect(h.shop.shop.daily.first.skinUuid, 'p');
     expect(h.shop.shop.daily.first.price, 1775);
     expect(h.shop.shop.daily[1].price, 1275);
+  });
+}
+
+void nightMarketDateTests() {
+  testWidgets('夜市已過期時點結束日期不會出錯', (tester) async {
+    final now = DateTime(2026, 10, 20, 10);
+    final h = await Harness.create(tester,
+        shop: CurrentShop(
+          nightMarket: [
+            for (var i = 0; i < 6; i++)
+              NightMarketEntry(
+                  skinUuid: 'x$i', originalPrice: 2, discountedPrice: 1),
+          ],
+          nightMarketEndsAt: DateTime(2026, 10, 19, 8),
+        ));
+    await tester.pumpWidget(h.wrap(
+        home: ShopEditPage(section: ShopSection.nightMarket, now: () => now)));
+    await tester.ensureVisible(find.textContaining('結束日期'));
+    await tester.tap(find.textContaining('結束日期'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(DatePickerDialog), findsOneWidget);
+  });
+
+  testWidgets('夜市結束日期不能選今天', (tester) async {
+    final now = DateTime(2026, 10, 20, 10);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(
+        home: ShopEditPage(section: ShopSection.nightMarket, now: () => now)));
+    await tester.ensureVisible(find.text('選擇夜市結束日期'));
+    await tester.tap(find.text('選擇夜市結束日期'));
+    await tester.pumpAndSettle();
+    final dialog =
+        tester.widget<DatePickerDialog>(find.byType(DatePickerDialog));
+    expect(dialog.firstDate, DateTime(2026, 10, 21));
   });
 }
