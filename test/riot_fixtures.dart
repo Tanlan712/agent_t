@@ -145,6 +145,9 @@ MockClient riotClient({
             ? json(corePlayerJson())
             : json({'httpStatus': coreStatus, 'errorCode': 'x'}, coreStatus);
       }
+      if (path == '/core-game/v1/matches/$testCoreMatchId/loadouts') {
+        return json(coreLoadoutsJson());
+      }
       if (path == '/core-game/v1/matches/$testCoreMatchId') {
         return json(coreMatchJson());
       }

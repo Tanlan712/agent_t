@@ -31,6 +31,10 @@ class LivePartyProvider with ChangeNotifier {
   LiveParty? _party;
   LiveMatch? _liveMatch;
   LivePregame? _pregame;
+
+  /// 造型：每場對局只讀一次（matchId → puuid → 武器 → 造型）。
+  String? _skinsFor;
+  Map<String, Map<String, String>> _skins = const {};
   DateTime? _pregameFetchedAt;
   LivePhase _phase = LivePhase.party;
   LiveStatus _status = LiveStatus.idle;
@@ -55,6 +59,9 @@ class LivePartyProvider with ChangeNotifier {
   LiveParty? get party => _party;
   LiveMatch? get match => _liveMatch;
   LivePregame? get pregame => _pregame;
+
+  /// 玩家的武器 ID → 造型 ID；還沒讀到或沒有資料時為 null。
+  Map<String, String>? skins(String puuid) => _skins[puuid];
 
   /// 讀到選角資料的時間；畫面用來倒數剩餘時間。
   DateTime? get pregameFetchedAt => _pregameFetchedAt;
@@ -116,6 +123,8 @@ class LivePartyProvider with ChangeNotifier {
             mapCoreGame(await _live.fetchCoreMatch(s, coreId), s.puuid);
         if (_disposed) return;
         await _fillNames(s, match.players.map((p) => p.puuid));
+        if (_disposed) return;
+        await _loadSkins(s, coreId);
         if (_disposed) return;
         _liveMatch = match;
         _pregame = null;
@@ -187,6 +196,17 @@ class LivePartyProvider with ChangeNotifier {
     try {
       _names.addAll(await _match.fetchNames(s, ids));
       _namesAsked.addAll(ids);
+    } on RiotApiException catch (e) {
+      if (e.statusCode == 401) rethrow;
+    }
+  }
+
+  /// 造型只是補充資訊：失敗（401 以外）時下一輪再試，不影響對局畫面。
+  Future<void> _loadSkins(RiotSession s, String matchId) async {
+    if (_skinsFor == matchId) return;
+    try {
+      _skins = mapLoadouts(await _live.fetchCoreLoadouts(s, matchId));
+      _skinsFor = matchId;
     } on RiotApiException catch (e) {
       if (e.statusCode == 401) rethrow;
     }

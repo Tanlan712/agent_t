@@ -29,6 +29,11 @@ class LiveClient {
   Future<Map<String, dynamic>> fetchCoreMatch(RiotSession s, String matchId) =>
       _riot.getGlz(s, '/core-game/v1/matches/$matchId', label: '取得對局');
 
+  /// 對局中每位玩家攜帶的造型（使用者決定，AGENTS.md）；只 GET。
+  Future<Map<String, dynamic>> fetchCoreLoadouts(
+          RiotSession s, String matchId) =>
+      _riot.getGlz(s, '/core-game/v1/matches/$matchId/loadouts', label: '取得造型');
+
   /// 選角中的場次 ID；不在選角（404）時回傳 null。
   Future<String?> fetchPregameMatchId(RiotSession s) =>
       _matchId(s, '/pregame/v1/players/${s.puuid}', '取得選角');

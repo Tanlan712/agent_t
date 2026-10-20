@@ -10,6 +10,7 @@ import 'package:valorant_shop_tracker/services/live_client.dart';
 import 'package:valorant_shop_tracker/services/match_client.dart';
 import 'package:valorant_shop_tracker/services/riot_client.dart';
 
+import '../live_fixtures.dart';
 import '../match_fixtures.dart';
 import '../riot_fixtures.dart';
 
@@ -165,6 +166,15 @@ void main() {
       expect(p.name(myPuuid), 'Tester#TW1');
       expect(where('/parties/'), isEmpty);
       expect(where('/pregame/'), isEmpty);
+    });
+
+    test('對局中：造型每場只讀一次', () async {
+      final (p, _) = await setup(coreStatus: 200);
+      await p.refresh();
+      await p.refresh();
+      expect(p.skins('mate')![vandalId], 'p');
+      expect(p.skins('nobody'), isNull);
+      expect(where('/loadouts').length, 1);
     });
 
     test('選角中：切到 pregame，讀取我方並查名稱，不讀隊伍', () async {

@@ -89,4 +89,13 @@ void main() {
         .fetchPregameMatch(riot.session!, testPregameMatchId);
     expect(json['ID'], testPregameMatchId);
   });
+
+  test('對局造型', () async {
+    final rc = RiotClient(client: riotClient(coreStatus: 200));
+    final riot = RiotProvider(rc);
+    await riot.login(fakeRedirect);
+    final json =
+        await LiveClient(rc).fetchCoreLoadouts(riot.session!, testCoreMatchId);
+    expect((json['Loadouts'] as List).length, 2);
+  });
 }
