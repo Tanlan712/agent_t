@@ -19,6 +19,7 @@ import '../services/match_client.dart';
 import '../shell/app_shell.dart';
 import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
+import '../widgets/hud/hud.dart';
 import '../widgets/recent_form_cell.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
 
@@ -152,7 +153,8 @@ class _LivePageState extends State<LivePage> {
     if (party == null) {
       switch (_live.status) {
         case LiveStatus.noParty:
-          return const Center(child: Text('遊戲沒有開啟，或目前不在大廳'));
+          return const EmptyState(
+              icon: Icons.sports_esports, message: '遊戲沒有開啟，或目前不在大廳');
         case LiveStatus.error:
         case LiveStatus.loggedOut:
           return Center(
@@ -342,49 +344,74 @@ class _MatchView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Wrap(
-              spacing: 16,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
+        KpiStrip(tiles: [
+          KpiTile(label: '地圖', value: ref.map(match.mapId).name),
+          KpiTile(
+              label: '模式',
+              value: match.queueId.isEmpty ? '—' : queueName(match.queueId)),
+          KpiTile(
+              label: '狀態',
+              value: match.state == 'IN_PROGRESS' ? '進行中' : match.state),
+        ]),
+        const SizedBox(height: 16),
+        // 寬螢幕我方與敵方左右並排，窄螢幕上下排列。
+        LayoutBuilder(builder: (context, c) {
+          final teams = [
+            for (final teamId in match.teamIds)
+              Column(
+                key: ValueKey('live-team-$teamId'),
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4, bottom: 8),
+                    child: Text(teamId == match.myTeamId ? '我方' : '敵方',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: teamId == match.myTeamId
+                                ? AppColors.win
+                                : AppColors.loss)),
+                  ),
+                  HudCard(
+                    padding: EdgeInsets.zero,
+                    accent: teamId == match.myTeamId
+                        ? AppColors.win
+                        : AppColors.loss,
+                    child: Column(
+                      children: [
+                        for (final p in match.team(teamId))
+                          _PlayerRow(
+                              player: p,
+                              live: live,
+                              ref: ref,
+                              queue: match.queueId,
+                              seasonId: match.seasonId,
+                              rules: rules),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+          ];
+          if (c.maxWidth >= 1000 && teams.length == 2) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(ref.map(match.mapId).name,
-                    style: Theme.of(context).textTheme.titleLarge),
-                if (match.queueId.isNotEmpty) Text(queueName(match.queueId)),
-                Text(match.state == 'IN_PROGRESS' ? '進行中' : match.state,
-                    style: const TextStyle(color: AppColors.owned)),
+                Expanded(child: teams[0]),
+                const SizedBox(width: 12),
+                Expanded(child: teams[1]),
               ],
-            ),
-          ),
-        ),
-        for (final teamId in match.teamIds) ...[
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 8),
-            child: Text(teamId == match.myTeamId ? '我方' : '敵方',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: teamId == match.myTeamId
-                        ? AppColors.owned
-                        : AppColors.error)),
-          ),
-          Card(
-            child: Column(
-              children: [
-                for (final p in match.team(teamId))
-                  _PlayerRow(
-                      player: p,
-                      live: live,
-                      ref: ref,
-                      queue: match.queueId,
-                      seasonId: match.seasonId,
-                      rules: rules),
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < teams.length; i++) ...[
+                if (i > 0) const SizedBox(height: 16),
+                teams[i],
               ],
-            ),
-          ),
-        ],
+            ],
+          );
+        }),
         const SizedBox(height: 24),
         const Center(
           child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊。',
@@ -842,16 +869,8 @@ class _SuspicionTag extends StatelessWidget {
       child: Tooltip(
         key: ValueKey('sus-$puuid'),
         message: '${s.reasons.join('\n')}\n（依公開數據推測，可能誤判）',
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.wishlistGold),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text('⚠ $label',
-              style:
-                  const TextStyle(color: AppColors.wishlistGold, fontSize: 11)),
-        ),
+        child: StatusChip(
+            label: label, color: AppColors.warn, icon: Icons.warning_amber),
       ),
     );
   }

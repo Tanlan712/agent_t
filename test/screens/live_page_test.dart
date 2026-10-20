@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 import 'package:http/http.dart' as http;
 import 'package:valorant_shop_tracker/models/match_models.dart';
 import 'package:valorant_shop_tracker/logic/suspicion.dart';
@@ -380,6 +381,55 @@ void main() {
       }
       expect(find.byKey(const ValueKey('sus-b3')), findsNothing);
       expect(find.byKey(const ValueKey('sus-coach')), findsNothing);
+      await leave(tester, h);
+    });
+  });
+
+  group('戰術 HUD 即時對局', () {
+    testWidgets('寬螢幕我方與敵方左右並排，窄螢幕上下排列', (tester) async {
+      for (final (width, sideBySide) in [(1400.0, true), (800.0, false)]) {
+        setWidth(tester, width);
+        final h = await harness(tester, coreStatus: 200);
+        await tester.pumpWidget(h.wrap(home: const LivePage()));
+        await drain(tester);
+        final blue =
+            tester.getTopLeft(find.byKey(const ValueKey('live-team-Blue')));
+        final red =
+            tester.getTopLeft(find.byKey(const ValueKey('live-team-Red')));
+        if (sideBySide) {
+          expect(red.dy, blue.dy, reason: '$width');
+          expect(red.dx, greaterThan(blue.dx));
+        } else {
+          expect(red.dy, greaterThan(blue.dy), reason: '$width');
+        }
+        expect(tester.takeException(), isNull);
+        await leave(tester, h);
+      }
+    });
+
+    testWidgets('疑似小號標籤是 StatusChip，不用 emoji', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester, coreStatus: 200);
+      await tester.pumpWidget(h.wrap(
+          home: const LivePage(
+              rules: SuspicionRules(lowLevel: 60, smurfMinAcs: 200))));
+      await drain(tester);
+      await drain(tester);
+      expect(
+          find.descendant(
+              of: find.byKey(const ValueKey('sus-r1')),
+              matching: find.byType(StatusChip)),
+          findsOneWidget);
+      expect(find.textContaining('⚠'), findsNothing);
+      await leave(tester, h);
+    });
+
+    testWidgets('不在大廳時顯示 EmptyState', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester, partyStatus: 404);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      expect(find.byType(EmptyState), findsOneWidget);
       await leave(tester, h);
     });
   });
