@@ -133,9 +133,26 @@
     - `Incognito`：成員隱藏名稱。使用者決定照樣查詢並顯示名稱，不加標籤。
     - `HideAccountLevel`：成員隱藏等級。使用者決定照樣顯示（自己的資料上也會出現這個開關）。
 
-### `GET /pregame/v1/players/{puuid}`、`GET /core-game/v1/players/{puuid}` ✅ 2026-10-21
-- 不在該階段時回 404：`{httpStatus, errorCode, message}`。
-- 在選角或對局中時的欄位：📄 `Subject, MatchID, Version`；詳細內容待實測後補上。
+### `GET /pregame/v1/players/{puuid}` ✅ 2026-10-21
+- 不在選角時回 404：`{httpStatus, errorCode, message}`。
+- 選角中的欄位：📄 `Subject, MatchID, Version`；`pregame/v1/matches/{id}` 的內容**尚待實測**。
+
+### `GET /core-game/v1/players/{puuid}` ✅ 2026-10-21（競技場次、對局中）
+- 不在對局時回 404。對局中回 `Subject, MatchID, Version`。
+
+### `GET /core-game/v1/matches/{matchId}` ✅ 2026-10-21
+- 頂層：`MatchID, Version, State, MapID, ModeID, ProvisioningFlow, GamePodID, AllMUCName, TeamMUCName, TeamVoiceID, TeamMatchToken, IsReconnectable, ConnectionDetails, PostGameDetails, Players, MatchmakingData`
+  - `State` 實測值：`IN_PROGRESS`；`MapID` 例如 `/Game/Maps/Triad/Triad`；`ProvisioningFlow`：`Matchmaking`
+  - `MatchmakingData`：`QueueID`（實測 `competitive`）、`IsRanked`
+  - `PostGameDetails`：對局中為 null
+  - ⛔ `ConnectionDetails`（`GameServerHosts, GameServerHost, GameServerPort, GameServerObfuscatedIP, GameClientHash, PlayerKey`）、`TeamMatchToken`、`TeamVoiceID`、`AllMUCName`、`TeamMUCName`：
+    遊戲伺服器連線資訊與語音／聊天憑證，**絕對不得讀取內容、顯示、記錄或傳送**。
+- `Players[]`（10 人）：`Subject, TeamID, TeamNumber, CharacterID, bonsaiBloomline, PlayerIdentity, SeasonalBadgeInfo, IsCoach, IsAssociated, PlatformType, PremierPrestige`
+  - `TeamID`：`Blue`／`Red`；`CharacterID`：特務 UUID
+  - `PlayerIdentity`：與隊伍相同（`PlayerCardID, PlayerTitleID, AccountLevel, PreferredLevelBorderID, Incognito, HideAccountLevel`）
+  - `SeasonalBadgeInfo`：`SeasonID, NumberOfWins, WinsByTier{tier: 勝場}, Rank`（本季牌位）`, LeaderboardRank`
+  - `bonsaiBloomline`：`bloomlineFlourishID, bloomlineShortLevel, bloomlineHypeID`（意義不明，未使用）
+  - 沒有名稱與 partyId；名稱要用 name-service 查詢。
 
 ## 公開遊戲資料（valorant-api.com）🧩
 

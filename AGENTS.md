@@ -68,6 +68,8 @@ Riot 的第三方 App 說明指出：暴露隱藏資訊、即時分析或帶來�
 
 - 不得詢問、儲存或輸入使用者的 Riot 帳號密碼，也不得替使用者登入。
 - token 只存在記憶體，不得寫入 localStorage、log、錯誤訊息或測試資料。
+- core-game 的 `ConnectionDetails`（遊戲伺服器 IP、連接埠、PlayerKey）、`TeamMatchToken` 與語音／聊天 ID，
+  一律不讀取內容、不顯示、不記錄、不傳送。
 - 不得讀取或輸出 `.env` 的內容。
 
 ## 5. 隱私
