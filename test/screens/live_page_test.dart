@@ -260,4 +260,51 @@ void main() {
       await leave(tester, h);
     });
   });
+
+  group('選角畫面', () {
+    testWidgets('地圖、模式、剩餘時間、敵方人數與鎖定數', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester, pregameStatus: 200);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      expect(find.text('亞海懸城'), findsOneWidget);
+      expect(find.text('競技'), findsOneWidget);
+      expect(find.text('選角中'), findsOneWidget);
+      expect(find.byKey(const ValueKey('pregame-remaining')), findsOneWidget);
+      expect(find.textContaining('秒'), findsWidgets);
+      expect(find.text('敵方 5 人，已鎖定 2 人'), findsOneWidget);
+      await leave(tester, h);
+    });
+
+    testWidgets('我方成員：特務、選角狀態、名稱、牌位、最近 5 場', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester, pregameStatus: 200);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      await drain(tester);
+      expect(inKey('pregame-state-mate', '已鎖定'), findsOneWidget);
+      expect(inKey('pregame-state-$myPuuid', '已選'), findsOneWidget);
+      expect(inKey('pregame-state-b3', '未選'), findsOneWidget);
+      expect(inKey('live-name-mate', 'N-mate#TW1'), findsOneWidget);
+      String tip(String key) =>
+          tester.widget<Tooltip>(find.byKey(ValueKey(key))).message!;
+      expect(tip('live-rank-mate'), '鑽石 2');
+      expect(tip('live-rank-b4'), '超凡 1');
+      expect(find.byKey(const ValueKey('live-level-b5')), findsNothing);
+      expect(find.byKey(const ValueKey('form-mate-0')), findsOneWidget);
+      await leave(tester, h);
+    });
+
+    testWidgets('點隊友進入玩家頁', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester, pregameStatus: 200);
+      await tester.pumpWidget(
+          h.wrap(home: const LivePage(), onGenerateRoute: recordRoute));
+      await drain(tester);
+      await tester.tap(find.byKey(const ValueKey('live-player-mate')));
+      await tester.pumpAndSettle();
+      expect(find.text('route:/players/detail mate'), findsOneWidget);
+      await leave(tester, h);
+    });
+  });
 }

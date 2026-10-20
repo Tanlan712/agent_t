@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -42,29 +44,44 @@ class _LivePageState extends State<LivePage> {
     });
   }
 
-  /// 使用者決定（AGENTS.md 第 2 節）：對局中查每位玩家的最近 5 場（同模式，教練除外）。
+  /// 使用者決定（AGENTS.md 第 2 節）：對局中查每位玩家的最近 5 場（同模式，教練除外）；
+  /// 選角時查隊友（Riot 不提供對手）。
   void _requestForms() {
     final m = _live.match;
-    if (_live.phase != LivePhase.inGame ||
-        m == null ||
-        m.matchId == _formsFor) {
-      return;
+    final pre = _live.pregame;
+    if (_live.phase == LivePhase.inGame && m != null) {
+      _request(
+          'core:${m.matchId}',
+          [
+            for (final id in m.teamIds)
+              for (final p in m.team(id))
+                if (!p.isCoach) p.puuid,
+          ],
+          m.queueId,
+          m.seasonId,
+          {
+            for (final p in m.players)
+              if (p.tier == 0 && !p.isCoach) p.puuid,
+          });
+    } else if (_live.phase == LivePhase.pregame && pre != null) {
+      _request(
+          'pre:${pre.matchId}',
+          [for (final a in pre.allies) a.puuid],
+          pre.queueId,
+          pre.seasonId,
+          {
+            for (final a in pre.allies)
+              if (a.tier == 0) a.puuid,
+          });
     }
-    _formsFor = m.matchId;
-    _forms.request(
-        [
-          for (final id in m.teamIds)
-            for (final p in m.team(id))
-              if (!p.isCoach) p.puuid,
-        ],
-        owner: this,
-        queue: m.queueId,
-        // 實測 SeasonalBadgeInfo.Rank 常為 0：另外查這季牌位。
-        seasonId: m.seasonId,
-        rankFor: {
-          for (final p in m.players)
-            if (p.tier == 0 && !p.isCoach) p.puuid,
-        });
+  }
+
+  void _request(String key, List<String> puuids, String queue, String seasonId,
+      Set<String> rankFor) {
+    if (key == _formsFor) return;
+    _formsFor = key;
+    _forms.request(puuids,
+        owner: this, queue: queue, seasonId: seasonId, rankFor: rankFor);
   }
 
   @override
@@ -116,8 +133,8 @@ class _LivePageState extends State<LivePage> {
     if (_live.phase == LivePhase.inGame && _live.match != null) {
       return _MatchView(match: _live.match!, live: _live, ref: ref);
     }
-    if (_live.phase == LivePhase.pregame) {
-      return const Center(child: Text('選角中…（對局開始後會自動切換成即時對戰）'));
+    if (_live.phase == LivePhase.pregame && _live.pregame != null) {
+      return _PregameView(pregame: _live.pregame!, live: _live, ref: ref);
     }
     final party = _live.party;
     if (party == null) {
@@ -453,6 +470,211 @@ class _PlayerRow extends StatelessWidget {
                   key: ValueKey('form-${player.puuid}'),
                   puuid: player.puuid,
                   queue: queue),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+const _selectionLabels = {
+  AgentSelection.none: '未選',
+  AgentSelection.selected: '已選',
+  AgentSelection.locked: '已鎖定',
+};
+
+/// 選角中（pregame）的畫面：我方 5 人；Riot 不提供對手，只顯示人數與已鎖定人數。
+class _PregameView extends StatefulWidget {
+  final LivePregame pregame;
+  final LivePartyProvider live;
+  final MatchReferenceProvider ref;
+
+  const _PregameView(
+      {required this.pregame, required this.live, required this.ref});
+
+  @override
+  State<_PregameView> createState() => _PregameViewState();
+}
+
+class _PregameViewState extends State<_PregameView> {
+  /// 只在畫面上倒數，不會多發請求。
+  late final Timer _tick =
+      Timer.periodic(const Duration(seconds: 1), (_) => setState(() {}));
+
+  @override
+  void initState() {
+    super.initState();
+    _tick;
+  }
+
+  @override
+  void dispose() {
+    _tick.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pre = widget.pregame;
+    final fetched = widget.live.pregameFetchedAt ?? DateTime.now();
+    final left = pre.remaining - DateTime.now().difference(fetched);
+    final seconds = left.isNegative ? 0 : left.inSeconds;
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(widget.ref.map(pre.mapId).name,
+                    style: Theme.of(context).textTheme.titleLarge),
+                if (pre.queueId.isNotEmpty) Text(queueName(pre.queueId)),
+                const Text('選角中', style: TextStyle(color: AppColors.owned)),
+                Text('剩餘 $seconds 秒',
+                    key: const ValueKey('pregame-remaining'),
+                    style: const TextStyle(color: AppColors.muted)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Text('我方',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold, color: AppColors.owned)),
+        ),
+        Card(
+          child: Column(
+            children: [
+              for (final a in pre.allies)
+                _PregameRow(
+                    player: a,
+                    live: widget.live,
+                    ref: widget.ref,
+                    queue: pre.queueId,
+                    seasonId: pre.seasonId),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Text('敵方 ${pre.enemySize} 人，已鎖定 ${pre.enemyLocked} 人',
+              style: const TextStyle(color: AppColors.muted)),
+        ),
+        const SizedBox(height: 24),
+        const Center(
+          child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊。',
+              style: TextStyle(color: AppColors.muted, fontSize: 12)),
+        ),
+      ],
+    );
+  }
+}
+
+class _PregameRow extends StatelessWidget {
+  final PregamePlayer player;
+  final LivePartyProvider live;
+  final MatchReferenceProvider ref;
+  final String queue;
+  final String seasonId;
+
+  const _PregameRow(
+      {required this.player,
+      required this.live,
+      required this.ref,
+      required this.queue,
+      required this.seasonId});
+
+  void _open(BuildContext context) {
+    final nav = Navigator.of(context);
+    if (player.isMe) {
+      nav.pushNamedAndRemoveUntil('/matches', (_) => false);
+    } else {
+      nav.pushNamed('/players/detail',
+          arguments: PlayerRef(
+              puuid: player.puuid, riotId: live.name(player.puuid) ?? '玩家'));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final agent = ref.agent(player.agentId);
+    final tier = ref.tier(player.tier > 0
+        ? player.tier
+        : (context
+                .watch<RecentFormLoader>()
+                .rank(player.puuid, seasonId)
+                .seasonTier ??
+            0));
+    final name = live.name(player.puuid) ??
+        (live.nameMissing(player.puuid) ? '未知玩家' : '…');
+    final locked = player.selection == AgentSelection.locked;
+    return InkWell(
+      key: ValueKey('live-player-${player.puuid}'),
+      onTap: () => _open(context),
+      child: Container(
+        color: player.isMe ? AppColors.surfaceHigh : null,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            Tooltip(
+              key: ValueKey('live-rank-${player.puuid}'),
+              message: tier.name,
+              child: SizedBox(
+                  width: 24, height: 24, child: SkinIcon(url: tier.iconUrl)),
+            ),
+            const SizedBox(width: 8),
+            Tooltip(
+              key: ValueKey('live-agent-${player.puuid}'),
+              message: player.agentId.isEmpty ? '尚未選擇' : agent.name,
+              child: SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: player.agentId.isEmpty
+                      ? null
+                      : SkinIcon(url: agent.iconUrl)),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 48,
+              child: Text(_selectionLabels[player.selection]!,
+                  key: ValueKey('pregame-state-${player.puuid}'),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: locked ? AppColors.owned : AppColors.muted)),
+            ),
+            Expanded(
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(name,
+                        key: ValueKey('live-name-${player.puuid}'),
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontWeight: player.isMe
+                                ? FontWeight.bold
+                                : FontWeight.normal)),
+                  ),
+                  if (player.level > 0) ...[
+                    const SizedBox(width: 6),
+                    Text('Lv ${player.level}',
+                        key: ValueKey('live-level-${player.puuid}'),
+                        style: const TextStyle(
+                            color: AppColors.muted, fontSize: 12)),
+                  ],
+                ],
+              ),
+            ),
+            RecentFormCell(
+                key: ValueKey('form-${player.puuid}'),
+                puuid: player.puuid,
+                queue: queue),
           ],
         ),
       ),
