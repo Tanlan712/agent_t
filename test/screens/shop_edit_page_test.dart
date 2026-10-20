@@ -60,9 +60,9 @@ void main() {
     final h = await openDaily(tester, [odin, prime, ion, reaver]);
     await tester.ensureVisible(find.byKey(const ValueKey('price-3')));
     await tester.enterText(find.byKey(const ValueKey('price-3')), 'abc');
-    await tester.scrollUntilVisible(find.byKey(const ValueKey('slot-0')), -200);
     await save(tester);
     expect(tester.takeException(), isNull);
+    expect(find.text('請輸入正整數'), findsOneWidget);
     expect(h.shop.shop.daily, isEmpty);
   });
 
