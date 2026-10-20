@@ -5,6 +5,7 @@ import '../models/match_models.dart';
 import '../models/riot_session.dart';
 import '../services/match_client.dart';
 import '../services/riot_client.dart';
+import 'match_detail_cache.dart';
 import 'riot_provider.dart';
 
 class MatchEntry {
@@ -36,8 +37,11 @@ class MatchHistoryProvider with ChangeNotifier {
   int _generation = 0;
   String? _loadedFor;
 
+  final MatchDetailCache cache;
+
   MatchHistoryProvider(this._client, this._riot,
-      {this.pageSize = 10, this.maxConcurrent = 4});
+      {MatchDetailCache? cache, this.pageSize = 10, this.maxConcurrent = 4})
+      : cache = cache ?? MatchDetailCache();
 
   List<MatchEntry> get entries => List.unmodifiable(_entries);
   bool get hasMore => _entries.length < _total;
@@ -142,7 +146,7 @@ class MatchHistoryProvider with ChangeNotifier {
         final i = next++;
         final ref = refs[i];
         try {
-          final json = await _client.fetchMatchJson(s, ref.matchId);
+          final json = await cache.json(s, ref.matchId, _client);
           final d = mapMatchDetail(json, s.puuid, rrChange: _rr[ref.matchId]);
           fetched[ref.matchId] = d;
           results[i] = MatchEntry(ref: ref, detail: d);

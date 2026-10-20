@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'providers/catalog_provider.dart';
+import 'providers/match_detail_cache.dart';
 import 'providers/match_history_provider.dart';
 import 'providers/match_reference_provider.dart';
 import 'providers/riot_provider.dart';
@@ -40,6 +41,9 @@ Future<void> main() async {
   // 商店同步與對戰紀錄共用同一個 Riot 登入。
   final riotClient = RiotClient();
   final riot = RiotProvider(riotClient);
+  // 自己的紀錄、最近 5 場與玩家頁共用同一份場次快取。
+  final matchClient = MatchClient(riotClient);
+  final matchCache = MatchDetailCache();
   final matchReference =
       MatchReferenceProvider(MatchReferenceApi(), MatchReferenceCache(prefs));
   matchReference.init();
@@ -54,8 +58,11 @@ Future<void> main() async {
         ChangeNotifierProvider(
             create: (_) => SettingsProvider(SettingsStorage(prefs))),
         ChangeNotifierProvider.value(value: riot),
+        Provider.value(value: matchClient),
+        Provider.value(value: matchCache),
         ChangeNotifierProvider(
-            create: (_) => MatchHistoryProvider(MatchClient(riotClient), riot)),
+            create: (_) =>
+                MatchHistoryProvider(matchClient, riot, cache: matchCache)),
         ChangeNotifierProvider.value(value: matchReference),
       ],
       child: const MyApp(),

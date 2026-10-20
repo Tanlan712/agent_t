@@ -8,6 +8,7 @@ import 'package:valorant_shop_tracker/models/current_shop.dart';
 import 'package:valorant_shop_tracker/models/match_models.dart';
 import 'package:valorant_shop_tracker/models/wishlist_item.dart';
 import 'package:valorant_shop_tracker/providers/catalog_provider.dart';
+import 'package:valorant_shop_tracker/providers/match_detail_cache.dart';
 import 'package:valorant_shop_tracker/providers/match_history_provider.dart';
 import 'package:valorant_shop_tracker/providers/match_reference_provider.dart';
 import 'package:valorant_shop_tracker/providers/riot_provider.dart';
@@ -47,9 +48,20 @@ class Harness {
   final MatchHistoryProvider matchHistory;
   final MatchReferenceProvider matchReference;
   final SharedPreferences prefs;
+  final MatchClient matchClient;
+  final MatchDetailCache matchCache;
 
-  Harness(this.catalog, this.shop, this.wishlist, this.settings, this.riot,
-      this.matchHistory, this.matchReference, this.prefs);
+  Harness(
+      this.catalog,
+      this.shop,
+      this.wishlist,
+      this.settings,
+      this.riot,
+      this.matchHistory,
+      this.matchReference,
+      this.prefs,
+      this.matchClient,
+      this.matchCache);
 
   static Future<Harness> create(
     WidgetTester tester, {
@@ -73,15 +85,20 @@ class Harness {
     final reference = MatchReferenceProvider(
         MatchReferenceApi(client: riotHttp ?? riotClient()), refCache);
     await reference.init();
+    final matchClient = MatchClient(rc);
+    final matchCache = MatchDetailCache();
     return Harness(
       c,
       ShopProvider(ShopStorage(prefs)),
       WishlistProvider(WishlistStorage(prefs)),
       SettingsProvider(SettingsStorage(prefs)),
       riot,
-      MatchHistoryProvider(MatchClient(rc), riot, pageSize: matchPageSize),
+      MatchHistoryProvider(matchClient, riot,
+          cache: matchCache, pageSize: matchPageSize),
       reference,
       prefs,
+      matchClient,
+      matchCache,
     );
   }
 
@@ -100,6 +117,8 @@ class Harness {
         ChangeNotifierProvider.value(value: wishlist),
         ChangeNotifierProvider.value(value: settings),
         ChangeNotifierProvider.value(value: riot),
+        Provider.value(value: matchClient),
+        Provider.value(value: matchCache),
         ChangeNotifierProvider.value(value: matchHistory),
         ChangeNotifierProvider.value(value: matchReference),
       ],
