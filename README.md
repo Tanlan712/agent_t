@@ -1,16 +1,42 @@
-# valorant_shop_tracker
+# VALORANT 商店追蹤器（網頁版）
 
-A new Flutter project.
+Flutter Web 應用程式，提供：
 
-## Getting Started
+- **遊戲資料瀏覽**：角色、武器、地圖、組合包、遊戲模式、玩家卡片（資料來自 [valorant-api.com](https://valorant-api.com/)）。
+- **我的商店**：每日商店、夜市、精選組合包。可以手動輸入，也可以登入 Riot 後自動同步。
+- **願望清單**：商店裡出現願望清單上的造型時，會用金框標示並顯示數量。
+- **Riot 連動**（選用）：登入後同步商店、錢包餘額（VP／輻能點數／王國幣），並標示已擁有的造型。
 
-This project is a starting point for a Flutter application.
+## 本機執行
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+flutter pub get
+flutter run -d web-server --web-port 8642 --web-hostname localhost
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+接著用瀏覽器開啟 http://localhost:8642 。
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+建置靜態檔：`flutter build web`（輸出到 `build/web`）。
+
+## Riot 登入方式
+
+1. 進入「設定 → Riot 帳號」，或在「我的商店」點「登入 Riot 以自動同步」。
+2. 按「開啟 Riot 登入頁」（或複製登入網址），在 Riot 官方頁面登入。
+3. 登入後網頁會跳到 `playvalorant.com`，把網址列的**完整網址**貼回 App，再按「完成登入」。
+
+App 不會接觸密碼。登入資訊只保留在分頁的記憶體裡，重新整理頁面或約 1 小時後需要重新登入。
+
+## ⚠️ 注意事項
+
+- 商店、錢包、已擁有造型使用的是 **Riot 未公開的 API**，可能違反服務條款、帳號有受處分的風險，API 也可能隨時失效。建議使用非主要帳號。
+- 資料（商店、願望清單、造型目錄快取）只存在這個瀏覽器的 localStorage 裡。
+- **部署前必須處理**：`pubspec.yaml` 目前把 `.env` 列成 asset，網頁建置後 `.env` 會成為可以公開下載的檔案。
+
+## 測試
+
+```bash
+flutter test
+flutter analyze
+```
+
+設計與計畫文件：`docs/superpowers/specs/`、`docs/superpowers/plans/`。
