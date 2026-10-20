@@ -148,9 +148,16 @@ MockClient riotClient({
       if (path == '/core-game/v1/matches/$testCoreMatchId') {
         return json(coreMatchJson());
       }
+      if (path == '/pregame/v1/matches/$testPregameMatchId') {
+        return json(pregameMatchJson());
+      }
       if (path == '/pregame/v1/players/puuid-1') {
         return pregameStatus == 200
-            ? json({'Subject': 'puuid-1', 'MatchID': 'pre-1', 'Version': 1})
+            ? json({
+                'Subject': 'puuid-1',
+                'MatchID': testPregameMatchId,
+                'Version': 1
+              })
             : json(
                 {'httpStatus': pregameStatus, 'errorCode': 'x'}, pregameStatus);
       }

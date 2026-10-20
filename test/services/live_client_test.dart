@@ -80,4 +80,13 @@ void main() {
     await r2.login(fakeRedirect);
     expect(await LiveClient(rc).fetchPregameMatchId(r2.session!), 'pre-1');
   });
+
+  test('選角場次詳情', () async {
+    final rc = RiotClient(client: riotClient(pregameStatus: 200));
+    final riot = RiotProvider(rc);
+    await riot.login(fakeRedirect);
+    final json = await LiveClient(rc)
+        .fetchPregameMatch(riot.session!, testPregameMatchId);
+    expect(json['ID'], testPregameMatchId);
+  });
 }

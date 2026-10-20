@@ -167,11 +167,14 @@ void main() {
       expect(where('/pregame/'), isEmpty);
     });
 
-    test('選角中：切到 pregame，不讀隊伍', () async {
+    test('選角中：切到 pregame，讀取我方並查名稱，不讀隊伍', () async {
       final (p, _) = await setup(pregameStatus: 200);
       await p.refresh();
       expect(p.phase, LivePhase.pregame);
       expect(p.match, isNull);
+      expect(p.pregame!.allies.length, 5);
+      expect(p.name('mate'), 'N-mate#TW1');
+      expect(p.pregameFetchedAt, isNotNull);
       expect(where('/parties/'), isEmpty);
     });
 

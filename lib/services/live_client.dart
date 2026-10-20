@@ -33,6 +33,10 @@ class LiveClient {
   Future<String?> fetchPregameMatchId(RiotSession s) =>
       _matchId(s, '/pregame/v1/players/${s.puuid}', '取得選角');
 
+  Future<Map<String, dynamic>> fetchPregameMatch(
+          RiotSession s, String matchId) =>
+      _riot.getGlz(s, '/pregame/v1/matches/$matchId', label: '取得選角');
+
   Future<String?> _matchId(RiotSession s, String path, String label) async {
     try {
       final json = await _riot.getGlz(s, path, label: label);

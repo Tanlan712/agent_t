@@ -26,9 +26,12 @@ class LivePartyProvider with ChangeNotifier {
   /// AGENTS.md：即時對局的輪詢間隔至少 5 秒。
   final Duration interval;
   final Timer Function(Duration, void Function(Timer)) _periodic;
+  final DateTime Function() _now;
 
   LiveParty? _party;
   LiveMatch? _liveMatch;
+  LivePregame? _pregame;
+  DateTime? _pregameFetchedAt;
   LivePhase _phase = LivePhase.party;
   LiveStatus _status = LiveStatus.idle;
   String? _error;
@@ -43,12 +46,18 @@ class LivePartyProvider with ChangeNotifier {
 
   LivePartyProvider(this._live, this._match, this._riot,
       {this.interval = const Duration(seconds: 10),
-      Timer Function(Duration, void Function(Timer))? periodic})
+      Timer Function(Duration, void Function(Timer))? periodic,
+      DateTime Function() now = DateTime.now})
       : assert(interval >= const Duration(seconds: 5)),
-        _periodic = periodic ?? Timer.periodic;
+        _periodic = periodic ?? Timer.periodic,
+        _now = now;
 
   LiveParty? get party => _party;
   LiveMatch? get match => _liveMatch;
+  LivePregame? get pregame => _pregame;
+
+  /// 讀到選角資料的時間；畫面用來倒數剩餘時間。
+  DateTime? get pregameFetchedAt => _pregameFetchedAt;
   LivePhase get phase => _phase;
   LiveStatus get status => _status;
   String? get error => _error;
@@ -109,15 +118,24 @@ class LivePartyProvider with ChangeNotifier {
         await _fillNames(s, match.players.map((p) => p.puuid));
         if (_disposed) return;
         _liveMatch = match;
+        _pregame = null;
         _phase = LivePhase.inGame;
         _status = LiveStatus.ready;
         _error = null;
         return;
       }
       _liveMatch = null;
+      _pregame = null;
       final preId = await _live.fetchPregameMatchId(s);
       if (_disposed) return;
       if (preId != null) {
+        final pre =
+            mapPregame(await _live.fetchPregameMatch(s, preId), s.puuid);
+        if (_disposed) return;
+        await _fillNames(s, pre.allies.map((a) => a.puuid));
+        if (_disposed) return;
+        _pregame = pre;
+        _pregameFetchedAt = _now();
         _phase = LivePhase.pregame;
         _status = LiveStatus.ready;
         _error = null;
