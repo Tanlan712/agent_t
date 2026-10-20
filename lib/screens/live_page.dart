@@ -475,7 +475,8 @@ class _PlayerRow extends StatelessWidget {
                                     ? FontWeight.bold
                                     : FontWeight.normal)),
                       ),
-                      if (!player.isMe && !player.isCoach)
+                      // 使用者要求：對局 10 人都判斷（包括自己），教練除外。
+                      if (!player.isCoach)
                         _SuspicionTag(
                             puuid: player.puuid,
                             level: player.level,

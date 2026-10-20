@@ -363,7 +363,23 @@ void main() {
       expect(tip.message, contains('Lv 50'));
       expect(tip.message, contains('推測'));
       expect(find.byKey(const ValueKey('sus-mate')), findsNothing);
-      expect(find.byKey(const ValueKey('sus-$myPuuid')), findsNothing);
+      await leave(tester, h);
+    });
+
+    testWidgets('對局 10 人都判斷（包括自己），教練不判斷', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester, coreStatus: 200);
+      await tester.pumpWidget(h.wrap(
+          home: const LivePage(
+              rules: SuspicionRules(lowLevel: 60, smurfMinAcs: 150))));
+      await drain(tester);
+      await drain(tester);
+      // fixture 的 ACS：自己 191、mate 159、r1 227，其餘低於 150。
+      for (final id in [myPuuid, 'mate', 'r1']) {
+        expect(find.byKey(ValueKey('sus-$id')), findsOneWidget, reason: id);
+      }
+      expect(find.byKey(const ValueKey('sus-b3')), findsNothing);
+      expect(find.byKey(const ValueKey('sus-coach')), findsNothing);
       await leave(tester, h);
     });
   });
