@@ -11,7 +11,10 @@ class RiotApiException implements Exception {
   /// 不含任何 token，可直接顯示給使用者。
   final String message;
 
-  RiotApiException(this.statusCode, this.message);
+  /// 429 回應的 Retry-After（秒）；沒有這個標頭時為 null。
+  final Duration? retryAfter;
+
+  RiotApiException(this.statusCode, this.message, {this.retryAfter});
 
   bool get isAuthError => statusCode == 401 || statusCode == 403;
 
@@ -208,8 +211,10 @@ class RiotClient {
       throw RiotApiException(null, '$label：連線失敗');
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
+      final seconds = int.tryParse(response.headers['retry-after'] ?? '');
       throw RiotApiException(
-          response.statusCode, '$label：伺服器回應 ${response.statusCode}');
+          response.statusCode, '$label：伺服器回應 ${response.statusCode}',
+          retryAfter: seconds == null ? null : Duration(seconds: seconds));
     }
     try {
       return jsonDecode(utf8.decode(response.bodyBytes))

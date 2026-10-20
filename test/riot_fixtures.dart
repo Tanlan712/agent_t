@@ -86,7 +86,11 @@ MockClient riotClient({
   bool blankNames = false,
   int nameStatus = 200,
   bool nameMalformed = false,
+  Map<String, int> history429 = const {},
+  bool retryAfter = false,
+  Map<String, int> otherHistoryStatus = const {},
 }) {
+  final throttled = <String, int>{};
   return MockClient((req) async {
     requests?.add(req);
     final host = req.url.host;
@@ -156,6 +160,30 @@ MockClient riotClient({
         }
         return json(historyJson(
             total: historyTotal, count: count < 0 ? 0 : count, start: start));
+      }
+      // 其他玩家的紀錄：第 1 場固定是 m1（所有人共用），其餘是各自的場次。
+      if (path.startsWith('/match-history/v1/history/')) {
+        final p = path.split('/').last;
+        final n = throttled[p] = (throttled[p] ?? 0) + 1;
+        if (n <= (history429[p] ?? 0)) {
+          return http.Response('{}', 429,
+              headers: retryAfter ? {'retry-after': '1'} : const {});
+        }
+        final status = otherHistoryStatus[p] ?? 200;
+        if (status != 200) return json({'errorCode': 'x'}, status);
+        final end = int.parse(req.url.queryParameters['endIndex'] ?? '5');
+        return json({
+          'Subject': p,
+          'Total': 30,
+          'History': [
+            for (var i = 0; i < end; i++)
+              {
+                'MatchID': i == 0 ? 'm1' : '$p-g$i',
+                'GameStartTime': 1760900000000 - i * 3600000,
+                'QueueID': 'competitive',
+              },
+          ],
+        });
       }
       if (path.startsWith('/match-details/v1/matches/')) {
         final id = path.split('/').last;
