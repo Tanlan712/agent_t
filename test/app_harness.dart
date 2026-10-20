@@ -85,6 +85,7 @@ class Harness {
     CatalogProvider? catalog,
     http.Client? riotHttp,
     int matchPageSize = 10,
+    DateTime Function()? now,
   }) async {
     final c = catalog ?? await loadedCatalog(tester);
     final prefs = await SharedPreferences.getInstance();
@@ -94,7 +95,7 @@ class Harness {
         WishlistItem(skinUuid: id, addedAt: DateTime(2026, 10, 1)),
     ]);
     final rc = RiotClient(client: riotHttp ?? riotClient());
-    final riot = RiotProvider(rc);
+    final riot = RiotProvider(rc, now: now ?? DateTime.now);
     final refCache = MatchReferenceCache(prefs);
     await refCache.save(testMatchReference);
     final reference = MatchReferenceProvider(
