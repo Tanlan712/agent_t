@@ -126,8 +126,9 @@ Map<String, dynamic> competitiveUpdatesJson() => {
       'Version': 1,
       'Subject': myPuuid,
       'Matches': [
-        {'MatchID': 'm1', 'RankedRatingEarned': 18, 'TierAfterUpdate': 18},
-        {'MatchID': 'm2', 'RankedRatingEarned': -15, 'TierAfterUpdate': 18},
+        {'MatchID': 'm1', 'QueueID': 'competitive', 'RankedRatingEarned': 18, 'TierAfterUpdate': 18},
+        {'MatchID': 'm9', 'QueueID': 'unrated', 'RankedRatingEarned': 0, 'TierAfterUpdate': 0},
+        {'MatchID': 'm2', 'QueueID': 'competitive', 'RankedRatingEarned': -15, 'TierAfterUpdate': 18},
       ],
     };
 

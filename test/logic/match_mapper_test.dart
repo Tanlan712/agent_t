@@ -4,6 +4,7 @@ import 'package:valorant_shop_tracker/logic/match_mapper.dart';
 import '../match_fixtures.dart';
 
 void main() {
+  group('審查修正', reviewFixTests);
   group('mapMatchDetail', () {
     final d = mapMatchDetail(matchDetailsJson(), myPuuid, rrChange: 18);
     final all = d.teams.values.expand((t) => t).toList();
@@ -89,5 +90,23 @@ void main() {
     expect(refs.first.queueId, 'competitive');
     expect(refs.first.startTime,
         DateTime.fromMillisecondsSinceEpoch(1760900000000));
+  });
+}
+
+void reviewFixTests() {
+  test('勝負優先採用 teams[].won（例如對手投降時回合數較少仍判勝）', () {
+    final json = matchDetailsJson();
+    json['teams'] = [
+      {'teamId': 'Blue', 'won': true, 'roundsWon': 7},
+      {'teamId': 'Red', 'won': false, 'roundsWon': 9},
+    ];
+    final s = mapMatchDetail(json, myPuuid).summary;
+    expect(s.won, isTrue);
+    expect(s.myScore, 7);
+    expect(s.enemyScore, 9);
+  });
+
+  test('rrByMatch 只保留競技場次', () {
+    expect(rrByMatch(competitiveUpdatesJson()).containsKey('m9'), isFalse);
   });
 }

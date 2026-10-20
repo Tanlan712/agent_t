@@ -30,7 +30,9 @@ Map<String, int> rrByMatch(Map<String, dynamic> competitiveUpdates) => {
       for (final m
           in (competitiveUpdates['Matches'] as List<dynamic>? ?? const [])
               .cast<Map<String, dynamic>>())
-        m['MatchID'] as String: _int(m['RankedRatingEarned']),
+        // 只保留競技場次：其他模式的 RankedRatingEarned 固定為 0，會誤導 RR 趨勢。
+        if (m['QueueID'] == 'competitive')
+          m['MatchID'] as String: _int(m['RankedRatingEarned']),
     };
 
 RankInfo? mapRank(Map<String, dynamic> mmr) {
@@ -139,7 +141,8 @@ MatchDetail mapMatchDetail(Map<String, dynamic> json, String myPuuid,
       durationMs: _int(info['gameLengthMillis']),
       isRanked: info['isRanked'] == true,
       myTeamId: myTeam,
-      won: myScore == enemyScore ? null : myScore > enemyScore,
+      won: _teamWon(json, myTeam) ??
+          (myScore == enemyScore ? null : myScore > enemyScore),
       myScore: myScore,
       enemyScore: enemyScore,
       myAgentId: me?.agentId ?? '',
@@ -150,4 +153,13 @@ MatchDetail mapMatchDetail(Map<String, dynamic> json, String myPuuid,
     ),
     teams: teams,
   );
+}
+
+/// teams[] 有 won 旗標時以它為準（投降等提早結束的場次回合數不代表勝負）。
+bool? _teamWon(Map<String, dynamic> json, String teamId) {
+  for (final t in (json['teams'] as List<dynamic>? ?? const [])
+      .cast<Map<String, dynamic>>()) {
+    if (t['teamId'] == teamId && t['won'] is bool) return t['won'] as bool;
+  }
+  return null;
 }

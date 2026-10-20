@@ -79,6 +79,8 @@ MockClient riotClient({
   bool corsBlocked = false,
   int historyStatus = 200,
   int historyTotal = 25,
+  int mmrStatus = 200,
+  bool brokenHistory = false,
   Set<String> failMatchIds = const {},
   Duration matchDelay = Duration.zero,
 }) {
@@ -141,6 +143,11 @@ MockClient riotClient({
         final start = int.parse(req.url.queryParameters['startIndex'] ?? '0');
         final end = int.parse(req.url.queryParameters['endIndex'] ?? '20');
         final count = (end < historyTotal ? end : historyTotal) - start;
+        if (brokenHistory) {
+          return json({'Total': 1, 'History': [
+            {'GameStartTime': 1}
+          ]});
+        }
         return json(historyJson(
             total: historyTotal, count: count < 0 ? 0 : count, start: start));
       }
@@ -156,6 +163,7 @@ MockClient riotClient({
         return json(competitiveUpdatesJson());
       }
       if (path == '/mmr/v1/players/puuid-1') {
+        if (mmrStatus != 200) return json({'errorCode': 'x'}, mmrStatus);
         return json(mmrJson());
       }
       if (path == '/store/v1/entitlements/puuid-1/$skinLevelType') {

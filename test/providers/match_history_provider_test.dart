@@ -36,6 +36,7 @@ class _Counting {
 }
 
 void main() {
+  group('審查修正', reviewFixTests);
   Future<(MatchHistoryProvider, RiotProvider, _Counting)> setup({
     int historyTotal = 25,
     int historyStatus = 200,
@@ -128,5 +129,48 @@ void main() {
     expect(p.error, '請先登入 Riot');
     expect(c.historyRequests, 0);
     expect(c.matchRequests, 0);
+  });
+}
+
+void reviewFixTests() {
+  Future<(MatchHistoryProvider, RiotProvider)> make(http.Client client) async {
+    final rc = RiotClient(client: client);
+    final riot = RiotProvider(rc);
+    await riot.login(fakeRedirect);
+    return (MatchHistoryProvider(MatchClient(rc), riot, pageSize: 3), riot);
+  }
+
+  test('歷史格式不符時顯示錯誤而非丟出例外', () async {
+    final (p, _) = await make(riotClient(brokenHistory: true));
+    await p.loadFirstPage();
+    expect(p.error, '資料格式不符');
+    expect(p.isLoading, isFalse);
+  });
+
+  test('牌位請求失敗不影響列表', () async {
+    final (p, riot) = await make(riotClient(mmrStatus: 500));
+    await p.loadFirstPage();
+    expect(p.entries.length, 3);
+    expect(p.rank, isNull);
+    expect(p.error, isNull);
+    expect(riot.isLoggedIn, isTrue);
+  });
+
+  test('重複呼叫 loadFirstPage 不會產生重複資料', () async {
+    final (p, _) = await make(riotClient(matchDelay: const Duration(milliseconds: 20)));
+    final first = p.loadFirstPage();
+    final second = p.loadFirstPage();
+    await Future.wait([first, second]);
+    expect(p.entries.length, 3);
+    expect(p.entries.map((e) => e.ref.matchId).toSet().length, 3);
+  });
+
+  test('loadMore 進行中被 loadFirstPage 取代時不混入舊頁', () async {
+    final (p, _) = await make(riotClient(matchDelay: const Duration(milliseconds: 20)));
+    await p.loadFirstPage();
+    final more = p.loadMore();
+    final reset = p.loadFirstPage();
+    await Future.wait([more, reset]);
+    expect(p.entries.map((e) => e.ref.matchId).toList(), ['m1', 'm2', 'm3']);
   });
 }

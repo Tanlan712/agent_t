@@ -19,6 +19,7 @@ class MatchEntry {
 class MatchHistoryProvider with ChangeNotifier {
   static const notLoggedInMessage = '請先登入 Riot';
   static const expiredMessage = '登入已過期，請重新登入';
+  static const formatErrorMessage = '資料格式不符';
 
   final MatchClient _client;
   final RiotProvider _riot;
@@ -32,6 +33,7 @@ class MatchHistoryProvider with ChangeNotifier {
   int _total = 0;
   bool _isLoading = false;
   String? _error;
+  int _generation = 0;
 
   MatchHistoryProvider(this._client, this._riot,
       {this.pageSize = 10, this.maxConcurrent = 4});
@@ -45,6 +47,8 @@ class MatchHistoryProvider with ChangeNotifier {
   MatchDetail? detail(String matchId) => _details[matchId];
 
   Future<void> loadFirstPage() async {
+    // 每次重新載入換一個世代；舊世代還在進行的請求，結果一律丟棄。
+    final gen = ++_generation;
     _entries.clear();
     _details.clear();
     _rr = {};
@@ -53,10 +57,15 @@ class MatchHistoryProvider with ChangeNotifier {
     _error = null;
     final s = _session();
     if (s == null) return;
-    await _guarded(s, () async {
-      _rank = await _client.fetchRank(s);
-      _rr = await _client.fetchRrChanges(s, 20);
-      await _loadPage(s, 0);
+    await _guarded(gen, () async {
+      // 牌位只是頁首資訊：失敗（非登入過期）時留空，不阻擋列表。
+      final rank = await _optional(() => _client.fetchRank(s), null);
+      final rr =
+          await _optional(() => _client.fetchRrChanges(s, 20), <String, int>{});
+      if (gen != _generation) return;
+      _rank = rank;
+      _rr = rr;
+      await _loadPage(s, 0, gen);
     });
   }
 
@@ -64,7 +73,18 @@ class MatchHistoryProvider with ChangeNotifier {
     if (_isLoading || !hasMore) return;
     final s = _session();
     if (s == null) return;
-    await _guarded(s, () => _loadPage(s, _entries.length));
+    final gen = _generation;
+    await _guarded(gen, () => _loadPage(s, _entries.length, gen));
+  }
+
+  Future<T> _optional<T>(Future<T> Function() call, T fallback) async {
+    try {
+      return await call();
+    } on RiotApiException catch (e) {
+      if (e.isAuthError) rethrow;
+      debugPrint('牌位資料取得失敗：${e.message}');
+      return fallback;
+    }
   }
 
   RiotSession? _session() {
@@ -77,28 +97,35 @@ class MatchHistoryProvider with ChangeNotifier {
     return s;
   }
 
-  Future<void> _guarded(RiotSession s, Future<void> Function() body) async {
+  Future<void> _guarded(int gen, Future<void> Function() body) async {
     _isLoading = true;
     notifyListeners();
     try {
       await body();
     } on RiotApiException catch (e) {
-      if (e.isAuthError) {
-        _riot.logout();
-        _error = expiredMessage;
-      } else {
-        _error = e.message;
+      if (gen == _generation) {
+        if (e.isAuthError) {
+          _riot.logout();
+          _error = expiredMessage;
+        } else {
+          _error = e.message;
+        }
       }
+    } catch (e) {
+      debugPrint('對戰紀錄解析失敗：${e.runtimeType}');
+      if (gen == _generation) _error = formatErrorMessage;
     } finally {
-      _isLoading = false;
+      if (gen == _generation) _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> _loadPage(RiotSession s, int start) async {
+  Future<void> _loadPage(RiotSession s, int start, int gen) async {
     final (refs, total) = await _client.fetchHistory(s, start, pageSize);
+    if (gen != _generation) return;
     _total = total;
     final results = List<MatchEntry?>.filled(refs.length, null);
+    final fetched = <String, MatchDetail>{};
     RiotApiException? authError;
     var next = 0;
 
@@ -110,7 +137,7 @@ class MatchHistoryProvider with ChangeNotifier {
         try {
           final json = await _client.fetchMatchJson(s, ref.matchId);
           final d = mapMatchDetail(json, s.puuid, rrChange: _rr[ref.matchId]);
-          _details[ref.matchId] = d;
+          fetched[ref.matchId] = d;
           results[i] = MatchEntry(ref: ref, detail: d);
         } on RiotApiException catch (e) {
           if (e.isAuthError) authError = e;
@@ -124,7 +151,9 @@ class MatchHistoryProvider with ChangeNotifier {
 
     final workers = refs.length < maxConcurrent ? refs.length : maxConcurrent;
     await Future.wait([for (var w = 0; w < workers; w++) worker()]);
+    if (gen != _generation) return;
     if (authError != null) throw authError!;
+    _details.addAll(fetched);
     _entries.addAll(results.whereType<MatchEntry>());
   }
 }
