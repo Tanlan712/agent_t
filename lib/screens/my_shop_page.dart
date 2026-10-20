@@ -231,17 +231,20 @@ class _RiotBar extends StatelessWidget {
               children: [
                 const Icon(Icons.verified_user, color: AppColors.owned),
                 const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('已登入：${session.displayName}（${session.shard}）',
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    if (wallet != null)
-                      Text(
-                          'VP ${wallet.vp} · 輻能點數 ${wallet.radianite} · 王國幣 ${wallet.kingdom}'),
-                    if (wallet != null)
-                      Text('已擁有 ${riot.ownedSkinUuids.length} 款造型'),
-                  ],
+                // Flexible：文字在 Wrap 給的最大寬度內換行，不會溢出。
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('已登入：${session.displayName}（${session.shard}）',
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      if (wallet != null)
+                        Text(
+                            'VP ${wallet.vp} · 輻能點數 ${wallet.radianite} · 王國幣 ${wallet.kingdom}'),
+                      if (wallet != null)
+                        Text('已擁有 ${riot.ownedSkinUuids.length} 款造型'),
+                    ],
+                  ),
                 ),
               ],
             ),

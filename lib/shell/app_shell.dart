@@ -43,96 +43,100 @@ class AppShell extends StatelessWidget {
       final mode = navModeFor(width);
       final body = _Content(padding: horizontalPadding(width), child: child);
 
-      if (mode == NavMode.drawer) {
-        return Scaffold(
-          appBar: AppBar(title: Text(title), actions: actions),
-          drawer: _NavDrawer(
-            selectedIndex: _selectedIndex,
-            onTap: (item, ctx) => _go(ctx, item, closeDrawer: true),
-          ),
-          body: body,
-        );
-      }
-
+      final drawer = mode == NavMode.drawer;
       final extended = mode == NavMode.extended;
+      // 三種模式共用同一個樹結構（Scaffold > Row > Expanded > Column > Expanded），
+      // 只增減導覽欄與標題列；Flex 會從尾端對到同一個 Expanded，
+      // 跨斷點時內容子樹（捲動位置、頁面狀態）得以保留。
       return Scaffold(
+        appBar: drawer ? AppBar(title: Text(title), actions: actions) : null,
+        drawer: drawer
+            ? _NavDrawer(
+                selectedIndex: _selectedIndex,
+                onTap: (item, ctx) => _go(ctx, item, closeDrawer: true),
+              )
+            : null,
         body: Row(
           children: [
-            Container(
-              width: extended ? 240 : 88,
-              color: AppColors.surface,
-              // 視窗太矮時導覽可捲動；夠高時 Riot 狀態仍貼在底部。
-              child: LayoutBuilder(
-                builder: (context, navConstraints) => SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints:
-                        BoxConstraints(minHeight: navConstraints.maxHeight),
-                    child: IntrinsicHeight(
-                      child: Column(
-                        children: [
-                          Expanded(
-                            child: NavigationRail(
-                              extended: extended,
-                              minExtendedWidth: 240,
-                              labelType: extended
-                                  ? NavigationRailLabelType.none
-                                  : NavigationRailLabelType.all,
-                              selectedIndex: _selectedIndex,
-                              leading: extended
-                                  ? const Padding(
-                                      padding: EdgeInsets.fromLTRB(8, 16, 8, 8),
-                                      child: Text(appName,
-                                          style: TextStyle(
-                                              color: AppColors.primary,
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold)),
-                                    )
-                                  : const Padding(
-                                      padding:
-                                          EdgeInsets.symmetric(vertical: 16),
-                                      child: Icon(Icons.local_fire_department,
-                                          color: AppColors.primary),
+            if (!drawer)
+              Container(
+                width: extended ? 240 : 88,
+                color: AppColors.surface,
+                // 視窗太矮時導覽可捲動；夠高時 Riot 狀態仍貼在底部。
+                child: LayoutBuilder(
+                  builder: (context, navConstraints) => SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints:
+                          BoxConstraints(minHeight: navConstraints.maxHeight),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: NavigationRail(
+                                extended: extended,
+                                minExtendedWidth: 240,
+                                labelType: extended
+                                    ? NavigationRailLabelType.none
+                                    : NavigationRailLabelType.all,
+                                selectedIndex: _selectedIndex,
+                                leading: extended
+                                    ? const Padding(
+                                        padding:
+                                            EdgeInsets.fromLTRB(8, 16, 8, 8),
+                                        child: Text(appName,
+                                            style: TextStyle(
+                                                color: AppColors.primary,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold)),
+                                      )
+                                    : const Padding(
+                                        padding:
+                                            EdgeInsets.symmetric(vertical: 16),
+                                        child: Icon(Icons.local_fire_department,
+                                            color: AppColors.primary),
+                                      ),
+                                destinations: [
+                                  for (final item in navItems)
+                                    NavigationRailDestination(
+                                      icon: Icon(item.icon),
+                                      label: Text(item.label),
                                     ),
-                              destinations: [
-                                for (final item in navItems)
-                                  NavigationRailDestination(
-                                    icon: Icon(item.icon),
-                                    label: Text(item.label),
-                                  ),
-                              ],
-                              onDestinationSelected: (i) =>
-                                  _go(context, navItems[i]),
+                                ],
+                                onDestinationSelected: (i) =>
+                                    _go(context, navItems[i]),
+                              ),
                             ),
-                          ),
-                          _RiotStatus(compact: !extended),
-                        ],
+                            _RiotStatus(compact: !extended),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-            const VerticalDivider(width: 1),
+            if (!drawer) const VerticalDivider(width: 1),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _Content(
-                    padding: horizontalPadding(width),
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 24, bottom: 8),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(title,
-                                style:
-                                    Theme.of(context).textTheme.headlineSmall),
-                          ),
-                          ...actions,
-                        ],
+                  if (!drawer)
+                    _Content(
+                      padding: horizontalPadding(width),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 24, bottom: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(title,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall),
+                            ),
+                            ...actions,
+                          ],
+                        ),
                       ),
                     ),
-                  ),
                   Expanded(child: body),
                 ],
               ),

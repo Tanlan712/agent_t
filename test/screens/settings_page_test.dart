@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -8,6 +9,7 @@ import 'package:valorant_shop_tracker/widgets/my_shop_settings_card.dart';
 
 import '../app_harness.dart';
 import '../catalog_helpers.dart';
+import '../theme/app_theme_test.dart' show contrast;
 
 void main() {
   setUp(() => dotenv.testLoad(fileInput: ''));
@@ -48,6 +50,20 @@ void main() {
         .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     await tester.pump();
     expect(requests, greaterThan(0));
+  });
+
+  testWidgets('複製網址按鈕的文字在深色主題下清楚可讀', (tester) async {
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(home: const SettingsPage()));
+    final label = find.text('複製 valorant-api.com 網址');
+    await tester.scrollUntilVisible(label, 300,
+        scrollable: find.byType(Scrollable).last);
+    final fg = tester.renderObject<RenderParagraph>(label).text.style!.color!;
+    final bg = tester
+        .widget<Material>(
+            find.ancestor(of: label, matching: find.byType(Material)).first)
+        .color!;
+    expect(contrast(fg, bg), greaterThanOrEqualTo(4.5));
   });
 
   testWidgets('設定頁包含我的商店區塊', (tester) async {

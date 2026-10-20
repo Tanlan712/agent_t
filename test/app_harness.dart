@@ -11,6 +11,7 @@ import 'package:valorant_shop_tracker/providers/settings_provider.dart';
 import 'package:valorant_shop_tracker/providers/shop_provider.dart';
 import 'package:valorant_shop_tracker/providers/wishlist_provider.dart';
 import 'package:valorant_shop_tracker/services/riot_client.dart';
+import 'package:valorant_shop_tracker/theme/app_theme.dart';
 import 'package:valorant_shop_tracker/storage/settings_storage.dart';
 import 'package:valorant_shop_tracker/storage/shop_storage.dart';
 import 'package:valorant_shop_tracker/storage/wishlist_storage.dart';
@@ -71,10 +72,12 @@ class Harness {
       ],
       child: useAppRoutes
           ? MaterialApp(
+              theme: buildAppTheme(),
               onGenerateRoute: onGenerateAppRoute,
               navigatorObservers: observers,
             )
           : MaterialApp(
+              theme: buildAppTheme(),
               home: home,
               routes: routes,
               onGenerateRoute: onGenerateRoute,

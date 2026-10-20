@@ -21,6 +21,15 @@ class _SkinPickerPageState extends State<SkinPickerPage> {
   String _query = '';
   String? _weapon;
 
+  /// 由 State 持有：寬度跨過 600 時搜尋框在樹中的位置會變，輸入文字仍要保留。
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogProvider>();
@@ -33,6 +42,7 @@ class _SkinPickerPageState extends State<SkinPickerPage> {
               catalog.catalog?.skins ?? const [], _query,
               weaponName: _weapon);
           final search = TextField(
+            controller: _searchController,
             decoration: const InputDecoration(
               hintText: '搜尋造型名稱',
               prefixIcon: Icon(Icons.search),

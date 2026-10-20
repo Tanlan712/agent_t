@@ -114,6 +114,19 @@ void riotTests() {
     expect(h.shop.shop.daily.first.skinUuid, 'skin-odin');
   });
 
+  testWidgets('360 寬、已登入有錢包：帳號列不溢出', (tester) async {
+    setWidth(tester, 360);
+    final h = await Harness.create(tester, catalog: await loadedCatalog(tester, skins: const [
+      SkinInfo(uuid: 'skin-odin', name: '凌空之志 奧丁', weaponName: '奧丁', tier: Tier.deluxe, levelUuid: 'lvl-odin'),
+    ]));
+    await tester.runAsync(() => h.riot.login(fakeRedirect));
+    await tester.runAsync(() => h.riot.sync(shop: h.shop, catalog: h.catalog));
+    await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+    await tester.pumpAndSettle();
+    expect(find.text('VP 1500 · 輻能點數 120 · 王國幣 3000'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('SkinTile owned 顯示已擁有', (tester) async {
     await tester.pumpWidget(const MaterialApp(
         home: Scaffold(body: SkinTile(skin: odin, owned: true))));

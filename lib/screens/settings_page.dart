@@ -204,7 +204,8 @@ class _SettingsPageState extends State<SettingsPage> {
               style: const TextStyle(height: 1.5),
             ),
             const SizedBox(height: 16),
-            ElevatedButton.icon(
+            // FilledButton：主題已設為 buttonRed 底＋白字（對比 4.96）。
+            FilledButton.icon(
               onPressed: () {
                 Clipboard.setData(
                   const ClipboardData(text: 'https://valorant-api.com/'),
@@ -218,9 +219,6 @@ class _SettingsPageState extends State<SettingsPage> {
               },
               icon: const Icon(Icons.copy),
               label: const Text('複製 valorant-api.com 網址'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.buttonRed,
-              ),
             ),
           ],
         ),

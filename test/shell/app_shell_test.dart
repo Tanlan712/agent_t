@@ -69,6 +69,35 @@ void main() {
     }
   });
 
+  testWidgets('跨過 600 寬時內容的捲動位置保留', (tester) async {
+    setWidth(tester, 900);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(
+      home: AppShell(
+        currentRoute: '/wishlist',
+        title: '願望清單',
+        child: ListView(
+          key: const ValueKey('page-list'),
+          children: [for (var i = 0; i < 100; i++) Text('row $i')],
+        ),
+      ),
+    ));
+    final list = find.byKey(const ValueKey('page-list'));
+    tester.state<ScrollableState>(
+        find.descendant(of: list, matching: find.byType(Scrollable))).position.jumpTo(400);
+    await tester.pump();
+    for (final width in [500.0, 1400.0, 500.0]) {
+      tester.view.physicalSize = Size(width, 900);
+      await tester.pumpAndSettle();
+      final pixels = tester
+          .state<ScrollableState>(
+              find.descendant(of: list, matching: find.byType(Scrollable)))
+          .position
+          .pixels;
+      expect(pixels, 400, reason: '$width');
+    }
+  });
+
   testWidgets('導覽底部顯示 Riot 登入狀態', (tester) async {
     setWidth(tester, 1400);
     final h = await Harness.create(tester);
