@@ -135,7 +135,20 @@
 
 ### `GET /pregame/v1/players/{puuid}` ✅ 2026-10-21
 - 不在選角時回 404：`{httpStatus, errorCode, message}`。
-- 選角中的欄位：📄 `Subject, MatchID, Version`；`pregame/v1/matches/{id}` 的內容**尚待實測**。
+- 選角中回 `Subject, MatchID, Version` ✅ 2026-10-21。
+
+### `GET /pregame/v1/matches/{matchId}` ✅ 2026-10-21（競技、選角中）
+- 頂層：`ID, Version, Teams, AllyTeam, EnemyTeam, ObserverSubjects, MatchCoaches, EnemyTeamSize, EnemyTeamLockCount, PregameState, LastUpdated, MapID, MapSelectPool, BannedMapIDs, CastedVotes, MapSelectSteps, MapSelectStep, Team1, GamePodID, Mode, LocalAccessibleAgents, VoiceSessionID, MUCName, TeamMatchToken, QueueID, ProvisioningFlowID, IsRanked, PhaseTimeRemainingNS, StepTimeRemainingNS, altModesFlagADA, TournamentMetadata, RosterMetadata, GameRules`
+  - `PregameState` 實測值：`character_select_active`；`PhaseTimeRemainingNS`：剩餘時間（奈秒）
+  - `MapID`、`Mode`（例如 `/Game/GameModes/Bomb/BombGameMode.BombGameMode_C`）、`QueueID`、`IsRanked`
+  - **`EnemyTeam` 為 null**：選角時看不到對手；只有 `EnemyTeamSize`（人數）與 `EnemyTeamLockCount`（已鎖定人數）
+  - `Teams` 只有我方 1 隊；`AllyTeam`：`TeamID, TeamNumber, Players`
+  - `GameRules`：`AccoladesEnabled, AllowLenientSurrender, ReplayRecordMatch`
+  - ⛔ `TeamMatchToken`、`VoiceSessionID`、`MUCName`：憑證類，不得讀取內容、顯示、記錄或傳送。
+- `AllyTeam.Players[]`：`Subject, CharacterID, CharacterSelectionState, PregamePlayerState, CompetitiveTier, PlayerIdentity, SeasonalBadgeInfo, IsCaptain, PlatformType, PremierPrestige`
+  - `CharacterSelectionState`：空字串（尚未選）／`selected`／`locked`（依社群文件）
+  - `PregamePlayerState` 實測值：`joined`
+  - `CompetitiveTier`：選角時有實際牌位
 
 ### `GET /core-game/v1/players/{puuid}` ✅ 2026-10-21（競技場次、對局中）
 - 不在對局時回 404。對局中回 `Subject, MatchID, Version`。
@@ -150,7 +163,9 @@
 - `Players[]`（10 人）：`Subject, TeamID, TeamNumber, CharacterID, bonsaiBloomline, PlayerIdentity, SeasonalBadgeInfo, IsCoach, IsAssociated, PlatformType, PremierPrestige`
   - `TeamID`：`Blue`／`Red`；`CharacterID`：特務 UUID
   - `PlayerIdentity`：與隊伍相同（`PlayerCardID, PlayerTitleID, AccountLevel, PreferredLevelBorderID, Incognito, HideAccountLevel`）
-  - `SeasonalBadgeInfo`：`SeasonID, NumberOfWins, WinsByTier{tier: 勝場}, Rank`（本季牌位）`, LeaderboardRank`
+  - `SeasonalBadgeInfo`：`SeasonID, NumberOfWins, WinsByTier{tier: 勝場}, Rank, LeaderboardRank`
+    - 實測 `Rank` 大多是 0（包括自己），**不能當成即時牌位**；為 0 時改用 MMR 查 `SeasonID` 那一季的牌位。
+  - 實測多數玩家的 `AccountLevel` 是 0（推測對方隱藏等級時 Riot 直接給 0）。
   - `bonsaiBloomline`：`bloomlineFlourishID, bloomlineShortLevel, bloomlineHypeID`（意義不明，未使用）
   - 沒有名稱與 partyId；名稱要用 name-service 查詢。
 
