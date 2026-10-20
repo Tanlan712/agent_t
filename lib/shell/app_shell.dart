@@ -72,38 +72,46 @@ class AppShell extends StatelessWidget {
                         child: Column(
                           children: [
                             Expanded(
-                              child: NavigationRail(
-                                extended: extended,
-                                minExtendedWidth: 240,
-                                labelType: extended
-                                    ? NavigationRailLabelType.none
-                                    : NavigationRailLabelType.all,
-                                selectedIndex: _selectedIndex,
-                                leading: extended
-                                    ? const Padding(
-                                        padding:
-                                            EdgeInsets.fromLTRB(8, 16, 8, 8),
-                                        child: Text(appName,
-                                            style: TextStyle(
-                                                color: AppColors.primary,
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold)),
-                                      )
-                                    : const Padding(
-                                        padding:
-                                            EdgeInsets.symmetric(vertical: 16),
-                                        child: Icon(Icons.local_fire_department,
-                                            color: AppColors.primary),
+                              // NavigationRail 回報的內在高度比實際字型渲染矮（中文字型尤其明顯），
+                              // 依項目數給足最小高度，矮視窗才會正確捲動而不是溢出。
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                    minHeight: (extended ? 72 : 88) +
+                                        navItems.length * (extended ? 56 : 76)),
+                                child: NavigationRail(
+                                  extended: extended,
+                                  minExtendedWidth: 240,
+                                  labelType: extended
+                                      ? NavigationRailLabelType.none
+                                      : NavigationRailLabelType.all,
+                                  selectedIndex: _selectedIndex,
+                                  leading: extended
+                                      ? const Padding(
+                                          padding:
+                                              EdgeInsets.fromLTRB(8, 16, 8, 8),
+                                          child: Text(appName,
+                                              style: TextStyle(
+                                                  color: AppColors.primary,
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold)),
+                                        )
+                                      : const Padding(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 16),
+                                          child: Icon(
+                                              Icons.local_fire_department,
+                                              color: AppColors.primary),
+                                        ),
+                                  destinations: [
+                                    for (final item in navItems)
+                                      NavigationRailDestination(
+                                        icon: Icon(item.icon),
+                                        label: Text(item.label),
                                       ),
-                                destinations: [
-                                  for (final item in navItems)
-                                    NavigationRailDestination(
-                                      icon: Icon(item.icon),
-                                      label: Text(item.label),
-                                    ),
-                                ],
-                                onDestinationSelected: (i) =>
-                                    _go(context, navItems[i]),
+                                  ],
+                                  onDestinationSelected: (i) =>
+                                      _go(context, navItems[i]),
+                                ),
                               ),
                             ),
                             _RiotStatus(compact: !extended),
