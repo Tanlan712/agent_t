@@ -45,6 +45,15 @@ void main() {
     expect(h.wishlist.contains('o'), isFalse);
   });
 
+  testWidgets('點刪除鈕移出願望清單', (tester) async {
+    final h = await Harness.create(tester, wishlist: ['o']);
+    await tester.pumpWidget(h.wrap(home: WishlistPage(now: () => now)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('移出願望清單'));
+    await tester.pumpAndSettle();
+    expect(h.wishlist.contains('o'), isFalse);
+  });
+
   testWidgets('＋ 加入造型', (tester) async {
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(

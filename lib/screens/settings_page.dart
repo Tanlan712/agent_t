@@ -55,17 +55,24 @@ class _SettingsPageState extends State<SettingsPage> {
     return AppShell(
       currentRoute: '/settings',
       title: '設定',
-      child: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        children: [
-          _buildApiKeySection(),
-          const SizedBox(height: 24),
-          _buildRenewalInstructionsSection(),
-          const SizedBox(height: 24),
-          _buildAlternativeApiSection(),
-          const SizedBox(height: 24),
-          const MyShopSettingsCard(),
-        ],
+      // 靠左與殼層標題對齊；單欄最大寬度 760。
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760),
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            children: [
+              _buildApiKeySection(),
+              const SizedBox(height: 24),
+              _buildRenewalInstructionsSection(),
+              const SizedBox(height: 24),
+              _buildAlternativeApiSection(),
+              const SizedBox(height: 24),
+              const MyShopSettingsCard(),
+            ],
+          ),
+        ),
       ),
     );
   }

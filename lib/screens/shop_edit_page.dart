@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -9,6 +11,7 @@ import '../models/skin_info.dart';
 import '../providers/catalog_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/shop_provider.dart';
+import '../shell/responsive_grid.dart';
 import '../widgets/bundle_picker_sheet.dart';
 import '../widgets/bundle_tile.dart';
 import '../widgets/catalog_gate.dart';
@@ -218,79 +221,107 @@ class _ShopEditPageState extends State<ShopEditPage> {
           key: _formKey,
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            // 用 Column 而非 ListView：所有價格欄位都必須建構，Form.validate 才會檢查到。
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (var i = 0; i < _slots.length; i++) ...[
-                  KeyedSubtree(
-                    key: ValueKey('slot-$i'),
-                    child: _slots[i].itemUuid == null
-                        ? Card(
-                            child: ListTile(
-                              onTap: () => _pick(i),
-                              leading: const Icon(Icons.add_circle_outline),
-                              title:
-                                  Text(isBundle ? '選擇組合包' : '選擇第 ${i + 1} 個造型'),
-                            ),
-                          )
-                        : isBundle
-                            ? BundleTile(
-                                bundle: catalog.bundleById(_slots[i].itemUuid!),
-                                onTap: () => _pick(i),
-                              )
-                            : SkinTile(
-                                skin: catalog.skinById(_slots[i].itemUuid!),
-                                onTap: () => _pick(i),
-                              ),
-                  ),
-                  if (_slots[i].itemUuid != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                      child: Row(
+            // 用 Column／Wrap 而非 ListView：所有價格欄位都必須建構，Form.validate 才會檢查到。
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 760),
+                child: LayoutBuilder(builder: (context, constraints) {
+                  final cols = min(2, columnsFor(constraints.maxWidth, 340));
+                  final slotWidth =
+                      (constraints.maxWidth - gridSpacing * (cols - 1)) / cols;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Wrap(
+                        spacing: gridSpacing,
+                        runSpacing: 4,
                         children: [
-                          if (isNight) ...[
-                            Expanded(
-                              child: TextFormField(
-                                key: ValueKey('original-$i'),
-                                controller: _slots[i].originalPrice,
-                                decoration:
-                                    const InputDecoration(labelText: '原價'),
-                                keyboardType: TextInputType.number,
-                                validator: _validatePrice,
-                              ),
+                          for (var i = 0; i < _slots.length; i++)
+                            SizedBox(
+                              width: slotWidth,
+                              child: _slotEditor(i, catalog, isNight, isBundle),
                             ),
-                            const SizedBox(width: 12),
-                          ],
-                          Expanded(
-                            child: TextFormField(
-                              key: ValueKey('price-$i'),
-                              controller: _slots[i].price,
-                              decoration: InputDecoration(
-                                  labelText: isNight ? '折扣價' : '價格'),
-                              keyboardType: TextInputType.number,
-                              validator: _validatePrice,
-                            ),
-                          ),
                         ],
                       ),
-                    ),
-                ],
-                if (isNight)
-                  ListTile(
-                    leading: const Icon(Icons.event),
-                    title: Text(_nightEndDate == null
-                        ? '選擇夜市結束日期'
-                        : '結束日期：${_nightEndDate!.year}-${_nightEndDate!.month}-${_nightEndDate!.day}'),
-                    onTap: _pickEndDate,
-                  ),
-                const SizedBox(height: 16),
-                FilledButton(onPressed: _save, child: const Text('儲存')),
-              ],
+                      if (isNight)
+                        ListTile(
+                          leading: const Icon(Icons.event),
+                          title: Text(_nightEndDate == null
+                              ? '選擇夜市結束日期'
+                              : '結束日期：${_nightEndDate!.year}-${_nightEndDate!.month}-${_nightEndDate!.day}'),
+                          onTap: _pickEndDate,
+                        ),
+                      const SizedBox(height: 16),
+                      FilledButton(onPressed: _save, child: const Text('儲存')),
+                    ],
+                  );
+                }),
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  /// 一個格子：造型（或組合包）卡片＋價格欄位。
+  Widget _slotEditor(
+      int i, CatalogProvider catalog, bool isNight, bool isBundle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KeyedSubtree(
+          key: ValueKey('slot-$i'),
+          child: _slots[i].itemUuid == null
+              ? Card(
+                  child: ListTile(
+                    onTap: () => _pick(i),
+                    leading: const Icon(Icons.add_circle_outline),
+                    title: Text(isBundle ? '選擇組合包' : '選擇第 ${i + 1} 個造型'),
+                  ),
+                )
+              : isBundle
+                  ? BundleTile(
+                      bundle: catalog.bundleById(_slots[i].itemUuid!),
+                      onTap: () => _pick(i),
+                    )
+                  : SkinTile(
+                      skin: catalog.skinById(_slots[i].itemUuid!),
+                      onTap: () => _pick(i),
+                    ),
+        ),
+        if (_slots[i].itemUuid != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Row(
+              children: [
+                if (isNight) ...[
+                  Expanded(
+                    child: TextFormField(
+                      key: ValueKey('original-$i'),
+                      controller: _slots[i].originalPrice,
+                      decoration: const InputDecoration(labelText: '原價'),
+                      keyboardType: TextInputType.number,
+                      validator: _validatePrice,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                Expanded(
+                  child: TextFormField(
+                    key: ValueKey('price-$i'),
+                    controller: _slots[i].price,
+                    decoration:
+                        InputDecoration(labelText: isNight ? '折扣價' : '價格'),
+                    keyboardType: TextInputType.number,
+                    validator: _validatePrice,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

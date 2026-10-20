@@ -6,6 +6,7 @@ import 'package:valorant_shop_tracker/providers/catalog_provider.dart';
 import 'package:valorant_shop_tracker/providers/riot_provider.dart';
 import 'package:valorant_shop_tracker/screens/skin_picker_page.dart';
 import 'package:valorant_shop_tracker/services/riot_client.dart';
+import 'package:valorant_shop_tracker/widgets/skin_card.dart';
 import 'package:valorant_shop_tracker/widgets/skin_tile.dart';
 
 import '../catalog_helpers.dart';
@@ -57,7 +58,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('幻象').last);
     await tester.pumpAndSettle();
-    expect(find.byType(SkinTile), findsNWidgets(2));
+    expect(find.byType(SkinCard), findsNWidgets(2));
     expect(find.text('凌空之志 奧丁'), findsNothing);
   });
 

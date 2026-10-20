@@ -89,14 +89,16 @@ ThemeData buildAppTheme() {
     inputDecorationTheme: const InputDecorationTheme(
       filled: true,
       fillColor: AppColors.surfaceHigh,
-      border: OutlineInputBorder(borderRadius: _radius, borderSide: BorderSide.none),
+      border: OutlineInputBorder(
+          borderRadius: _radius, borderSide: BorderSide.none),
     ),
     navigationRailTheme: const NavigationRailThemeData(
       backgroundColor: AppColors.surface,
       indicatorColor: AppColors.surfaceHigh,
       selectedIconTheme: IconThemeData(color: AppColors.primary),
       unselectedIconTheme: IconThemeData(color: AppColors.muted),
-      selectedLabelTextStyle: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+      selectedLabelTextStyle:
+          TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
       unselectedLabelTextStyle: TextStyle(color: AppColors.muted),
     ),
     drawerTheme: const DrawerThemeData(backgroundColor: AppColors.surface),

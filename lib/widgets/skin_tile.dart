@@ -90,8 +90,9 @@ class _PriceLabel extends StatelessWidget {
 /// 網路圖片，失敗或沒有網址時顯示佔位圖示。
 class SkinIcon extends StatelessWidget {
   final String? url;
+  final BoxFit fit;
 
-  const SkinIcon({super.key, required this.url});
+  const SkinIcon({super.key, required this.url, this.fit = BoxFit.contain});
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +100,6 @@ class SkinIcon extends StatelessWidget {
     final url = this.url;
     if (url == null) return placeholder;
     return Image.network(url,
-        fit: BoxFit.contain, errorBuilder: (_, __, ___) => placeholder);
+        fit: fit, errorBuilder: (_, __, ___) => placeholder);
   }
 }

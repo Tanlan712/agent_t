@@ -9,10 +9,16 @@ import '../providers/settings_provider.dart';
 import '../providers/shop_provider.dart';
 import '../providers/wishlist_provider.dart';
 import '../shell/app_shell.dart';
+import '../shell/responsive_grid.dart';
+import '../theme/app_theme.dart';
 import '../widgets/bundle_tile.dart';
 import '../widgets/catalog_gate.dart';
-import '../widgets/skin_tile.dart';
+import '../widgets/skin_card.dart';
+import '../widgets/skin_tile.dart' show wishlistGold;
 import 'shop_edit_page.dart';
+
+/// 商店造型卡片的寬高比。
+const _cardAspect = 0.78;
 
 String formatRemaining(Duration d) =>
     '剩餘 ${d.inHours} 小時 ${d.inMinutes % 60} 分';
@@ -65,12 +71,20 @@ class MyShopPage extends StatelessWidget {
                       : '已過期，請更新',
               onEdit: () => edit(ShopSection.daily),
               children: [
-                for (final e in shop.daily)
-                  SkinTile(
-                    skin: catalog.skinById(e.skinUuid),
-                    price: e.price,
-                    highlighted: dailyActive && matched.contains(e.skinUuid),
-                    owned: riot.isOwned(e.skinUuid),
+                if (shop.daily.isNotEmpty)
+                  ResponsiveGrid(
+                    minTileWidth: 240,
+                    childAspectRatio: _cardAspect,
+                    children: [
+                      for (final e in shop.daily)
+                        SkinCard(
+                          skin: catalog.skinById(e.skinUuid),
+                          price: e.price,
+                          highlighted:
+                              dailyActive && matched.contains(e.skinUuid),
+                          owned: riot.isOwned(e.skinUuid),
+                        ),
+                    ],
                   ),
               ],
             ),
@@ -83,13 +97,21 @@ class MyShopPage extends StatelessWidget {
                       : '已過期，請更新',
               onEdit: () => edit(ShopSection.nightMarket),
               children: [
-                for (final e in shop.nightMarket)
-                  SkinTile(
-                    skin: catalog.skinById(e.skinUuid),
-                    price: e.discountedPrice,
-                    originalPrice: e.originalPrice,
-                    highlighted: nightActive && matched.contains(e.skinUuid),
-                    owned: riot.isOwned(e.skinUuid),
+                if (shop.nightMarket.isNotEmpty)
+                  ResponsiveGrid(
+                    minTileWidth: 240,
+                    childAspectRatio: _cardAspect,
+                    children: [
+                      for (final e in shop.nightMarket)
+                        SkinCard(
+                          skin: catalog.skinById(e.skinUuid),
+                          price: e.discountedPrice,
+                          originalPrice: e.originalPrice,
+                          highlighted:
+                              nightActive && matched.contains(e.skinUuid),
+                          owned: riot.isOwned(e.skinUuid),
+                        ),
+                    ],
                   ),
               ],
             ),
@@ -100,7 +122,9 @@ class MyShopPage extends StatelessWidget {
               children: [
                 if (shop.featuredBundle case final b?)
                   BundleTile(
-                      bundle: catalog.bundleById(b.bundleUuid), price: b.price),
+                      bundle: catalog.bundleById(b.bundleUuid),
+                      price: b.price,
+                      banner: true),
               ],
             ),
           ],
@@ -152,6 +176,7 @@ class _Section extends StatelessWidget {
               ),
             ],
           ),
+          if (children.isNotEmpty) const SizedBox(height: 12),
           ...children,
         ],
       ),
@@ -191,23 +216,31 @@ class _RiotBar extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Row(
+        // Wrap：窄螢幕時同步按鈕自動換到下一行。
+        child: Wrap(
+          spacing: 16,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          alignment: WrapAlignment.spaceBetween,
           children: [
-            const Icon(Icons.verified_user, color: Colors.green),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('已登入：${session.displayName}（${session.shard}）',
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  if (wallet != null)
-                    Text(
-                        'VP ${wallet.vp} · 輻能點數 ${wallet.radianite} · 王國幣 ${wallet.kingdom}'),
-                  if (wallet != null)
-                    Text('已擁有 ${riot.ownedSkinUuids.length} 款造型'),
-                ],
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.verified_user, color: AppColors.owned),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('已登入：${session.displayName}（${session.shard}）',
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    if (wallet != null)
+                      Text(
+                          'VP ${wallet.vp} · 輻能點數 ${wallet.radianite} · 王國幣 ${wallet.kingdom}'),
+                    if (wallet != null)
+                      Text('已擁有 ${riot.ownedSkinUuids.length} 款造型'),
+                  ],
+                ),
+              ],
             ),
             FilledButton.icon(
               onPressed: riot.isBusy ? null : () => _sync(context),
