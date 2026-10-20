@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 import 'package:valorant_shop_tracker/models/current_shop.dart';
 import 'package:valorant_shop_tracker/models/skin_info.dart';
 import 'package:valorant_shop_tracker/models/tier.dart';
@@ -108,22 +109,37 @@ void riotTests() {
     await tester
         .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
     await tester.pumpAndSettle();
-    expect(find.text('VP 1500 · 輻能點數 120 · 王國幣 3000'), findsOneWidget);
-    expect(find.text('已擁有 2 款造型'), findsOneWidget);
+    Finder kpi(String t) => find.descendant(
+        of: find.byKey(const ValueKey('shop-kpi')), matching: find.text(t));
+    expect(kpi('1500'), findsOneWidget);
+    expect(kpi('120'), findsOneWidget);
+    expect(kpi('3000'), findsOneWidget);
+    // 已擁有造型數移到 KPI。
+    expect(kpi('2'), findsOneWidget);
     expect(find.text('已擁有'), findsWidgets);
     expect(h.shop.shop.daily.first.skinUuid, 'skin-odin');
   });
 
   testWidgets('360 寬、已登入有錢包：帳號列不溢出', (tester) async {
     setWidth(tester, 360);
-    final h = await Harness.create(tester, catalog: await loadedCatalog(tester, skins: const [
-      SkinInfo(uuid: 'skin-odin', name: '凌空之志 奧丁', weaponName: '奧丁', tier: Tier.deluxe, levelUuid: 'lvl-odin'),
-    ]));
+    final h = await Harness.create(tester,
+        catalog: await loadedCatalog(tester, skins: const [
+          SkinInfo(
+              uuid: 'skin-odin',
+              name: '凌空之志 奧丁',
+              weaponName: '奧丁',
+              tier: Tier.deluxe,
+              levelUuid: 'lvl-odin'),
+        ]));
     await tester.runAsync(() => h.riot.login(fakeRedirect));
     await tester.runAsync(() => h.riot.sync(shop: h.shop, catalog: h.catalog));
     await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
     await tester.pumpAndSettle();
-    expect(find.text('VP 1500 · 輻能點數 120 · 王國幣 3000'), findsOneWidget);
+    Finder kpi(String t) => find.descendant(
+        of: find.byKey(const ValueKey('shop-kpi')), matching: find.text(t));
+    expect(kpi('1500'), findsOneWidget);
+    expect(kpi('120'), findsOneWidget);
+    expect(kpi('3000'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -164,8 +180,10 @@ void layoutTests() {
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
     await tester.pumpAndSettle();
-    final barBottom =
-        tester.getBottomLeft(find.ancestor(of: find.text('登入 Riot 以自動同步'), matching: find.byType(Card))).dy;
+    final barBottom = tester
+        .getBottomLeft(find.ancestor(
+            of: find.text('登入 Riot 以自動同步'), matching: find.byType(Card)))
+        .dy;
     final headerTop = tester.getTopLeft(find.text('每日商店')).dy;
     expect(headerTop - barBottom, greaterThanOrEqualTo(16));
   });
@@ -178,5 +196,36 @@ void layoutTests() {
     final tops = cardTops(tester);
     expect(tops.toSet().length, tops.length);
     expect(tester.takeException(), isNull);
+  });
+
+  group('戰術 HUD', () {
+    testWidgets('未登入時 KPI 只有每日商店倒數', (tester) async {
+      final h = await Harness.create(tester,
+          shop: CurrentShop(
+            daily: const [ShopEntry(skinUuid: 'o', price: 1275)],
+            dailyExpiresAt: now.add(const Duration(hours: 22)),
+          ));
+      await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+      await tester.pumpAndSettle();
+      Finder kpi(String t) => find.descendant(
+          of: find.byKey(const ValueKey('shop-kpi')), matching: find.text(t));
+      expect(kpi('商店刷新'), findsOneWidget);
+      expect(kpi('22 小時 0 分'), findsOneWidget);
+      expect(kpi('VP'), findsNothing);
+    });
+
+    testWidgets('夜市折扣用 StatusChip 顯示百分比', (tester) async {
+      final h = await Harness.create(tester,
+          shop: CurrentShop(
+            nightMarket: const [
+              NightMarketEntry(
+                  skinUuid: 'o', originalPrice: 1000, discountedPrice: 700),
+            ],
+            nightMarketEndsAt: now.add(const Duration(days: 3)),
+          ));
+      await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(StatusChip, '-30%'), findsOneWidget);
+    });
   });
 }

@@ -10,6 +10,8 @@ import '../providers/wishlist_provider.dart';
 import '../shell/app_shell.dart';
 import '../widgets/catalog_gate.dart';
 import '../shell/responsive_grid.dart';
+import '../theme/app_theme.dart';
+import '../widgets/hud/hud.dart';
 import '../widgets/skin_card.dart';
 
 class WishlistPage extends StatelessWidget {
@@ -31,6 +33,11 @@ class WishlistPage extends StatelessWidget {
     final wishlist = context.watch<WishlistProvider>();
     final shop = context.watch<ShopProvider>().shop;
     final onSale = wishlistUuidsInShop(shop, wishlist.uuids, now());
+    // 上架中的排在最前面，其餘維持加入順序。
+    final items = [
+      ...wishlist.items.where((e) => onSale.contains(e.skinUuid)),
+      ...wishlist.items.where((e) => !onSale.contains(e.skinUuid)),
+    ];
 
     return AppShell(
       currentRoute: '/wishlist',
@@ -44,13 +51,18 @@ class WishlistPage extends StatelessWidget {
       ],
       child: CatalogGate(
         child: wishlist.items.isEmpty
-            ? const Center(child: Text('願望清單是空的，按 ＋ 加入造型'))
+            ? EmptyState(
+                icon: Icons.star_border,
+                message: '願望清單是空的，按 ＋ 加入造型',
+                actionLabel: '加入造型',
+                onAction: () => _add(context),
+              )
             : ResponsiveGridView.builder(
                 minTileWidth: 200,
                 childAspectRatio: 0.72,
-                itemCount: wishlist.items.length,
+                itemCount: items.length,
                 itemBuilder: (context, i) {
-                  final item = wishlist.items[i];
+                  final item = items[i];
                   final isOnSale = onSale.contains(item.skinUuid);
                   return Dismissible(
                     key: ValueKey(item.skinUuid),
@@ -70,10 +82,8 @@ class WishlistPage extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (isOnSale)
-                            const Chip(
-                              label: Text('現在上架中'),
-                              visualDensity: VisualDensity.compact,
-                            ),
+                            const StatusChip(
+                                label: '現在上架中', color: AppColors.warn),
                           IconButton(
                             tooltip: '移出願望清單',
                             icon: const Icon(Icons.close),

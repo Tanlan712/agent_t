@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 import 'package:valorant_shop_tracker/models/current_shop.dart';
 import 'package:valorant_shop_tracker/screens/wishlist_page.dart';
 
@@ -71,5 +72,32 @@ void main() {
     await tester.pumpAndSettle();
     expect(h.wishlist.contains('p'), isTrue);
     expect(find.text('Prime 幻象'), findsOneWidget);
+  });
+
+  group('戰術 HUD', () {
+    testWidgets('空清單用 EmptyState，按鈕可加入造型', (tester) async {
+      final h = await Harness.create(tester);
+      await tester.pumpWidget(h.wrap(home: WishlistPage(now: () => now)));
+      await tester.pumpAndSettle();
+      expect(find.byType(EmptyState), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, '加入造型'), findsOneWidget);
+    });
+
+    testWidgets('上架中的造型排第一，標籤是 StatusChip', (tester) async {
+      final h = await Harness.create(
+        tester,
+        wishlist: ['p', 'o'],
+        shop: CurrentShop(
+          daily: const [ShopEntry(skinUuid: 'o', price: 1275)],
+          dailyExpiresAt: DateTime(2026, 10, 20, 8),
+        ),
+      );
+      await tester.pumpWidget(h.wrap(home: WishlistPage(now: () => now)));
+      await tester.pumpAndSettle();
+      final odin = tester.getTopLeft(find.text('凌空之志 奧丁'));
+      final prime = tester.getTopLeft(find.text('Prime 幻象'));
+      expect(odin.dy < prime.dy || odin.dx < prime.dx, isTrue);
+      expect(find.widgetWithText(StatusChip, '現在上架中'), findsOneWidget);
+    });
   });
 }

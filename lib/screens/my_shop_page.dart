@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../logic/shop_time.dart';
 import '../logic/wishlist_match.dart';
+import '../models/riot_session.dart';
 import '../providers/catalog_provider.dart';
 import '../providers/riot_provider.dart';
 import '../providers/settings_provider.dart';
@@ -13,6 +14,7 @@ import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
 import '../widgets/bundle_tile.dart';
 import '../widgets/catalog_gate.dart';
+import '../widgets/hud/hud.dart';
 import '../widgets/skin_card.dart';
 import '../widgets/skin_tile.dart' show wishlistGold;
 import 'shop_edit_page.dart';
@@ -22,6 +24,35 @@ const _cardAspect = 0.78;
 
 String formatRemaining(Duration d) =>
     '剩餘 ${d.inHours} 小時 ${d.inMinutes % 60} 分';
+
+String _compact(Duration d) => '${d.inHours} 小時 ${d.inMinutes % 60} 分';
+
+int _discount(int original, int now) =>
+    original <= 0 ? 0 : ((1 - now / original) * 100).round();
+
+/// 頁首 KPI：每日商店倒數；登入且同步後加上錢包與已擁有造型數。
+class _ShopKpi extends StatelessWidget {
+  final String daily;
+  final RiotWallet? wallet;
+  final int? owned;
+
+  const _ShopKpi(
+      {required this.daily, required this.wallet, required this.owned});
+
+  @override
+  Widget build(BuildContext context) {
+    final w = wallet;
+    return KpiStrip(key: const ValueKey('shop-kpi'), tiles: [
+      KpiTile(label: '商店刷新', value: daily),
+      if (w != null) ...[
+        KpiTile(label: 'VP', value: '${w.vp}'),
+        KpiTile(label: '輻能點數', value: '${w.radianite}'),
+        KpiTile(label: '王國幣', value: '${w.kingdom}'),
+      ],
+      if (owned != null) KpiTile(label: '已擁有造型', value: '$owned'),
+    ]);
+  }
+}
 
 class MyShopPage extends StatelessWidget {
   final DateTime Function() now;
@@ -53,6 +84,16 @@ class MyShopPage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 16),
           children: [
+            _ShopKpi(
+              daily: shop.daily.isEmpty
+                  ? '—'
+                  : dailyActive
+                      ? _compact(shop.dailyExpiresAt!.difference(t))
+                      : '已過期',
+              wallet: riot.wallet,
+              owned: riot.wallet == null ? null : riot.ownedSkinUuids.length,
+            ),
+            const SizedBox(height: 12),
             const _RiotBar(),
             const SizedBox(height: 24),
             if (matched.isNotEmpty) ...[
@@ -110,6 +151,10 @@ class MyShopPage extends StatelessWidget {
                           skin: catalog.skinById(e.skinUuid),
                           price: e.discountedPrice,
                           originalPrice: e.originalPrice,
+                          trailing: StatusChip(
+                              label:
+                                  '-${_discount(e.originalPrice, e.discountedPrice)}%',
+                              color: AppColors.warn),
                           highlighted:
                               nightActive && matched.contains(e.skinUuid),
                           owned: riot.isOwned(e.skinUuid),
@@ -160,6 +205,8 @@ class _Section extends StatelessWidget {
         children: [
           Row(
             children: [
+              Container(width: 3, height: 18, color: AppColors.primary),
+              const SizedBox(width: 8),
               Text(title, style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(width: 12),
               Expanded(
@@ -215,7 +262,6 @@ class _RiotBar extends StatelessWidget {
         ),
       );
     }
-    final wallet = riot.wallet;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -238,11 +284,6 @@ class _RiotBar extends StatelessWidget {
                     children: [
                       Text('已登入：${session.displayName}（${session.shard}）',
                           style: const TextStyle(fontWeight: FontWeight.bold)),
-                      if (wallet != null)
-                        Text(
-                            'VP ${wallet.vp} · 輻能點數 ${wallet.radianite} · 王國幣 ${wallet.kingdom}'),
-                      if (wallet != null)
-                        Text('已擁有 ${riot.ownedSkinUuids.length} 款造型'),
                     ],
                   ),
                 ),
