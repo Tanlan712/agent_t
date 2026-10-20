@@ -96,6 +96,8 @@ MockClient riotClient({
   int partyStatus = 200,
   int partyDetailStatus = 200,
   Map<String, dynamic>? party,
+  int coreStatus = 404,
+  int pregameStatus = 404,
   bool unratedTiers = false,
 }) {
   final throttled = <String, int>{};
@@ -137,6 +139,21 @@ MockClient riotClient({
     }
     // 即時對局（glz）：只有 GET。
     if (host == 'glz-ap-1.ap.a.pvp.net' && req.method == 'GET') {
+      // 預設不在選角也不在對局（404），與實測相同。
+      if (path == '/core-game/v1/players/puuid-1') {
+        return coreStatus == 200
+            ? json(corePlayerJson())
+            : json({'httpStatus': coreStatus, 'errorCode': 'x'}, coreStatus);
+      }
+      if (path == '/core-game/v1/matches/$testCoreMatchId') {
+        return json(coreMatchJson());
+      }
+      if (path == '/pregame/v1/players/puuid-1') {
+        return pregameStatus == 200
+            ? json({'Subject': 'puuid-1', 'MatchID': 'pre-1', 'Version': 1})
+            : json(
+                {'httpStatus': pregameStatus, 'errorCode': 'x'}, pregameStatus);
+      }
       if (path == '/parties/v1/players/puuid-1') {
         return partyStatus == 200
             ? json(partyPlayerJson())

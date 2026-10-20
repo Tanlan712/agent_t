@@ -58,4 +58,26 @@ void main() {
         throwsA(isA<RiotApiException>()
             .having((e) => e.statusCode, 'status', 401)));
   });
+
+  test('對局：不在對局（404）時回傳 null，對局中回傳場次', () async {
+    final (c, riot, _) = await setup();
+    expect(await c.fetchCoreMatchId(riot.session!), isNull);
+    final rc = RiotClient(client: riotClient(coreStatus: 200));
+    final r2 = RiotProvider(rc);
+    await r2.login(fakeRedirect);
+    final c2 = LiveClient(rc);
+    final id = await c2.fetchCoreMatchId(r2.session!);
+    expect(id, testCoreMatchId);
+    final json = await c2.fetchCoreMatch(r2.session!, id!);
+    expect(json['MatchID'], testCoreMatchId);
+  });
+
+  test('選角：不在選角（404）時回傳 null', () async {
+    final (c, riot, _) = await setup();
+    expect(await c.fetchPregameMatchId(riot.session!), isNull);
+    final rc = RiotClient(client: riotClient(pregameStatus: 200));
+    final r2 = RiotProvider(rc);
+    await r2.login(fakeRedirect);
+    expect(await LiveClient(rc).fetchPregameMatchId(r2.session!), 'pre-1');
+  });
 }
