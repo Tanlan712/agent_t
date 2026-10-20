@@ -34,6 +34,9 @@ class LivePartyProvider with ChangeNotifier {
   String? _error;
   final Map<String, String> _names = {};
 
+  /// name-service 已經查過的玩家（查過仍沒有名稱的顯示為未知玩家）。
+  final Set<String> _namesAsked = {};
+
   Timer? _timer;
   bool _busy = false;
   bool _disposed = false;
@@ -52,6 +55,10 @@ class LivePartyProvider with ChangeNotifier {
 
   /// 成員的 Riot ID；還沒查到時為 null。
   String? name(String puuid) => _names[puuid];
+
+  /// 查過 name-service 但沒有名稱。
+  bool nameMissing(String puuid) =>
+      !_names.containsKey(puuid) && _namesAsked.contains(puuid);
 
   /// 立即更新一次，之後每 [interval] 更新。
   void start() {
@@ -161,6 +168,7 @@ class LivePartyProvider with ChangeNotifier {
     if (ids.isEmpty) return;
     try {
       _names.addAll(await _match.fetchNames(s, ids));
+      _namesAsked.addAll(ids);
     } on RiotApiException catch (e) {
       if (e.statusCode == 401) rethrow;
     }

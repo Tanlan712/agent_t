@@ -87,6 +87,9 @@ class LiveMatch {
   final String mapId;
   final String queueId;
   final String myTeamId;
+
+  /// 本季 ID（SeasonalBadgeInfo.SeasonID）；Rank 為 0 時用來查這季牌位。
+  final String seasonId;
   final List<LivePlayer> players;
 
   const LiveMatch({
@@ -95,6 +98,7 @@ class LiveMatch {
     required this.mapId,
     required this.queueId,
     required this.myTeamId,
+    this.seasonId = '',
     required this.players,
   });
 

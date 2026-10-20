@@ -51,11 +51,20 @@ class _LivePageState extends State<LivePage> {
       return;
     }
     _formsFor = m.matchId;
-    _forms.request([
-      for (final id in m.teamIds)
-        for (final p in m.team(id))
-          if (!p.isCoach) p.puuid,
-    ], owner: this, queue: m.queueId);
+    _forms.request(
+        [
+          for (final id in m.teamIds)
+            for (final p in m.team(id))
+              if (!p.isCoach) p.puuid,
+        ],
+        owner: this,
+        queue: m.queueId,
+        // 實測 SeasonalBadgeInfo.Rank 常為 0：另外查這季牌位。
+        seasonId: m.seasonId,
+        rankFor: {
+          for (final p in m.players)
+            if (p.tier == 0 && !p.isCoach) p.puuid,
+        });
   }
 
   @override
@@ -333,7 +342,11 @@ class _MatchView extends StatelessWidget {
               children: [
                 for (final p in match.team(teamId))
                   _PlayerRow(
-                      player: p, live: live, ref: ref, queue: match.queueId),
+                      player: p,
+                      live: live,
+                      ref: ref,
+                      queue: match.queueId,
+                      seasonId: match.seasonId),
               ],
             ),
           ),
@@ -353,12 +366,14 @@ class _PlayerRow extends StatelessWidget {
   final LivePartyProvider live;
   final MatchReferenceProvider ref;
   final String queue;
+  final String seasonId;
 
   const _PlayerRow(
       {required this.player,
       required this.live,
       required this.ref,
-      required this.queue});
+      required this.queue,
+      required this.seasonId});
 
   void _open(BuildContext context) {
     final nav = Navigator.of(context);
@@ -374,7 +389,15 @@ class _PlayerRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final agent = ref.agent(player.agentId);
-    final tier = ref.tier(player.tier);
+    final tier = ref.tier(player.tier > 0
+        ? player.tier
+        : (context
+                .watch<RecentFormLoader>()
+                .rank(player.puuid, seasonId)
+                .seasonTier ??
+            0));
+    final name = live.name(player.puuid) ??
+        (live.nameMissing(player.puuid) ? '未知玩家' : '…');
     return InkWell(
       key: ValueKey('live-player-${player.puuid}'),
       onTap: () => _open(context),
@@ -401,7 +424,7 @@ class _PlayerRow extends StatelessWidget {
               child: Row(
                 children: [
                   Flexible(
-                    child: Text(live.name(player.puuid) ?? '…',
+                    child: Text(name,
                         key: ValueKey('live-name-${player.puuid}'),
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -409,10 +432,14 @@ class _PlayerRow extends StatelessWidget {
                                 ? FontWeight.bold
                                 : FontWeight.normal)),
                   ),
-                  const SizedBox(width: 6),
-                  Text('Lv ${player.level}',
-                      style: const TextStyle(
-                          color: AppColors.muted, fontSize: 12)),
+                  // 實測隱藏等級時 Riot 直接給 0，不顯示以免誤導。
+                  if (player.level > 0) ...[
+                    const SizedBox(width: 6),
+                    Text('Lv ${player.level}',
+                        key: ValueKey('live-level-${player.puuid}'),
+                        style: const TextStyle(
+                            color: AppColors.muted, fontSize: 12)),
+                  ],
                   if (player.isCoach) ...[
                     const SizedBox(width: 6),
                     const Text('教練',

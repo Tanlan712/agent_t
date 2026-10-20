@@ -233,4 +233,31 @@ void main() {
       await leave(tester, h);
     });
   });
+
+  group('即時對戰實測修正', () {
+    testWidgets('Rank 為 0 時改顯示查到的這季牌位', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester, coreStatus: 200);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      await drain(tester);
+      String tip(String key) =>
+          tester.widget<Tooltip>(find.byKey(ValueKey(key))).message!;
+      expect(tip('live-rank-r3'), '超凡 1');
+      expect(tip('live-rank-r1'), '鑽石 2');
+      await leave(tester, h);
+    });
+
+    testWidgets('等級為 0 不顯示；查不到名稱顯示未知玩家', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester, coreStatus: 200);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      expect(find.byKey(const ValueKey('live-level-r4')), findsNothing);
+      expect(inKey('live-level-r1', 'Lv 50'), findsOneWidget);
+      // fixture 的 name-service 對 r5 回傳空名稱。
+      expect(inKey('live-name-r5', '未知玩家'), findsOneWidget);
+      await leave(tester, h);
+    });
+  });
 }

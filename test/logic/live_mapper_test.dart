@@ -87,6 +87,7 @@ void coreGameTests() {
     expect(blue.first.puuid, myPuuid);
     expect(blue.length, 5);
     expect(m.team('Red').length, 6);
+    expect(m.seasonId, 'season-1');
   });
 
   test('對局玩家欄位：特務、牌位、等級、隱藏名稱、教練', () {

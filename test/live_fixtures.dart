@@ -80,7 +80,10 @@ Map<String, dynamic> partyPlayerJson() => {
 const testCoreMatchId = 'core-1';
 
 Map<String, dynamic> corePlayer(String subject, String team,
-        {int rank = 12, bool incognito = false, bool coach = false}) =>
+        {int rank = 12,
+        int level = 50,
+        bool incognito = false,
+        bool coach = false}) =>
     {
       'Subject': subject,
       'TeamID': team,
@@ -90,7 +93,7 @@ Map<String, dynamic> corePlayer(String subject, String team,
         'Subject': subject,
         'PlayerCardID': 'card-$subject',
         'PlayerTitleID': 'title',
-        'AccountLevel': 50,
+        'AccountLevel': level,
         'PreferredLevelBorderID': 'border',
         'Incognito': incognito,
         'HideAccountLevel': false,
@@ -132,8 +135,9 @@ Map<String, dynamic> coreMatchJson() => {
         corePlayer('b4', 'Blue'),
         corePlayer('b5', 'Blue'),
         corePlayer('r2', 'Red', incognito: true),
-        corePlayer('r3', 'Red'),
-        corePlayer('r4', 'Red'),
+        // 實測：Rank 常是 0、隱藏等級時 AccountLevel 是 0。
+        corePlayer('r3', 'Red', rank: 0),
+        corePlayer('r4', 'Red', level: 0),
         corePlayer('r5', 'Red'),
         corePlayer('coach', 'Red', coach: true),
       ],

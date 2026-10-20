@@ -54,11 +54,16 @@ String? playerCardUrl(String? cardId) => cardId == null || cardId.isEmpty
 /// 依 AGENTS.md 只讀取需要的欄位，不碰 ConnectionDetails 與任何 token。
 LiveMatch mapCoreGame(Map<String, dynamic> json, String myPuuid) {
   final players = <LivePlayer>[];
+  var seasonId = '';
   for (final p in (json['Players'] as List<dynamic>? ?? const [])
       .cast<Map<String, dynamic>>()) {
     final id = p['Subject'] as String? ?? '';
     final identity = p['PlayerIdentity'] as Map<String, dynamic>? ?? const {};
     final badge = p['SeasonalBadgeInfo'] as Map<String, dynamic>? ?? const {};
+    final season = badge['SeasonID'] as String? ?? '';
+    if (seasonId.isEmpty || id == myPuuid) {
+      if (season.isNotEmpty) seasonId = season;
+    }
     players.add(LivePlayer(
       puuid: id,
       isMe: id == myPuuid,
@@ -81,6 +86,7 @@ LiveMatch mapCoreGame(Map<String, dynamic> json, String myPuuid) {
             as String? ??
         '',
     myTeamId: me?.teamId ?? '',
+    seasonId: seasonId,
     players: players,
   );
 }
