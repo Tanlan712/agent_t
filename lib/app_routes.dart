@@ -4,6 +4,8 @@ import 'screens/agents_page.dart';
 import 'screens/bundles_page.dart';
 import 'screens/gamemodes_page.dart';
 import 'screens/maps_page.dart';
+import 'screens/match_detail_page.dart';
+import 'screens/match_history_page.dart';
 import 'screens/my_shop_page.dart';
 import 'screens/playercards_page.dart';
 import 'screens/riot_login_page.dart';
@@ -18,6 +20,7 @@ final Map<String, WidgetBuilder> _topLevel = {
   '/': (_) => const MyShopPage(),
   '/my-shop': (_) => const MyShopPage(),
   '/wishlist': (_) => const WishlistPage(),
+  '/matches': (_) => const MatchHistoryPage(),
   '/agents': (_) => const AgentsPage(),
   '/weapons': (_) => const WeaponsPage(),
   '/maps': (_) => const MapsPage(),
@@ -48,6 +51,12 @@ Route<dynamic>? onGenerateAppRoute(RouteSettings settings) {
       return MaterialPageRoute(
         settings: settings,
         builder: (_) => const SkinPickerPage(),
+      );
+    case '/matches/detail':
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) =>
+            MatchDetailPage(matchId: settings.arguments as String? ?? ''),
       );
     case '/riot-login':
       return MaterialPageRoute<void>(

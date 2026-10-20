@@ -4,14 +4,19 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'providers/catalog_provider.dart';
+import 'providers/match_history_provider.dart';
+import 'providers/match_reference_provider.dart';
 import 'providers/riot_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/shop_provider.dart';
 import 'providers/wishlist_provider.dart';
 import 'app_routes.dart';
 import 'services/catalog_api.dart';
+import 'services/match_client.dart';
+import 'services/match_reference_api.dart';
 import 'services/riot_client.dart';
 import 'storage/catalog_cache.dart';
+import 'storage/match_reference_cache.dart';
 import 'storage/settings_storage.dart';
 import 'storage/shop_storage.dart';
 import 'storage/wishlist_storage.dart';
@@ -32,6 +37,13 @@ Future<void> main() async {
   // 不等待：先顯示畫面，目錄在背景載入。
   catalog.init();
 
+  // 商店同步與對戰紀錄共用同一個 Riot 登入。
+  final riotClient = RiotClient();
+  final riot = RiotProvider(riotClient);
+  final matchReference =
+      MatchReferenceProvider(MatchReferenceApi(), MatchReferenceCache(prefs));
+  matchReference.init();
+
   runApp(
     MultiProvider(
       providers: [
@@ -41,7 +53,10 @@ Future<void> main() async {
             create: (_) => WishlistProvider(WishlistStorage(prefs))),
         ChangeNotifierProvider(
             create: (_) => SettingsProvider(SettingsStorage(prefs))),
-        ChangeNotifierProvider(create: (_) => RiotProvider(RiotClient())),
+        ChangeNotifierProvider.value(value: riot),
+        ChangeNotifierProvider(
+            create: (_) => MatchHistoryProvider(MatchClient(riotClient), riot)),
+        ChangeNotifierProvider.value(value: matchReference),
       ],
       child: const MyApp(),
     ),

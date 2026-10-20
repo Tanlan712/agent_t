@@ -34,6 +34,7 @@ class MatchHistoryProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   int _generation = 0;
+  String? _loadedFor;
 
   MatchHistoryProvider(this._client, this._riot,
       {this.pageSize = 10, this.maxConcurrent = 4});
@@ -46,6 +47,9 @@ class MatchHistoryProvider with ChangeNotifier {
   List<int> get recentRr => _rr.values.take(5).toList();
   MatchDetail? detail(String matchId) => _details[matchId];
 
+  /// 目前資料屬於哪個帳號（puuid）；換帳號時頁面據此重新載入。
+  String? get loadedFor => _loadedFor;
+
   Future<void> loadFirstPage() async {
     // 每次重新載入換一個世代；舊世代還在進行的請求，結果一律丟棄。
     final gen = ++_generation;
@@ -57,6 +61,7 @@ class MatchHistoryProvider with ChangeNotifier {
     _error = null;
     final s = _session();
     if (s == null) return;
+    _loadedFor = s.puuid;
     await _guarded(gen, () async {
       // 牌位只是頁首資訊：失敗（非登入過期）時留空，不阻擋列表。
       final rank = await _optional(() => _client.fetchRank(s), null);

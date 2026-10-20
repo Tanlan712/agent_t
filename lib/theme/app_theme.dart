@@ -18,6 +18,15 @@ abstract final class AppColors {
   static const error = Color(0xFFFF6B6B);
   static const wishlistGold = Color(0xFFFFC107);
   static const owned = Color(0xFF4ADE80);
+
+  /// 對戰計分板的組隊標記；同一組隊用同一個顏色。
+  static const partyColors = [
+    Color(0xFF60A5FA),
+    Color(0xFFF472B6),
+    Color(0xFFFBBF24),
+    Color(0xFF34D399),
+    Color(0xFFA78BFA),
+  ];
 }
 
 const _radius = BorderRadius.all(Radius.circular(4));

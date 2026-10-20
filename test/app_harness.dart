@@ -1,23 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:valorant_shop_tracker/app_routes.dart';
 import 'package:valorant_shop_tracker/models/current_shop.dart';
+import 'package:valorant_shop_tracker/models/match_models.dart';
 import 'package:valorant_shop_tracker/models/wishlist_item.dart';
 import 'package:valorant_shop_tracker/providers/catalog_provider.dart';
+import 'package:valorant_shop_tracker/providers/match_history_provider.dart';
+import 'package:valorant_shop_tracker/providers/match_reference_provider.dart';
 import 'package:valorant_shop_tracker/providers/riot_provider.dart';
 import 'package:valorant_shop_tracker/providers/settings_provider.dart';
 import 'package:valorant_shop_tracker/providers/shop_provider.dart';
 import 'package:valorant_shop_tracker/providers/wishlist_provider.dart';
+import 'package:valorant_shop_tracker/services/match_client.dart';
+import 'package:valorant_shop_tracker/services/match_reference_api.dart';
 import 'package:valorant_shop_tracker/services/riot_client.dart';
+import 'package:valorant_shop_tracker/storage/match_reference_cache.dart';
 import 'package:valorant_shop_tracker/theme/app_theme.dart';
 import 'package:valorant_shop_tracker/storage/settings_storage.dart';
 import 'package:valorant_shop_tracker/storage/shop_storage.dart';
 import 'package:valorant_shop_tracker/storage/wishlist_storage.dart';
 
 import 'catalog_helpers.dart';
+import 'match_fixtures.dart';
 import 'riot_fixtures.dart';
+
+/// 對戰頁面測試用的參考資料（預先寫入快取，不連網）。
+const testMatchReference = MatchReference(
+  agents: {
+    'agent-$myPuuid': RefItem(name: '蓋克'),
+    'agent-mate': RefItem(name: '菲德'),
+  },
+  maps: {'/Game/Maps/Ascent/Ascent': RefItem(name: '亞海懸城')},
+  tiers: {18: RefItem(name: '鑽石 2'), 12: RefItem(name: '白金 1')},
+);
 
 /// 測試用的整組 providers，已預先寫入商店／願望清單資料。
 class Harness {
@@ -26,16 +44,20 @@ class Harness {
   final WishlistProvider wishlist;
   final SettingsProvider settings;
   final RiotProvider riot;
+  final MatchHistoryProvider matchHistory;
+  final MatchReferenceProvider matchReference;
   final SharedPreferences prefs;
 
   Harness(this.catalog, this.shop, this.wishlist, this.settings, this.riot,
-      this.prefs);
+      this.matchHistory, this.matchReference, this.prefs);
 
   static Future<Harness> create(
     WidgetTester tester, {
     CurrentShop shop = const CurrentShop(),
     List<String> wishlist = const [],
     CatalogProvider? catalog,
+    http.Client? riotHttp,
+    int matchPageSize = 10,
   }) async {
     final c = catalog ?? await loadedCatalog(tester);
     final prefs = await SharedPreferences.getInstance();
@@ -44,12 +66,21 @@ class Harness {
       for (final id in wishlist)
         WishlistItem(skinUuid: id, addedAt: DateTime(2026, 10, 1)),
     ]);
+    final rc = RiotClient(client: riotHttp ?? riotClient());
+    final riot = RiotProvider(rc);
+    final refCache = MatchReferenceCache(prefs);
+    await refCache.save(testMatchReference);
+    final reference = MatchReferenceProvider(
+        MatchReferenceApi(client: riotHttp ?? riotClient()), refCache);
+    await reference.init();
     return Harness(
       c,
       ShopProvider(ShopStorage(prefs)),
       WishlistProvider(WishlistStorage(prefs)),
       SettingsProvider(SettingsStorage(prefs)),
-      RiotProvider(RiotClient(client: riotClient())),
+      riot,
+      MatchHistoryProvider(MatchClient(rc), riot, pageSize: matchPageSize),
+      reference,
       prefs,
     );
   }
@@ -69,6 +100,8 @@ class Harness {
         ChangeNotifierProvider.value(value: wishlist),
         ChangeNotifierProvider.value(value: settings),
         ChangeNotifierProvider.value(value: riot),
+        ChangeNotifierProvider.value(value: matchHistory),
+        ChangeNotifierProvider.value(value: matchReference),
       ],
       child: useAppRoutes
           ? MaterialApp(
