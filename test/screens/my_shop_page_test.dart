@@ -156,6 +156,42 @@ void riotTests() {
     });
   }
 
+  Finder statIn(String key, String text) => find.descendant(
+      of: find.byKey(ValueKey(key)), matching: find.textContaining(text));
+
+  Future<void> loadStats(WidgetTester tester) async {
+    for (var i = 0; i < 20; i++) {
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump();
+      if (find
+              .byKey(const ValueKey('stats-summary-puuid-1'))
+              .evaluate()
+              .isNotEmpty &&
+          find.textContaining('讀取中').evaluate().isEmpty) {
+        break;
+      }
+    }
+  }
+
+  for (final width in [1440.0, 375.0]) {
+    testWidgets('${width.toInt()} 寬：帳號列顯示我的戰鬥數據', (tester) async {
+      setWidth(tester, width);
+      final h = await Harness.create(tester);
+      await tester.runAsync(() => h.riot.login(fakeRedirect));
+      await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+      await loadStats(tester);
+      expect(statIn('stats-current-puuid-1', '未定級'), findsOneWidget);
+      expect(statIn('stats-last-puuid-1', '競技'), findsOneWidget);
+      expect(statIn('stats-last-puuid-1', '20 / 12 / 4'), findsOneWidget);
+      expect(statIn('stats-last-puuid-1', '表現 265'), findsOneWidget);
+      expect(statIn('stats-last-puuid-1', 'ACS 191'), findsOneWidget);
+      expect(statIn('stats-summary-puuid-1', '最近 20 場'), findsOneWidget);
+      expect(statIn('stats-summary-puuid-1', '勝率 100%'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('已登入時顯示帳號、同步按鈕，同步後顯示錢包與已擁有', (tester) async {
     final h = await Harness.create(tester,
         catalog: await loadedCatalog(tester, skins: const [

@@ -19,6 +19,7 @@ void main() {
       int coreStatus = 404,
       int pregameStatus = 404,
       Set<String> otherMmrHidden = const {},
+      Map<String, int> otherMmrStatus = const {},
       Map<String, dynamic>? party}) async {
     final h = await Harness.create(tester,
         riotHttp: riotClient(
@@ -26,6 +27,7 @@ void main() {
             coreStatus: coreStatus,
             pregameStatus: pregameStatus,
             otherMmrHidden: otherMmrHidden,
+            otherMmrStatus: otherMmrStatus,
             party: party));
     await tester.runAsync(() => h.riot.login(fakeRedirect));
     return h;
@@ -74,6 +76,47 @@ void main() {
     expect(find.byKey(const ValueKey('live-owner-mate')), findsNothing);
     expect(find.text('未準備'), findsOneWidget);
     expect(find.textContaining('請勿公開或分享他人資訊'), findsOneWidget);
+    await leave(tester, h);
+  });
+
+  Finder statIn(String key, String text) => find.descendant(
+      of: find.byKey(ValueKey(key)), matching: find.textContaining(text));
+
+  for (final width in [1400.0, 375.0]) {
+    testWidgets('${width.toInt()} 寬：隊伍卡片顯示最近一場、目前牌位與 RR、歷史最高與賽季',
+        (tester) async {
+      setWidth(tester, width);
+      final h = await harness(tester);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 300)));
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(const ValueKey('stats-last-mate')));
+      expect(statIn('stats-current-mate', '超凡 1・40 RR'), findsOneWidget);
+      expect(statIn('stats-peak-mate', '超凡 1・V26 第六幕'), findsOneWidget);
+      expect(statIn('stats-last-mate', '競技'), findsOneWidget);
+      expect(statIn('stats-last-mate', '10 / 10 / 5'), findsOneWidget);
+      expect(statIn('stats-last-mate', 'ACS 159'), findsOneWidget);
+      // 自己的 MMR 沒有本幕資料：未定級。
+      expect(statIn('stats-current-$myPuuid', '未定級'), findsOneWidget);
+      // 隊伍卡片不顯示總覽。
+      expect(find.byKey(const ValueKey('stats-summary-mate')), findsNothing);
+      expect(tester.takeException(), isNull);
+      await leave(tester, h);
+    });
+  }
+
+  testWidgets('隊友的 MMR 讀取失敗時，牌位顯示無法取得、最近一場照常', (tester) async {
+    setWidth(tester, 1400);
+    final h = await harness(tester, otherMmrStatus: {'mate': 500});
+    await tester.pumpWidget(h.wrap(home: const LivePage()));
+    await drain(tester);
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)));
+    await tester.pump();
+    expect(statIn('stats-current-mate', '無法取得'), findsOneWidget);
+    expect(statIn('stats-last-mate', '10 / 10 / 5'), findsOneWidget);
     await leave(tester, h);
   });
 

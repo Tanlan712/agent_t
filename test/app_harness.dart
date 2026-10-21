@@ -38,7 +38,15 @@ import 'match_fixtures.dart';
 import 'riot_fixtures.dart';
 
 /// 對戰頁面測試用的參考資料（預先寫入快取，不連網）。
-const testMatchReference = MatchReference(
+final testMatchReference = MatchReference(
+  // season-1 是測試期間的本幕（match-details 與他人 MMR 的假資料都用它）。
+  seasons: {
+    'season-1': SeasonRef(
+        name: 'V26 第六幕',
+        start: DateTime.utc(2023),
+        end: DateTime.utc(2100),
+        isAct: true),
+  },
   agents: {
     'agent-$myPuuid': RefItem(name: '蓋克'),
     'agent-mate': RefItem(name: '菲德'),

@@ -20,6 +20,7 @@ import '../shell/app_shell.dart';
 import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
+import '../widgets/combat_stats.dart';
 import '../widgets/recent_form_cell.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
 
@@ -70,6 +71,15 @@ class _LivePageState extends State<LivePage> {
             for (final p in m.players)
               if (p.tier == 0 && !p.isCoach) p.puuid,
           });
+    } else if (_live.phase == LivePhase.party && _live.party != null) {
+      // 使用者決定（2026-10-22）：大廳顯示隊友的最近一場與牌位（AGENTS.md 第 2 節）。
+      final members = [for (final m in _live.party!.members) m.puuid];
+      final key = 'party:${members.join(',')}';
+      if (key != _formsFor) {
+        _formsFor = key;
+        requestCombatStats(context, members,
+            games: memberStatsGames, owner: this);
+      }
     } else if (_live.phase == LivePhase.pregame && pre != null) {
       _request(
           'pre:${pre.matchId}',
@@ -177,6 +187,8 @@ class _LivePageState extends State<LivePage> {
         ResponsiveGrid(
           minTileWidth: 260,
           childAspectRatio: 2.6,
+          // 卡片下半是戰鬥數據，固定高度讓窄欄換行時也放得下。
+          mainAxisExtent: 236,
           children: [
             for (final m in party.members)
               _MemberCard(member: m, live: _live, ref: ref),
@@ -266,60 +278,71 @@ class _MemberCard extends StatelessWidget {
         onTap: () => _open(context),
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              SizedBox(
-                  width: 56,
-                  height: 56,
-                  child: SkinIcon(url: playerCardUrl(member.cardId))),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(name,
-                              key: ValueKey('live-name-${member.puuid}'),
-                              overflow: TextOverflow.ellipsis,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold)),
-                        ),
-                        if (member.isOwner) ...[
-                          const SizedBox(width: 6),
-                          Icon(Icons.star,
-                              key: ValueKey('live-owner-${member.puuid}'),
-                              size: 16,
-                              color: AppColors.wishlistGold),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Row(
+              children: [
+                SizedBox(
+                    width: 56,
+                    height: 56,
+                    child: SkinIcon(url: playerCardUrl(member.cardId))),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(name,
+                                key: ValueKey('live-name-${member.puuid}'),
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                          if (member.isOwner) ...[
+                            const SizedBox(width: 6),
+                            Icon(Icons.star,
+                                key: ValueKey('live-owner-${member.puuid}'),
+                                size: 16,
+                                color: AppColors.wishlistGold),
+                          ],
                         ],
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        ...[
-                          Text('Lv ${member.level}',
-                              key: ValueKey('live-level-${member.puuid}'),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          ...[
+                            Text('Lv ${member.level}',
+                                key: ValueKey('live-level-${member.puuid}'),
+                                style: TextStyle(
+                                    color: AppColors.muted, fontSize: 12)),
+                            const SizedBox(width: 12),
+                          ],
+                          Text(member.isReady ? '已準備' : '未準備',
                               style: TextStyle(
-                                  color: AppColors.muted, fontSize: 12)),
-                          const SizedBox(width: 12),
+                                  color: member.isReady
+                                      ? AppColors.owned
+                                      : AppColors.muted,
+                                  fontSize: 12)),
                         ],
-                        Text(member.isReady ? '已準備' : '未準備',
-                            style: TextStyle(
-                                color: member.isReady
-                                    ? AppColors.owned
-                                    : AppColors.muted,
-                                fontSize: 12)),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
+                _rank(),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const NeverScrollableScrollPhysics(),
+                child: CombatStatsView(
+                    puuid: member.puuid, games: memberStatsGames, dense: true),
               ),
-              _rank(),
-            ],
-          ),
+            ),
+          ]),
         ),
       ),
     );

@@ -6,6 +6,7 @@ import '../logic/wishlist_match.dart';
 import '../models/current_shop.dart';
 import '../models/riot_session.dart';
 import '../providers/catalog_provider.dart';
+import '../providers/recent_form_loader.dart';
 import '../providers/riot_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/shop_provider.dart';
@@ -15,6 +16,7 @@ import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
 import '../widgets/bundle_tile.dart';
 import '../widgets/catalog_gate.dart';
+import '../widgets/combat_stats.dart';
 import '../widgets/hud/hud.dart';
 import '../widgets/skin_card.dart';
 import '../widgets/skin_tile.dart' show wishlistGold;
@@ -511,15 +513,47 @@ class _Section extends StatelessWidget {
 }
 
 /// 頁面頂端的 Riot 帳號列：未登入時引導登入，登入後提供同步與錢包。
-class _RiotBar extends StatelessWidget {
+/// 已登入的帳號列：帳號、同步按鈕，以及我的戰鬥數據（使用者決定 2026-10-22）。
+class _RiotBar extends StatefulWidget {
   const _RiotBar();
+
+  @override
+  State<_RiotBar> createState() => _RiotBarState();
+}
+
+class _RiotBarState extends State<_RiotBar> {
+  String? _requestedFor;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _requestStats();
+  }
+
+  /// 登入後（換帳號時）讀一次我的戰鬥數據。
+  void _requestStats() {
+    final me = context.read<RiotProvider>().session?.puuid;
+    if (me == null || me == _requestedFor) return;
+    _requestedFor = me;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) requestCombatStats(context, [me], games: selfStatsGames);
+    });
+  }
 
   Future<void> _sync(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
-    final error = await context.read<RiotProvider>().sync(
-          shop: context.read<ShopProvider>(),
-          catalog: context.read<CatalogProvider>(),
-        );
+    final riot = context.read<RiotProvider>();
+    final loader = context.read<RecentFormLoader>();
+    final error = await riot.sync(
+      shop: context.read<ShopProvider>(),
+      catalog: context.read<CatalogProvider>(),
+    );
+    // 同步時也重新讀我的戰鬥數據。
+    final me = riot.session?.puuid;
+    if (error == null && me != null && context.mounted) {
+      loader.forget(me);
+      requestCombatStats(context, [me], games: selfStatsGames);
+    }
     messenger.showSnackBar(SnackBar(content: Text(error ?? '已從 Riot 同步商店')));
   }
 
@@ -529,11 +563,11 @@ class _RiotBar extends StatelessWidget {
     final session = riot.session;
     // 未登入時由 _LoginHero 顯示。
     if (session == null) return const SizedBox.shrink();
+    _requestStats();
     return PanelCard(
-      child: Padding(
-        padding: EdgeInsets.zero,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         // Wrap：窄螢幕時同步按鈕自動換到下一行。
-        child: Wrap(
+        Wrap(
           spacing: 16,
           runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
@@ -568,7 +602,22 @@ class _RiotBar extends StatelessWidget {
             ),
           ],
         ),
-      ),
+        const SizedBox(height: 12),
+        // 點數據進入我的對戰紀錄。
+        Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => Navigator.pushNamedAndRemoveUntil(
+                context, '/matches', (_) => false),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: CombatStatsView(
+                  puuid: session.puuid, games: selfStatsGames, summary: true),
+            ),
+          ),
+        ),
+      ]),
     );
   }
 }
