@@ -46,6 +46,11 @@ class AppShell extends StatelessWidget {
     Navigator.pushReplacementNamed(context, item.route);
   }
 
+  void _goHome(BuildContext context) {
+    if (context.appStyle.id.isEva) EvaLayer.requestTitleCard('/');
+    Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false);
+  }
+
   /// 底部導覽選中的位置；不在常用 4 頁時是「更多」（4）。
   int get _bottomIndex {
     final i = bottomNavRoutes.indexOf(canonicalRoute(currentRoute));
@@ -99,10 +104,24 @@ class AppShell extends StatelessWidget {
       // 只增減導覽欄與標題列；Flex 會從尾端對到同一個 Expanded，
       // 跨斷點與切換風格時內容子樹（捲動位置、頁面狀態）得以保留。
       final scaffold = Scaffold(
+        // 手機：上方是品牌與 Riot 狀態，頁面標題改用與網頁版相同的 PageHeader。
+        // 返回鍵一律回到首頁（不是上一層）；首頁沒有返回鍵。
         appBar: bottom
             ? AppBar(
-                title: Text(title),
-                actions: [...actions, const _RiotStatus(compact: true)])
+                automaticallyImplyLeading: false,
+                leading: canonicalRoute(currentRoute) == '/'
+                    ? null
+                    : IconButton(
+                        key: const ValueKey('shell-home'),
+                        tooltip: '回到首頁',
+                        icon: const Icon(Icons.arrow_back),
+                        onPressed: () => _goHome(context)),
+                title: Text(appName,
+                    style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold)),
+                actions: const [_RiotStatus(compact: true)])
             : null,
         drawer: top && style.nav == NavLayout.topHamburger
             ? Drawer(
@@ -171,19 +190,19 @@ class AppShell extends StatelessWidget {
                         trailing:
                             _RiotStatus(compact: !extended, inline: extended),
                       ),
-                    if (!bottom)
-                      _Content(
-                        padding: horizontalPadding(width),
-                        maxWidth: maxWidth,
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 24, bottom: 16),
-                          child: PageHeader(
-                              title: title,
-                              subtitle: subtitle,
-                              actions: actions,
-                              route: currentRoute),
-                        ),
+                    _Content(
+                      padding: horizontalPadding(width),
+                      maxWidth: maxWidth,
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                            top: bottom ? 12 : 24, bottom: bottom ? 12 : 16),
+                        child: PageHeader(
+                            title: title,
+                            subtitle: subtitle,
+                            actions: actions,
+                            route: currentRoute),
                       ),
+                    ),
                     // 一直放在樹中（不需要時是空的），跨斷點時結構不變。
                     const ExpiryBanner(),
                     Expanded(child: body),

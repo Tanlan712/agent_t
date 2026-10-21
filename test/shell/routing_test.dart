@@ -55,7 +55,10 @@ void main() {
     await tester.tap(find.text('角色'));
     await tester.pumpAndSettle();
     expect(find.byType(BottomSheet), findsNothing);
-    expect(find.widgetWithText(AppBar, '角色'), findsOneWidget);
+    // 手機版的頁面標題在 PageHeader（與網頁版相同），不在 AppBar。
+    expect(
+        tester.widget<Text>(find.byKey(const ValueKey('header-title'))).data,
+        '角色');
   });
 
   testWidgets('子頁面（造型搜尋器）有返回鍵', (tester) async {

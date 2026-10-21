@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
 import 'package:valorant_shop_tracker/app_routes.dart';
 import 'package:valorant_shop_tracker/shell/app_shell.dart';
+import 'package:valorant_shop_tracker/widgets/hud/page_header.dart';
 import 'package:valorant_shop_tracker/shell/side_nav.dart';
 import 'package:valorant_shop_tracker/theme/app_theme.dart';
 import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
@@ -43,6 +44,10 @@ Widget sideNavHost({required bool extended, Widget? footer}) => MaterialApp(
       ),
     );
 
+/// 頁首標題（PageHeader 的標題 Text 帶有 header-title key）。
+String? headerTitle(WidgetTester tester) =>
+    tester.widget<Text>(find.byKey(const ValueKey('header-title'))).data;
+
 void main() {
   testWidgets('400 寬：底部導覽 5 項、沒有 NavigationRail 與漢堡選單', (tester) async {
     setWidth(tester, 400);
@@ -72,7 +77,70 @@ void main() {
     expect(find.text('設定'), findsOneWidget);
     await tester.tap(find.text('角色'));
     await tester.pumpAndSettle();
-    expect(find.widgetWithText(AppBar, '角色'), findsOneWidget);
+    expect(headerTitle(tester), '角色');
+  });
+
+  testWidgets('400 寬：手機版也有網頁版的頁首（標題、英文標與動作）', (tester) async {
+    setWidth(tester, 400);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(
+        home: const AppShell(
+            currentRoute: '/wishlist',
+            title: '願望清單',
+            subtitle: '3 款',
+            actions: [Icon(Icons.add, key: ValueKey('page-action'))],
+            child: Text('內容'))));
+    await tester.pumpAndSettle();
+    expect(find.byType(PageHeader), findsOneWidget);
+    expect(headerTitle(tester), '願望清單');
+    expect(find.text('3 款'), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byType(PageHeader),
+            matching: find.byKey(const ValueKey('page-action'))),
+        findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('400 寬：返回鍵回到首頁，不是上一層', (tester) async {
+    setWidth(tester, 400);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(useAppRoutes: true));
+    await tester.pumpAndSettle();
+    // 先到對戰紀錄，再從「更多」到角色：上一層是對戰紀錄。
+    await tester.tap(find.text('對戰紀錄'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('更多'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('角色'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('shell-home')));
+    await tester.pumpAndSettle();
+    expect(headerTitle(tester), '我的商店');
+    // 首頁沒有返回鍵。
+    expect(find.byKey(const ValueKey('shell-home')), findsNothing);
+    expect(find.byType(BackButton), findsNothing);
+  });
+
+  testWidgets('首頁即使疊在其他頁面上也沒有返回鍵', (tester) async {
+    setWidth(tester, 400);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(
+        home: Builder(
+            builder: (context) => TextButton(
+                onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                        builder: (_) => const AppShell(
+                            currentRoute: '/',
+                            title: '我的商店',
+                            child: Text('首頁')))),
+                child: const Text('go')))));
+    await tester.tap(find.text('go'));
+    await tester.pumpAndSettle();
+    expect(find.text('首頁'), findsOneWidget);
+    expect(find.byType(BackButton), findsNothing);
+    expect(find.byKey(const ValueKey('shell-home')), findsNothing);
   });
 
   testWidgets('400 寬與 1400 寬都有到期提醒列', (tester) async {
