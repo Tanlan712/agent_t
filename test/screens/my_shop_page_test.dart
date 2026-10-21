@@ -120,6 +120,35 @@ void riotTests() {
     expect(find.widgetWithText(FilledButton, '登入 Riot'), findsOneWidget);
   });
 
+  for (final width in [1440.0, 800.0]) {
+    testWidgets('${width.toInt()} 寬：右欄 KPI 較高時，每日商店與夜市之間沒有空白', (tester) async {
+      setWidth(tester, width);
+      final h = await Harness.create(tester,
+          catalog: await loadedCatalog(tester, skins: const [
+            SkinInfo(
+                uuid: 'skin-odin',
+                name: '凌空之志 奧丁',
+                weaponName: '奧丁',
+                tier: Tier.deluxe,
+                levelUuid: 'lvl-odin'),
+          ]));
+      await tester.runAsync(() => h.riot.login(fakeRedirect));
+      await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('從 Riot 同步'));
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pumpAndSettle();
+      final daily = tester.getRect(find.byKey(const ValueKey('shop-daily')));
+      final night = tester.getRect(find.byKey(const ValueKey('shop-night')));
+      final kpi = tester.getRect(find.byKey(const ValueKey('shop-kpi')));
+      // 前提：右欄比每日商店高（錢包同步後 5 格）。
+      expect(kpi.height, greaterThan(daily.height));
+      expect(night.top - daily.bottom, lessThanOrEqualTo(24));
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('已登入時顯示帳號、同步按鈕，同步後顯示錢包與已擁有', (tester) async {
     final h = await Harness.create(tester,
         catalog: await loadedCatalog(tester, skins: const [

@@ -186,6 +186,7 @@ class MyShopPage extends StatelessWidget {
 
     final nightSection = _Section(
       emptyHint: '夜市開放期間，登入 Riot 後會自動顯示',
+      key: const ValueKey('shop-night'),
       title: '夜市',
       emptyIcon: Icons.nightlight_outlined,
       emptyLabel: '尚未開放',
@@ -300,41 +301,57 @@ class MyShopPage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.only(bottom: 24),
           children: [
-            BentoGrid(children: [
-              BentoTile(
-                  span: 12,
-                  child: riot.isLoggedIn
-                      ? const _RiotBar()
-                      : _LoginHero(onManual: () => edit(ShopSection.daily))),
-              // 有組合包時放在最上方；還沒有資料時放到最後，不把每日商店推下去。
-              if (bundles.isNotEmpty) BentoTile(span: 12, child: bundleSection),
-              BentoTile(span: 8, child: dailySection),
-              BentoTile(
-                span: 4,
-                child: _ShopKpi(
-                  daily: shop.daily.isEmpty
-                      ? '—'
-                      : dailyActive
-                          ? _clock(shop.dailyExpiresAt!.difference(t))
-                          : '已過期',
-                  wallet: riot.wallet,
-                  owned:
-                      riot.wallet == null ? null : riot.ownedSkinUuids.length,
-                ),
-              ),
-              BentoTile(span: 8, child: nightSection),
-              BentoTile(
-                span: 4,
-                child: _WishlistHits(
-                  enabled: highlight,
-                  names: [
-                    for (final id in matched)
-                      catalog.skinById(id)?.name ?? '未知造型',
-                  ],
-                ),
-              ),
-              if (bundles.isEmpty) BentoTile(span: 12, child: bundleSection),
-            ]),
+            LayoutBuilder(builder: (context, c) {
+              final kpi = _ShopKpi(
+                daily: shop.daily.isEmpty
+                    ? '—'
+                    : dailyActive
+                        ? _clock(shop.dailyExpiresAt!.difference(t))
+                        : '已過期',
+                wallet: riot.wallet,
+                owned: riot.wallet == null ? null : riot.ownedSkinUuids.length,
+              );
+              final hits = _WishlistHits(
+                enabled: highlight,
+                names: [
+                  for (final id in matched)
+                    catalog.skinById(id)?.name ?? '未知造型',
+                ],
+              );
+              // 有兩欄時左右各自往下排：右欄 KPI 較高也不會在每日商店下面留白。
+              // 單欄（手機）維持 每日商店 → KPI → 夜市 → 願望清單 的順序。
+              final twoColumns = bentoColumns(c.maxWidth) > 1;
+              Widget stack(List<Widget> items) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var i = 0; i < items.length; i++) ...[
+                        if (i > 0) const SizedBox(height: gridSpacing),
+                        items[i],
+                      ],
+                    ],
+                  );
+              return BentoGrid(children: [
+                BentoTile(
+                    span: 12,
+                    child: riot.isLoggedIn
+                        ? const _RiotBar()
+                        : _LoginHero(onManual: () => edit(ShopSection.daily))),
+                // 有組合包時放在最上方；還沒有資料時放到最後，不把每日商店推下去。
+                if (bundles.isNotEmpty)
+                  BentoTile(span: 12, child: bundleSection),
+                if (twoColumns) ...[
+                  BentoTile(
+                      span: 8, child: stack([dailySection, nightSection])),
+                  BentoTile(span: 4, child: stack([kpi, hits])),
+                ] else ...[
+                  BentoTile(span: 8, child: dailySection),
+                  BentoTile(span: 4, child: kpi),
+                  BentoTile(span: 8, child: nightSection),
+                  BentoTile(span: 4, child: hits),
+                ],
+                if (bundles.isEmpty) BentoTile(span: 12, child: bundleSection),
+              ]);
+            }),
           ],
         ),
       ),
