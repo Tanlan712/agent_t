@@ -64,11 +64,14 @@ Riot 的第三方 App 說明指出：暴露隱藏資訊、即時分析或帶來�
 |---|---|
 | 登入與授權（使用者在 Riot 官方頁面自行登入） | `auth.riotgames.com`、`entitlements.auth.riotgames.com` |
 | 自己的商店、錢包、已擁有造型 | `pd.{shard}.a.pvp.net` |
+| 自己擁有的收藏（使用者決定 2026-10-21）：`store/v1/entitlements/{puuid}/{ItemTypeID}` 的造型、炫彩、特務、吊飾、噴漆、玩家卡片、稱號，只能 GET | `pd.{shard}.a.pvp.net` |
+| 自己的帳號等級與經驗（使用者決定 2026-10-21）：`account-xp/v1/players/{puuid}`，只能 GET | `pd.{shard}.a.pvp.net` |
+| 自己的通行證與任務進度（使用者決定 2026-10-21）：`contracts/v1/contracts/{puuid}`，**只能 GET**；不得啟用合約（POST `contracts/v1/contracts/{puuid}/special/{id}`）或任何寫入 | `pd.{shard}.a.pvp.net` |
 | 已結束場次的對戰紀錄、詳情、名稱、牌位 | `pd.{shard}.a.pvp.net` |
 | 即時對局（使用者核准，見第 2 節） | `glz-{region}-1.{shard}.a.pvp.net`，只能 GET |
 | 公開遊戲資料 | `valorant-api.com` |
 
-- **只讀**：不得呼叫會改變遊戲或帳號狀態的端點，例如選角、鎖角、佇列、隊伍、裝備、聊天、合約、購買。
+- **只讀**：不得呼叫會改變遊戲或帳號狀態的端點，例如選角、鎖角、佇列、隊伍、裝備、聊天、啟用合約、購買。（讀取自己的合約進度是 GET，見上表。）
 - **頻率**：背景請求同時最多 2 個；429 和連線失敗時依 `Retry-After` 或 2s／4s／8s 退避，最多重試 3 次；能快取就快取。
 - 瀏覽器擋下的端點（沒有 CORS 標頭）**不可**用本機代理、修改瀏覽器安全設定或擴充功能繞過。
 
