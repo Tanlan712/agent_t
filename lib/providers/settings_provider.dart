@@ -20,6 +20,13 @@ class SettingsProvider with ChangeNotifier {
   Future<void> setLoginShard(String shard) =>
       _save(_settings.copyWith(loginShard: shard));
 
+  Future<void> setTheme({String? style, String? accent, String? brightness}) =>
+      _save(_settings.copyWith(
+          themeStyle: style, themeAccent: accent, themeBrightness: brightness));
+
+  Future<void> setBackgroundMotion(bool value) =>
+      _save(_settings.copyWith(backgroundMotion: value));
+
   Future<void> _save(AppSettings next) async {
     _settings = next;
     await _storage.save(next);
