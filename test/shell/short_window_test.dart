@@ -17,7 +17,8 @@ void main() {
               currentRoute: '/', title: '我的商店', child: Text('內容'))));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(find.text('對戰紀錄'), findsOneWidget);
+      // 收合時只有圖示＋提示，展開時有名稱；兩者都要能找到項目。
+      expect(find.byKey(const ValueKey('nav-/matches')), findsOneWidget);
     });
   }
 }

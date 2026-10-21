@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/services.dart';
+import 'package:valorant_shop_tracker/app_routes.dart';
 import 'package:valorant_shop_tracker/shell/app_shell.dart';
+import 'package:valorant_shop_tracker/shell/side_nav.dart';
+import 'package:valorant_shop_tracker/theme/app_theme.dart';
+import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 
 import '../app_harness.dart';
 import '../riot_fixtures.dart';
@@ -32,7 +37,7 @@ void main() {
           reason: label);
     }
     expect(find.byIcon(Icons.menu), findsNothing);
-    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(SideNav), findsNothing);
     expect(find.text('內容'), findsOneWidget);
   });
 
@@ -64,24 +69,85 @@ void main() {
     }
   });
 
-  testWidgets('900 寬：窄導覽列', (tester) async {
+  testWidgets('900 寬：窄導覽列，只有圖示加提示', (tester) async {
     setWidth(tester, 900);
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(home: shell()));
-    final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-    expect(rail.extended, isFalse);
+    expect(tester.widget<SideNav>(find.byType(SideNav)).extended, isFalse);
+    expect(
+        find.descendant(
+            of: find.byType(SideNav), matching: find.byType(Tooltip)),
+        findsAtLeastNWidgets(12));
     expect(find.byIcon(Icons.menu), findsNothing);
   });
 
-  testWidgets('1100 寬：展開導覽列，看得到完整名稱', (tester) async {
+  testWidgets('1100 寬：展開導覽列，分組標題與完整名稱', (tester) async {
     setWidth(tester, 1100);
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(home: shell()));
-    final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-    expect(rail.extended, isTrue);
-    expect(find.text('玩家卡片'), findsOneWidget);
-    expect(find.text('VALORANT 商店追蹤'), findsOneWidget);
+    expect(tester.widget<SideNav>(find.byType(SideNav)).extended, isTrue);
+    for (final t in ['主要', '資料庫', '其他', '玩家卡片', 'VALORANT 商店追蹤']) {
+      expect(find.text(t), findsOneWidget, reason: t);
+    }
     expect(find.text('願望清單'), findsWidgets);
+  });
+
+  testWidgets('選中項目有 3px 紅色指示條', (tester) async {
+    setWidth(tester, 1400);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(home: shell()));
+    final bar = find.descendant(
+        of: find.byKey(const ValueKey('nav-/wishlist')),
+        matching: find.byKey(const ValueKey('nav-indicator')));
+    expect(bar, findsOneWidget);
+    expect(tester.widget<Container>(bar).color, AppColors.primary);
+    expect(tester.getSize(bar).width, 3);
+    expect(
+        find.descendant(
+            of: find.byKey(const ValueKey('nav-/matches')),
+            matching: find.byKey(const ValueKey('nav-indicator'))),
+        findsNothing);
+  });
+
+  testWidgets('點側欄項目換頁', (tester) async {
+    setWidth(tester, 1400);
+    final h = await Harness.create(tester);
+    await tester
+        .pumpWidget(h.wrap(home: shell(), onGenerateRoute: onGenerateAppRoute));
+    await tester.tap(find.byKey(const ValueKey('nav-/agents')));
+    await tester.pumpAndSettle();
+    expect(find.text('角色'), findsWidgets);
+    expect(find.text('內容'), findsNothing);
+  });
+
+  testWidgets('Tab 聚焦側欄項目後 Enter 換頁', (tester) async {
+    setWidth(tester, 1400);
+    final h = await Harness.create(tester);
+    await tester
+        .pumpWidget(h.wrap(home: shell(), onGenerateRoute: onGenerateAppRoute));
+    // 依序：我的商店、願望清單（目前頁）、對戰紀錄。
+    for (var i = 0; i < 3; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+    }
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.text('內容'), findsNothing);
+  });
+
+  testWidgets('1440 寬頁首標題 28px', (tester) async {
+    setWidth(tester, 1440);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(
+        home: const AppShell(
+            currentRoute: '/wishlist',
+            title: '願望清單',
+            subtitle: '3 項',
+            child: Text('內容'))));
+    final title = find.descendant(
+        of: find.byType(PageHeader), matching: find.text('願望清單'));
+    expect(tester.widget<Text>(title).style?.fontSize, 28);
+    expect(find.text('3 項'), findsOneWidget);
   });
 
   testWidgets('從 1400 縮到 400 不丟例外', (tester) async {

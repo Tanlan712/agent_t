@@ -7,6 +7,8 @@ import '../providers/riot_provider.dart';
 import '../theme/app_theme.dart';
 import 'layout.dart';
 import 'nav_items.dart';
+import 'side_nav.dart';
+import '../widgets/hud/page_header.dart';
 
 const appName = 'VALORANT 商店追蹤';
 
@@ -15,6 +17,7 @@ const appName = 'VALORANT 商店追蹤';
 class AppShell extends StatelessWidget {
   final String currentRoute;
   final String title;
+  final String? subtitle;
   final List<Widget> actions;
   final Widget child;
 
@@ -22,15 +25,10 @@ class AppShell extends StatelessWidget {
     super.key,
     required this.currentRoute,
     required this.title,
+    this.subtitle,
     this.actions = const [],
     required this.child,
   });
-
-  int? get _selectedIndex {
-    final i =
-        navItems.indexWhere((n) => n.route == canonicalRoute(currentRoute));
-    return i < 0 ? null : i;
-  }
 
   void _go(BuildContext context, NavItem item) {
     if (item.route == canonicalRoute(currentRoute)) return;
@@ -99,70 +97,12 @@ class AppShell extends StatelessWidget {
         body: Row(
           children: [
             if (!bottom)
-              Container(
-                width: extended ? 240 : 88,
-                color: AppColors.surface,
-                // 視窗太矮時導覽可捲動；夠高時 Riot 狀態仍貼在底部。
-                child: LayoutBuilder(
-                  builder: (context, navConstraints) => SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints:
-                          BoxConstraints(minHeight: navConstraints.maxHeight),
-                      child: IntrinsicHeight(
-                        child: Column(
-                          children: [
-                            Expanded(
-                              // NavigationRail 回報的內在高度比實際字型渲染矮（中文字型尤其明顯），
-                              // 依項目數給足最小高度，矮視窗才會正確捲動而不是溢出。
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                    minHeight: (extended ? 72 : 88) +
-                                        navItems.length * (extended ? 56 : 76)),
-                                child: NavigationRail(
-                                  extended: extended,
-                                  minExtendedWidth: 240,
-                                  labelType: extended
-                                      ? NavigationRailLabelType.none
-                                      : NavigationRailLabelType.all,
-                                  selectedIndex: _selectedIndex,
-                                  leading: extended
-                                      ? const Padding(
-                                          padding:
-                                              EdgeInsets.fromLTRB(8, 16, 8, 8),
-                                          child: Text(appName,
-                                              style: TextStyle(
-                                                  color: AppColors.primary,
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold)),
-                                        )
-                                      : const Padding(
-                                          padding: EdgeInsets.symmetric(
-                                              vertical: 16),
-                                          child: Icon(
-                                              Icons.local_fire_department,
-                                              color: AppColors.primary),
-                                        ),
-                                  destinations: [
-                                    for (var i = 0; i < navItems.length; i++)
-                                      NavigationRailDestination(
-                                        icon: Icon(navItems[i].icon),
-                                        selectedIcon: _SelectedIcon(
-                                            icon: navItems[i].icon),
-                                        label: Text(navItems[i].label),
-                                      ),
-                                  ],
-                                  onDestinationSelected: (i) =>
-                                      _go(context, navItems[i]),
-                                ),
-                              ),
-                            ),
-                            _RiotStatus(compact: !extended),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+              SideNav(
+                currentRoute: currentRoute,
+                extended: extended,
+                brand: appName,
+                onSelect: (item) => _go(context, item),
+                footer: _RiotStatus(compact: !extended),
               ),
             if (!bottom) const VerticalDivider(width: 1),
             Expanded(
@@ -173,18 +113,9 @@ class AppShell extends StatelessWidget {
                     _Content(
                       padding: horizontalPadding(width),
                       child: Padding(
-                        padding: const EdgeInsets.only(top: 24, bottom: 8),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(title,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineSmall),
-                            ),
-                            ...actions,
-                          ],
-                        ),
+                        padding: const EdgeInsets.only(top: 24, bottom: 16),
+                        child: PageHeader(
+                            title: title, subtitle: subtitle, actions: actions),
                       ),
                     ),
                   // 一直放在樹中（不需要時是空的），跨斷點時結構不變。
@@ -220,23 +151,6 @@ class _Content extends StatelessWidget {
       ),
     );
   }
-}
-
-/// 側邊欄選中項目：圖示左側 3px 品牌紅指示條。
-class _SelectedIcon extends StatelessWidget {
-  final IconData icon;
-
-  const _SelectedIcon({required this.icon});
-
-  @override
-  Widget build(BuildContext context) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(width: 3, height: 20, color: AppColors.primary),
-          const SizedBox(width: 6),
-          Icon(icon, color: AppColors.primary),
-        ],
-      );
 }
 
 /// 手機「更多」：依分組列出其餘頁面。

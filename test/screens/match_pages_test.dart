@@ -68,7 +68,7 @@ void main() {
           scrollable: find
               .descendant(
                   of: find.byType(ListView), matching: find.byType(Scrollable))
-              .first);
+              .last);
       expect(find.text('載入更多'), findsOneWidget);
     });
 

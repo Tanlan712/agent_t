@@ -28,7 +28,7 @@ const List<NavItem> navItems = [
 ];
 
 const navGroupLabels = {
-  NavGroup.shop: '商店',
+  NavGroup.shop: '主要',
   NavGroup.database: '資料庫',
   NavGroup.settings: '其他',
 };
