@@ -71,8 +71,8 @@ class EvaBackgroundState extends State<EvaBackground>
   }
 
   @override
-  void didUpdateWidget(EvaBackground old) {
-    super.didUpdateWidget(old);
+  void didUpdateWidget(EvaBackground oldWidget) {
+    super.didUpdateWidget(oldWidget);
     _sync();
   }
 
@@ -214,7 +214,7 @@ class _Lattice extends CustomPainter {
       ..color = c.withOpacity(0.5)
       ..strokeWidth = 1;
     for (final o in [
-      Offset(24, 24),
+      const Offset(24, 24),
       Offset(size.width - 24, size.height - 24),
       Offset(size.width / 2, size.height - 14),
     ]) {

@@ -265,8 +265,8 @@ class _AlertStripeState extends State<AlertStripe>
   }
 
   @override
-  void didUpdateWidget(AlertStripe old) {
-    super.didUpdateWidget(old);
+  void didUpdateWidget(AlertStripe oldWidget) {
+    super.didUpdateWidget(oldWidget);
     _sync();
   }
 

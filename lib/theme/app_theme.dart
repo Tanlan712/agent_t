@@ -150,7 +150,7 @@ ThemeData buildAppTheme({
           borderRadius: _radius,
           border: Border.fromBorderSide(BorderSide(color: palette.outline))),
       textStyle: TextStyle(color: palette.text, fontSize: 12),
-      waitDuration: Duration(milliseconds: 300),
+      waitDuration: const Duration(milliseconds: 300),
     ),
     scaffoldBackgroundColor: palette.background,
     canvasColor: palette.background,

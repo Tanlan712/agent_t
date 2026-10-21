@@ -51,14 +51,11 @@ class AppPalette extends ThemeExtension<AppPalette> {
     this.decor,
   });
 
-  static AppPalette _current = resolve(const ThemeChoice());
-
   /// `AppColors.*` 讀這裡；由 `buildAppTheme` 設定。
-  static AppPalette get current => _current;
-  static set current(AppPalette p) => _current = p;
+  static AppPalette current = resolve(const ThemeChoice());
 
   @visibleForTesting
-  static void reset() => _current = resolve(const ThemeChoice());
+  static void reset() => current = resolve(const ThemeChoice());
 
   static AppPalette resolve(ThemeChoice c) {
     final dark = c.brightness == Brightness.dark;

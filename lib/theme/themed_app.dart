@@ -40,9 +40,9 @@ class RebuildOnChange extends StatefulWidget {
 
 class _RebuildOnChangeState extends State<RebuildOnChange> {
   @override
-  void didUpdateWidget(RebuildOnChange old) {
-    super.didUpdateWidget(old);
-    if (old.token == widget.token) return;
+  void didUpdateWidget(RebuildOnChange oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.token == widget.token) return;
     // 建構期間不能走訪子元件；等這一幀結束再標記（多一幀舊色）。
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;

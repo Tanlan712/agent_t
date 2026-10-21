@@ -163,8 +163,9 @@ class CountUpText extends StatelessWidget {
     final m = _pattern.firstMatch(value);
     Text text(String v) =>
         Text(v, maxLines: 1, overflow: TextOverflow.ellipsis, style: style);
-    if (m == null || MediaQuery.disableAnimationsOf(context))
+    if (m == null || MediaQuery.disableAnimationsOf(context)) {
       return text(value);
+    }
     final digits = (m.group(1)! + (m.group(2) ?? '')).replaceAll(',', '');
     final target = double.parse(digits);
     final decimals = m.group(2) == null ? 0 : m.group(2)!.length - 1;

@@ -203,8 +203,8 @@ class _EvaTickerState extends State<EvaTicker>
   }
 
   @override
-  void didUpdateWidget(EvaTicker old) {
-    super.didUpdateWidget(old);
+  void didUpdateWidget(EvaTicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
     _sync();
   }
 
