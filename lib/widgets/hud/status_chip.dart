@@ -31,11 +31,13 @@ class StatusChip extends StatelessWidget {
             Icon(icon, size: 12, color: color),
             const SizedBox(width: 3),
           ],
-          Text(label,
-              softWrap: false,
-              overflow: TextOverflow.fade,
-              style: TextStyle(
-                  color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+          Flexible(
+            child: Text(label,
+                softWrap: false,
+                overflow: TextOverflow.fade,
+                style: TextStyle(
+                    color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+          ),
         ],
       ),
     );

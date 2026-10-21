@@ -40,6 +40,11 @@ abstract final class AppColors {
 
 const _radius = BorderRadius.all(Radius.circular(4));
 
+/// 圓角（Bento 改版）。
+abstract final class AppRadius {
+  static const double card = 12;
+}
+
 /// 鍵盤焦點：2px info 外框（MASTER.md 第 6 節）；其餘狀態用 [normal]。
 WidgetStateProperty<BorderSide?> _focusSide([BorderSide? normal]) =>
     WidgetStateProperty.resolveWith((states) =>
@@ -56,7 +61,7 @@ abstract final class AppText {
   /// KPI 大數字。
   static TextStyle kpi(BuildContext context) =>
       tabular(Theme.of(context).textTheme.headlineSmall?.copyWith(
-          fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.text));
+          fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.text));
 
   static const label =
       TextStyle(color: AppColors.muted, fontSize: 12, letterSpacing: 0.4);
@@ -141,13 +146,14 @@ ThemeData buildAppTheme({bool useGoogleFonts = true}) {
       elevation: 0,
       scrolledUnderElevation: 0,
     ),
-    // 戰術 HUD：所有卡片右上角 8px 斜切（MASTER.md 第 3 節）。
+    // Bento：所有卡片 12px 圓角、細邊框。
     cardTheme: const CardTheme(
       color: AppColors.surface,
       elevation: 0,
       margin: EdgeInsets.zero,
-      shape: BeveledRectangleBorder(
-        borderRadius: BorderRadius.only(topRight: Radius.circular(8)),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(AppRadius.card)),
         side: BorderSide(color: AppColors.outline),
       ),
     ),

@@ -2,70 +2,76 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_theme.dart';
 
-/// 戰術 HUD 卡片：邊框、可選右上角 8px 切角、左側強調色條、hover 回饋。
-class HudCard extends StatefulWidget {
+/// 儀表板卡片：12px 圓角、細邊框、可選左側強調色條；可點擊時有 hover 與鍵盤焦點。
+class PanelCard extends StatefulWidget {
   final Widget child;
-  final bool notched;
   final EdgeInsets padding;
   final VoidCallback? onTap;
   final Color? accent;
 
-  const HudCard({
+  const PanelCard({
     super.key,
     required this.child,
-    this.notched = false,
-    this.padding = const EdgeInsets.all(12),
+    this.padding = const EdgeInsets.all(16),
     this.onTap,
     this.accent,
   });
 
   @override
-  State<HudCard> createState() => _HudCardState();
+  State<PanelCard> createState() => _PanelCardState();
 }
 
-class _HudCardState extends State<HudCard> {
+class _PanelCardState extends State<PanelCard> {
   bool _hover = false;
 
   @override
   Widget build(BuildContext context) {
     final clickable = widget.onTap != null;
-    Widget body = AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOut,
-      decoration: BoxDecoration(
-        color: _hover && clickable ? AppColors.surfaceHigh : AppColors.surface,
-        border: Border(
-          left: BorderSide(
-              color: widget.accent ?? AppColors.outline,
-              width: widget.accent == null ? 1 : 3),
-          top: const BorderSide(color: AppColors.outline),
-          right: const BorderSide(color: AppColors.outline),
-          bottom: const BorderSide(color: AppColors.outline),
+    final hot = _hover && clickable;
+    const radius = BorderRadius.all(Radius.circular(AppRadius.card));
+    Widget content = Padding(padding: widget.padding, child: widget.child);
+    if (widget.accent != null) {
+      content = Stack(children: [
+        Padding(padding: const EdgeInsets.only(left: 3), child: content),
+        Positioned(
+          left: 0,
+          top: 0,
+          bottom: 0,
+          child: Container(
+              key: const ValueKey('panel-accent'),
+              width: 3,
+              color: widget.accent),
         ),
-      ),
-      padding: widget.padding,
-      child: widget.child,
-    );
+      ]);
+    }
     if (clickable) {
-      body = MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hover = true),
-        onExit: (_) => setState(() => _hover = false),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
+      content = Material(
+        type: MaterialType.transparency,
+        child: InkWell(
           onTap: widget.onTap,
-          child: body,
+          onHover: (v) => setState(() => _hover = v),
+          borderRadius: radius,
+          child: content,
         ),
       );
     }
-    if (widget.notched) {
-      body = ClipPath(clipper: const NotchClipper(), child: body);
-    }
-    return body;
+    return AnimatedContainer(
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 150),
+      curve: Curves.easeOut,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: hot ? AppColors.surfaceHigh : AppColors.surface,
+        borderRadius: radius,
+        border: Border.all(color: hot ? AppColors.muted : AppColors.outline),
+      ),
+      child: content,
+    );
   }
 }
 
-/// 右上角斜切 [size] px，呼應 VALORANT 的 UI。
+/// 右上角斜切 [size] px（Bento 改版後不再使用，保留待使用者決定是否刪除）。
 class NotchClipper extends CustomClipper<Path> {
   final double size;
 

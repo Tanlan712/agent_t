@@ -52,11 +52,10 @@ void main() {
     expect(find.byType(Tooltip), findsOneWidget);
   });
 
-  testWidgets('HudCard：切角與點擊', (tester) async {
+  testWidgets('PanelCard：點擊', (tester) async {
     var taps = 0;
-    await tester.pumpWidget(host(
-        HudCard(notched: true, onTap: () => taps++, child: const Text('卡片'))));
-    expect(find.byType(ClipPath), findsOneWidget);
+    await tester.pumpWidget(
+        host(PanelCard(onTap: () => taps++, child: const Text('卡片'))));
     await tester.tap(find.text('卡片'));
     expect(taps, 1);
   });
@@ -65,7 +64,7 @@ void main() {
     var done = false;
     await tester.pumpWidget(host(EmptyState(
         icon: Icons.inbox,
-        message: '沒有資料',
+        title: '沒有資料',
         actionLabel: '重試',
         onAction: () => done = true)));
     expect(find.text('沒有資料'), findsOneWidget);

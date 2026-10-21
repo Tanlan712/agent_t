@@ -80,7 +80,7 @@ void main() {
       await tester.pumpWidget(h.wrap(home: WishlistPage(now: () => now)));
       await tester.pumpAndSettle();
       expect(find.byType(EmptyState), findsOneWidget);
-      expect(find.widgetWithText(OutlinedButton, '加入造型'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, '加入造型'), findsOneWidget);
     });
 
     testWidgets('上架中的造型排第一，標籤是 StatusChip', (tester) async {

@@ -74,7 +74,7 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
             padding: const EdgeInsets.all(16),
             children: [
               // 風險提示：警示色條＋圖示（MASTER.md：不用 emoji 當圖示）。
-              const HudCard(
+              const PanelCard(
                 accent: AppColors.warn,
                 padding: EdgeInsets.all(16),
                 child: Row(

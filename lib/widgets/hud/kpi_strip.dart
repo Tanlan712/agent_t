@@ -29,8 +29,7 @@ class KpiTile extends StatelessWidget {
       false => AppColors.loss,
       null => AppColors.muted,
     };
-    return HudCard(
-      notched: true,
+    return PanelCard(
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

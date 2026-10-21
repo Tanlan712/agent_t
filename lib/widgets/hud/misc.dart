@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_theme.dart';
 
-/// 區塊標題（Chakra Petch）＋右側動作。
+/// 區塊標題：18px 標題＋右側動作。
 class SectionHeader extends StatelessWidget {
   final String title;
   final Widget? trailing;
@@ -11,31 +11,34 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.only(bottom: 12),
         child: Row(
           children: [
-            Container(width: 3, height: 18, color: AppColors.primary),
-            const SizedBox(width: 8),
             Expanded(
-                child:
-                    Text(title, style: Theme.of(context).textTheme.titleLarge)),
+                child: Text(title,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontSize: 18, fontWeight: FontWeight.w600))),
             if (trailing != null) trailing!,
           ],
         ),
       );
 }
 
-/// 空狀態：圖示＋說明＋一個動作。
+/// 空狀態：圓形圖示、標題、說明、一個動作。
 class EmptyState extends StatelessWidget {
   final IconData icon;
-  final String message;
+  final String title;
+  final String? message;
   final String? actionLabel;
   final VoidCallback? onAction;
 
   const EmptyState({
     super.key,
     required this.icon,
-    required this.message,
+    required this.title,
+    this.message,
     this.actionLabel,
     this.onAction,
   });
@@ -47,14 +50,28 @@ class EmptyState extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 40, color: AppColors.muted),
+              Container(
+                width: 48,
+                height: 48,
+                decoration: const BoxDecoration(
+                    color: AppColors.surfaceHigh, shape: BoxShape.circle),
+                child: Icon(icon, size: 24, color: AppColors.muted),
+              ),
               const SizedBox(height: 12),
-              Text(message,
+              Text(title,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppColors.muted)),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600)),
+              if (message != null) ...[
+                const SizedBox(height: 4),
+                Text(message!,
+                    textAlign: TextAlign.center,
+                    style:
+                        const TextStyle(fontSize: 14, color: AppColors.muted)),
+              ],
               if (actionLabel != null && onAction != null) ...[
-                const SizedBox(height: 12),
-                OutlinedButton(onPressed: onAction, child: Text(actionLabel!)),
+                const SizedBox(height: 16),
+                FilledButton(onPressed: onAction, child: Text(actionLabel!)),
               ],
             ],
           ),

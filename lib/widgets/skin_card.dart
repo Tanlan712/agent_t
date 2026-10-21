@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../models/skin_info.dart';
 import '../theme/app_theme.dart';
-import 'hud/hud.dart';
 import 'skin_tile.dart' show SkinIcon;
 import 'tier_badge.dart';
 
@@ -32,104 +31,101 @@ class SkinCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final skin = this.skin;
     final textTheme = Theme.of(context).textTheme;
-    // 戰術 HUD：右上角切角，底部稀有度色條。
-    return ClipPath(
-      clipper: const NotchClipper(),
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: const BorderRadius.all(Radius.circular(4)),
-          side: highlighted
-              ? const BorderSide(color: AppColors.wishlistGold, width: 3)
-              : const BorderSide(color: AppColors.outline),
+    // 圓角卡片，底部稀有度色條。
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.all(Radius.circular(AppRadius.card)),
+        side: highlighted
+            ? const BorderSide(color: AppColors.wishlistGold, width: 3)
+            : const BorderSide(color: AppColors.outline),
+      ),
+      // Ink：漸層畫在 Material 上，InkWell 的水波與焦點高亮才看得到。
+      child: Ink(
+        decoration: BoxDecoration(
+          border: Border(
+              bottom: BorderSide(
+                  color: skin?.tier.color ?? AppColors.outline, width: 3)),
+          gradient: skin == null
+              ? null
+              : LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    skin.tier.color.withOpacity(0.10),
+                    AppColors.surface,
+                  ],
+                ),
         ),
-        // Ink：漸層畫在 Material 上，InkWell 的水波與焦點高亮才看得到。
-        child: Ink(
-          decoration: BoxDecoration(
-            border: Border(
-                bottom: BorderSide(
-                    color: skin?.tier.color ?? AppColors.outline, width: 3)),
-            gradient: skin == null
-                ? null
-                : LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      skin.tier.color.withOpacity(0.10),
-                      AppColors.surface,
-                    ],
-                  ),
-          ),
-          child: InkWell(
-            onTap: onTap,
-            child: Stack(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Center(child: SkinIcon(url: skin?.iconUrl)),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        skin?.name ?? '未知造型',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: 4),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
+        child: InkWell(
+          onTap: onTap,
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Center(child: SkinIcon(url: skin?.iconUrl)),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      skin?.name ?? '未知造型',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (skin != null)
+                          Text(skin.weaponName,
+                              style: textTheme.bodySmall
+                                  ?.copyWith(color: AppColors.muted)),
+                        if (skin != null) TierBadge(tier: skin.tier),
+                        if (owned)
+                          const Text('已擁有',
+                              style: TextStyle(
+                                  color: AppColors.owned,
+                                  fontWeight: FontWeight.bold)),
+                        if (highlighted)
+                          const Text('★ 願望清單',
+                              style: TextStyle(
+                                  color: AppColors.wishlistGold,
+                                  fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    if (price != null) ...[
+                      const SizedBox(height: 6),
+                      Row(
                         children: [
-                          if (skin != null)
-                            Text(skin.weaponName,
-                                style: textTheme.bodySmall
-                                    ?.copyWith(color: AppColors.muted)),
-                          if (skin != null) TierBadge(tier: skin.tier),
-                          if (owned)
-                            const Text('已擁有',
-                                style: TextStyle(
-                                    color: AppColors.owned,
-                                    fontWeight: FontWeight.bold)),
-                          if (highlighted)
-                            const Text('★ 願望清單',
-                                style: TextStyle(
-                                    color: AppColors.wishlistGold,
-                                    fontWeight: FontWeight.bold)),
+                          if (originalPrice != null) ...[
+                            Text('$originalPrice',
+                                style: textTheme.bodySmall?.copyWith(
+                                    color: AppColors.muted,
+                                    decoration: TextDecoration.lineThrough)),
+                            const SizedBox(width: 6),
+                          ],
+                          Text('$price',
+                              style: textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 4),
+                          Text('VP',
+                              style: textTheme.bodySmall
+                                  ?.copyWith(color: AppColors.muted)),
                         ],
                       ),
-                      if (price != null) ...[
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            if (originalPrice != null) ...[
-                              Text('$originalPrice',
-                                  style: textTheme.bodySmall?.copyWith(
-                                      color: AppColors.muted,
-                                      decoration: TextDecoration.lineThrough)),
-                              const SizedBox(width: 6),
-                            ],
-                            Text('$price',
-                                style: textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.bold)),
-                            const SizedBox(width: 4),
-                            Text('VP',
-                                style: textTheme.bodySmall
-                                    ?.copyWith(color: AppColors.muted)),
-                          ],
-                        ),
-                      ],
                     ],
-                  ),
+                  ],
                 ),
-                if (trailing != null)
-                  Positioned(top: 4, right: 12, child: trailing!),
-              ],
-            ),
+              ),
+              if (trailing != null)
+                Positioned(top: 4, right: 12, child: trailing!),
+            ],
           ),
         ),
       ),

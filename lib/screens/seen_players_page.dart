@@ -71,8 +71,7 @@ class _SeenPlayersPageState extends State<SeenPlayersPage> {
           ),
           Expanded(
             child: list.isEmpty
-                ? const EmptyState(
-                    icon: Icons.person_search, message: '找不到符合的玩家')
+                ? const EmptyState(icon: Icons.person_search, title: '找不到符合的玩家')
                 : ListView.builder(
                     itemCount: list.length,
                     itemBuilder: (context, i) {

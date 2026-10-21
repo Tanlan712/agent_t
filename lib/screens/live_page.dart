@@ -154,7 +154,7 @@ class _LivePageState extends State<LivePage> {
       switch (_live.status) {
         case LiveStatus.noParty:
           return const EmptyState(
-              icon: Icons.sports_esports, message: '遊戲沒有開啟，或目前不在大廳');
+              icon: Icons.sports_esports, title: '遊戲沒有開啟，或目前不在大廳');
         case LiveStatus.error:
         case LiveStatus.loggedOut:
           return Center(
@@ -371,7 +371,7 @@ class _MatchView extends StatelessWidget {
                                 ? AppColors.win
                                 : AppColors.loss)),
                   ),
-                  HudCard(
+                  PanelCard(
                     padding: EdgeInsets.zero,
                     accent: teamId == match.myTeamId
                         ? AppColors.win

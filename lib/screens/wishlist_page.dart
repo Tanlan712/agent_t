@@ -53,7 +53,7 @@ class WishlistPage extends StatelessWidget {
         child: wishlist.items.isEmpty
             ? EmptyState(
                 icon: Icons.star_border,
-                message: '願望清單是空的，按 ＋ 加入造型',
+                title: '願望清單是空的，按 ＋ 加入造型',
                 actionLabel: '加入造型',
                 onAction: () => _add(context),
               )

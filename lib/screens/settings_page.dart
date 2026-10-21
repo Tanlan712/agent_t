@@ -83,7 +83,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildApiKeySection() {
-    return HudCard(
+    return PanelCard(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,7 +133,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildRenewalInstructionsSection() {
-    return HudCard(
+    return PanelCard(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,7 +168,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildAlternativeApiSection() {
-    return HudCard(
+    return PanelCard(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
