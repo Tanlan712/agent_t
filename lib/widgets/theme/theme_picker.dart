@@ -5,6 +5,7 @@ import '../../providers/settings_provider.dart';
 import '../../theme/app_fonts.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/eva_names.dart';
 import '../../theme/theme_ids.dart';
 import '../hud/hud.dart';
 
@@ -22,12 +23,7 @@ const themeStyleNames = {
 
 /// 主色名稱；EVA 系列用 EVA 對應色的名稱（規格 §3.2）。
 String accentName(AccentId a, {required bool eva}) => eva
-    ? const {
-        AccentId.red: '警戒紅',
-        AccentId.blue: '琥珀',
-        AccentId.green: '訊號綠',
-        AccentId.violet: '初號機紫',
-      }[a]!
+    ? evaAccentNames[a]!
     : const {
         AccentId.red: '特務紅',
         AccentId.blue: '輻能藍',
