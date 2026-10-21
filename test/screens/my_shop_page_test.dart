@@ -65,6 +65,15 @@ void main() {
     expect(find.text('尚未開放'), findsNWidgets(2));
     expect(find.text('每日商店'), findsOneWidget);
     expect(find.text('夜市'), findsOneWidget);
+    // 夜市只能由登入同步取得：沒有新增／編輯按鈕，說明也不提手動輸入。
+    final night =
+        find.ancestor(of: find.text('夜市'), matching: find.byType(PanelCard));
+    expect(find.descendant(of: night.first, matching: find.text('新增')),
+        findsNothing);
+    expect(
+        find.descendant(of: night.first, matching: find.textContaining('手動')),
+        findsNothing);
+    expect(find.text('新增'), findsNWidgets(2));
     expect(find.text('精選組合包'), findsOneWidget);
     expect(find.byType(EmptyState), findsNWidgets(3));
     expect(find.text('今天沒有願望清單造型'), findsOneWidget);
@@ -253,6 +262,20 @@ void layoutTests() {
       expect(kpi('商店刷新'), findsOneWidget);
       expect(kpi('22 小時 0 分'), findsOneWidget);
       expect(kpi('VP'), findsNothing);
+    });
+
+    testWidgets('夜市有資料時也沒有編輯按鈕', (tester) async {
+      final h = await Harness.create(tester,
+          shop: CurrentShop(nightMarket: const [
+            NightMarketEntry(
+                skinUuid: 'o', originalPrice: 1775, discountedPrice: 1065),
+          ], nightMarketEndsAt: now.add(const Duration(days: 3))));
+      await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+      await tester.pumpAndSettle();
+      final night =
+          find.ancestor(of: find.text('夜市'), matching: find.byType(PanelCard));
+      expect(find.descendant(of: night.first, matching: find.text('編輯')),
+          findsNothing);
     });
 
     testWidgets('夜市折扣用 StatusChip 顯示百分比', (tester) async {

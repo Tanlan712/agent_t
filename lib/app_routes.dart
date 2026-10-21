@@ -52,7 +52,10 @@ Route<dynamic>? onGenerateAppRoute(RouteSettings settings) {
   }
   switch (settings.name) {
     case '/my-shop/edit':
-      final section = settings.arguments as ShopSection? ?? ShopSection.daily;
+      final requested = settings.arguments as ShopSection? ?? ShopSection.daily;
+      // 夜市只能由登入同步取得，不開放手動編輯。
+      final section =
+          requested == ShopSection.nightMarket ? ShopSection.daily : requested;
       return MaterialPageRoute<void>(
         settings: settings,
         builder: (_) => ShopEditPage(section: section),

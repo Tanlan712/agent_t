@@ -128,7 +128,7 @@ class MyShopPage extends StatelessWidget {
     );
 
     final nightSection = _Section(
-      emptyHint: emptyHint,
+      emptyHint: '夜市開放期間，登入 Riot 後會自動顯示',
       title: '夜市',
       emptyIcon: Icons.nightlight_outlined,
       emptyLabel: '尚未開放',
@@ -138,7 +138,8 @@ class MyShopPage extends StatelessWidget {
           : nightActive
               ? formatRemaining(shop.nightMarketEndsAt!.difference(t))
               : '已過期，請更新',
-      onEdit: () => edit(ShopSection.nightMarket),
+      // 夜市只能由登入同步取得，不提供手動編輯。
+      onEdit: null,
       children: [
         if (shop.nightMarket.isNotEmpty)
           ResponsiveGrid(
@@ -326,7 +327,9 @@ class _Section extends StatelessWidget {
   final String emptyLabel;
   final String emptyTitle;
   final String emptyHint;
-  final VoidCallback onEdit;
+
+  /// null 時不顯示新增／編輯按鈕。
+  final VoidCallback? onEdit;
   final List<Widget> children;
 
   const _Section({
@@ -337,7 +340,7 @@ class _Section extends StatelessWidget {
     this.emptyLabel = '尚未輸入',
     this.emptyTitle = '還沒有資料',
     required this.emptyHint,
-    required this.onEdit,
+    this.onEdit,
     required this.children,
   });
 
@@ -366,11 +369,12 @@ class _Section extends StatelessWidget {
                   ),
                 ),
               ),
-              TextButton.icon(
-                onPressed: onEdit,
-                icon: Icon(empty ? Icons.add : Icons.edit),
-                label: Text(empty ? '新增' : '編輯'),
-              ),
+              if (onEdit != null)
+                TextButton.icon(
+                  onPressed: onEdit,
+                  icon: Icon(empty ? Icons.add : Icons.edit),
+                  label: Text(empty ? '新增' : '編輯'),
+                ),
             ],
           ),
           const SizedBox(height: 12),
