@@ -308,6 +308,46 @@ void main() {
     }
   });
 
+  Widget longPage() => AppShell(
+        currentRoute: '/wishlist',
+        title: '願望清單',
+        child: ListView(
+          key: const ValueKey('page-list'),
+          children: [for (var i = 0; i < 100; i++) Text('row $i')],
+        ),
+      );
+
+  testWidgets('400 寬：往上捲時頁首跟著內容捲走，捲回頂端時回來', (tester) async {
+    setWidth(tester, 400);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(home: longPage()));
+    await tester.pumpAndSettle();
+    final title = find.byKey(const ValueKey('header-title'));
+    final y0 = tester.getTopLeft(title).dy;
+    await tester.drag(find.text('row 3'), const Offset(0, -400));
+    await tester.pumpAndSettle();
+    // 捲出畫面的頁首會被回收（找不到），或至少往上移了。
+    expect(title.evaluate().isEmpty || tester.getTopLeft(title).dy < y0 - 100,
+        isTrue);
+    await tester.drag(
+        find.byKey(const ValueKey('page-list')), const Offset(0, 2000));
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(title).dy, closeTo(y0, 1));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('1400 寬：頁首固定，不跟著內容捲動', (tester) async {
+    setWidth(tester, 1400);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(choice: terminal, home: longPage()));
+    await tester.pumpAndSettle();
+    final title = find.byKey(const ValueKey('header-title'));
+    final y0 = tester.getTopLeft(title).dy;
+    await tester.drag(find.text('row 3'), const Offset(0, -300));
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(title).dy, y0);
+  });
+
   testWidgets('跨過 600 寬時內容的捲動位置保留', (tester) async {
     setWidth(tester, 900);
     final h = await Harness.create(tester);

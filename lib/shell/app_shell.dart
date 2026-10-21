@@ -93,6 +93,19 @@ class AppShell extends StatelessWidget {
           child: child);
 
       final bottom = mode == NavMode.bottom;
+      final header = _Content(
+        padding: horizontalPadding(width),
+        maxWidth: maxWidth,
+        child: Padding(
+          padding:
+              EdgeInsets.only(top: bottom ? 12 : 24, bottom: bottom ? 12 : 16),
+          child: PageHeader(
+              title: title,
+              subtitle: subtitle,
+              actions: actions,
+              route: currentRoute),
+        ),
+      );
       final extended = mode == NavMode.extended;
       final top = !bottom && _topLayouts.contains(style.nav);
       final side = !bottom && !top;
@@ -100,7 +113,7 @@ class AppShell extends StatelessWidget {
       // 使用者自訂的選單順序，所有風格的導覽共用。
       final ordered = orderedNavItems(context
           .select<SettingsProvider, List<String>>((s) => s.settings.navOrder));
-      // 所有模式共用同一個樹結構（Scaffold > Row > Expanded > Column > Expanded），
+      // 所有模式共用同一個樹結構（Scaffold > Row > Expanded > Column > Expanded > NestedScrollView），
       // 只增減導覽欄與標題列；Flex 會從尾端對到同一個 Expanded，
       // 跨斷點與切換風格時內容子樹（捲動位置、頁面狀態）得以保留。
       final scaffold = Scaffold(
@@ -190,22 +203,19 @@ class AppShell extends StatelessWidget {
                         trailing:
                             _RiotStatus(compact: !extended, inline: extended),
                       ),
-                    _Content(
-                      padding: horizontalPadding(width),
-                      maxWidth: maxWidth,
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                            top: bottom ? 12 : 24, bottom: bottom ? 12 : 16),
-                        child: PageHeader(
-                            title: title,
-                            subtitle: subtitle,
-                            actions: actions,
-                            route: currentRoute),
-                      ),
-                    ),
+                    if (!bottom) header,
                     // 一直放在樹中（不需要時是空的），跨斷點時結構不變。
                     const ExpiryBanner(),
-                    Expanded(child: body),
+                    // 內容一律放在 NestedScrollView 裡（跨斷點時位置不變、狀態保留）；
+                    // 手機版的頁首放在捲動區上方，往上捲時跟著內容捲走。
+                    Expanded(
+                      child: NestedScrollView(
+                        headerSliverBuilder: (context, _) => [
+                          if (bottom) SliverToBoxAdapter(child: header),
+                        ],
+                        body: body,
+                      ),
+                    ),
                   ],
                 ),
               ),
