@@ -1,9 +1,21 @@
 import 'dart:convert';
+import '../models/account_progress.dart';
 
 import 'package:http/http.dart' as http;
 
 import '../models/riot_session.dart';
 import 'riot_auth.dart';
+
+/// 收藏的 ItemTypeID（AGENTS.md 第 3 節核准，只能 GET）。
+abstract final class ItemTypes {
+  static const skinLevel = 'e7c63390-eda7-46e0-bb7a-a6abdacd2433';
+  static const skinChroma = '3ad1b2b2-acdb-4524-852f-954a76ddae0a';
+  static const agent = '01bb38e1-da47-4e6a-9b3d-945fe4655707';
+  static const buddyLevel = 'dd3bf334-87f3-40bd-b043-682a57a8dc3a';
+  static const spray = 'd5f120f8-ff8c-4aac-92ea-f2b5acbe9475';
+  static const playerCard = '3f296c07-64c3-494c-923b-fe692a4fa1bd';
+  static const title = 'de7caa6b-adf7-4588-bbd1-143831e786c6';
+}
 
 class RiotApiException implements Exception {
   final int? statusCode;
@@ -181,6 +193,27 @@ class RiotClient {
         (e as Map<String, dynamic>)['ItemID'] as String,
     };
   }
+
+  /// 自己擁有的某類物品（ItemID 轉小寫）；只能 GET。
+  Future<Set<String>> fetchEntitlements(
+      RiotSession s, String itemTypeId) async {
+    final json = await getPd(s, '/store/v1/entitlements/${s.puuid}/$itemTypeId',
+        label: '取得收藏');
+    return {
+      for (final e in (json['Entitlements'] as List<dynamic>? ?? const []))
+        ((e as Map<String, dynamic>)['ItemID'] as String).toLowerCase(),
+    };
+  }
+
+  /// 自己的帳號等級與經驗；只能 GET。
+  Future<AccountXp> fetchAccountXp(RiotSession s) async => AccountXp.fromJson(
+      await getPd(s, '/account-xp/v1/players/${s.puuid}', label: '取得帳號等級'));
+
+  /// 自己的合約（通行證）與任務進度；只能 GET，不得啟用合約。
+  Future<ContractsSnapshot> fetchContracts(RiotSession s) async =>
+      ContractsSnapshot.fromJson(await getPd(
+          s, '/contracts/v1/contracts/${s.puuid}',
+          label: '取得通行證與任務'));
 
   /// 解碼 JWT 的 payload（不驗證簽章，只讀取欄位）；格式不符回傳 null。
   static Map<String, dynamic>? _jwtPayload(String token) {

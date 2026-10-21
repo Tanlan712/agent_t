@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
+import 'account_fixtures.dart';
 import 'live_fixtures.dart';
 import 'match_fixtures.dart';
 
@@ -99,6 +100,13 @@ MockClient riotClient({
   int coreStatus = 404,
   int pregameStatus = 404,
   bool unratedTiers = false,
+  Map<String, List<String>> entitlements = const {},
+  Map<String, int> entitlementStatus = const {},
+  Map<String, int> entitlement429 = const {},
+  int xpStatus = 200,
+  int contractsStatus = 200,
+  Map<String, dynamic>? contracts,
+  void Function(String path)? onEntitlement,
 }) {
   final throttled = <String, int>{};
   final dropped = <String, int>{};
@@ -298,6 +306,35 @@ MockClient riotClient({
       if (path == '/mmr/v1/players/puuid-1') {
         if (mmrStatus != 200) return json({'errorCode': 'x'}, mmrStatus);
         return json(mmrJson());
+      }
+      if (path == '/account-xp/v1/players/puuid-1') {
+        if (xpStatus != 200) return json({'errorCode': 'x'}, xpStatus);
+        return json(accountXpJson());
+      }
+      if (path == '/contracts/v1/contracts/puuid-1' && req.method == 'GET') {
+        if (contractsStatus != 200) {
+          return json({'errorCode': 'x'}, contractsStatus);
+        }
+        return json(contracts ?? contractsJson());
+      }
+      if (path.startsWith('/store/v1/entitlements/puuid-1/') &&
+          path != '/store/v1/entitlements/puuid-1/$skinLevelType') {
+        final type = path.split('/').last;
+        onEntitlement?.call(type);
+        final n = throttled['ent-$type'] = (throttled['ent-$type'] ?? 0) + 1;
+        if (n <= (entitlement429[type] ?? 0)) {
+          return http.Response('{}', 429,
+              headers: retryAfter ? {'retry-after': '1'} : const {});
+        }
+        final status = entitlementStatus[type] ?? 200;
+        if (status != 200) return json({'errorCode': 'x'}, status);
+        return json({
+          'ItemTypeID': type,
+          'Entitlements': [
+            for (final id in entitlements[type] ?? const <String>[])
+              {'TypeID': type, 'ItemID': id},
+          ],
+        });
       }
       if (path == '/store/v1/entitlements/puuid-1/$skinLevelType') {
         return json({
