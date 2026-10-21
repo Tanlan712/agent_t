@@ -3,6 +3,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'providers/collection_provider.dart';
+import 'providers/progress_provider.dart';
 import 'providers/catalog_provider.dart';
 import 'providers/match_detail_cache.dart';
 import 'providers/match_history_provider.dart';
@@ -14,6 +16,7 @@ import 'providers/settings_provider.dart';
 import 'providers/shop_provider.dart';
 import 'providers/wishlist_provider.dart';
 import 'app_routes.dart';
+import 'services/progress_reference_api.dart';
 import 'services/catalog_api.dart';
 import 'services/live_client.dart';
 import 'services/match_client.dart';
@@ -56,6 +59,9 @@ Future<void> main() async {
   final matchReference =
       MatchReferenceProvider(MatchReferenceApi(), MatchReferenceCache(prefs));
   matchReference.init();
+  // 自己的收藏、等級、通行證與任務（只讀 GET，AGENTS.md 第 3 節）。
+  final collection = CollectionProvider(riot, riotClient);
+  final progress = ProgressProvider(riot, riotClient, ProgressReferenceApi());
 
   runApp(
     MultiProvider(
@@ -67,6 +73,8 @@ Future<void> main() async {
         ChangeNotifierProvider(
             create: (_) => SettingsProvider(SettingsStorage(prefs))),
         ChangeNotifierProvider.value(value: riot),
+        ChangeNotifierProvider.value(value: collection),
+        ChangeNotifierProvider.value(value: progress),
         Provider.value(value: matchClient),
         Provider.value(value: liveClient),
         Provider.value(value: matchCache),

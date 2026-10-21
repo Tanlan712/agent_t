@@ -12,7 +12,10 @@ import 'package:valorant_shop_tracker/providers/match_detail_cache.dart';
 import 'package:valorant_shop_tracker/providers/match_history_provider.dart';
 import 'package:valorant_shop_tracker/providers/match_reference_provider.dart';
 import 'package:valorant_shop_tracker/providers/recent_form_loader.dart';
+import 'package:valorant_shop_tracker/providers/collection_provider.dart';
+import 'package:valorant_shop_tracker/providers/progress_provider.dart';
 import 'package:valorant_shop_tracker/providers/riot_provider.dart';
+import 'package:valorant_shop_tracker/services/progress_reference_api.dart';
 import 'package:valorant_shop_tracker/providers/seen_players_provider.dart';
 import 'package:valorant_shop_tracker/providers/settings_provider.dart';
 import 'package:valorant_shop_tracker/providers/shop_provider.dart';
@@ -61,6 +64,8 @@ class Harness {
   final MatchDetailCache matchCache;
   final SeenPlayersProvider seenPlayers;
   final LiveClient liveClient;
+  late final CollectionProvider collection;
+  late final ProgressProvider progress;
   late final RecentFormLoader recentForm =
       RecentFormLoader(matchClient, riot, matchCache);
 
@@ -86,6 +91,7 @@ class Harness {
     http.Client? riotHttp,
     int matchPageSize = 10,
     DateTime Function()? now,
+    ProgressReferenceApi? progressApi,
   }) async {
     final c = catalog ?? await loadedCatalog(tester);
     final prefs = await SharedPreferences.getInstance();
@@ -104,7 +110,7 @@ class Harness {
     final matchClient = MatchClient(rc);
     final matchCache = MatchDetailCache();
     final seenPlayers = SeenPlayersProvider(SeenPlayersStorage(prefs));
-    return Harness(
+    final h = Harness(
       c,
       ShopProvider(ShopStorage(prefs)),
       WishlistProvider(WishlistStorage(prefs)),
@@ -121,6 +127,12 @@ class Harness {
       seenPlayers,
       LiveClient(rc),
     );
+    // 測試不真的等待退避。
+    h.collection = CollectionProvider(riot, rc, delay: (_) async {});
+    h.progress = ProgressProvider(riot, rc,
+        progressApi ?? ProgressReferenceApi(client: riotHttp ?? riotClient()),
+        delay: (_) async {});
+    return h;
   }
 
   /// [useAppRoutes] 為 true 時改用 App 的路由表（`onGenerateAppRoute`），從 `/` 開始。
@@ -138,6 +150,8 @@ class Harness {
         ChangeNotifierProvider.value(value: wishlist),
         ChangeNotifierProvider.value(value: settings),
         ChangeNotifierProvider.value(value: riot),
+        ChangeNotifierProvider.value(value: collection),
+        ChangeNotifierProvider.value(value: progress),
         Provider.value(value: matchClient),
         Provider.value(value: liveClient),
         Provider.value(value: matchCache),

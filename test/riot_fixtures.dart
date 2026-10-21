@@ -337,6 +337,7 @@ MockClient riotClient({
         });
       }
       if (path == '/store/v1/entitlements/puuid-1/$skinLevelType') {
+        onEntitlement?.call(skinLevelType);
         return json({
           'ItemTypeID': skinLevelType,
           'Entitlements': [
