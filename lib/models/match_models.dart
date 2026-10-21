@@ -165,13 +165,49 @@ class RefItem {
 }
 
 /// 特務（uuid 小寫）、地圖（mapUrl）、牌位（tier 編號）的對照表。
+/// 賽季（valorant-api `/v1/seasons`）：[name] 是「上層賽季 + 幕」，例如「V26 第六幕」。
+class SeasonRef {
+  final String name;
+  final DateTime start;
+  final DateTime end;
+
+  /// 幕（Act）；上層賽季（Episode）為 false。
+  final bool isAct;
+
+  const SeasonRef(
+      {required this.name,
+      required this.start,
+      required this.end,
+      required this.isAct});
+
+  factory SeasonRef.fromJson(Map<String, dynamic> json) => SeasonRef(
+        name: json['name'] as String? ?? '',
+        start: DateTime.parse(json['start'] as String),
+        end: DateTime.parse(json['end'] as String),
+        isAct: json['isAct'] as bool? ?? false,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'start': start.toIso8601String(),
+        'end': end.toIso8601String(),
+        'isAct': isAct,
+      };
+}
+
 class MatchReference {
   final Map<String, RefItem> agents;
   final Map<String, RefItem> maps;
   final Map<int, RefItem> tiers;
 
+  /// 賽季 uuid（小寫）→ 名稱與起訖。
+  final Map<String, SeasonRef> seasons;
+
   const MatchReference(
-      {required this.agents, required this.maps, required this.tiers});
+      {required this.agents,
+      required this.maps,
+      required this.tiers,
+      this.seasons = const {}});
 
   factory MatchReference.fromJson(Map<String, dynamic> json) {
     Map<String, RefItem> items(Object? m) => {
@@ -184,6 +220,11 @@ class MatchReference {
       tiers: {
         for (final e in items(json['tiers']).entries) int.parse(e.key): e.value,
       },
+      seasons: {
+        for (final e
+            in (json['seasons'] as Map<String, dynamic>? ?? const {}).entries)
+          e.key: SeasonRef.fromJson(e.value as Map<String, dynamic>),
+      },
     );
   }
 
@@ -191,5 +232,6 @@ class MatchReference {
         'agents': {for (final e in agents.entries) e.key: e.value.toJson()},
         'maps': {for (final e in maps.entries) e.key: e.value.toJson()},
         'tiers': {for (final e in tiers.entries) '${e.key}': e.value.toJson()},
+        'seasons': {for (final e in seasons.entries) e.key: e.value.toJson()},
       };
 }

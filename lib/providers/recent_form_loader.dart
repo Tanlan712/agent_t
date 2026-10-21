@@ -9,6 +9,10 @@ import '../services/riot_client.dart';
 import 'match_detail_cache.dart';
 import 'riot_provider.dart';
 
+/// 只看一般與競技：對戰紀錄不帶 queue 參數讀取，再略過其他模式。
+const standardQueues = 'competitive,unrated';
+const _standardQueueIds = {'competitive', 'unrated'};
+
 class FormGame {
   final String matchId;
 
@@ -16,12 +20,29 @@ class FormGame {
   final bool? won;
   final int acs;
   final String agentId;
+  final int kills;
+  final int deaths;
+  final int assists;
 
-  const FormGame(
-      {required this.matchId,
-      required this.won,
-      required this.acs,
-      required this.agentId});
+  /// 表現分數（scores.TempValueF，0～500）；Riot 沒有提供時為 null。
+  final double? rating;
+  final double? headshotPercent;
+  final String queueId;
+  final DateTime? startTime;
+
+  const FormGame({
+    required this.matchId,
+    required this.won,
+    required this.acs,
+    required this.agentId,
+    this.kills = 0,
+    this.deaths = 0,
+    this.assists = 0,
+    this.rating,
+    this.headshotPercent,
+    this.queueId = '',
+    this.startTime,
+  });
 }
 
 class RecentForm {
@@ -32,6 +53,29 @@ class RecentForm {
   double? get avgAcs => games.isEmpty
       ? null
       : games.fold<int>(0, (s, g) => s + g.acs) / games.length;
+
+  /// 有勝負的場次中贏的比例（平手不算）。
+  double? get winRate {
+    final decided = games.where((g) => g.won != null).toList();
+    if (decided.isEmpty) return null;
+    return decided.where((g) => g.won == true).length / decided.length;
+  }
+
+  /// 總擊殺 ÷ 總死亡（沒有死亡時用 1）。
+  double? get avgKd {
+    if (games.isEmpty) return null;
+    final k = games.fold<int>(0, (s, g) => s + g.kills);
+    final d = games.fold<int>(0, (s, g) => s + g.deaths);
+    return k / (d == 0 ? 1 : d);
+  }
+
+  double? get avgHeadshot {
+    final hs = [
+      for (final g in games)
+        if (g.headshotPercent case final h?) h
+    ];
+    return hs.isEmpty ? null : hs.reduce((a, b) => a + b) / hs.length;
+  }
 }
 
 enum FormStatus { pending, loading, done, failed }
@@ -72,6 +116,13 @@ class RecentFormLoader with ChangeNotifier {
 
   /// 佇列鍵 → 需要另外查牌位的賽季。
   final Map<String, String> _rankSeason = {};
+
+  /// 玩家 → 完整的 MMR（目前牌位、歷史最高用）；只放在記憶體。
+  final Map<String, Map<String, dynamic>> _mmr = {};
+  final Map<String, FormStatus> _profileStatus = {};
+
+  /// 佇列鍵 → 需要一起讀 MMR 的玩家。
+  final Map<String, String> _profileFor = {};
   static final _anonymous = Object();
   int _running = 0;
   bool _disposed = false;
@@ -100,6 +151,30 @@ class RecentFormLoader with ChangeNotifier {
   PlayerRank rank(String puuid, String seasonId) =>
       _ranks['$seasonId|$puuid'] ?? PlayerRank.pending;
 
+  /// 玩家的 MMR 讀取狀態與內容（[request] 的 profileFor）。
+  FormStatus profileStatus(String puuid) =>
+      _profileStatus[puuid] ?? FormStatus.pending;
+  Map<String, dynamic>? mmr(String puuid) => _mmr[puuid];
+
+  /// 清掉這位玩家所有已完成或失敗的結果（例如按「從 Riot 同步」）；之後要再 [request]。
+  /// 正在讀取中的不受影響。
+  void forget(String puuid) {
+    final keys = [
+      for (final e in _targets.entries)
+        if (e.value.$1 == puuid) e.key
+    ];
+    for (final k in keys) {
+      if (_status[k] == FormStatus.loading) continue;
+      _status.remove(k);
+      _forms.remove(k);
+    }
+    if (_profileStatus[puuid] != FormStatus.loading) {
+      _profileStatus.remove(puuid);
+      _mmr.remove(puuid);
+    }
+    _notify();
+  }
+
   /// 把 [puuids] 依序排到佇列最前面（目前畫面上的頁面優先）。
   /// 載入中或已完成的玩家略過；失敗的玩家重新排隊。
   /// [owner] 通常是頁面，[cancelPending] 只取消該頁要求的玩家。
@@ -110,6 +185,7 @@ class RecentFormLoader with ChangeNotifier {
       String? queue,
       String seasonId = '',
       Set<String> rankFor = const {},
+      Set<String> profileFor = const {},
       int? games}) {
     final o = owner ?? _anonymous;
     final front = <String>[];
@@ -118,6 +194,10 @@ class RecentFormLoader with ChangeNotifier {
       _targets[p] = (puuid, queue, games ?? this.games);
       if (rankFor.contains(puuid) && seasonId.isNotEmpty) {
         _rankSeason[p] = seasonId;
+      }
+      if (profileFor.contains(puuid) && _profileStatus[puuid] == null) {
+        _profileFor[p] = puuid;
+        _profileStatus[puuid] = FormStatus.pending;
       }
       final st = _status[p];
       if (st == FormStatus.loading || st == FormStatus.done) continue;
@@ -189,6 +269,7 @@ class RecentFormLoader with ChangeNotifier {
       final (puuid, queue, count) = _targets[key]!;
       final season = _rankSeason.remove(key);
       if (season != null) await _loadRank(s, puuid, season);
+      if (_profileFor.remove(key) != null) await _loadProfile(s, puuid);
       final form = await _load(s, puuid, queue, count);
       if (_disposed) return;
       _forms[key] = form;
@@ -229,12 +310,30 @@ class RecentFormLoader with ChangeNotifier {
     _notify();
   }
 
+  /// MMR 只是補充資訊：失敗（401 以外）時標成 failed，不影響最近戰績。
+  Future<void> _loadProfile(RiotSession s, String puuid) async {
+    _profileStatus[puuid] = FormStatus.loading;
+    _notify();
+    try {
+      _mmr[puuid] = await _retry(() => _client.fetchMmrJson(s, puuid));
+      _profileStatus[puuid] = FormStatus.done;
+    } on RiotApiException catch (e) {
+      if (e.statusCode == 401) rethrow;
+      _profileStatus[puuid] = FormStatus.failed;
+    } catch (_) {
+      _profileStatus[puuid] = FormStatus.failed;
+    }
+    _notify();
+  }
+
   Future<RecentForm> _load(
       RiotSession s, String puuid, String? queue, int count) async {
-    final (refs, _) = await _retry(
-        () => _client.fetchHistory(s, 0, count, puuid: puuid, queue: queue));
+    final standard = queue == standardQueues;
+    final (refs, _) = await _retry(() => _client.fetchHistory(s, 0, count,
+        puuid: puuid, queue: standard ? null : queue));
     final result = <FormGame>[];
     for (final ref in refs) {
+      if (standard && !_standardQueueIds.contains(ref.queueId)) continue;
       final Map<String, dynamic> json;
       try {
         json = await _retry(() => _cache.json(s, ref.matchId, _client));
@@ -248,11 +347,19 @@ class RecentFormLoader with ChangeNotifier {
       final line =
           d.teams.values.expand((t) => t).where((l) => l.puuid == puuid);
       if (line.isEmpty) continue;
+      final l = line.first;
       result.add(FormGame(
         matchId: ref.matchId,
         won: d.summary.won,
-        acs: line.first.acs,
-        agentId: line.first.agentId,
+        acs: l.acs,
+        agentId: l.agentId,
+        kills: l.kills,
+        deaths: l.deaths,
+        assists: l.assists,
+        rating: l.rating,
+        headshotPercent: l.headshotPercent,
+        queueId: ref.queueId,
+        startTime: ref.startTime,
       ));
     }
     return RecentForm(result);

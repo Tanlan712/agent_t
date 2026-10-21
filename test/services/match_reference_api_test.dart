@@ -34,6 +34,26 @@ MockClient referenceClient({void Function()? onRequest, bool fail = false}) =>
               'listViewIcon': 'https://x/ascent.png'
             },
           ]);
+        case '/v1/seasons':
+          return json([
+            {
+              'uuid': 'EP-26',
+              'displayName': 'V26',
+              'type': null,
+              'parentUuid': null,
+              'startTime': '2026-06-24T00:00:00Z',
+              'endTime': '2027-01-06T00:00:00Z',
+            },
+            {
+              'uuid': 'ACT-6',
+              'displayName': '第六幕',
+              'type': 'EAresSeasonType::Act',
+              'parentUuid': 'EP-26',
+              'startTime': '2026-10-14T00:00:00Z',
+              'endTime': '2027-01-06T00:00:00Z',
+            },
+            {'uuid': 'broken', 'displayName': 'x'},
+          ]);
         case '/v1/competitivetiers':
           return json([
             {
@@ -60,6 +80,18 @@ MockClient referenceClient({void Function()? onRequest, bool fail = false}) =>
       return http.Response('not found', 404);
     });
 
+/// 只讓 /v1/seasons 失敗，其他請求轉給 [inner]。
+class _FailSeasons extends http.BaseClient {
+  final http.Client inner;
+  _FailSeasons(this.inner);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async =>
+      request.url.path == '/v1/seasons'
+          ? http.StreamedResponse(Stream.value(const []), 500)
+          : inner.send(request);
+}
+
 void main() {
   late SharedPreferences prefs;
   setUp(() async {
@@ -76,12 +108,30 @@ void main() {
     expect(r.tiers[18]!.iconUrl, 'https://x/18.png');
   });
 
+  test('fetch 解析賽季：幕的名稱帶上層賽季，缺日期的略過', () async {
+    final r = await MatchReferenceApi(client: referenceClient()).fetch();
+    final act = r.seasons['act-6']!;
+    expect(act.name, 'V26 第六幕');
+    expect(act.isAct, isTrue);
+    expect(act.start, DateTime.utc(2026, 10, 14));
+    expect(r.seasons['ep-26']!.isAct, isFalse);
+    expect(r.seasons.containsKey('broken'), isFalse);
+  });
+
+  test('賽季下載失敗時其他資料照常', () async {
+    final r = await MatchReferenceApi(client: _FailSeasons(referenceClient()))
+        .fetch();
+    expect(r.seasons, isEmpty);
+    expect(r.tiers[18]!.name, '鑽石 2');
+  });
+
   test('快取存入讀出一致、損壞時回傳 null', () async {
     final cache = MatchReferenceCache(prefs);
     await cache
         .save(await MatchReferenceApi(client: referenceClient()).fetch());
     expect(cache.load()!.tiers[18]!.name, '鑽石 2');
-    SharedPreferences.setMockInitialValues({'match_reference_v1': '{bad'});
+    expect(cache.load()!.seasons['act-6']!.name, 'V26 第六幕');
+    SharedPreferences.setMockInitialValues({'match_reference_v2': '{bad'});
     expect(MatchReferenceCache(await SharedPreferences.getInstance()).load(),
         isNull);
   });

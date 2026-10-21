@@ -9,6 +9,9 @@ import 'package:valorant_shop_tracker/providers/riot_provider.dart';
 import 'package:valorant_shop_tracker/services/match_client.dart';
 import 'package:valorant_shop_tracker/services/riot_client.dart';
 
+import 'package:valorant_shop_tracker/logic/match_mapper.dart';
+
+import '../match_fixtures.dart';
 import '../riot_fixtures.dart';
 
 class _Env {
@@ -27,8 +30,8 @@ class _Env {
 }
 
 Future<void> _settle(RecentFormLoader l, List<String> ids,
-    {String? queue}) async {
-  FormStatus st(String p) => l.status(p, queue: queue);
+    {String? queue, int? games}) async {
+  FormStatus st(String p) => l.status(p, queue: queue, games: games);
   for (var i = 0; i < 200; i++) {
     if (ids
         .every((p) => st(p) == FormStatus.done || st(p) == FormStatus.failed)) {
@@ -50,6 +53,7 @@ void main() {
     Map<String, int> otherMmrStatus = const {},
     Set<String> otherMmrHidden = const {},
     int maxConcurrent = 2,
+    bool mixedQueues = false,
   }) async {
     final waits = <Duration>[];
     final paths = <String>[];
@@ -65,6 +69,7 @@ void main() {
       otherMmrStatus: otherMmrStatus,
       otherMmrHidden: otherMmrHidden,
       matchDelay: const Duration(milliseconds: 5),
+      mixedQueues: mixedQueues,
     );
     final client = MockClient((req) async {
       final pd = req.url.host.startsWith('pd.');
@@ -97,6 +102,101 @@ void main() {
   }
 
   tearDown(() => env.loader.dispose());
+
+  group('戰鬥數據', () {
+    test('一般＋競技：不帶 queue 讀紀錄，略過其他模式，不讀它們的詳細資料', () async {
+      env = await setup(mixedQueues: true);
+      env.loader.request(['r1'], queue: standardQueues, games: 5);
+      await _settle(env.loader, ['r1'], queue: standardQueues);
+      final form = env.loader.form('r1', queue: standardQueues, games: 5)!;
+      expect(form.games.map((g) => g.queueId),
+          ['competitive', 'unrated', 'competitive', 'competitive']);
+      final history =
+          env.calls.where((u) => u.path.contains('/match-history/')).toList();
+      expect(history, isNotEmpty);
+      expect(history.every((u) => !u.queryParameters.containsKey('queue')),
+          isTrue);
+      expect(env.requestsFor('/match-details/v1/matches/r1-g1'), 0);
+    });
+
+    test('每場帶 K/D/A、表現分數、ACS、爆頭率、模式與時間', () async {
+      env = await setup();
+      env.loader.request(['r1'], queue: standardQueues, games: 1);
+      await _settle(env.loader, ['r1'], queue: standardQueues, games: 1);
+      final g =
+          env.loader.form('r1', queue: standardQueues, games: 1)!.games.single;
+      expect((g.kills, g.deaths, g.assists), (10, 10, 5));
+      expect(g.rating, 452);
+      expect(g.acs, 227);
+      // 爆頭率與對戰詳細頁算法相同（mapMatchDetail）。
+      final line = mapMatchDetail(matchDetailsJson(), 'r1')
+          .teams
+          .values
+          .expand((t) => t)
+          .firstWhere((l) => l.puuid == 'r1');
+      expect(g.headshotPercent, line.headshotPercent);
+      expect(g.queueId, 'competitive');
+      expect(g.startTime, DateTime.fromMillisecondsSinceEpoch(1760900000000));
+    });
+
+    test('總覽：勝率、平均 K/D、平均 ACS、平均爆頭率', () async {
+      env = await setup();
+      FormGame g(bool? won, int k, int d, int acs, double? hs) => FormGame(
+          matchId: 'x',
+          won: won,
+          acs: acs,
+          agentId: 'a',
+          kills: k,
+          deaths: d,
+          headshotPercent: hs);
+      final f = RecentForm([
+        g(true, 20, 10, 300, 30),
+        g(false, 10, 10, 200, null),
+        g(null, 6, 0, 100, 20),
+      ]);
+      expect(f.winRate, closeTo(0.5, 1e-9));
+      expect(f.avgKd, closeTo(36 / 20, 1e-9));
+      expect(f.avgAcs, closeTo(200, 1e-9));
+      expect(f.avgHeadshot, closeTo(25, 1e-9));
+      expect(const RecentForm([]).winRate, isNull);
+      expect(const RecentForm([]).avgKd, isNull);
+    });
+
+    test('個人資料：讀一次 MMR；失敗時標成 failed，不影響戰績', () async {
+      env = await setup(otherMmrStatus: {'r2': 500});
+      env.loader.request(['r1', 'r2'],
+          queue: standardQueues, games: 1, profileFor: {'r1', 'r2'});
+      await _settle(env.loader, ['r1', 'r2'], queue: standardQueues, games: 1);
+      expect(env.loader.profileStatus('r1'), FormStatus.done);
+      expect(env.loader.mmr('r1'), isNotNull);
+      expect(env.loader.profileStatus('r2'), FormStatus.failed);
+      expect(env.loader.mmr('r2'), isNull);
+      expect(env.loader.status('r2', queue: standardQueues, games: 1),
+          FormStatus.done);
+      // 同一位不重查。
+      env.loader
+          .request(['r1'], queue: standardQueues, games: 1, profileFor: {'r1'});
+      await _settle(env.loader, ['r1'], queue: standardQueues, games: 1);
+      expect(env.requestsFor('/mmr/v1/players/r1'), 1);
+    });
+
+    test('重新讀取：清掉這位玩家的結果後再要求會重抓', () async {
+      env = await setup();
+      env.loader
+          .request(['r1'], queue: standardQueues, games: 1, profileFor: {'r1'});
+      await _settle(env.loader, ['r1'], queue: standardQueues, games: 1);
+      final before = env.requestsFor('/match-history/');
+      env.loader.forget('r1');
+      expect(env.loader.status('r1', queue: standardQueues, games: 1),
+          FormStatus.pending);
+      expect(env.loader.mmr('r1'), isNull);
+      env.loader
+          .request(['r1'], queue: standardQueues, games: 1, profileFor: {'r1'});
+      await _settle(env.loader, ['r1'], queue: standardQueues, games: 1);
+      expect(env.requestsFor('/match-history/'), before + 1);
+      expect(env.requestsFor('/mmr/v1/players/r1'), 2);
+    });
+  });
   group('賽季牌位', () {
     test('牌位未知的玩家另外查 MMR，同一季只查一次', () async {
       env = await setup();

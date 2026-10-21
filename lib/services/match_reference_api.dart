@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import '../models/match_models.dart';
 import 'catalog_api.dart';
 
-/// 從 valorant-api.com 下載特務、地圖、牌位的顯示資料。
+/// 從 valorant-api.com 下載特務、地圖、牌位與賽季的顯示資料。
 class MatchReferenceApi {
   static const _host = 'valorant-api.com';
   final http.Client _client;
@@ -16,6 +16,13 @@ class MatchReferenceApi {
     final agents = await _data('/v1/agents', {'isPlayableCharacter': 'true'});
     final maps = await _data('/v1/maps');
     final tierSets = await _data('/v1/competitivetiers');
+    // 賽季只用來顯示名稱與判斷本幕：下載失敗時留空，不影響其他資料。
+    List<dynamic> seasons;
+    try {
+      seasons = await _data('/v1/seasons');
+    } catch (_) {
+      seasons = const [];
+    }
 
     final lastSeason = tierSets.isEmpty
         ? const <dynamic>[]
@@ -42,7 +49,33 @@ class MatchReferenceApi {
               name: t['tierName'] as String,
               iconUrl: t['smallIcon'] as String?),
       },
+      seasons: _seasons(seasons.whereType<Map<String, dynamic>>().toList()),
     );
+  }
+
+  /// 幕的名稱帶上層賽季，例如「V26 第六幕」；缺起訖日期的略過。
+  static Map<String, SeasonRef> _seasons(List<Map<String, dynamic>> raw) {
+    String id(Object? v) => (v as String? ?? '').toLowerCase();
+    final names = {
+      for (final s in raw) id(s['uuid']): s['displayName'] as String? ?? ''
+    };
+    return {
+      for (final s in raw)
+        if ((
+          DateTime.tryParse(s['startTime'] as String? ?? ''),
+          DateTime.tryParse(s['endTime'] as String? ?? '')
+        )
+            case (final start?, final end?))
+          id(s['uuid']): SeasonRef(
+            name: [
+              if (names[id(s['parentUuid'])] case final p? when p.isNotEmpty) p,
+              s['displayName'] as String? ?? '',
+            ].join(' '),
+            start: start,
+            end: end,
+            isAct: s['type'] == 'EAresSeasonType::Act',
+          ),
+    };
   }
 
   Future<List<dynamic>> _data(String path,

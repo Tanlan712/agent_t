@@ -4,7 +4,8 @@ import '../models/match_models.dart';
 import 'prefs_json.dart';
 
 class MatchReferenceCache {
-  static const _key = 'match_reference_v1';
+  /// v2 起含賽季；舊的 v1 快取沒有賽季，換鍵讓它重新下載。
+  static const _key = 'match_reference_v2';
 
   final SharedPreferences _prefs;
 

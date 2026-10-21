@@ -108,6 +108,8 @@ MockClient riotClient({
   Map<String, dynamic>? contracts,
   void Function(String path)? onEntitlement,
   List<String>? skinLevels,
+  // 他人紀錄的第 2 場是死鬥、第 3 場是一般（其他是競技）。
+  bool mixedQueues = false,
 }) {
   final throttled = <String, int>{};
   final dropped = <String, int>{};
@@ -247,7 +249,11 @@ MockClient riotClient({
               {
                 'MatchID': i == 0 ? 'm1' : '$p-g$i',
                 'GameStartTime': 1760900000000 - i * 3600000,
-                'QueueID': 'competitive',
+                'QueueID': mixedQueues && i == 1
+                    ? 'deathmatch'
+                    : mixedQueues && i == 2
+                        ? 'unrated'
+                        : 'competitive',
               },
           ],
         });
