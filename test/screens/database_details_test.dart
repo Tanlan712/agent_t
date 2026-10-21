@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:valorant_shop_tracker/screens/bundles_page.dart';
 import 'package:valorant_shop_tracker/screens/maps_page.dart';
 import 'package:valorant_shop_tracker/screens/weapons_page.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
@@ -29,6 +30,27 @@ ValorantApiService fakeApi(Map<String, List<Map<String, dynamic>>> data,
 /// 換頁後被蓋住的列表頁停止監聽圖片，失敗就會變成未處理的例外。
 Map<String, dynamic> noIcon(Map<String, dynamic> j) =>
     {...j, 'displayIcon': null, 'splash': null, 'background': null};
+
+http.Response fakeApiResponse(
+    String path, Map<String, List<Map<String, dynamic>>> data) {
+  final body = data[path];
+  if (body == null) return http.Response('', 404);
+  return http.Response.bytes(
+      utf8.encode(jsonEncode({'status': 200, 'data': body})), 200,
+      headers: {'content-type': 'application/json; charset=utf-8'});
+}
+
+/// 造型的假資料去掉炫彩圖片（造型卡片會用第一個炫彩的圖，換頁後被蓋住）。
+Map<String, dynamic> bareSkin(String uuid, String theme) {
+  final j = noIcon(skinJson(uuid: uuid, theme: theme));
+  return {
+    ...j,
+    'chromas': [
+      for (final c in j['chromas'] as List)
+        {...c as Map<String, dynamic>, 'displayIcon': null, 'fullRender': null},
+    ],
+  };
+}
 
 Finder inKey(String key, Finder f) =>
     find.descendant(of: find.byKey(ValueKey(key)), matching: f);
@@ -149,6 +171,123 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('這張地圖沒有小地圖'), findsOneWidget);
       expect(find.byKey(const ValueKey('callouts-toggle')), findsNothing);
+    });
+  });
+
+  group('組合包', () {
+    List<String> log = [];
+    late ValorantApiService api;
+    setUp(() {
+      log = [];
+      api = fakeApi({
+        '/v1/bundles': [
+          {'uuid': 'b-rgx', 'displayName': 'RGX 11z Pro', 'displayIcon': null},
+          {'uuid': 'b-go', 'displayName': '特戰英豪 GO！', 'displayIcon': null},
+        ],
+        '/v1/themes': [
+          {'uuid': 't-rgx', 'displayName': 'RGX 11z Pro'},
+        ],
+        '/v1/weapons': [
+          {
+            ...noIcon(vandalJson()),
+            'skins': [
+              bareSkin('s1', 't-rgx'),
+              bareSkin('s2', 't-other'),
+            ],
+          },
+          {
+            ...noIcon(classicJson()),
+            'skins': [bareSkin('s3', 't-rgx')],
+          },
+        ],
+      }, log: log);
+    });
+
+    for (final width in [375.0, 1440.0]) {
+      testWidgets('$width 寬：組合包 → 造型 → 等級與炫彩', (tester) async {
+        setWidth(tester, width);
+        final opened = <Uri>[];
+        final h = await Harness.create(tester);
+        await tester.pumpWidget(h.wrap(
+            home: BundlesPage(
+                api: api,
+                launch: (u) async {
+                  opened.add(u);
+                  return true;
+                })));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('db-bundle-b-rgx')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('db-skin-s1')), findsOneWidget);
+        expect(find.byKey(const ValueKey('db-skin-s3')), findsOneWidget);
+        expect(find.byKey(const ValueKey('db-skin-s2')), findsNothing);
+        expect(find.textContaining('同名組合包'), findsOneWidget);
+
+        await tester.tap(find.byKey(const ValueKey('db-skin-s1')));
+        await tester.pumpAndSettle();
+        expect(find.text('等級 1'), findsOneWidget);
+        expect(find.text('等級 2'), findsOneWidget);
+        // 只有等級 2 有影片。
+        expect(find.byKey(const ValueKey('level-video-0')), findsNothing);
+        await tester.tap(find.byKey(const ValueKey('level-video-1')));
+        expect(opened.single.toString(), 'lv2.mp4');
+        await tester.scrollUntilVisible(find.text('紅色'), 200,
+            scrollable: find.byType(Scrollable).last);
+        expect(find.text('原色'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('配不到造型；主題與武器資料只下載一次', (tester) async {
+      setWidth(tester, 1440);
+      final h = await Harness.create(tester);
+      await tester.pumpWidget(h.wrap(home: BundlesPage(api: api)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('db-bundle-b-go')));
+      await tester.pumpAndSettle();
+      expect(find.text('這個組合包沒有槍枝造型資料'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('db-bundle-b-rgx')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('db-skin-s1')), findsOneWidget);
+      expect(log.where((p) => p == '/v1/themes'), hasLength(1));
+      expect(log.where((p) => p == '/v1/weapons'), hasLength(1));
+    });
+
+    testWidgets('造型資料讀取失敗可重試', (tester) async {
+      setWidth(tester, 1440);
+      var fail = true;
+      final flaky = ValorantApiService(
+          client: MockClient((req) async {
+        if (req.url.path == '/v1/themes' && fail) {
+          return http.Response('', 500);
+        }
+        return fakeApiResponse(req.url.path, {
+          '/v1/bundles': [
+            {'uuid': 'b-rgx', 'displayName': 'RGX 11z Pro', 'displayIcon': null},
+          ],
+          '/v1/themes': [
+            {'uuid': 't-rgx', 'displayName': 'RGX 11z Pro'},
+          ],
+          '/v1/weapons': [
+            {
+              ...noIcon(vandalJson()),
+              'skins': [bareSkin('s1', 't-rgx')],
+            },
+          ],
+        });
+      }));
+      final h = await Harness.create(tester);
+      await tester.pumpWidget(h.wrap(home: BundlesPage(api: flaky)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('db-bundle-b-rgx')));
+      await tester.pumpAndSettle();
+      expect(find.text('造型資料讀取失敗'), findsOneWidget);
+      fail = false;
+      await tester.tap(find.text('重試'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('db-skin-s1')), findsOneWidget);
     });
   });
 }
