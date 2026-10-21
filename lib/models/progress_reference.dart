@@ -8,7 +8,17 @@ class RefWeapon {
   final String name;
   final String? iconUrl;
 
-  const RefWeapon({required this.uuid, required this.name, this.iconUrl});
+  /// `EEquippableCategory::Rifle` 等；[categoryText] 是商店的中文類別名（近戰沒有）。
+  final String category;
+  final String? categoryText;
+
+  const RefWeapon({
+    required this.uuid,
+    required this.name,
+    this.iconUrl,
+    this.category = '',
+    this.categoryText,
+  });
 }
 
 class RefSkinLevel {

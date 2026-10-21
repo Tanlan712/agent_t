@@ -21,9 +21,19 @@ class FakeProgressApi implements ProgressReferenceApi {
 
 ProgressReference testProgressRef({DateTime? seasonEnd}) => ProgressReference(
       weapons: const [
-        RefWeapon(uuid: 'w-vandal', name: '暴徒'),
-        RefWeapon(uuid: 'w-phantom', name: '幻象'),
-        RefWeapon(uuid: 'w-sheriff', name: '雪怪'),
+        RefWeapon(
+            uuid: 'w-vandal',
+            name: '暴徒',
+            category: 'EEquippableCategory::Rifle'),
+        RefWeapon(
+            uuid: 'w-phantom',
+            name: '幻象',
+            category: 'EEquippableCategory::Rifle'),
+        RefWeapon(
+            uuid: 'w-sheriff',
+            name: '雪怪',
+            category: 'EEquippableCategory::Sidearm',
+            categoryText: '手槍隨身武器'),
       ],
       skinLevels: const {
         'lv-vandal-1': RefSkinLevel(

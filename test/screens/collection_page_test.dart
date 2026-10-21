@@ -103,6 +103,23 @@ void main() {
     expect(find.text('光幻 暴徒'), findsNothing);
   });
 
+  testWidgets('造型分頁的槍枝依類型分區（商店順序）', (tester) async {
+    setWidth(tester, 1440);
+    final h = await withSkins(tester);
+    await tester.pumpWidget(h.wrap(home: const CollectionPage()));
+    await settle(tester);
+    // 手槍區用資料的中文類別名，步槍區沒有時用內建名稱。
+    final pistol = find.byKey(const ValueKey('weapon-section-手槍隨身武器'));
+    final rifle = find.byKey(const ValueKey('weapon-section-步槍'));
+    expect(pistol, findsOneWidget);
+    expect(rifle, findsOneWidget);
+    expect(tester.getTopLeft(pistol).dy, lessThan(tester.getTopLeft(rifle).dy));
+    expect(tester.getTopLeft(find.byKey(const ValueKey('weapon-w-sheriff'))).dy,
+        lessThan(tester.getTopLeft(rifle).dy));
+    expect(tester.getTopLeft(find.byKey(const ValueKey('weapon-w-vandal'))).dy,
+        greaterThan(tester.getTopLeft(rifle).dy));
+  });
+
   testWidgets('點進槍枝：只列該槍擁有的造型，最高等級、色票、預覽影片', (tester) async {
     setWidth(tester, 1440);
     final launched = <Uri>[];

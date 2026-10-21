@@ -22,6 +22,8 @@ MockClient api({int failStatus = 200, List<Uri>? seen}) =>
               'uuid': 'W-VANDAL',
               'displayName': '暴徒',
               'displayIcon': 'vandal.png',
+              'category': 'EEquippableCategory::Rifle',
+              'shopData': {'categoryText': '突擊步槍'},
               'skins': [
                 {
                   'uuid': 'SKIN-V',
@@ -174,6 +176,8 @@ void main() {
     expect(r.weapons.single.uuid, 'w-vandal');
     expect(r.weapons.single.name, '暴徒');
     expect(r.weapons.single.iconUrl, 'vandal.png');
+    expect(r.weapons.single.category, 'EEquippableCategory::Rifle');
+    expect(r.weapons.single.categoryText, '突擊步槍');
     expect(r.agents['ag-1']!.uuid, 'ag-1');
     expect(r.chromas['ch-1']!.swatchUrl, 'sw.png');
     expect(r.agents['ag-1']!.isBase, isTrue);

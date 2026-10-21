@@ -18,25 +18,33 @@ class WeaponSection {
   const WeaponSection({required this.label, required this.weapons});
 }
 
-/// 依類別分區（商店順序）；區內依價格排序，未知類別放在最後的「其他」。
-List<WeaponSection> weaponSections(List<WeaponInfo> weapons) {
-  int byCost(WeaponInfo a, WeaponInfo b) => a.cost.compareTo(b.cost);
+/// 依武器類別分區（商店順序）：區名用資料的 categoryText，沒有時用內建中文名；
+/// 未知類別放在最後的「其他」。區內維持原順序。
+List<(String, List<T>)> groupByWeaponCategory<T>(List<T> items,
+    String Function(T) category, String? Function(T) categoryText) {
   final known = {for (final (c, _) in weaponCategoryOrder) c};
   return [
-    for (final (category, fallback) in weaponCategoryOrder)
-      if (weapons.where((w) => w.category == category).toList() case final list
+    for (final (c, fallback) in weaponCategoryOrder)
+      if (items.where((w) => category(w) == c).toList() case final list
           when list.isNotEmpty)
-        WeaponSection(
-          label:
-              list.map((w) => w.categoryText).whereType<String>().firstOrNull ??
-                  fallback,
-          weapons: list..sort(byCost),
+        (
+          list.map(categoryText).whereType<String>().firstOrNull ?? fallback,
+          list
         ),
-    if (weapons.where((w) => !known.contains(w.category)).toList()
+    if (items.where((w) => !known.contains(category(w))).toList()
         case final other when other.isNotEmpty)
-      WeaponSection(label: '其他', weapons: other..sort(byCost)),
+      ('其他', other),
   ];
 }
+
+/// 武器頁的分區；區內依價格排序。
+List<WeaponSection> weaponSections(List<WeaponInfo> weapons) => [
+      for (final (label, list) in groupByWeaponCategory(
+          weapons, (w) => w.category, (w) => w.categoryText))
+        WeaponSection(
+            label: label,
+            weapons: list..sort((a, b) => a.cost.compareTo(b.cost))),
+    ];
 
 String wallPenetrationLabel(String? v) => switch (v) {
       'EWallPenetrationDisplayType::Low' => '低',

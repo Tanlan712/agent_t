@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../logic/database_logic.dart' show groupByWeaponCategory;
 import '../logic/progress_logic.dart';
 import '../models/match_models.dart' show RefItem;
 import '../models/progress_reference.dart';
@@ -237,49 +238,61 @@ class _WeaponGrid extends StatelessWidget {
   const _WeaponGrid({required this.weapons, required this.launch});
 
   @override
-  Widget build(BuildContext context) => ResponsiveGridView.builder(
-        minTileWidth: 200,
-        childAspectRatio: 1.6,
-        mainAxisExtent: 140,
+  Widget build(BuildContext context) => ListView(
         padding: const EdgeInsets.only(bottom: 24),
-        itemCount: weapons.length,
-        itemBuilder: (context, i) {
-          final w = weapons[i];
-          final none = w.ownedCount == 0;
-          return PanelCard(
-            key: ValueKey('weapon-${w.uuid}'),
-            onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                    builder: (_) => WeaponSkinsPage(
-                        weaponUuid: w.uuid,
-                        weaponName: w.name,
-                        launch: launch))),
-            child: Opacity(
-              // 沒有造型的槍枝變淡，但仍可點進去。
-              opacity: none ? 0.5 : 1,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: Center(child: SkinIcon(url: w.iconUrl))),
-                  const SizedBox(height: 8),
-                  Row(children: [
-                    Expanded(
-                      child: Text(w.name,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
-                    ),
-                    Text('擁有 ${w.ownedCount} 款',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: none ? AppColors.muted : AppColors.text)),
-                  ]),
-                ],
-              ),
+        children: [
+          for (final (label, list) in groupByWeaponCategory(
+              weapons, (w) => w.category, (w) => w.categoryText)) ...[
+            SectionHeader(
+              key: ValueKey('weapon-section-$label'),
+              title: label,
+              trailing: Text('擁有 ${list.fold(0, (n, w) => n + w.ownedCount)} 款',
+                  style: TextStyle(color: AppColors.muted)),
             ),
-          );
-        },
+            ResponsiveGrid(
+              minTileWidth: 200,
+              childAspectRatio: 1.6,
+              mainAxisExtent: 140,
+              children: [for (final w in list) _card(context, w)],
+            ),
+            const SizedBox(height: 24),
+          ],
+        ],
       );
+
+  Widget _card(BuildContext context, WeaponSummary w) {
+    final none = w.ownedCount == 0;
+    return PanelCard(
+      key: ValueKey('weapon-${w.uuid}'),
+      onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute<void>(
+              builder: (_) => WeaponSkinsPage(
+                  weaponUuid: w.uuid, weaponName: w.name, launch: launch))),
+      child: Opacity(
+        // 沒有造型的槍枝變淡，但仍可點進去。
+        opacity: none ? 0.5 : 1,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: Center(child: SkinIcon(url: w.iconUrl))),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(
+                child: Text(w.name,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+              ),
+              Text('擁有 ${w.ownedCount} 款',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: none ? AppColors.muted : AppColors.text)),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// 某把槍擁有的造型。

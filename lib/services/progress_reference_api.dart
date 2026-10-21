@@ -35,7 +35,12 @@ class ProgressReferenceApi {
       weaponList.add(RefWeapon(
           uuid: weaponUuid,
           name: weaponName,
-          iconUrl: w['displayIcon'] as String?));
+          iconUrl: w['displayIcon'] as String?,
+          category: w['category'] as String? ?? '',
+          categoryText: switch (w['shopData']) {
+            {'categoryText': final String t} when t.isNotEmpty => t,
+            _ => null,
+          }));
       for (final skin in (w['skins'] as List<dynamic>? ?? const [])
           .cast<Map<String, dynamic>>()) {
         final skinUuid = _id(skin['uuid']);

@@ -59,12 +59,16 @@ class ResponsiveGridView extends StatelessWidget {
 class ResponsiveGrid extends StatelessWidget {
   final double minTileWidth;
   final double childAspectRatio;
+
+  /// 固定高度；設定時取代 [childAspectRatio]。
+  final double? mainAxisExtent;
   final List<Widget> children;
 
   const ResponsiveGrid({
     super.key,
     required this.minTileWidth,
     required this.childAspectRatio,
+    this.mainAxisExtent,
     required this.children,
   });
 
@@ -73,13 +77,16 @@ class ResponsiveGrid extends StatelessWidget {
     final style = context.appStyle;
     final spacing = style.gridSpacing;
     return LayoutBuilder(
-      builder: (context, constraints) => GridView.count(
-        crossAxisCount: columnsFor(
-            constraints.maxWidth, minTileWidth * style.tileWidthFactor,
-            spacing: spacing),
-        childAspectRatio: childAspectRatio,
-        mainAxisSpacing: spacing,
-        crossAxisSpacing: spacing,
+      builder: (context, constraints) => GridView(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: columnsFor(
+              constraints.maxWidth, minTileWidth * style.tileWidthFactor,
+              spacing: spacing),
+          childAspectRatio: childAspectRatio,
+          mainAxisExtent: mainAxisExtent,
+          mainAxisSpacing: spacing,
+          crossAxisSpacing: spacing,
+        ),
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         children: children,

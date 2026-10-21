@@ -71,12 +71,16 @@ class WeaponSummary {
   final String name;
   final String? iconUrl;
   final int ownedCount;
+  final String category;
+  final String? categoryText;
 
   const WeaponSummary(
       {required this.uuid,
       required this.name,
       this.iconUrl,
-      required this.ownedCount});
+      required this.ownedCount,
+      this.category = '',
+      this.categoryText});
 }
 
 /// 所有槍枝（含擁有 0 款）與擁有的造型數，依參考資料的槍枝順序。
@@ -93,7 +97,9 @@ List<WeaponSummary> weaponSummaries(Set<String> levels, ProgressReference ref) {
           uuid: w.uuid,
           name: w.name,
           iconUrl: w.iconUrl,
-          ownedCount: skinsByWeapon[w.uuid]?.length ?? 0),
+          ownedCount: skinsByWeapon[w.uuid]?.length ?? 0,
+          category: w.category,
+          categoryText: w.categoryText),
   ];
 }
 
