@@ -44,6 +44,7 @@ class _GamemodesPageState extends State<GamemodesPage> {
     return AppShell(
       currentRoute: '/gamemodes',
       title: '遊戲模式',
+      subtitle: _isLoading || _error != null ? null : '${_gamemodes.length} 種',
       child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null

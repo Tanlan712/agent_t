@@ -42,6 +42,7 @@ class WishlistPage extends StatelessWidget {
     return AppShell(
       currentRoute: '/wishlist',
       title: '願望清單',
+      subtitle: items.isEmpty ? null : '${items.length} 款',
       actions: [
         IconButton(
           icon: const Icon(Icons.add),

@@ -44,6 +44,7 @@ class _AgentsPageState extends State<AgentsPage> {
     return AppShell(
       currentRoute: '/agents',
       title: '角色',
+      subtitle: _isLoading || _error != null ? null : '${_agents.length} 位',
       child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null

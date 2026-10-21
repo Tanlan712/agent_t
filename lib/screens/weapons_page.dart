@@ -44,6 +44,7 @@ class _WeaponsPageState extends State<WeaponsPage> {
     return AppShell(
       currentRoute: '/weapons',
       title: '武器',
+      subtitle: _isLoading || _error != null ? null : '${_weapons.length} 把',
       child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null

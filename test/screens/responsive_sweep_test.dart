@@ -39,6 +39,52 @@ void main() {
     }
   }
 
+  testWidgets('矮視窗 1024×500 各頁不 overflow', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1024, 500);
+    addTearDown(tester.view.reset);
+    for (final route in routes) {
+      final h = await Harness.create(tester);
+      await tester.pumpWidget(h.wrap(
+          home: Navigator(
+              onGenerateRoute: (_) =>
+                  onGenerateAppRoute(RouteSettings(name: route))),
+          onGenerateRoute: onGenerateAppRoute));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull, reason: route);
+      await tester.pumpWidget(h.wrap(home: const SizedBox()));
+    }
+  });
+
+  for (final (name, page) in [
+    ('設定', const SettingsPage() as Widget),
+    ('登入', const RiotLoginPage() as Widget),
+  ]) {
+    testWidgets('$name頁 1440 寬內容不超過 760 且置中', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(1440, 900);
+      addTearDown(tester.view.reset);
+      final h = await Harness.create(tester);
+      await tester.pumpWidget(h.wrap(home: page));
+      await tester.pump();
+      final box = find
+          .ancestor(
+              of: find.byType(ListView).last,
+              matching: find.byType(ConstrainedBox))
+          .first;
+      final rect = tester.getRect(box);
+      expect(rect.width, lessThanOrEqualTo(760));
+      // 置中：內容區（扣掉側欄）的中線。
+      // 有側欄時以內容區（Expanded）為準；登入頁沒有側欄，以整個 Scaffold 為準。
+      final area = find.ancestor(of: box, matching: find.byType(Expanded));
+      final scaffold = tester.getRect(area.evaluate().isEmpty
+          ? find.byType(Scaffold).first
+          : area.first);
+      expect(rect.center.dx, closeTo(scaffold.center.dx, 40));
+    });
+  }
+
   testWidgets('登入頁不用 emoji，改用警示圖示', (tester) async {
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(home: const RiotLoginPage()));

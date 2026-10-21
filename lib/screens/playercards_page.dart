@@ -44,6 +44,8 @@ class _PlayerCardsPageState extends State<PlayerCardsPage> {
     return AppShell(
       currentRoute: '/playercards',
       title: '玩家卡片',
+      subtitle:
+          _isLoading || _error != null ? null : '${_playerCards.length} 張',
       child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null

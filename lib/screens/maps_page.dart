@@ -44,6 +44,7 @@ class _MapsPageState extends State<MapsPage> {
     return AppShell(
       currentRoute: '/maps',
       title: '地圖',
+      subtitle: _isLoading || _error != null ? null : '${_maps.length} 張',
       child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null

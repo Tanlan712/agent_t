@@ -62,7 +62,7 @@ class _SettingsPageState extends State<SettingsPage> {
       title: '設定',
       // 靠左與殼層標題對齊；單欄最大寬度 760。
       child: Align(
-        alignment: Alignment.topLeft,
+        alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 760),
           child: ListView(

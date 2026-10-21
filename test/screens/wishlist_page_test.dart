@@ -37,6 +37,13 @@ void main() {
     expect(find.text('現在上架中'), findsOneWidget);
   });
 
+  testWidgets('Bento：頁首副標顯示款數', (tester) async {
+    final h = await Harness.create(tester, wishlist: ['o', 'x']);
+    await tester.pumpWidget(h.wrap(home: WishlistPage(now: () => now)));
+    await tester.pumpAndSettle();
+    expect(find.text('2 款'), findsOneWidget);
+  });
+
   testWidgets('左滑刪除', (tester) async {
     final h = await Harness.create(tester, wishlist: ['o']);
     await tester.pumpWidget(h.wrap(home: WishlistPage(now: () => now)));

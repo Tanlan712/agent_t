@@ -44,6 +44,7 @@ class _BundlesPageState extends State<BundlesPage> {
     return AppShell(
       currentRoute: '/bundles',
       title: '組合包',
+      subtitle: _isLoading || _error != null ? null : '${_bundles.length} 組',
       child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
