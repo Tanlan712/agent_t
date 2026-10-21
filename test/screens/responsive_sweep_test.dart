@@ -7,6 +7,8 @@ import 'package:valorant_shop_tracker/screens/settings_page.dart';
 import 'package:valorant_shop_tracker/services/riot_api_key_manager.dart';
 import 'package:valorant_shop_tracker/shell/nav_items.dart';
 
+import 'package:valorant_shop_tracker/theme/theme_ids.dart';
+
 import '../app_harness.dart';
 
 /// MASTER.md 第 6 節：375／768／1024／1440 都不可以 overflow。
@@ -16,26 +18,31 @@ void main() {
   // 設定頁讀取 .env（只確認是否存在），測試用空內容，與 settings_page_test 相同。
   setUp(() => dotenv.testLoad(fileInput: ''));
 
-  for (final width in widths) {
-    for (final route in routes) {
-      testWidgets('$route @ ${width.toInt()} 不 overflow', (tester) async {
-        tester.view.devicePixelRatio = 1;
-        tester.view.physicalSize = Size(width, 900);
-        addTearDown(tester.view.reset);
-        final h = await Harness.create(tester);
-        await tester.pumpWidget(h.wrap(
-            home: Builder(builder: (c) {
-              return Navigator(
-                onGenerateRoute: (_) =>
-                    onGenerateAppRoute(RouteSettings(name: route)),
-              );
-            }),
-            onGenerateRoute: onGenerateAppRoute));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
-        expect(tester.takeException(), isNull);
-        await tester.pumpWidget(h.wrap(home: const SizedBox()));
-      });
+  // 規格 §0：每種風格（各自的預設明暗）都要通過。
+  for (final style in ThemeStyleId.values) {
+    for (final width in widths) {
+      for (final route in routes) {
+        testWidgets('${style.name} $route @ ${width.toInt()} 不 overflow',
+            (tester) async {
+          tester.view.devicePixelRatio = 1;
+          tester.view.physicalSize = Size(width, 900);
+          addTearDown(tester.view.reset);
+          final h = await Harness.create(tester);
+          await tester.pumpWidget(h.wrap(
+              choice: ThemeChoice(style: style),
+              home: Builder(builder: (c) {
+                return Navigator(
+                  onGenerateRoute: (_) =>
+                      onGenerateAppRoute(RouteSettings(name: route)),
+                );
+              }),
+              onGenerateRoute: onGenerateAppRoute));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 500));
+          expect(tester.takeException(), isNull);
+          await tester.pumpWidget(h.wrap(home: const SizedBox()));
+        });
+      }
     }
   }
 
@@ -78,9 +85,8 @@ void main() {
       // 置中：內容區（扣掉側欄）的中線。
       // 有側欄時以內容區（Expanded）為準；登入頁沒有側欄，以整個 Scaffold 為準。
       final area = find.ancestor(of: box, matching: find.byType(Expanded));
-      final scaffold = tester.getRect(area.evaluate().isEmpty
-          ? find.byType(Scaffold).first
-          : area.first);
+      final scaffold = tester.getRect(
+          area.evaluate().isEmpty ? find.byType(Scaffold).first : area.first);
       expect(rect.center.dx, closeTo(scaffold.center.dx, 40));
     });
   }
