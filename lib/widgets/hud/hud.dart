@@ -5,3 +5,5 @@ export 'hud_card.dart';
 export 'kpi_strip.dart';
 export 'misc.dart';
 export 'status_chip.dart';
+export 'bento_grid.dart';
+export 'page_header.dart';
