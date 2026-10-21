@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'providers/collection_provider.dart';
+import 'providers/login_prefetcher.dart';
 import 'providers/progress_provider.dart';
 import 'providers/catalog_provider.dart';
 import 'providers/match_detail_cache.dart';
@@ -62,6 +63,8 @@ Future<void> main() async {
   // 自己的收藏、等級、通行證與任務（只讀 GET，AGENTS.md 第 3 節）。
   final collection = CollectionProvider(riot, riotClient);
   final progress = ProgressProvider(riot, riotClient, ProgressReferenceApi());
+  // 登入後先在背景讀一次（依序、同時最多 2 個 Riot 請求）。
+  LoginPrefetcher(riot, collection, progress);
 
   runApp(
     MultiProvider(
