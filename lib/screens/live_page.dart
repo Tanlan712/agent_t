@@ -756,8 +756,7 @@ class _PregameRow extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text('Lv ${player.level}',
                         key: ValueKey('live-level-${player.puuid}'),
-                        style: TextStyle(
-                            color: AppColors.muted, fontSize: 12)),
+                        style: TextStyle(color: AppColors.muted, fontSize: 12)),
                   ],
                 ],
               ),

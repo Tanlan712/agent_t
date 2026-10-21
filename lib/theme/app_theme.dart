@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'app_fonts.dart';
 import 'app_palette.dart';
 import 'app_style.dart';
 import 'theme_ids.dart';
@@ -96,6 +97,7 @@ ThemeData buildAppTheme({
   final palette = AppPalette.resolve(choice);
   final style = AppStyle.of(choice.style);
   if (setCurrent) AppPalette.current = palette;
+  AppFonts.enabled = useGoogleFonts;
   final dark = choice.brightness == Brightness.dark;
   final scheme = (dark ? ColorScheme.dark : ColorScheme.light)(
     primary: palette.primary,

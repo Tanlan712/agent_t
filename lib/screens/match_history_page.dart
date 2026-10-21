@@ -283,11 +283,9 @@ class MatchCard extends StatelessWidget {
                 Text(map.name,
                     style: const TextStyle(fontWeight: FontWeight.bold)),
                 Text(queueName(s.queueId),
-                    style:
-                        TextStyle(color: AppColors.muted, fontSize: 12)),
+                    style: TextStyle(color: AppColors.muted, fontSize: 12)),
                 Text(formatMatchTime(entry.ref.startTime),
-                    style:
-                        TextStyle(color: AppColors.muted, fontSize: 12)),
+                    style: TextStyle(color: AppColors.muted, fontSize: 12)),
               ],
             ),
           ),
@@ -311,8 +309,7 @@ class MatchCard extends StatelessWidget {
                 Text('${s.kills} / ${s.deaths} / ${s.assists}'),
                 if (otherPlayer)
                   Text('ACS ${s.acs}',
-                      style: TextStyle(
-                          color: AppColors.muted, fontSize: 12)),
+                      style: TextStyle(color: AppColors.muted, fontSize: 12)),
                 if (s.rrChange case final rr?)
                   Text(formatRr(rr),
                       style: TextStyle(

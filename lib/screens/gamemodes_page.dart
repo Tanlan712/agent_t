@@ -130,8 +130,7 @@ class _GamemodesPageState extends State<GamemodesPage> {
                     const SizedBox(height: 4),
                     Text(
                       '時長: $duration',
-                      style:
-                          TextStyle(fontSize: 12, color: AppColors.muted),
+                      style: TextStyle(fontSize: 12, color: AppColors.muted),
                     ),
                   ],
                 ],

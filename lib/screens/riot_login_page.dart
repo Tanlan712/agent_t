@@ -98,8 +98,7 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
               const SizedBox(height: 16),
               if (riot.isLoggedIn && session != null) ...[
                 ListTile(
-                  leading:
-                      Icon(Icons.verified_user, color: AppColors.owned),
+                  leading: Icon(Icons.verified_user, color: AppColors.owned),
                   title: Text('已登入：${session.displayName}（${session.shard}）'),
                 ),
                 OutlinedButton(onPressed: riot.logout, child: const Text('登出')),

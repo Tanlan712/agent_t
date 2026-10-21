@@ -11,6 +11,7 @@ import 'nav/bottom_nav.dart';
 import 'nav/top_nav.dart';
 import 'side_nav.dart';
 import '../theme/app_style.dart';
+import '../widgets/theme/style_background.dart';
 import '../widgets/hud/page_header.dart';
 
 const appName = 'VALORANT 商店追蹤';
@@ -119,53 +120,56 @@ class AppShell extends StatelessWidget {
                 ),
               )
             : null,
-        body: Row(
-          children: [
-            if (side)
-              SideNav(
-                currentRoute: currentRoute,
-                // D 終端機一律是窄側欄。
-                extended: extended && style.nav != NavLayout.sideRail,
-                brand: appName,
-                onSelect: go,
-                footer: _RiotStatus(
-                    compact: !extended || style.nav == NavLayout.sideRail),
-              ),
-            if (side) const VerticalDivider(width: 1),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (top)
-                    TopNav(
-                      currentRoute: currentRoute,
-                      compact: !extended,
-                      layout: style.nav,
-                      brand: appName,
-                      onSelect: go,
-                      trailing:
-                          _RiotStatus(compact: !extended, inline: extended),
-                    ),
-                  if (!bottom)
-                    _Content(
-                      padding: horizontalPadding(width),
-                      maxWidth: maxWidth,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 24, bottom: 16),
-                        child: PageHeader(
-                            title: title,
-                            subtitle: subtitle,
-                            actions: actions,
-                            route: currentRoute),
+        body: StyleBackground(
+          style: style.id,
+          child: Row(
+            children: [
+              if (side)
+                SideNav(
+                  currentRoute: currentRoute,
+                  // D 終端機一律是窄側欄。
+                  extended: extended && style.nav != NavLayout.sideRail,
+                  brand: appName,
+                  onSelect: go,
+                  footer: _RiotStatus(
+                      compact: !extended || style.nav == NavLayout.sideRail),
+                ),
+              if (side) const VerticalDivider(width: 1),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (top)
+                      TopNav(
+                        currentRoute: currentRoute,
+                        compact: !extended,
+                        layout: style.nav,
+                        brand: appName,
+                        onSelect: go,
+                        trailing:
+                            _RiotStatus(compact: !extended, inline: extended),
                       ),
-                    ),
-                  // 一直放在樹中（不需要時是空的），跨斷點時結構不變。
-                  const ExpiryBanner(),
-                  Expanded(child: body),
-                ],
+                    if (!bottom)
+                      _Content(
+                        padding: horizontalPadding(width),
+                        maxWidth: maxWidth,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 24, bottom: 16),
+                          child: PageHeader(
+                              title: title,
+                              subtitle: subtitle,
+                              actions: actions,
+                              route: currentRoute),
+                        ),
+                      ),
+                    // 一直放在樹中（不需要時是空的），跨斷點時結構不變。
+                    const ExpiryBanner(),
+                    Expanded(child: body),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     });

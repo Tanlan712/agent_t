@@ -83,8 +83,7 @@ class WishlistPage extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (isOnSale)
-                            StatusChip(
-                                label: '現在上架中', color: AppColors.warn),
+                            StatusChip(label: '現在上架中', color: AppColors.warn),
                           IconButton(
                             tooltip: '移出願望清單',
                             icon: const Icon(Icons.close),

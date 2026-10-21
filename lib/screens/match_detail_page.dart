@@ -251,8 +251,7 @@ class _TeamTable extends StatelessWidget {
                       DataRow(
                         // 自己那一列較亮；其餘奇數列用淡斑馬紋。
                         color: p.isMe
-                            ? WidgetStatePropertyAll(
-                                AppColors.surfaceHigh)
+                            ? WidgetStatePropertyAll(AppColors.surfaceHigh)
                             : i.isOdd
                                 ? WidgetStatePropertyAll(
                                     AppColors.surfaceHigh.withOpacity(0.4))

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/app_fonts.dart';
 import '../../theme/app_style.dart';
 import '../../theme/app_theme.dart';
 import 'hud_card.dart';
@@ -129,7 +130,7 @@ class _TerminalLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mono = AppText.tabular(
-        const TextStyle(fontFamily: 'monospace', fontSize: 13, height: 1.6));
+        AppFonts.mono(const TextStyle(fontSize: 13, height: 1.6)));
     return Row(
       key: const ValueKey('kpi-line'),
       children: [

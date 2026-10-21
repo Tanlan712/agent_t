@@ -306,13 +306,12 @@ class _AgentsTab extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontWeight: FontWeight.w600)),
                       Text(a.role,
-                          style: TextStyle(
-                              color: AppColors.muted, fontSize: 12)),
+                          style:
+                              TextStyle(color: AppColors.muted, fontSize: 12)),
                     ],
                   ),
                 ),
-                if (a.isBase)
-                  StatusChip(label: '初始', color: AppColors.info),
+                if (a.isBase) StatusChip(label: '初始', color: AppColors.info),
               ],
             ),
           );

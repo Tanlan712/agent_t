@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../shell/nav_items.dart';
+import '../../theme/app_fonts.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_style.dart';
 import '../../theme/nav_labels_en.dart';
@@ -97,12 +98,10 @@ class PageHeader extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.clip,
                       softWrap: false,
-                      style: TextStyle(
-                          fontFamily: 'serif',
-                          fontStyle: FontStyle.italic,
+                      style: AppFonts.serif(TextStyle(
                           fontSize: 64,
                           height: 1,
-                          color: p.text.withOpacity(0.06))),
+                          color: p.text.withOpacity(0.06)))),
                 ),
               ),
             Row(
@@ -139,8 +138,8 @@ class PageHeader extends StatelessWidget {
             children: [
               if (en != null)
                 Text('[ ${en.toLowerCase()} ]',
-                    style: TextStyle(
-                        fontFamily: 'monospace', fontSize: 12, color: p.muted)),
+                    style:
+                        AppFonts.mono(TextStyle(fontSize: 12, color: p.muted))),
               Row(children: [
                 Flexible(child: titleText),
                 const SizedBox(width: 6),
@@ -156,11 +155,8 @@ class PageHeader extends StatelessWidget {
               if (number != null) ...[
                 Text(twoDigits(number),
                     key: const ValueKey('header-page-number'),
-                    style: TextStyle(
-                        fontFamily: 'serif',
-                        fontSize: 48,
-                        height: 1,
-                        color: p.primary)),
+                    style: AppFonts.serif(
+                        TextStyle(fontSize: 48, height: 1, color: p.primary))),
                 const SizedBox(width: 16),
               ],
             ],

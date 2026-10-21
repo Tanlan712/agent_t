@@ -92,8 +92,7 @@ class _ProgressPageState extends State<ProgressPage> {
                 accent: AppColors.loss,
                 child: Row(children: [
                   Expanded(
-                      child: Text(e,
-                          style: TextStyle(color: AppColors.error))),
+                      child: Text(e, style: TextStyle(color: AppColors.error))),
                   OutlinedButton(onPressed: p.refresh, child: const Text('重試')),
                 ]),
               ),
