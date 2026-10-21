@@ -29,7 +29,11 @@ void main() {
         shop: dailyShop(['o', 'p', 'i', 'r']), wishlist: ['o', 'x']);
     await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
     await tester.pumpAndSettle();
-    expect(find.text('今天有 1 個願望清單造型上架'), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byKey(const ValueKey('shop-wishlist-hits')),
+            matching: find.text('今天有 1 個願望清單造型上架')),
+        findsOneWidget);
     expect(find.text('★ 願望清單'), findsOneWidget);
     expect(find.text('剩餘 22 小時 0 分'), findsOneWidget);
   });
@@ -60,6 +64,8 @@ void main() {
     expect(find.text('每日商店'), findsOneWidget);
     expect(find.text('夜市'), findsOneWidget);
     expect(find.text('精選組合包'), findsOneWidget);
+    expect(find.byType(EmptyState), findsNWidgets(3));
+    expect(find.text('今天沒有願望清單造型'), findsOneWidget);
   });
 
   testWidgets('關閉標示願望清單時不顯示金框', (tester) async {
@@ -89,6 +95,8 @@ void riotTests() {
     await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
     await tester.pumpAndSettle();
     expect(find.text('登入 Riot 以自動同步'), findsOneWidget);
+    expect(find.byKey(const ValueKey('shop-login-hero')), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, '登入 Riot'), findsOneWidget);
   });
 
   testWidgets('已登入時顯示帳號、同步按鈕，同步後顯示錢包與已擁有', (tester) async {
@@ -116,6 +124,7 @@ void riotTests() {
     expect(kpi('3000'), findsOneWidget);
     // 已擁有造型數移到 KPI。
     expect(kpi('2'), findsOneWidget);
+    expect(find.byKey(const ValueKey('shop-login-hero')), findsNothing);
     expect(find.text('已擁有'), findsWidgets);
     expect(h.shop.shop.daily.first.skinUuid, 'skin-odin');
   });
@@ -165,14 +174,25 @@ void layoutTests() {
           tester.getTopLeft(find.byWidget(e.widget)).dy,
       ];
 
-  testWidgets('1400 寬：每日 4 款在同一列', (tester) async {
+  testWidgets('1400 寬：每日 4 款排成 2×2', (tester) async {
     setWidth(tester, 1400);
     final h = await Harness.create(tester, shop: shop);
     await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
     await tester.pumpAndSettle();
     final tops = cardTops(tester);
     expect(tops.length, 4);
-    expect(tops.toSet().length, 1);
+    expect(tops.toSet().length, 2);
+  });
+
+  testWidgets('1440 寬：每日商店與右欄 KPI 同一列', (tester) async {
+    setWidth(tester, 1440);
+    final h = await Harness.create(tester, shop: shop);
+    await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+    await tester.pumpAndSettle();
+    final daily = tester.getTopLeft(find.byKey(const ValueKey('shop-daily')));
+    final kpi = tester.getTopLeft(find.byKey(const ValueKey('shop-kpi')));
+    expect(daily.dy, kpi.dy);
+    expect(kpi.dx, greaterThan(daily.dx));
   });
 
   testWidgets('帳號列與每日商店標題之間有間距', (tester) async {
@@ -182,7 +202,8 @@ void layoutTests() {
     await tester.pumpAndSettle();
     final barBottom = tester
         .getBottomLeft(find.ancestor(
-            of: find.text('登入 Riot 以自動同步'), matching: find.byType(Card)))
+            of: find.text('登入 Riot 以自動同步'),
+            matching: find.byKey(const ValueKey('shop-login-hero'))))
         .dy;
     final headerTop = tester.getTopLeft(find.text('每日商店')).dy;
     expect(headerTop - barBottom, greaterThanOrEqualTo(16));

@@ -42,7 +42,7 @@ class _ShopKpi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final w = wallet;
-    return KpiStrip(key: const ValueKey('shop-kpi'), tiles: [
+    final tiles = [
       KpiTile(label: '商店刷新', value: daily),
       if (w != null) ...[
         KpiTile(label: 'VP', value: '${w.vp}'),
@@ -50,7 +50,18 @@ class _ShopKpi extends StatelessWidget {
         KpiTile(label: '王國幣', value: '${w.kingdom}'),
       ],
       if (owned != null) KpiTile(label: '已擁有造型', value: '$owned'),
-    ]);
+    ];
+    // 右欄直向堆疊；6 欄以下由 BentoGrid 換到下一列，仍是直向。
+    return Column(
+      key: const ValueKey('shop-kpi'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < tiles.length; i++) ...[
+          if (i > 0) const SizedBox(height: 12),
+          tiles[i],
+        ],
+      ],
+    );
   }
 }
 
@@ -77,104 +88,122 @@ class MyShopPage extends StatelessWidget {
     void edit(ShopSection section) =>
         Navigator.pushNamed(context, '/my-shop/edit', arguments: section);
 
+    final dailySection = _Section(
+      key: const ValueKey('shop-daily'),
+      title: '每日商店',
+      emptyIcon: Icons.storefront,
+      status: shop.daily.isEmpty
+          ? null
+          : dailyActive
+              ? formatRemaining(shop.dailyExpiresAt!.difference(t))
+              : '已過期，請更新',
+      onEdit: () => edit(ShopSection.daily),
+      children: [
+        if (shop.daily.isNotEmpty)
+          ResponsiveGrid(
+            minTileWidth: 300,
+            childAspectRatio: _cardAspect,
+            children: [
+              for (final e in shop.daily)
+                SkinCard(
+                  skin: catalog.skinById(e.skinUuid),
+                  price: e.price,
+                  highlighted: dailyActive && matched.contains(e.skinUuid),
+                  owned: riot.isOwned(e.skinUuid),
+                ),
+            ],
+          ),
+      ],
+    );
+
+    final nightSection = _Section(
+      title: '夜市',
+      emptyIcon: Icons.nightlight_outlined,
+      status: shop.nightMarket.isEmpty
+          ? null
+          : nightActive
+              ? formatRemaining(shop.nightMarketEndsAt!.difference(t))
+              : '已過期，請更新',
+      onEdit: () => edit(ShopSection.nightMarket),
+      children: [
+        if (shop.nightMarket.isNotEmpty)
+          ResponsiveGrid(
+            minTileWidth: 240,
+            childAspectRatio: _cardAspect,
+            children: [
+              for (final e in shop.nightMarket)
+                SkinCard(
+                  skin: catalog.skinById(e.skinUuid),
+                  price: e.discountedPrice,
+                  originalPrice: e.originalPrice,
+                  trailing: StatusChip(
+                      label:
+                          '-${_discount(e.originalPrice, e.discountedPrice)}%',
+                      color: AppColors.warn),
+                  highlighted: nightActive && matched.contains(e.skinUuid),
+                  owned: riot.isOwned(e.skinUuid),
+                ),
+            ],
+          ),
+      ],
+    );
+
+    final bundleSection = _Section(
+      title: '精選組合包',
+      emptyIcon: Icons.card_giftcard,
+      status: null,
+      onEdit: () => edit(ShopSection.featuredBundle),
+      children: [
+        if (shop.featuredBundle case final b?)
+          BundleTile(
+              bundle: catalog.bundleById(b.bundleUuid),
+              price: b.price,
+              banner: true),
+      ],
+    );
+
     return AppShell(
       currentRoute: '/',
       title: '我的商店',
+      subtitle: shop.daily.isNotEmpty && dailyActive
+          ? '刷新倒數 ${_compact(shop.dailyExpiresAt!.difference(t))}'
+          : null,
       child: CatalogGate(
         child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.only(bottom: 24),
           children: [
-            _ShopKpi(
-              daily: shop.daily.isEmpty
-                  ? '—'
-                  : dailyActive
-                      ? _compact(shop.dailyExpiresAt!.difference(t))
-                      : '已過期',
-              wallet: riot.wallet,
-              owned: riot.wallet == null ? null : riot.ownedSkinUuids.length,
-            ),
-            const SizedBox(height: 12),
-            const _RiotBar(),
-            const SizedBox(height: 24),
-            if (matched.isNotEmpty) ...[
-              Card(
-                color: wishlistGold.withOpacity(0.2),
-                child: ListTile(
-                  leading: const Icon(Icons.star, color: wishlistGold),
-                  title: Text('今天有 ${matched.length} 個願望清單造型上架'),
+            BentoGrid(children: [
+              BentoTile(
+                  span: 12,
+                  child: riot.isLoggedIn
+                      ? const _RiotBar()
+                      : _LoginHero(onManual: () => edit(ShopSection.daily))),
+              BentoTile(span: 8, child: dailySection),
+              BentoTile(
+                span: 4,
+                child: _ShopKpi(
+                  daily: shop.daily.isEmpty
+                      ? '—'
+                      : dailyActive
+                          ? _compact(shop.dailyExpiresAt!.difference(t))
+                          : '已過期',
+                  wallet: riot.wallet,
+                  owned:
+                      riot.wallet == null ? null : riot.ownedSkinUuids.length,
                 ),
               ),
-              const SizedBox(height: 24),
-            ],
-            _Section(
-              title: '每日商店',
-              status: shop.daily.isEmpty
-                  ? null
-                  : dailyActive
-                      ? formatRemaining(shop.dailyExpiresAt!.difference(t))
-                      : '已過期，請更新',
-              onEdit: () => edit(ShopSection.daily),
-              children: [
-                if (shop.daily.isNotEmpty)
-                  ResponsiveGrid(
-                    minTileWidth: 240,
-                    childAspectRatio: _cardAspect,
-                    children: [
-                      for (final e in shop.daily)
-                        SkinCard(
-                          skin: catalog.skinById(e.skinUuid),
-                          price: e.price,
-                          highlighted:
-                              dailyActive && matched.contains(e.skinUuid),
-                          owned: riot.isOwned(e.skinUuid),
-                        ),
-                    ],
-                  ),
-              ],
-            ),
-            _Section(
-              title: '夜市',
-              status: shop.nightMarket.isEmpty
-                  ? null
-                  : nightActive
-                      ? formatRemaining(shop.nightMarketEndsAt!.difference(t))
-                      : '已過期，請更新',
-              onEdit: () => edit(ShopSection.nightMarket),
-              children: [
-                if (shop.nightMarket.isNotEmpty)
-                  ResponsiveGrid(
-                    minTileWidth: 240,
-                    childAspectRatio: _cardAspect,
-                    children: [
-                      for (final e in shop.nightMarket)
-                        SkinCard(
-                          skin: catalog.skinById(e.skinUuid),
-                          price: e.discountedPrice,
-                          originalPrice: e.originalPrice,
-                          trailing: StatusChip(
-                              label:
-                                  '-${_discount(e.originalPrice, e.discountedPrice)}%',
-                              color: AppColors.warn),
-                          highlighted:
-                              nightActive && matched.contains(e.skinUuid),
-                          owned: riot.isOwned(e.skinUuid),
-                        ),
-                    ],
-                  ),
-              ],
-            ),
-            _Section(
-              title: '精選組合包',
-              status: null,
-              onEdit: () => edit(ShopSection.featuredBundle),
-              children: [
-                if (shop.featuredBundle case final b?)
-                  BundleTile(
-                      bundle: catalog.bundleById(b.bundleUuid),
-                      price: b.price,
-                      banner: true),
-              ],
-            ),
+              BentoTile(span: 8, child: nightSection),
+              BentoTile(
+                span: 4,
+                child: _WishlistHits(
+                  names: [
+                    for (final id in matched)
+                      catalog.skinById(id)?.name ?? '未知造型',
+                  ],
+                ),
+              ),
+              BentoTile(span: 12, child: bundleSection),
+            ]),
           ],
         ),
       ),
@@ -182,15 +211,105 @@ class MyShopPage extends StatelessWidget {
   }
 }
 
+/// 未登入時的登入大卡。
+class _LoginHero extends StatelessWidget {
+  final VoidCallback onManual;
+
+  const _LoginHero({required this.onManual});
+
+  @override
+  Widget build(BuildContext context) => PanelCard(
+        key: const ValueKey('shop-login-hero'),
+        accent: AppColors.primary,
+        padding: const EdgeInsets.all(20),
+        child: Wrap(
+          spacing: 16,
+          runSpacing: 12,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          alignment: WrapAlignment.spaceBetween,
+          children: [
+            const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.login, color: AppColors.primary, size: 28),
+                SizedBox(width: 16),
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('登入 Riot 以自動同步',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.w600)),
+                      SizedBox(height: 4),
+                      Text('自動讀取每日商店、夜市與錢包；也可以手動輸入商店內容',
+                          style:
+                              TextStyle(fontSize: 14, color: AppColors.muted)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              FilledButton(
+                onPressed: () => Navigator.pushNamed(context, '/riot-login'),
+                child: const Text('登入 Riot'),
+              ),
+              OutlinedButton(onPressed: onManual, child: const Text('手動輸入')),
+            ]),
+          ],
+        ),
+      );
+}
+
+/// 右下：今天上架的願望清單造型。
+class _WishlistHits extends StatelessWidget {
+  final List<String> names;
+
+  const _WishlistHits({required this.names});
+
+  @override
+  Widget build(BuildContext context) => PanelCard(
+        key: const ValueKey('shop-wishlist-hits'),
+        accent: names.isEmpty ? null : wishlistGold,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SectionHeader(title: '願望清單上架'),
+            if (names.isEmpty)
+              const Text('今天沒有願望清單造型', style: TextStyle(color: AppColors.muted))
+            else ...[
+              Text('今天有 ${names.length} 個願望清單造型上架',
+                  style: const TextStyle(
+                      color: wishlistGold, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              for (final n in names)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Row(children: [
+                    const Icon(Icons.star, size: 16, color: wishlistGold),
+                    const SizedBox(width: 6),
+                    Expanded(child: Text(n, overflow: TextOverflow.ellipsis)),
+                  ]),
+                ),
+            ],
+          ],
+        ),
+      );
+}
+
 class _Section extends StatelessWidget {
   final String title;
   final String? status;
+  final IconData emptyIcon;
   final VoidCallback onEdit;
   final List<Widget> children;
 
   const _Section({
+    super.key,
     required this.title,
     required this.status,
+    required this.emptyIcon,
     required this.onEdit,
     required this.children,
   });
@@ -198,24 +317,25 @@ class _Section extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final empty = children.isEmpty;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+    return PanelCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Container(width: 3, height: 18, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Text(title, style: Theme.of(context).textTheme.titleLarge),
+              Text(title,
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontSize: 18, fontWeight: FontWeight.w600)),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   empty ? '尚未輸入' : (status ?? ''),
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: status == '已過期，請更新'
-                        ? Theme.of(context).colorScheme.error
-                        : Theme.of(context).hintColor,
+                    color:
+                        status == '已過期，請更新' ? AppColors.error : AppColors.muted,
                   ),
                 ),
               ),
@@ -226,8 +346,14 @@ class _Section extends StatelessWidget {
               ),
             ],
           ),
-          if (children.isNotEmpty) const SizedBox(height: 12),
-          ...children,
+          const SizedBox(height: 12),
+          if (empty)
+            EmptyState(
+                icon: emptyIcon,
+                title: '還沒有資料',
+                message: '登入 Riot 自動同步，或按「新增」手動輸入')
+          else
+            ...children,
         ],
       ),
     );
@@ -251,20 +377,11 @@ class _RiotBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final riot = context.watch<RiotProvider>();
     final session = riot.session;
-    if (!riot.isLoggedIn || session == null) {
-      return Card(
-        child: ListTile(
-          leading: const Icon(Icons.login),
-          title: const Text('登入 Riot 以自動同步'),
-          subtitle: const Text('或在下方手動輸入商店內容'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.pushNamed(context, '/riot-login'),
-        ),
-      );
-    }
-    return Card(
+    // 未登入時由 _LoginHero 顯示。
+    if (session == null) return const SizedBox.shrink();
+    return PanelCard(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.zero,
         // Wrap：窄螢幕時同步按鈕自動換到下一行。
         child: Wrap(
           spacing: 16,
