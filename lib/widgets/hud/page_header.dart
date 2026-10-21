@@ -200,7 +200,7 @@ class _SlashClipper extends CustomClipper<Path> {
   bool shouldReclip(_SlashClipper oldClipper) => false;
 }
 
-/// D 終端機的方塊游標；減少動態效果時不閃。
+/// D 終端機的方塊游標：進入頁面後閃 4 次，之後保持亮著；減少動態效果時不閃。
 class BlinkingCursor extends StatefulWidget {
   final Color color;
 
@@ -212,17 +212,18 @@ class BlinkingCursor extends StatefulWidget {
 
 class _BlinkingCursorState extends State<BlinkingCursor>
     with SingleTickerProviderStateMixin {
+  static const _blinks = 4;
+
   late final AnimationController _c = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 1060));
+      vsync: this, duration: const Duration(milliseconds: 1060 * _blinks));
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (MediaQuery.disableAnimationsOf(context)) {
-      _c.stop();
-      _c.value = 0;
-    } else if (!_c.isAnimating) {
-      _c.repeat();
+      _c.value = 1;
+    } else if (_c.value == 0 && !_c.isAnimating) {
+      _c.forward();
     }
   }
 
@@ -235,8 +236,8 @@ class _BlinkingCursorState extends State<BlinkingCursor>
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
         animation: _c,
-        builder: (context, child) =>
-            Opacity(opacity: _c.value < 0.5 ? 1 : 0, child: child),
+        builder: (context, child) => Opacity(
+            opacity: (_c.value * _blinks) % 1 < 0.5 ? 1 : 0, child: child),
         child: Container(
             key: const ValueKey('header-cursor'),
             width: 10,

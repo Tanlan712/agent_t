@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'app_harness.dart';
@@ -10,6 +11,7 @@ void main() {
     await tester.pumpWidget(h.wrap(useAppRoutes: true));
     await tester.pumpAndSettle();
     expect(find.text('每日商店'), findsOneWidget);
-    expect(find.text('角色'), findsOneWidget);
+    // A 編輯海報：主要群組在頂部列，資料庫類頁面在 /// 選單。
+    expect(find.byKey(const ValueKey('nav-/matches')), findsOneWidget);
   });
 }

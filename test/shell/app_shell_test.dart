@@ -26,6 +26,23 @@ Widget shell() => const AppShell(
       child: Text('內容'),
     );
 
+/// 側欄的行為在 D 終端機（窄側欄）下測試；展開模式直接測 SideNav。
+const terminal = ThemeChoice(style: ThemeStyleId.terminal);
+
+Widget sideNavHost({required bool extended, Widget? footer}) => MaterialApp(
+      home: Scaffold(
+        body: Row(children: [
+          SideNav(
+            currentRoute: '/wishlist',
+            extended: extended,
+            brand: appName,
+            onSelect: (_) {},
+            footer: footer,
+          ),
+        ]),
+      ),
+    );
+
 void main() {
   testWidgets('400 寬：底部導覽 5 項、沒有 NavigationRail 與漢堡選單', (tester) async {
     setWidth(tester, 400);
@@ -76,7 +93,7 @@ void main() {
   testWidgets('900 寬：窄導覽列，只有圖示加提示', (tester) async {
     setWidth(tester, 900);
     final h = await Harness.create(tester);
-    await tester.pumpWidget(h.wrap(home: shell()));
+    await tester.pumpWidget(h.wrap(choice: terminal, home: shell()));
     expect(tester.widget<SideNav>(find.byType(SideNav)).extended, isFalse);
     expect(
         find.descendant(
@@ -85,21 +102,18 @@ void main() {
     expect(find.byIcon(Icons.menu), findsNothing);
   });
 
-  testWidgets('1100 寬：展開導覽列，分組標題與完整名稱', (tester) async {
+  testWidgets('SideNav 展開：分組標題與完整名稱', (tester) async {
     setWidth(tester, 1100);
-    final h = await Harness.create(tester);
-    await tester.pumpWidget(h.wrap(home: shell()));
-    expect(tester.widget<SideNav>(find.byType(SideNav)).extended, isTrue);
-    for (final t in ['主要', '資料庫', '其他', '玩家卡片', 'VALORANT 商店追蹤']) {
+    await tester.pumpWidget(sideNavHost(extended: true));
+    for (final t in ['主要', '資料庫', '其他', '玩家卡片', 'VALORANT 商店追蹤', '願望清單']) {
       expect(find.text(t), findsOneWidget, reason: t);
     }
-    expect(find.text('願望清單'), findsWidgets);
   });
 
   testWidgets('選中項目有 3px 紅色指示條', (tester) async {
     setWidth(tester, 1400);
     final h = await Harness.create(tester);
-    await tester.pumpWidget(h.wrap(home: shell()));
+    await tester.pumpWidget(h.wrap(choice: terminal, home: shell()));
     final bar = find.descendant(
         of: find.byKey(const ValueKey('nav-/wishlist')),
         matching: find.byKey(const ValueKey('nav-indicator')));
@@ -116,8 +130,8 @@ void main() {
   testWidgets('點側欄項目換頁', (tester) async {
     setWidth(tester, 1400);
     final h = await Harness.create(tester);
-    await tester
-        .pumpWidget(h.wrap(home: shell(), onGenerateRoute: onGenerateAppRoute));
+    await tester.pumpWidget(h.wrap(
+        choice: terminal, home: shell(), onGenerateRoute: onGenerateAppRoute));
     await tester.tap(find.byKey(const ValueKey('nav-/agents')));
     await tester.pumpAndSettle();
     expect(find.text('角色'), findsWidgets);
@@ -127,8 +141,8 @@ void main() {
   testWidgets('Tab 聚焦側欄項目後 Enter 換頁', (tester) async {
     setWidth(tester, 1400);
     final h = await Harness.create(tester);
-    await tester
-        .pumpWidget(h.wrap(home: shell(), onGenerateRoute: onGenerateAppRoute));
+    await tester.pumpWidget(h.wrap(
+        choice: terminal, home: shell(), onGenerateRoute: onGenerateAppRoute));
     // 依序：我的商店、願望清單（目前頁）、對戰紀錄。
     for (var i = 0; i < 3; i++) {
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
@@ -143,6 +157,7 @@ void main() {
     setWidth(tester, 1400);
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(
+        choice: terminal,
         home: MediaQuery(
             data: const MediaQueryData(
                 size: Size(1400, 900), disableAnimations: true),
@@ -154,11 +169,12 @@ void main() {
     expect(ink.splashFactory, NoSplash.splashFactory);
   });
 
-  testWidgets('側欄項目是按鈕語意；底部 Riot 狀態列在透明 Material 上', (tester) async {
+  testWidgets('側欄項目是按鈕語意；footer 在透明 Material 上', (tester) async {
     setWidth(tester, 1400);
     final handle = tester.ensureSemantics();
-    final h = await Harness.create(tester);
-    await tester.pumpWidget(h.wrap(home: shell()));
+    await tester.pumpWidget(sideNavHost(
+        extended: true,
+        footer: const ListTile(key: ValueKey('nav-riot'), title: Text('登入'))));
     final node = tester.getSemantics(find.descendant(
         of: find.byKey(const ValueKey('nav-/matches')),
         matching: find.text('對戰紀錄')));
@@ -166,7 +182,7 @@ void main() {
     final riot = find.byKey(const ValueKey('nav-riot'));
     final material = find.ancestor(of: riot, matching: find.byType(Material));
     final sideNav = find.byType(SideNav);
-    // riot 與 SideNav 之間要有一層 Material（ink 才畫在側欄底色之上）。
+    // footer 與 SideNav 之間要有一層 Material（ink 才畫在側欄底色之上）。
     expect(
         find.descendant(of: sideNav, matching: material.first), findsOneWidget);
     handle.dispose();

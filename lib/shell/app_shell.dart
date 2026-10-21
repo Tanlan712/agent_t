@@ -7,7 +7,10 @@ import '../providers/riot_provider.dart';
 import '../theme/app_theme.dart';
 import 'layout.dart';
 import 'nav_items.dart';
+import 'nav/bottom_nav.dart';
+import 'nav/top_nav.dart';
 import 'side_nav.dart';
+import '../theme/app_style.dart';
 import '../widgets/hud/page_header.dart';
 
 const appName = 'VALORANT 商店追蹤';
@@ -66,56 +69,94 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
+      final style = context.appStyle;
       final width = constraints.maxWidth;
       final mode = navModeFor(width);
-      final body = _Content(padding: horizontalPadding(width), child: child);
+      final maxWidth = style.contentMaxWidth ?? contentMaxWidth;
+      final body = _Content(
+          key: const ValueKey('shell-content'),
+          padding: horizontalPadding(width),
+          maxWidth: maxWidth,
+          child: child);
 
       final bottom = mode == NavMode.bottom;
       final extended = mode == NavMode.extended;
-      // 三種模式共用同一個樹結構（Scaffold > Row > Expanded > Column > Expanded），
+      final top = !bottom && _topLayouts.contains(style.nav);
+      final side = !bottom && !top;
+      void go(NavItem item) => _go(context, item);
+      // 所有模式共用同一個樹結構（Scaffold > Row > Expanded > Column > Expanded），
       // 只增減導覽欄與標題列；Flex 會從尾端對到同一個 Expanded，
-      // 跨斷點時內容子樹（捲動位置、頁面狀態）得以保留。
+      // 跨斷點與切換風格時內容子樹（捲動位置、頁面狀態）得以保留。
       return Scaffold(
         appBar: bottom
             ? AppBar(
                 title: Text(title),
                 actions: [...actions, const _RiotStatus(compact: true)])
             : null,
+        drawer: top && style.nav == NavLayout.topHamburger
+            ? Drawer(
+                child: _NavList(
+                    selectedRoute: canonicalRoute(currentRoute),
+                    items: navItems,
+                    onTap: (item) {
+                      Navigator.pop(context);
+                      go(item);
+                    }))
+            : null,
         bottomNavigationBar: bottom
-            ? NavigationBar(
-                selectedIndex: _bottomIndex,
-                onDestinationSelected: (i) => _onBottomTap(context, i),
-                destinations: [
-                  for (final r in bottomNavRoutes)
-                    for (final n in navItems.where((n) => n.route == r))
-                      NavigationDestination(icon: Icon(n.icon), label: n.label),
-                  const NavigationDestination(
-                      icon: Icon(Icons.more_horiz), label: '更多'),
-                ],
+            ? ThemedBottomNav(
+                bar: NavigationBar(
+                  selectedIndex: _bottomIndex,
+                  onDestinationSelected: (i) => _onBottomTap(context, i),
+                  destinations: [
+                    for (final r in bottomNavRoutes)
+                      for (final n in navItems.where((n) => n.route == r))
+                        NavigationDestination(
+                            icon: Icon(n.icon), label: n.label),
+                    const NavigationDestination(
+                        icon: Icon(Icons.more_horiz), label: '更多'),
+                  ],
+                ),
               )
             : null,
         body: Row(
           children: [
-            if (!bottom)
+            if (side)
               SideNav(
                 currentRoute: currentRoute,
-                extended: extended,
+                // D 終端機一律是窄側欄。
+                extended: extended && style.nav != NavLayout.sideRail,
                 brand: appName,
-                onSelect: (item) => _go(context, item),
-                footer: _RiotStatus(compact: !extended),
+                onSelect: go,
+                footer: _RiotStatus(
+                    compact: !extended || style.nav == NavLayout.sideRail),
               ),
-            if (!bottom) const VerticalDivider(width: 1),
+            if (side) const VerticalDivider(width: 1),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (top)
+                    TopNav(
+                      currentRoute: currentRoute,
+                      compact: !extended,
+                      layout: style.nav,
+                      brand: appName,
+                      onSelect: go,
+                      trailing:
+                          _RiotStatus(compact: !extended, inline: extended),
+                    ),
                   if (!bottom)
                     _Content(
                       padding: horizontalPadding(width),
+                      maxWidth: maxWidth,
                       child: Padding(
                         padding: const EdgeInsets.only(top: 24, bottom: 16),
                         child: PageHeader(
-                            title: title, subtitle: subtitle, actions: actions),
+                            title: title,
+                            subtitle: subtitle,
+                            actions: actions,
+                            route: currentRoute),
                       ),
                     ),
                   // 一直放在樹中（不需要時是空的），跨斷點時結構不變。
@@ -131,19 +172,31 @@ class AppShell extends StatelessWidget {
   }
 }
 
+const _topLayouts = {
+  NavLayout.topMinimalMenu,
+  NavLayout.topTabs,
+  NavLayout.topDropdowns,
+  NavLayout.topHamburger,
+};
+
 /// 置中並限制最大寬度的內容區。
 class _Content extends StatelessWidget {
   final double padding;
+  final double maxWidth;
   final Widget child;
 
-  const _Content({required this.padding, required this.child});
+  const _Content(
+      {super.key,
+      required this.padding,
+      required this.maxWidth,
+      required this.child});
 
   @override
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: contentMaxWidth),
+        constraints: BoxConstraints(maxWidth: maxWidth),
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: padding),
           child: child,
@@ -161,11 +214,34 @@ class _MoreSheet extends StatelessWidget {
   const _MoreSheet({required this.selectedRoute, required this.onTap});
 
   @override
+  Widget build(BuildContext context) => SafeArea(
+        child: SingleChildScrollView(
+          child: _NavList(
+            selectedRoute: selectedRoute,
+            items: [
+              for (final n in navItems)
+                if (!bottomNavRoutes.contains(n.route)) n
+            ],
+            onTap: onTap,
+          ),
+        ),
+      );
+}
+
+/// 依分組列出頁面（手機「更多」與 E 的側邊抽屜共用）。
+class _NavList extends StatelessWidget {
+  final String selectedRoute;
+  final List<NavItem> items;
+  final void Function(NavItem item) onTap;
+
+  const _NavList(
+      {required this.selectedRoute, required this.items, required this.onTap});
+
+  @override
   Widget build(BuildContext context) {
     final tiles = <Widget>[];
     NavGroup? group;
-    for (final item in navItems) {
-      if (bottomNavRoutes.contains(item.route)) continue;
+    for (final item in items) {
       if (item.group != group) {
         group = item.group;
         tiles.add(Padding(
@@ -182,11 +258,7 @@ class _MoreSheet extends StatelessWidget {
         onTap: () => onTap(item),
       ));
     }
-    return SafeArea(
-      child: SingleChildScrollView(
-        child: Column(mainAxisSize: MainAxisSize.min, children: tiles),
-      ),
-    );
+    return Column(mainAxisSize: MainAxisSize.min, children: tiles);
   }
 }
 
@@ -194,7 +266,10 @@ class _MoreSheet extends StatelessWidget {
 class _RiotStatus extends StatelessWidget {
   final bool compact;
 
-  const _RiotStatus({required this.compact});
+  /// 頂部列寬螢幕：圖示＋名稱的文字按鈕。
+  final bool inline;
+
+  const _RiotStatus({required this.compact, this.inline = false});
 
   @override
   Widget build(BuildContext context) {
@@ -208,6 +283,14 @@ class _RiotStatus extends StatelessWidget {
     );
     void open() => Navigator.pushNamed(context, '/riot-login');
 
+    if (inline) {
+      return TextButton.icon(
+        key: const ValueKey('nav-riot'),
+        onPressed: open,
+        icon: icon,
+        label: Text(label, overflow: TextOverflow.ellipsis),
+      );
+    }
     if (compact) {
       return Padding(
         padding: const EdgeInsets.only(bottom: 12),
@@ -263,8 +346,7 @@ class _ExpiryBannerState extends State<ExpiryBanner> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
         children: [
-          Icon(Icons.timer_outlined,
-              size: 18, color: AppColors.wishlistGold),
+          Icon(Icons.timer_outlined, size: 18, color: AppColors.wishlistGold),
           const SizedBox(width: 8),
           Expanded(child: Text('Riot 登入將在 $minutes 分鐘後過期')),
           TextButton(

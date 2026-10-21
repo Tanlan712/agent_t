@@ -62,8 +62,7 @@ class SideNav extends StatelessWidget {
                         color: AppColors.primary,
                         fontSize: 18,
                         fontWeight: FontWeight.bold))
-                : Icon(Icons.local_fire_department,
-                    color: AppColors.primary),
+                : Icon(Icons.local_fire_department, color: AppColors.primary),
           ),
           Expanded(
             child: ListView(
