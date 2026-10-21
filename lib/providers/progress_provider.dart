@@ -21,6 +21,8 @@ class ProgressProvider with ChangeNotifier {
   String? _error;
   String? _loadedFor;
   bool _isLoading = false;
+  bool _refLoading = false;
+  String? _refError;
   bool _disposed = false;
 
   ProgressProvider(this._riot, this._client, this._api,
@@ -33,6 +35,9 @@ class ProgressProvider with ChangeNotifier {
   ContractsSnapshot? get contracts => _contracts;
   ProgressReference? get ref => _ref;
   String? get error => _error;
+
+  /// 參考資料下載失敗的訊息（收藏頁用）。
+  String? get refError => _refError;
   bool get isLoading => _isLoading;
 
   String? get _puuid => _riot.isLoggedIn ? _riot.session?.puuid : null;
@@ -51,7 +56,8 @@ class ProgressProvider with ChangeNotifier {
     final puuid = _puuid;
     final s = _riot.session;
     if (puuid == null || s == null || _isLoading) return;
-    if (_loadedFor == puuid && _error == null) return;
+    // 已為目前帳號載入過就不重抓（失敗時用 refresh 重試），避免畫面重建時反覆請求。
+    if (_loadedFor == puuid) return;
     _isLoading = true;
     _error = null;
     _loadedFor = puuid;
@@ -88,6 +94,20 @@ class ProgressProvider with ChangeNotifier {
     }
     if (_puuid == puuid) _error = errors.isEmpty ? null : errors.join('；');
     _isLoading = false;
+    _notify();
+  }
+
+  /// 只確保公開參考資料已下載（收藏頁用）；不送 Riot 請求。
+  Future<void> ensureReference() async {
+    if (_ref != null || _refLoading) return;
+    _refLoading = true;
+    try {
+      _ref = await _api.fetch();
+      _refError = null;
+    } catch (_) {
+      _refError = '無法下載顯示資料';
+    }
+    _refLoading = false;
     _notify();
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'models/match_models.dart';
 import 'screens/agents_page.dart';
 import 'screens/bundles_page.dart';
+import 'screens/collection_page.dart';
 import 'screens/gamemodes_page.dart';
 import 'screens/live_page.dart';
 import 'screens/maps_page.dart';
@@ -27,6 +28,7 @@ final Map<String, WidgetBuilder> _topLevel = {
   '/matches': (_) => const MatchHistoryPage(),
   '/live': (_) => const LivePage(),
   '/players': (_) => const SeenPlayersPage(),
+  '/collection': (_) => const CollectionPage(),
   '/agents': (_) => const AgentsPage(),
   '/weapons': (_) => const WeaponsPage(),
   '/maps': (_) => const MapsPage(),

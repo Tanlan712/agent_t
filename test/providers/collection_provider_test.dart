@@ -103,6 +103,17 @@ void main() {
     expect(calls, CollectionProvider.types.length * 2);
   });
 
+  test('有分類失敗時，再次 load 不會反覆請求（重試要用 refresh）', () async {
+    var calls = 0;
+    final (p, _, _) = await make(riotClient(
+        entitlementStatus: {ItemTypes.spray: 500},
+        onEntitlement: (_) => calls++));
+    await p.load();
+    await p.load();
+    expect(calls, CollectionProvider.types.length);
+    expect(p.errors.keys, [ItemTypes.spray]);
+  });
+
   test('登出時清空，不留前一個帳號的資料', () async {
     final (p, riot, _) = await make(riotClient(entitlements: {
       ItemTypes.spray: ['spray-1'],

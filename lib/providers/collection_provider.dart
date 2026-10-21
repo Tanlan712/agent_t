@@ -50,12 +50,12 @@ class CollectionProvider with ChangeNotifier {
     _notify();
   }
 
-  /// 已為目前帳號載入且沒有錯誤時不重抓。
+  /// 已為目前帳號載入過就不重抓（失敗的分類用 [refresh] 重試），避免畫面重建時反覆請求。
   Future<void> load() async {
     final puuid = _puuid;
     final s = _riot.session;
     if (puuid == null || s == null || _isLoading) return;
-    if (_loadedFor == puuid && _errors.isEmpty) return;
+    if (_loadedFor == puuid) return;
     _isLoading = true;
     _errors.clear();
     _loadedFor = puuid;

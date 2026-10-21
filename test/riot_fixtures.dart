@@ -107,6 +107,7 @@ MockClient riotClient({
   int contractsStatus = 200,
   Map<String, dynamic>? contracts,
   void Function(String path)? onEntitlement,
+  List<String>? skinLevels,
 }) {
   final throttled = <String, int>{};
   final dropped = <String, int>{};
@@ -341,8 +342,13 @@ MockClient riotClient({
         return json({
           'ItemTypeID': skinLevelType,
           'Entitlements': [
-            {'TypeID': skinLevelType, 'ItemID': 'lvl-odin'},
-            {'TypeID': skinLevelType, 'ItemID': 'lvl-not-in-catalog'},
+            if (skinLevels != null)
+              for (final id in skinLevels)
+                {'TypeID': skinLevelType, 'ItemID': id},
+            if (skinLevels == null) ...[
+              {'TypeID': skinLevelType, 'ItemID': 'lvl-odin'},
+              {'TypeID': skinLevelType, 'ItemID': 'lvl-not-in-catalog'},
+            ],
           ],
         });
       }

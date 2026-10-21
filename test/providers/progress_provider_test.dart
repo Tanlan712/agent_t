@@ -71,6 +71,16 @@ void main() {
     expect(api.calls, 1);
   });
 
+  test('ensureReference 只下載公開參考資料，不送 Riot 請求', () async {
+    final (p, _, api, requests) = await make();
+    final n = requests.length;
+    await p.ensureReference();
+    await p.ensureReference();
+    expect(p.ref, isNotNull);
+    expect(api.calls, 1);
+    expect(requests.length, n);
+  });
+
   test('登出時清空 Riot 資料', () async {
     final (p, riot, _, _) = await make();
     await p.load();
