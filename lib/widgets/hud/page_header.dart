@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../providers/settings_provider.dart';
 
 import '../../shell/nav_items.dart';
 import '../../theme/app_fonts.dart';
@@ -28,7 +31,10 @@ class PageHeader extends StatelessWidget {
     final style = context.appStyle;
     final p = context.palette;
     final en = route == null ? null : navLabelsEn[canonicalRoute(route!)];
-    final number = navNumberOf(route);
+    // 編號跟左側導覽一致（依自訂順序）；沒有 SettingsProvider（單獨測試）時用預設順序。
+    final order = Provider.of<SettingsProvider?>(context)?.settings.navOrder ??
+        const <String>[];
+    final number = navNumberOf(route, order);
     final titleText = Text(title,
         key: const ValueKey('header-title'),
         maxLines: 1,

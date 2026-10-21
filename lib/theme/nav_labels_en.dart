@@ -18,10 +18,11 @@ const Map<String, String> navLabelsEn = {
   '/settings': 'CONFIG',
 };
 
-/// 路由在導覽中的序號（從 1 開始）；不在導覽中時為 null。
-int? navNumberOf(String? route) {
+/// 路由在導覽中的序號（從 1 開始，依使用者自訂的 [order]）；不在導覽中時為 null。
+int? navNumberOf(String? route, [List<String> order = const []]) {
   if (route == null) return null;
-  final i = navItems.indexWhere((n) => n.route == canonicalRoute(route));
+  final i = orderedNavItems(order)
+      .indexWhere((n) => n.route == canonicalRoute(route));
   return i < 0 ? null : i + 1;
 }
 

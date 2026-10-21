@@ -123,15 +123,17 @@ class _EvaLayerState extends State<EvaLayer> {
     EvaLayer._pendingTitleCard = null;
     if (!widget.enabled) return;
     if (!context.read<SettingsProvider>().settings.evaTitleCards) return;
-    if (navNumberOf(route) == null) return;
     final settings = context.read<SettingsProvider>().settings;
+    // 話數＝這一頁在左側導覽的編號（依自訂順序）。
+    final number = navNumberOf(route, settings.navOrder);
+    if (number == null) return;
     final story = evaStoryNames[route];
     _show(
         TitleCardOverlay(
-            episode: episodeOf(settings),
+            episode: number,
             finale: isFinale(settings),
             route: route,
-            pageCode: 'EPISODE:${twoDigits(episodeOf(settings))} / '
+            pageCode: 'EPISODE:${twoDigits(number)} / '
                 '${story?.$2 ?? navLabelsEn[route] ?? ''}'),
         const Duration(milliseconds: 600));
   }

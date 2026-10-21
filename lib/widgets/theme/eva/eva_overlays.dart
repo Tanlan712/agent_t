@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import '../../../theme/app_fonts.dart';
 import '../../../theme/app_palette.dart';
 import '../../../theme/eva_names.dart';
-import '../../../theme/nav_labels_en.dart';
 import '../../../theme/theme_ids.dart';
 import 'eva_mincho.dart';
 
@@ -266,15 +265,8 @@ class SyncOverlay extends StatelessWidget {
   }
 }
 
-/// 某一頁在第 [episode] 話的標題：依話數＋頁面序號錯開，
-/// 同一天每頁都不同（導覽項目少於 26 個），隔天每頁也換一句。
-(String, String) pageEpisodeTitle(int episode, String route) {
-  final n = evaEpisodeTitles.length;
-  final page = (navNumberOf(route) ?? 1) - 1;
-  return evaEpisodeTitles[((episode - 1) + page) % n];
-}
-
-/// R2：切頁標題卡：今天這一話、這一頁的原創標題（規格 §4.5），下方是頁名代碼行；終劇後顯示「終劇」。
+/// R2：切頁標題卡：「第 N 話」的 N 是這一頁在左側導覽的編號，標題是這一頁的專屬標題
+/// （[evaPageTitles]），下方是頁名代碼行；終劇後顯示「終劇」。
 class TitleCardOverlay extends StatelessWidget {
   final int episode;
   final bool finale;
@@ -291,7 +283,7 @@ class TitleCardOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final (big, small) = pageEpisodeTitle(episode.clamp(1, 26), route);
+    final (big, small) = evaPageTitles[route] ?? evaEpisodeTitles.first;
     return ColoredBox(
       color: p.background,
       child: Center(

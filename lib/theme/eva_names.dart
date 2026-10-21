@@ -48,6 +48,24 @@ const Map<String, String> navLabelsDe = {
   '/settings': 'MAGI-Konfiguration',
 };
 
+/// 每一頁專屬的標題卡標題：（大詞, 小詞），對應頁面內容（使用者決定 2026-10-21）。
+const Map<String, (String, String)> evaPageTitles = {
+  '/': ('補給線', '開通'),
+  '/wishlist': ('願望', '之清單'),
+  '/matches': ('交戰', '記錄'),
+  '/live': ('迎擊', '態勢'),
+  '/players': ('接觸', '者名冊'),
+  '/collection': ('格納庫', '深處'),
+  '/progress': ('育成', '計畫'),
+  '/agents': ('適格者', '檔案'),
+  '/weapons': ('兵裝', '點檢'),
+  '/maps': ('作戰', '區域'),
+  '/bundles': ('補給包', '到著'),
+  '/gamemodes': ('作戰', '形態'),
+  '/playercards': ('識別證', '發行'),
+  '/settings': ('MAGI', '設定'),
+};
+
 /// 26 話的原創標題：（大詞, 小詞），用於 L 形混排的標題卡。
 const List<(String, String)> evaEpisodeTitles = [
   ('起動', '之日'),

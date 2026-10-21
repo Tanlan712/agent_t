@@ -208,8 +208,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.byType(TitleCardOverlay), findsOneWidget);
-    // 話數是劇集進度（新設定為第 1 話），不是導覽順序。
-    expect(find.text('第 壱 話'), findsOneWidget);
+    // 話數是這一頁在左側導覽的編號（使用者決定 2026-10-21）：對戰紀錄是第 3 項。
+    expect(find.text('第 参 話'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(TitleCardOverlay), findsNothing);
   });

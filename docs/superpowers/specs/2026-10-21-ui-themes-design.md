@@ -191,7 +191,7 @@ E 另有裝飾漸層 `decor`：粉 F7A1C4、紫 B9A7F5、藍 8FC9F7（只用在�
 | 項目 | 內容 | 資料 |
 |---|---|---|
 | 故事化副名 | 頁首代碼行與英文標顯示故事名；**主標題仍是原本的中文頁名**。商店＝補給線 SUPPLY LINE、願望清單＝補完目標 TARGET LIST、對戰紀錄＝作戰記錄 OPERATION LOG、即時對局＝迎擊態勢 INTERCEPT、遇過的玩家＝接觸記錄 CONTACT LOG、我的收藏＝格納庫 HANGAR、通行證與任務＝育成計畫 TRAINING PLAN、角色＝適格者資料 PILOT FILE、武器＝兵裝 ARMAMENT、地圖＝作戰區域 SECTOR、組合包＝補給包 SUPPLY PACK、遊戲模式＝作戰形態 OPERATION TYPE、玩家卡片＝識別證 ID CARD、設定＝MAGI 設定 MAGI CONFIG | `lib/theme/eva_names.dart` 對照表 |
-| 劇集進度 | 每個「有打開 App 的日子」前進一話（同一天不重複），最多 26 話，之後為「終劇」；R2 標題卡顯示今天這一話的原創標題（26 個標題寫在對照表）；使用者決定（2026-10-21）每頁不同：依「話數＋頁面序號」錯開選句，同一天各頁不重複、隔天換句 | `evaEpisodeDays`、`evaLastOpenDate` |
+| 劇集進度 | 每個「有打開 App 的日子」前進一話（同一天不重複），最多 26 話，之後為「終劇」；R2 標題卡顯示今天這一話的原創標題（26 個標題寫在對照表）；使用者決定（2026-10-21，取代先前的錯開選句）：標題卡的「第 N 話」＝該頁在左側導覽的編號（依自訂順序），標題是每頁專屬、對應頁面內容的 `evaPageTitles`；劇集進度只用於故事層與終劇 | `evaEpisodeDays`、`evaLastOpenDate` |
 | 補完計畫進捗 | 願望清單中已擁有的比例，顯示在願望清單頁首（由殼層的 PageHeader 依路由顯示）與機密文件；收藏尚未載入時顯示 `— %` | `WishlistProvider`＋已載入的 `CollectionProvider` |
 | 使徒接近 | 見 E3 | 商店資料 |
 | 適格者登錄 | Riot 狀態顯示為「適格者 ○○ 登錄済」；未登入為「適格者 未登錄」 | `RiotProvider` |

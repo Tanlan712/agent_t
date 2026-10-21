@@ -35,28 +35,41 @@ void main() {
     return h;
   }
 
-  test('每一頁的標題卡都不一樣，隔天也會換', () {
+  test('每一頁都有對應內容的專屬標題，彼此不同', () {
     final routes = [for (final n in navItems) n.route];
-    for (final ep in [1, 12, 26]) {
-      final titles = {for (final r in routes) pageEpisodeTitle(ep, r)};
-      expect(titles, hasLength(routes.length), reason: '第 $ep 話');
-    }
     for (final r in routes) {
-      expect(pageEpisodeTitle(1, r), isNot(pageEpisodeTitle(2, r)), reason: r);
-      expect(evaEpisodeTitles, contains(pageEpisodeTitle(1, r)));
+      expect(evaPageTitles[r], isNotNull, reason: r);
     }
+    expect(
+        {for (final r in routes) evaPageTitles[r]}, hasLength(routes.length));
+    // 即時對局是迎擊，不是夜市。
+    expect(evaPageTitles['/live']!.$1, '迎擊');
+    expect(evaPageTitles['/matches']!.$1, '交戰');
   });
 
-  testWidgets('切頁標題卡顯示今天這一話、這一頁的原創標題', (tester) async {
+  testWidgets('標題卡的話數跟左側導覽的編號一致，標題對應頁面', (tester) async {
     final h = await pump(tester, routes: true);
     await h.settings.updateEva((s) => s.copyWith(evaEpisodeDays: 12));
-    await tester.tap(find.byKey(const ValueKey('nav-/matches')));
+    await tester.tap(find.byKey(const ValueKey('nav-/live')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.byType(TitleCardOverlay), findsOneWidget);
-    expect(find.text('第 拾弐 話'), findsOneWidget);
-    expect(find.text(pageEpisodeTitle(12, '/matches').$1), findsOneWidget);
-    expect(find.text('EPISODE:12 / OPERATION LOG'), findsOneWidget);
+    // 即時對局在導覽第 4 項。
+    expect(find.text('第 肆 話'), findsOneWidget);
+    expect(find.text('迎擊'), findsOneWidget);
+    expect(find.text('EPISODE:04 / INTERCEPT'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('自訂選單順序後，話數跟著左側的新編號', (tester) async {
+    final h = await pump(tester, routes: true);
+    await h.settings.setNavOrder(const ['/live', '/']);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('nav-/live')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('第 壱 話'), findsOneWidget);
+    expect(find.text('EPISODE:01 / INTERCEPT'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
   });
 
