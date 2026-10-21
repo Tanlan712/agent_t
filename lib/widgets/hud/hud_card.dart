@@ -60,6 +60,30 @@ class _PanelCardState extends State<PanelCard> {
               height: 2,
               color: palette.primary),
         ),
+      if (style.card == CardVariant.evaTab)
+        Positioned(
+          left: 0,
+          top: 0,
+          child: Container(
+              key: const ValueKey('panel-eva-tab'),
+              width: 28,
+              height: 6,
+              color: palette.primary),
+        ),
+      if (style.card == CardVariant.evaBracket)
+        for (final (top, left) in const [
+          (true, true),
+          (true, false),
+          (false, true),
+          (false, false),
+        ])
+          Positioned(
+            top: top ? 2 : null,
+            bottom: top ? null : 2,
+            left: left ? 2 : null,
+            right: left ? null : 2,
+            child: _Crosshair(color: palette.frame ?? palette.primary),
+          ),
       if (style.card == CardVariant.cornerMarks)
         for (final (top, left) in const [
           (true, true),
@@ -111,11 +135,51 @@ class _PanelCardState extends State<PanelCard> {
         borderRadius: radius,
         border: flat
             ? null
-            : Border.all(color: hot ? palette.muted : palette.outline),
+            : Border.all(
+                color: hot
+                    ? palette.muted
+                    : style.card == CardVariant.evaTab
+                        ? palette.primary
+                        : palette.outline),
       ),
       child: content,
     );
   }
+}
+
+/// EVA 卡片四角的小十字。
+class _Crosshair extends StatelessWidget {
+  final Color color;
+
+  const _Crosshair({required this.color});
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        key: const ValueKey('eva-crosshair'),
+        width: 9,
+        height: 9,
+        child: CustomPaint(painter: _CrossPainter(color)),
+      );
+}
+
+class _CrossPainter extends CustomPainter {
+  final Color color;
+
+  _CrossPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size s) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1;
+    canvas.drawLine(
+        Offset(s.width / 2, 0), Offset(s.width / 2, s.height), paint);
+    canvas.drawLine(
+        Offset(0, s.height / 2), Offset(s.width, s.height / 2), paint);
+  }
+
+  @override
+  bool shouldRepaint(_CrossPainter old) => old.color != color;
 }
 
 /// 四角對位標記（D 終端機）。

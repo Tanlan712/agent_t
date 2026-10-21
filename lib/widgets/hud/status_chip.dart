@@ -22,11 +22,15 @@ class StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 文字往主要文字色混 30%：疊在 15% 底色上，所有主題的對比都 ≥ 4.5。
-    final fg = Color.lerp(color, context.palette.text, 0.3)!;
+    final eva = context.appStyle.id.isEva;
+    // EVA：實心底＋底色文字（像 LIVE 徽章）；語意色對 background 的對比已測（≥ 4.5）。
+    final fg = eva
+        ? context.palette.background
+        : Color.lerp(color, context.palette.text, 0.3)!;
     Widget chip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: eva ? color : color.withOpacity(0.15),
         border: Border.all(color: color),
         borderRadius: BorderRadius.circular(switch (context.appStyle.id) {
           ThemeStyleId.editorial ||
@@ -34,6 +38,10 @@ class StatusChip extends StatelessWidget {
           ThemeStyleId.terminal =>
             0,
           ThemeStyleId.dreamy => 999,
+          ThemeStyleId.evaAlert ||
+          ThemeStyleId.evaMonitor ||
+          ThemeStyleId.evaFusion =>
+            0,
           _ => 2,
         }),
       ),

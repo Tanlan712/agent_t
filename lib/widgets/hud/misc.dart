@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/app_style.dart';
 import '../../theme/app_theme.dart';
+import '../theme/eva/eva_bracket.dart';
 
 /// 區塊標題：18px 標題＋右側動作。
 class SectionHeader extends StatelessWidget {
@@ -10,7 +12,22 @@ class SectionHeader extends StatelessWidget {
   const SectionHeader({super.key, required this.title, this.trailing});
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context) {
+    final style = context.appStyle;
+    if (style.header == HeaderVariant.evaMonitor ||
+        style.header == HeaderVariant.evaFusion) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(children: [
+          Expanded(child: EvaBracketTitle(title: title)),
+          if (trailing != null) trailing!,
+        ]),
+      );
+    }
+    return _plain(context);
+  }
+
+  Widget _plain(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: Row(
           children: [

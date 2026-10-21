@@ -5,6 +5,7 @@ import '../../theme/app_fonts.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_style.dart';
 import '../../theme/nav_labels_en.dart';
+import '../theme/eva/eva_header.dart';
 
 /// 頁首：標題、可選副標、右側動作；版型依目前風格（AppStyle.header）。
 /// [route] 由殼層傳入，用來取英文名與導覽序號；不在導覽中的頁面可省略。
@@ -175,7 +176,8 @@ class PageHeader extends StatelessWidget {
       case HeaderVariant.evaAlert:
       case HeaderVariant.evaMonitor:
       case HeaderVariant.evaFusion:
-        return row(const [], titleBlock());
+        return EvaPageHeader(
+            title: title, subtitle: subtitle, actions: actions, route: route);
     }
   }
 }
