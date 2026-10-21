@@ -100,18 +100,25 @@ class MyShopPage extends StatelessWidget {
       onEdit: () => edit(ShopSection.daily),
       children: [
         if (shop.daily.isNotEmpty)
-          ResponsiveGrid(
-            minTileWidth: 300,
-            childAspectRatio: _cardAspect,
-            children: [
-              for (final e in shop.daily)
-                SkinCard(
-                  skin: catalog.skinById(e.skinUuid),
-                  price: e.price,
-                  highlighted: dailyActive && matched.contains(e.skinUuid),
-                  owned: riot.isOwned(e.skinUuid),
-                ),
-            ],
+          // 每日 4 款：可用寬度 ≥ 360 時固定 2×2，否則單欄。
+          LayoutBuilder(
+            builder: (context, c) => GridView.count(
+              crossAxisCount: c.maxWidth >= 360 ? 2 : 1,
+              childAspectRatio: _cardAspect,
+              mainAxisSpacing: gridSpacing,
+              crossAxisSpacing: gridSpacing,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                for (final e in shop.daily)
+                  SkinCard(
+                    skin: catalog.skinById(e.skinUuid),
+                    price: e.price,
+                    highlighted: dailyActive && matched.contains(e.skinUuid),
+                    owned: riot.isOwned(e.skinUuid),
+                  ),
+              ],
+            ),
           ),
       ],
     );
@@ -196,6 +203,7 @@ class MyShopPage extends StatelessWidget {
               BentoTile(
                 span: 4,
                 child: _WishlistHits(
+                  enabled: highlight,
                   names: [
                     for (final id in matched)
                       catalog.skinById(id)?.name ?? '未知造型',
@@ -265,8 +273,9 @@ class _LoginHero extends StatelessWidget {
 /// 右下：今天上架的願望清單造型。
 class _WishlistHits extends StatelessWidget {
   final List<String> names;
+  final bool enabled;
 
-  const _WishlistHits({required this.names});
+  const _WishlistHits({required this.names, required this.enabled});
 
   @override
   Widget build(BuildContext context) => PanelCard(
@@ -276,7 +285,9 @@ class _WishlistHits extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SectionHeader(title: '願望清單上架'),
-            if (names.isEmpty)
+            if (!enabled)
+              const Text('已關閉願望清單標示', style: TextStyle(color: AppColors.muted))
+            else if (names.isEmpty)
               const Text('今天沒有願望清單造型', style: TextStyle(color: AppColors.muted))
             else ...[
               Text('今天有 ${names.length} 個願望清單造型上架',

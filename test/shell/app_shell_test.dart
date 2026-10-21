@@ -135,6 +135,21 @@ void main() {
     expect(find.text('內容'), findsNothing);
   });
 
+  testWidgets('減少動態時側欄項目沒有淡入與水波', (tester) async {
+    setWidth(tester, 1400);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(
+        home: MediaQuery(
+            data: const MediaQueryData(
+                size: Size(1400, 900), disableAnimations: true),
+            child: shell())));
+    final ink = tester.widget<InkWell>(find.descendant(
+        of: find.byKey(const ValueKey('nav-/matches')),
+        matching: find.byType(InkWell)));
+    expect(ink.hoverDuration, Duration.zero);
+    expect(ink.splashFactory, NoSplash.splashFactory);
+  });
+
   testWidgets('1440 寬頁首標題 28px', (tester) async {
     setWidth(tester, 1440);
     final h = await Harness.create(tester);

@@ -28,6 +28,7 @@ class _PanelCardState extends State<PanelCard> {
   Widget build(BuildContext context) {
     final clickable = widget.onTap != null;
     final hot = _hover && clickable;
+    final still = MediaQuery.disableAnimationsOf(context);
     const radius = BorderRadius.all(Radius.circular(AppRadius.card));
     Widget content = Padding(padding: widget.padding, child: widget.child);
     if (widget.accent != null) {
@@ -45,18 +46,19 @@ class _PanelCardState extends State<PanelCard> {
       ]);
     }
     if (clickable) {
-      content = Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: widget.onTap,
-          onHover: (v) => setState(() => _hover = v),
-          borderRadius: radius,
-          child: content,
-        ),
+      content = InkWell(
+        onTap: widget.onTap,
+        onHover: (v) => setState(() => _hover = v),
+        borderRadius: radius,
+        hoverDuration: still ? Duration.zero : null,
+        splashFactory: still ? NoSplash.splashFactory : null,
+        child: content,
       );
     }
+    // 一律提供透明 Material：子元件（ListTile 等）的焦點與水波才畫在卡片底色之上。
+    content = Material(type: MaterialType.transparency, child: content);
     return AnimatedContainer(
-      duration: MediaQuery.disableAnimationsOf(context)
+      duration: still
           ? Duration.zero
           : const Duration(milliseconds: 150),
       curve: Curves.easeOut,

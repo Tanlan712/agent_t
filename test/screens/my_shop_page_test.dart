@@ -76,6 +76,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('★ 願望清單'), findsNothing);
     expect(find.textContaining('今天有'), findsNothing);
+    // 關閉標示時不能說「今天沒有」，改說明已關閉。
+    expect(find.text('今天沒有願望清單造型'), findsNothing);
+    expect(find.text('已關閉願望清單標示'), findsOneWidget);
   });
 
   testWidgets('目錄下載失敗時顯示重試', (tester) async {
@@ -208,6 +211,18 @@ void layoutTests() {
     final headerTop = tester.getTopLeft(find.text('每日商店')).dy;
     expect(headerTop - barBottom, greaterThanOrEqualTo(16));
   });
+
+  for (final width in [1280.0, 768.0]) {
+    testWidgets('${width.toInt()} 寬：每日 4 款至少排成 2 欄', (tester) async {
+      setWidth(tester, width);
+      final h = await Harness.create(tester, shop: shop);
+      await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+      await tester.pumpAndSettle();
+      final tops = cardTops(tester);
+      expect(tops.length, 4);
+      expect(tops.toSet().length, lessThanOrEqualTo(2));
+    });
+  }
 
   testWidgets('390 寬：每日 4 款各佔一列', (tester) async {
     setWidth(tester, 390);

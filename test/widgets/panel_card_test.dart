@@ -57,6 +57,27 @@ void main() {
     expect(c.duration, Duration.zero);
   });
 
+  testWidgets('不可點擊的 PanelCard 也提供透明 Material，子元件的焦點與水波看得到',
+      (tester) async {
+    await tester.pumpWidget(host(PanelCard(
+        child: ListTile(title: const Text('列'), onTap: () {}))));
+    final material = find.descendant(
+        of: find.byType(PanelCard), matching: find.byType(Material));
+    expect(material, findsWidgets);
+    expect(
+        find.ancestor(of: find.byType(ListTile), matching: material.first),
+        findsOneWidget);
+  });
+
+  testWidgets('減少動態時 PanelCard 的 InkWell 沒有淡入與水波', (tester) async {
+    await tester.pumpWidget(host(PanelCard(onTap: () {}, child: const Text('卡片')),
+        reduceMotion: true));
+    final ink = tester.widget<InkWell>(find.descendant(
+        of: find.byType(PanelCard), matching: find.byType(InkWell)));
+    expect(ink.hoverDuration, Duration.zero);
+    expect(ink.splashFactory, NoSplash.splashFactory);
+  });
+
   testWidgets('StatusChip 在 60px 寬不 overflow', (tester) async {
     await tester.pumpWidget(host(const SizedBox(
         width: 60,

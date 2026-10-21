@@ -95,6 +95,7 @@ class _NavTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = selected ? AppColors.text : AppColors.muted;
+    final still = MediaQuery.disableAnimationsOf(context);
     Widget tile = Material(
       color: selected ? AppColors.surfaceHigh : Colors.transparent,
       borderRadius: BorderRadius.circular(8),
@@ -102,6 +103,8 @@ class _NavTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         hoverColor: AppColors.surfaceHigh.withOpacity(0.5),
+        hoverDuration: still ? Duration.zero : null,
+        splashFactory: still ? NoSplash.splashFactory : null,
         child: SizedBox(
           height: 40,
           child: Row(
