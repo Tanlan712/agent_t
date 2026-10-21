@@ -66,8 +66,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
     final (primary, fill, on) = c.style.isEva
         ? (dark ? _evaAccentDark : _evaAccentLight)[c.accent]!
         : (dark ? _accentDark : _accentLight)[c.accent]!;
-    final usesFrame = c.style == ThemeStyleId.evaMonitor ||
-        c.style == ThemeStyleId.evaFusion;
+    final usesFrame =
+        c.style == ThemeStyleId.evaMonitor || c.style == ThemeStyleId.evaFusion;
     return AppPalette(
       brightness: c.brightness,
       background: n[0],
@@ -109,42 +109,42 @@ extension AppPaletteContext on BuildContext {
 List<Color> _n(List<int> v) => [for (final x in v) Color(x)];
 
 final _neutralDark = <ThemeStyleId, List<Color>>{
-  ThemeStyleId.editorial:
-      _n([0xFF111111, 0xFF1A1A1A, 0xFF242424, 0xFF333333, 0xFFF2F2F2, 0xFFA3A3A3]),
-  ThemeStyleId.neon:
-      _n([0xFF0E0A1A, 0xFF1C1530, 0xFF271E40, 0xFF3A2F58, 0xFFF1EEF8, 0xFFABA3C4]),
-  ThemeStyleId.airy:
-      _n([0xFF161513, 0xFF201E1B, 0xFF2A2824, 0xFF3A3732, 0xFFF2EFE9, 0xFFA8A296]),
-  ThemeStyleId.terminal:
-      _n([0xFF05070C, 0xFF0D111A, 0xFF151B27, 0xFF232C3D, 0xFFE6EAF2, 0xFF9AA3B5]),
-  ThemeStyleId.dreamy:
-      _n([0xFF1A1230, 0xFF251A40, 0xFF30234F, 0xFF453568, 0xFFF6F0FF, 0xFFB8ACD6]),
-  ThemeStyleId.evaAlert:
-      _n([0xFF0A0000, 0xFF140505, 0xFF1F0A08, 0xFF4A1410, 0xFFFFE3DA, 0xFFC49A90]),
-  ThemeStyleId.evaMonitor:
-      _n([0xFF070302, 0xFF120A05, 0xFF1C1209, 0xFF5C3A12, 0xFFF2E6D0, 0xFFBFA888]),
-  ThemeStyleId.evaFusion:
-      _n([0xFF070302, 0xFF120A05, 0xFF1C1209, 0xFF5C3A12, 0xFFF2E6D0, 0xFFBFA888]),
+  ThemeStyleId.editorial: _n(
+      [0xFF111111, 0xFF1A1A1A, 0xFF242424, 0xFF333333, 0xFFF2F2F2, 0xFFA3A3A3]),
+  ThemeStyleId.neon: _n(
+      [0xFF0E0A1A, 0xFF1C1530, 0xFF271E40, 0xFF3A2F58, 0xFFF1EEF8, 0xFFABA3C4]),
+  ThemeStyleId.airy: _n(
+      [0xFF161513, 0xFF201E1B, 0xFF2A2824, 0xFF3A3732, 0xFFF2EFE9, 0xFFA8A296]),
+  ThemeStyleId.terminal: _n(
+      [0xFF05070C, 0xFF0D111A, 0xFF151B27, 0xFF232C3D, 0xFFE6EAF2, 0xFF9AA3B5]),
+  ThemeStyleId.dreamy: _n(
+      [0xFF1A1230, 0xFF251A40, 0xFF30234F, 0xFF453568, 0xFFF6F0FF, 0xFFB8ACD6]),
+  ThemeStyleId.evaAlert: _n(
+      [0xFF0A0000, 0xFF140505, 0xFF1F0A08, 0xFF4A1410, 0xFFFFE3DA, 0xFFC49A90]),
+  ThemeStyleId.evaMonitor: _n(
+      [0xFF070302, 0xFF120A05, 0xFF1C1209, 0xFF5C3A12, 0xFFF2E6D0, 0xFFBFA888]),
+  ThemeStyleId.evaFusion: _n(
+      [0xFF070302, 0xFF120A05, 0xFF1C1209, 0xFF5C3A12, 0xFFF2E6D0, 0xFFBFA888]),
 };
 
 final _neutralLight = <ThemeStyleId, List<Color>>{
-  ThemeStyleId.editorial:
-      _n([0xFFF5F5F3, 0xFFFFFFFF, 0xFFEDEDED, 0xFFD9D9D9, 0xFF111111, 0xFF595959]),
-  ThemeStyleId.neon:
-      _n([0xFFF4F2FA, 0xFFFFFFFF, 0xFFECE8F6, 0xFFD4CEE6, 0xFF1A1430, 0xFF5A5470]),
-  ThemeStyleId.airy:
-      _n([0xFFFBFAF8, 0xFFFFFFFF, 0xFFF1EEE8, 0xFFDDD8CE, 0xFF222222, 0xFF5E5A52]),
-  ThemeStyleId.terminal:
-      _n([0xFFF2F4F7, 0xFFFFFFFF, 0xFFE8ECF2, 0xFFCBD2DE, 0xFF0D111A, 0xFF4F5A6E]),
-  ThemeStyleId.dreamy:
-      _n([0xFFF7EEF8, 0xFFFFFFFF, 0xFFF2EAF7, 0xFFDCCFE6, 0xFF2A2340, 0xFF5B5470]),
-  ThemeStyleId.evaAlert:
-      _n([0xFFF4F1EA, 0xFFFFFFFF, 0xFFECE6DA, 0xFFCFC4B0, 0xFF1A0A08, 0xFF5E4A42]),
+  ThemeStyleId.editorial: _n(
+      [0xFFF5F5F3, 0xFFFFFFFF, 0xFFEDEDED, 0xFFD9D9D9, 0xFF111111, 0xFF595959]),
+  ThemeStyleId.neon: _n(
+      [0xFFF4F2FA, 0xFFFFFFFF, 0xFFECE8F6, 0xFFD4CEE6, 0xFF1A1430, 0xFF5A5470]),
+  ThemeStyleId.airy: _n(
+      [0xFFFBFAF8, 0xFFFFFFFF, 0xFFF1EEE8, 0xFFDDD8CE, 0xFF222222, 0xFF5E5A52]),
+  ThemeStyleId.terminal: _n(
+      [0xFFF2F4F7, 0xFFFFFFFF, 0xFFE8ECF2, 0xFFCBD2DE, 0xFF0D111A, 0xFF4F5A6E]),
+  ThemeStyleId.dreamy: _n(
+      [0xFFF7EEF8, 0xFFFFFFFF, 0xFFF2EAF7, 0xFFDCCFE6, 0xFF2A2340, 0xFF5B5470]),
+  ThemeStyleId.evaAlert: _n(
+      [0xFFF4F1EA, 0xFFFFFFFF, 0xFFECE6DA, 0xFFCFC4B0, 0xFF1A0A08, 0xFF5E4A42]),
   // 機密文件紙色。
-  ThemeStyleId.evaMonitor:
-      _n([0xFFECE9E0, 0xFFF6F4EE, 0xFFE6E3D9, 0xFFB9B4A0, 0xFF2B2A1F, 0xFF5A5744]),
-  ThemeStyleId.evaFusion:
-      _n([0xFFECE9E0, 0xFFF6F4EE, 0xFFE6E3D9, 0xFFB9B4A0, 0xFF2B2A1F, 0xFF5A5744]),
+  ThemeStyleId.evaMonitor: _n(
+      [0xFFECE9E0, 0xFFF6F4EE, 0xFFE6E3D9, 0xFFB9B4A0, 0xFF2B2A1F, 0xFF5A5744]),
+  ThemeStyleId.evaFusion: _n(
+      [0xFFECE9E0, 0xFFF6F4EE, 0xFFE6E3D9, 0xFFB9B4A0, 0xFF2B2A1F, 0xFF5A5744]),
 };
 
 // 主色：primary、buttonFill、onButton（規格 §3.2）。

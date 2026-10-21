@@ -29,7 +29,7 @@ import 'storage/session_storage.dart';
 import 'storage/settings_storage.dart';
 import 'storage/shop_storage.dart';
 import 'storage/wishlist_storage.dart';
-import 'theme/app_theme.dart';
+import 'theme/themed_app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -96,11 +96,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'VALORANT 商店追蹤',
-      debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
-      onGenerateRoute: onGenerateAppRoute,
+    return ThemedApp(
+      builder: (theme, builder) => MaterialApp(
+        title: 'VALORANT 商店追蹤',
+        debugShowCheckedModeBanner: false,
+        theme: theme,
+        builder: builder,
+        onGenerateRoute: onGenerateAppRoute,
+      ),
     );
   }
 }

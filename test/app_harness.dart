@@ -26,6 +26,8 @@ import 'package:valorant_shop_tracker/services/match_reference_api.dart';
 import 'package:valorant_shop_tracker/services/riot_client.dart';
 import 'package:valorant_shop_tracker/storage/match_reference_cache.dart';
 import 'package:valorant_shop_tracker/theme/app_theme.dart';
+import 'package:valorant_shop_tracker/theme/theme_ids.dart';
+import 'package:valorant_shop_tracker/theme/themed_app.dart';
 import 'package:valorant_shop_tracker/storage/seen_players_storage.dart';
 import 'package:valorant_shop_tracker/storage/settings_storage.dart';
 import 'package:valorant_shop_tracker/storage/shop_storage.dart';
@@ -136,13 +138,31 @@ class Harness {
   }
 
   /// [useAppRoutes] 為 true 時改用 App 的路由表（`onGenerateAppRoute`），從 `/` 開始。
+  /// [choice] 指定固定主題；[useSettingsTheme] 為 true 時改為跟著 settings 切換（同 MyApp）。
   Widget wrap({
     Widget? home,
     Map<String, WidgetBuilder> routes = const {},
     RouteFactory? onGenerateRoute,
     bool useAppRoutes = false,
     List<NavigatorObserver> observers = const [],
+    ThemeChoice choice = const ThemeChoice(),
+    bool useSettingsTheme = false,
   }) {
+    Widget app(ThemeData theme, TransitionBuilder? builder) => useAppRoutes
+        ? MaterialApp(
+            theme: theme,
+            builder: builder,
+            onGenerateRoute: onGenerateAppRoute,
+            navigatorObservers: observers,
+          )
+        : MaterialApp(
+            theme: theme,
+            builder: builder,
+            home: home,
+            routes: routes,
+            onGenerateRoute: onGenerateRoute,
+            navigatorObservers: observers,
+          );
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: catalog),
@@ -160,19 +180,9 @@ class Harness {
         ChangeNotifierProvider.value(value: matchHistory),
         ChangeNotifierProvider.value(value: matchReference),
       ],
-      child: useAppRoutes
-          ? MaterialApp(
-              theme: buildAppTheme(useGoogleFonts: false),
-              onGenerateRoute: onGenerateAppRoute,
-              navigatorObservers: observers,
-            )
-          : MaterialApp(
-              theme: buildAppTheme(useGoogleFonts: false),
-              home: home,
-              routes: routes,
-              onGenerateRoute: onGenerateRoute,
-              navigatorObservers: observers,
-            ),
+      child: useSettingsTheme
+          ? ThemedApp(useGoogleFonts: false, builder: app)
+          : app(buildAppTheme(choice: choice, useGoogleFonts: false), null),
     );
   }
 }

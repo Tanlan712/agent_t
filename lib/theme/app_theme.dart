@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'app_palette.dart';
+import 'app_style.dart';
+import 'theme_ids.dart';
 
 /// 目前主題的色彩；讀 [AppPalette.current]（由 [buildAppTheme] 設定）。
 /// 名稱沿用改版前，呼叫端不用改。
@@ -43,10 +45,11 @@ abstract final class AppRadius {
 }
 
 /// 鍵盤焦點：2px info 外框（MASTER.md 第 6 節）；其餘狀態用 [normal]。
-WidgetStateProperty<BorderSide?> _focusSide([BorderSide? normal]) =>
+WidgetStateProperty<BorderSide?> _focusSide(Color focus,
+        [BorderSide? normal]) =>
     WidgetStateProperty.resolveWith((states) =>
         states.contains(WidgetState.focused)
-            ? BorderSide(color: AppColors.info, width: 2)
+            ? BorderSide(color: focus, width: 2)
             : normal);
 
 /// 共用文字樣式（MASTER.md 第 2 節）。
@@ -66,8 +69,8 @@ abstract final class AppText {
 
 /// 標題用 Chakra Petch；內文與中文用系統字體（Noto Sans TC 約 14MB，使用者 2026-10-21 決定不下載）。
 /// [useGoogleFonts] 為 false 時用系統字體（測試、或字體載入失敗時）。
-TextTheme _textTheme(bool useGoogleFonts) {
-  final base = ThemeData(brightness: Brightness.dark).textTheme;
+TextTheme _textTheme(bool useGoogleFonts, Brightness brightness) {
+  final base = ThemeData(brightness: brightness).textTheme;
   if (!useGoogleFonts) return base;
   final body = base;
   TextStyle? head(TextStyle? s) => GoogleFonts.chakraPetch(textStyle: s);
@@ -82,114 +85,128 @@ TextTheme _textTheme(bool useGoogleFonts) {
   );
 }
 
-ThemeData buildAppTheme({bool useGoogleFonts = true}) {
-  final scheme = ColorScheme.dark(
-    primary: AppColors.primary,
-    onPrimary: AppColors.onPrimary,
-    secondary: AppColors.primary,
-    onSecondary: AppColors.onPrimary,
-    surface: AppColors.surface,
-    onSurface: AppColors.text,
-    onSurfaceVariant: AppColors.muted,
-    surfaceContainerHighest: AppColors.surfaceHigh,
-    surfaceContainerHigh: AppColors.surfaceHigh,
-    surfaceContainer: AppColors.surface,
-    surfaceContainerLow: AppColors.surface,
-    surfaceContainerLowest: AppColors.background,
-    primaryContainer: AppColors.buttonRed,
-    onPrimaryContainer: AppColors.onPrimary,
-    secondaryContainer: AppColors.surfaceHigh,
-    onSecondaryContainer: AppColors.text,
-    errorContainer: Color(0xFF5C1F24),
-    onErrorContainer: AppColors.text,
-    error: AppColors.error,
-    outline: AppColors.outline,
-    outlineVariant: AppColors.outline,
+/// 依 [choice] 建主題，掛上 [AppPalette]、[AppStyle] 兩個 extension。
+/// [setCurrent] 為 true 時同時設定 [AppPalette.current]（`AppColors.*` 讀它）；
+/// 設定頁的縮圖傳 false，只拿來預覽。
+ThemeData buildAppTheme({
+  ThemeChoice choice = const ThemeChoice(),
+  bool useGoogleFonts = true,
+  bool setCurrent = true,
+}) {
+  final palette = AppPalette.resolve(choice);
+  final style = AppStyle.of(choice.style);
+  if (setCurrent) AppPalette.current = palette;
+  final dark = choice.brightness == Brightness.dark;
+  final scheme = (dark ? ColorScheme.dark : ColorScheme.light)(
+    primary: palette.primary,
+    onPrimary: palette.onButton,
+    secondary: palette.primary,
+    onSecondary: palette.onButton,
+    surface: palette.surface,
+    onSurface: palette.text,
+    onSurfaceVariant: palette.muted,
+    surfaceContainerHighest: palette.surfaceHigh,
+    surfaceContainerHigh: palette.surfaceHigh,
+    surfaceContainer: palette.surface,
+    surfaceContainerLow: palette.surface,
+    surfaceContainerLowest: palette.background,
+    primaryContainer: palette.buttonFill,
+    onPrimaryContainer: palette.onButton,
+    secondaryContainer: palette.surfaceHigh,
+    onSecondaryContainer: palette.text,
+    errorContainer: dark ? const Color(0xFF5C1F24) : const Color(0xFFFDE2E1),
+    onErrorContainer: palette.text,
+    error: palette.loss,
+    outline: palette.outline,
+    outlineVariant: palette.outline,
   );
 
   return ThemeData(
     useMaterial3: true,
-    brightness: Brightness.dark,
+    brightness: choice.brightness,
     colorScheme: scheme,
-    textTheme: _textTheme(useGoogleFonts),
+    extensions: [palette, style],
+    textTheme: _textTheme(useGoogleFonts, choice.brightness),
     // 半透明，讓焦點列上的文字仍清楚可讀（對比 ≥ 4.5）。
-    focusColor: AppColors.info.withOpacity(0.2),
+    focusColor: palette.info.withOpacity(0.2),
     chipTheme: ChipThemeData(
-      backgroundColor: AppColors.surfaceHigh,
-      side: BorderSide(color: AppColors.outline),
+      backgroundColor: palette.surfaceHigh,
+      side: BorderSide(color: palette.outline),
       shape: const RoundedRectangleBorder(borderRadius: _radius),
-      labelStyle: TextStyle(color: AppColors.text, fontSize: 12),
+      labelStyle: TextStyle(color: palette.text, fontSize: 12),
     ),
     dataTableTheme: DataTableThemeData(
       headingRowHeight: 36,
       dataRowMinHeight: 36,
-      headingTextStyle: AppText.label,
+      headingTextStyle:
+          TextStyle(color: palette.muted, fontSize: 12, letterSpacing: 0.4),
       dividerThickness: 0.5,
     ),
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(
-          color: AppColors.surfaceHigh,
+          color: palette.surfaceHigh,
           borderRadius: _radius,
-          border: Border.fromBorderSide(BorderSide(color: AppColors.outline))),
-      textStyle: TextStyle(color: AppColors.text, fontSize: 12),
+          border: Border.fromBorderSide(BorderSide(color: palette.outline))),
+      textStyle: TextStyle(color: palette.text, fontSize: 12),
       waitDuration: Duration(milliseconds: 300),
     ),
-    scaffoldBackgroundColor: AppColors.background,
-    canvasColor: AppColors.background,
-    dividerColor: AppColors.outline,
+    scaffoldBackgroundColor: palette.background,
+    canvasColor: palette.background,
+    dividerColor: palette.outline,
     appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.background,
-      foregroundColor: AppColors.text,
+      backgroundColor: palette.background,
+      foregroundColor: palette.text,
       elevation: 0,
       scrolledUnderElevation: 0,
     ),
     // Bento：所有卡片 12px 圓角、細邊框。
     cardTheme: CardTheme(
-      color: AppColors.surface,
+      color: palette.surface,
       elevation: 0,
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(AppRadius.card)),
-        side: BorderSide(color: AppColors.outline),
+        borderRadius: BorderRadius.all(Radius.circular(style.cardRadius)),
+        side: BorderSide(color: palette.outline),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: AppColors.buttonRed,
-        foregroundColor: AppColors.onPrimary,
+        backgroundColor: palette.buttonFill,
+        foregroundColor: palette.onButton,
         shape: const RoundedRectangleBorder(borderRadius: _radius),
-      ).copyWith(side: _focusSide()),
+      ).copyWith(side: _focusSide(palette.info)),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.text,
+        foregroundColor: palette.text,
         shape: const RoundedRectangleBorder(borderRadius: _radius),
-      ).copyWith(side: _focusSide(BorderSide(color: AppColors.outline))),
+      ).copyWith(
+          side: _focusSide(palette.info, BorderSide(color: palette.outline))),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(foregroundColor: AppColors.primary)
-          .copyWith(side: _focusSide()),
+      style: TextButton.styleFrom(foregroundColor: palette.primary)
+          .copyWith(side: _focusSide(palette.info)),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.surfaceHigh,
+      fillColor: palette.surfaceHigh,
       border: const OutlineInputBorder(
           borderRadius: _radius, borderSide: BorderSide.none),
     ),
     navigationRailTheme: NavigationRailThemeData(
-      backgroundColor: AppColors.surface,
-      indicatorColor: AppColors.surfaceHigh,
-      selectedIconTheme: IconThemeData(color: AppColors.primary),
-      unselectedIconTheme: IconThemeData(color: AppColors.muted),
+      backgroundColor: palette.surface,
+      indicatorColor: palette.surfaceHigh,
+      selectedIconTheme: IconThemeData(color: palette.primary),
+      unselectedIconTheme: IconThemeData(color: palette.muted),
       selectedLabelTextStyle:
-          TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
-      unselectedLabelTextStyle: TextStyle(color: AppColors.muted),
+          TextStyle(color: palette.primary, fontWeight: FontWeight.w600),
+      unselectedLabelTextStyle: TextStyle(color: palette.muted),
     ),
-    drawerTheme: DrawerThemeData(backgroundColor: AppColors.surface),
+    drawerTheme: DrawerThemeData(backgroundColor: palette.surface),
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: AppColors.surfaceHigh,
-      contentTextStyle: TextStyle(color: AppColors.text),
+      backgroundColor: palette.surfaceHigh,
+      contentTextStyle: TextStyle(color: palette.text),
     ),
   );
 }

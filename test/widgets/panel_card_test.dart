@@ -3,7 +3,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:valorant_shop_tracker/theme/app_palette.dart';
+import 'package:valorant_shop_tracker/theme/app_style.dart';
 import 'package:valorant_shop_tracker/theme/app_theme.dart';
+import 'package:valorant_shop_tracker/theme/theme_ids.dart';
 import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 
 Widget host(Widget child, {bool reduceMotion = false}) => MaterialApp(
@@ -108,11 +111,17 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  test('CardTheme 是 12px 圓角', () {
-    final shape = buildAppTheme(useGoogleFonts: false).cardTheme.shape;
-    expect(shape, isA<RoundedRectangleBorder>());
-    expect((shape! as RoundedRectangleBorder).borderRadius,
-        BorderRadius.circular(12));
+  test('CardTheme 圓角依風格', () {
+    for (final style in ThemeStyleId.values) {
+      final shape = buildAppTheme(
+              choice: ThemeChoice(style: style), useGoogleFonts: false)
+          .cardTheme
+          .shape;
+      expect(shape, isA<RoundedRectangleBorder>());
+      expect((shape! as RoundedRectangleBorder).borderRadius,
+          BorderRadius.circular(AppStyle.of(style).cardRadius));
+    }
+    AppPalette.reset();
   });
 
   testWidgets('EmptyState 顯示標題、說明與按鈕', (tester) async {

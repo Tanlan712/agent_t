@@ -78,15 +78,17 @@ void main() {
 
   test('fromSettings 讀到合法值', () {
     final c = ThemeChoice.fromSettings(const AppSettings(
-        themeStyle: 'evaFusion', themeAccent: 'green', themeBrightness: 'light'));
+        themeStyle: 'evaFusion',
+        themeAccent: 'green',
+        themeBrightness: 'light'));
     expect(c.style, ThemeStyleId.evaFusion);
     expect(c.accent, AccentId.green);
     expect(c.mode, BrightnessMode.light);
   });
 
   test('reset 後 AppColors 讀預設配色', () {
-    AppPalette.current = AppPalette.resolve(
-        const ThemeChoice(style: ThemeStyleId.terminal));
+    AppPalette.current =
+        AppPalette.resolve(const ThemeChoice(style: ThemeStyleId.terminal));
     AppPalette.reset();
     expect(AppColors.primary, AppPalette.resolve(const ThemeChoice()).primary);
   });
