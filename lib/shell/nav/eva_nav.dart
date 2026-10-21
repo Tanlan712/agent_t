@@ -6,6 +6,7 @@ import '../../theme/app_fonts.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/nav_labels_en.dart';
 import '../../theme/theme_ids.dart';
+import '../../widgets/theme/eva/eva_layer.dart';
 import '../../widgets/theme/eva/eva_mincho.dart';
 import '../nav_items.dart';
 
@@ -53,12 +54,15 @@ class EvaNav extends StatelessWidget {
                   ? CrossAxisAlignment.start
                   : CrossAxisAlignment.center,
               children: [
-                Text('VAL-SYS',
-                    key: const ValueKey('eva-brand'),
-                    style: AppFonts.condensed(TextStyle(
-                        fontSize: extended ? 18 : 13,
-                        letterSpacing: 1,
-                        color: frame))),
+                GestureDetector(
+                  key: const ValueKey('eva-brand'),
+                  onTap: () => EvaEggScope.maybeOf(context)?.onBrandTap(),
+                  child: Text('VAL-SYS',
+                      style: AppFonts.condensed(TextStyle(
+                          fontSize: extended ? 18 : 13,
+                          letterSpacing: 1,
+                          color: frame))),
+                ),
                 if (extended)
                   Text(online ? 'CONDITION: GREEN' : 'CONDITION: RED',
                       style: mono.copyWith(color: online ? p.win : p.loss)),

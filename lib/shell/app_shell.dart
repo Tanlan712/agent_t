@@ -14,6 +14,7 @@ import 'side_nav.dart';
 import '../theme/app_fonts.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_style.dart';
+import '../widgets/theme/eva/eva_layer.dart';
 import '../widgets/theme/style_background.dart';
 import '../widgets/hud/page_header.dart';
 
@@ -39,6 +40,8 @@ class AppShell extends StatelessWidget {
 
   void _go(BuildContext context, NavItem item) {
     if (item.route == canonicalRoute(currentRoute)) return;
+    // EVA 系列：新頁面播放切頁標題卡（R2）。
+    if (context.appStyle.id.isEva) EvaLayer.requestTitleCard(item.route);
     Navigator.pushReplacementNamed(context, item.route);
   }
 
@@ -91,7 +94,7 @@ class AppShell extends StatelessWidget {
       // 所有模式共用同一個樹結構（Scaffold > Row > Expanded > Column > Expanded），
       // 只增減導覽欄與標題列；Flex 會從尾端對到同一個 Expanded，
       // 跨斷點與切換風格時內容子樹（捲動位置、頁面狀態）得以保留。
-      return Scaffold(
+      final scaffold = Scaffold(
         appBar: bottom
             ? AppBar(
                 title: Text(title),
@@ -184,6 +187,9 @@ class AppShell extends StatelessWidget {
           ),
         ),
       );
+      return style.id.isEva
+          ? EvaLayer(currentRoute: currentRoute, child: scaffold)
+          : scaffold;
     });
   }
 }
