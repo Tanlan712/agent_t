@@ -12,6 +12,9 @@ int columnsFor(double width, double minTileWidth) =>
 class ResponsiveGridView extends StatelessWidget {
   final double minTileWidth;
   final double childAspectRatio;
+
+  /// 固定每格高度（設定時忽略 [childAspectRatio]）。
+  final double? mainAxisExtent;
   final int itemCount;
   final IndexedWidgetBuilder itemBuilder;
   final EdgeInsetsGeometry padding;
@@ -20,6 +23,7 @@ class ResponsiveGridView extends StatelessWidget {
     super.key,
     required this.minTileWidth,
     required this.childAspectRatio,
+    this.mainAxisExtent,
     required this.itemCount,
     required this.itemBuilder,
     this.padding = const EdgeInsets.symmetric(vertical: 16),
@@ -33,6 +37,7 @@ class ResponsiveGridView extends StatelessWidget {
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: columnsFor(constraints.maxWidth, minTileWidth),
           childAspectRatio: childAspectRatio,
+          mainAxisExtent: mainAxisExtent,
           mainAxisSpacing: gridSpacing,
           crossAxisSpacing: gridSpacing,
         ),

@@ -61,7 +61,7 @@ class _SeenPlayersPageState extends State<SeenPlayersPage> {
       body = Column(
         children: [
           Padding(
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.only(top: 8, bottom: 16),
             child: TextField(
               decoration: const InputDecoration(
                 prefixIcon: Icon(Icons.search),
@@ -76,6 +76,7 @@ class _SeenPlayersPageState extends State<SeenPlayersPage> {
                 : ResponsiveGridView.builder(
                     minTileWidth: 280,
                     childAspectRatio: 3.6,
+                    mainAxisExtent: 88,
                     padding: const EdgeInsets.only(bottom: 16),
                     itemCount: list.length,
                     itemBuilder: (context, i) {

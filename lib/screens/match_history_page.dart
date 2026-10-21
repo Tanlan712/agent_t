@@ -105,7 +105,10 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
           for (final e in history.entries)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: SizedBox(height: 76, child: MatchCard(entry: e, ref: ref)),
+              // 至少 76 高；字放大時可以長高。
+              child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 76),
+                  child: MatchCard(entry: e, ref: ref)),
             ),
           if (history.hasMore)
             Padding(
@@ -155,6 +158,7 @@ class _HistoryKpi extends StatelessWidget {
     return BentoGrid(key: const ValueKey('history-kpi'), children: [
       BentoTile(
           span: 4,
+          medium: 6,
           child: _RankHeader(
               key: const ValueKey('history-rank'),
               rank: history.rank,
@@ -162,6 +166,7 @@ class _HistoryKpi extends StatelessWidget {
               ref: ref)),
       BentoTile(
         span: 3,
+        medium: 2,
         child: KpiTile(
           key: const ValueKey('kpi-rr'),
           label: '近 ${rr.length} 場 RR',
@@ -171,6 +176,7 @@ class _HistoryKpi extends StatelessWidget {
       ),
       BentoTile(
         span: 2,
+        medium: 2,
         child: KpiTile(
           label: '勝率（${decided.length} 場）',
           value: decided.isEmpty
@@ -180,6 +186,7 @@ class _HistoryKpi extends StatelessWidget {
       ),
       BentoTile(
         span: 3,
+        medium: 2,
         child: KpiTile(
           label: '平均 ACS',
           value: details.isEmpty

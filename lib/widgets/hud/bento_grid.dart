@@ -8,10 +8,11 @@ int bentoColumns(double width) => width >= 1024
         : 1;
 
 /// 以 12 欄為準的 [span12] 換算成 [columns] 欄時佔幾欄（至少 1、最多 columns）。
-int bentoSpan(int span12, int columns) {
+/// 6 欄時若有 [medium] 就直接用它。
+int bentoSpan(int span12, int columns, {int? medium}) {
   final s = switch (columns) {
     12 => span12,
-    6 => (span12 / 2).ceil(),
+    6 => medium ?? (span12 / 2).ceil(),
     _ => columns,
   };
   return s.clamp(1, columns);
@@ -19,9 +20,12 @@ int bentoSpan(int span12, int columns) {
 
 class BentoTile {
   final int span;
+
+  /// 6 欄時佔幾欄；null 時用 span 的一半（無條件進位）。
+  final int? medium;
   final Widget child;
 
-  const BentoTile({required this.span, required this.child});
+  const BentoTile({required this.span, this.medium, required this.child});
 }
 
 /// 12 欄 Bento 格：由左到右排，放不下就換列；列內頂端對齊。
@@ -42,8 +46,8 @@ class BentoGrid extends StatelessWidget {
             for (final t in children)
               SizedBox(
                 // 取整，避免浮點誤差讓同一列放不下而換列。
-                width: (bentoSpan(t.span, cols) * colW +
-                        (bentoSpan(t.span, cols) - 1) * gap)
+                width: (bentoSpan(t.span, cols, medium: t.medium) * colW +
+                        (bentoSpan(t.span, cols, medium: t.medium) - 1) * gap)
                     .floorToDouble(),
                 child: t.child,
               ),

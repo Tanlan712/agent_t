@@ -88,7 +88,11 @@ class MyShopPage extends StatelessWidget {
     void edit(ShopSection section) =>
         Navigator.pushNamed(context, '/my-shop/edit', arguments: section);
 
+    final emptyHint =
+        riot.isLoggedIn ? '按「從 Riot 同步」，或按「新增」手動輸入' : '登入 Riot 自動同步，或按「新增」手動輸入';
+
     final dailySection = _Section(
+      emptyHint: emptyHint,
       key: const ValueKey('shop-daily'),
       title: '每日商店',
       emptyIcon: Icons.storefront,
@@ -124,6 +128,7 @@ class MyShopPage extends StatelessWidget {
     );
 
     final nightSection = _Section(
+      emptyHint: emptyHint,
       title: '夜市',
       emptyIcon: Icons.nightlight_outlined,
       emptyLabel: '尚未開放',
@@ -158,6 +163,7 @@ class MyShopPage extends StatelessWidget {
     );
 
     final bundleSection = _Section(
+      emptyHint: emptyHint,
       title: '精選組合包',
       emptyIcon: Icons.card_giftcard,
       status: null,
@@ -319,6 +325,7 @@ class _Section extends StatelessWidget {
   /// 沒有資料時標題旁的文字與空狀態標題（夜市為「尚未開放」）。
   final String emptyLabel;
   final String emptyTitle;
+  final String emptyHint;
   final VoidCallback onEdit;
   final List<Widget> children;
 
@@ -329,6 +336,7 @@ class _Section extends StatelessWidget {
     required this.emptyIcon,
     this.emptyLabel = '尚未輸入',
     this.emptyTitle = '還沒有資料',
+    required this.emptyHint,
     required this.onEdit,
     required this.children,
   });
@@ -367,10 +375,7 @@ class _Section extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (empty)
-            EmptyState(
-                icon: emptyIcon,
-                title: emptyTitle,
-                message: '登入 Riot 自動同步，或按「新增」手動輸入')
+            EmptyState(icon: emptyIcon, title: emptyTitle, message: emptyHint)
           else
             ...children,
         ],

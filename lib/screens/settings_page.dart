@@ -60,7 +60,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return AppShell(
       currentRoute: '/settings',
       title: '設定',
-      // 靠左與殼層標題對齊；單欄最大寬度 760。
+      // 單欄最大寬度 760，置中。
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(

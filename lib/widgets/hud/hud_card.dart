@@ -29,7 +29,10 @@ class _PanelCardState extends State<PanelCard> {
     final clickable = widget.onTap != null;
     final hot = _hover && clickable;
     final still = MediaQuery.disableAnimationsOf(context);
-    const radius = BorderRadius.all(Radius.circular(AppRadius.card));
+    // 有強調色條時左側不圓角，色條才不會被裁掉。
+    final radius = widget.accent == null
+        ? const BorderRadius.all(Radius.circular(AppRadius.card))
+        : const BorderRadius.horizontal(right: Radius.circular(AppRadius.card));
     Widget content = Padding(padding: widget.padding, child: widget.child);
     if (widget.accent != null) {
       content = Stack(children: [
@@ -55,12 +58,11 @@ class _PanelCardState extends State<PanelCard> {
         child: content,
       );
     }
+    if (clickable) content = Semantics(button: true, child: content);
     // 一律提供透明 Material：子元件（ListTile 等）的焦點與水波才畫在卡片底色之上。
     content = Material(type: MaterialType.transparency, child: content);
     return AnimatedContainer(
-      duration: still
-          ? Duration.zero
-          : const Duration(milliseconds: 150),
+      duration: still ? Duration.zero : const Duration(milliseconds: 150),
       curve: Curves.easeOut,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(

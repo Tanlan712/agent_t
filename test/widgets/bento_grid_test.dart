@@ -55,6 +55,12 @@ void main() {
     });
   }
 
+  test('bentoSpan 6 欄時使用 medium', () {
+    expect(bentoSpan(2, 6, medium: 2), 2);
+    expect(bentoSpan(4, 6, medium: 6), 6);
+    expect(bentoSpan(4, 12, medium: 6), 4);
+  });
+
   testWidgets('400 寬每個 tile 一列、寬度等於容器寬', (tester) async {
     wide(tester);
     await tester.pumpWidget(host(400, grid()));

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -57,25 +59,43 @@ void main() {
     expect(c.duration, Duration.zero);
   });
 
-  testWidgets('不可點擊的 PanelCard 也提供透明 Material，子元件的焦點與水波看得到',
-      (tester) async {
-    await tester.pumpWidget(host(PanelCard(
-        child: ListTile(title: const Text('列'), onTap: () {}))));
+  testWidgets('不可點擊的 PanelCard 也提供透明 Material，子元件的焦點與水波看得到', (tester) async {
+    await tester.pumpWidget(
+        host(PanelCard(child: ListTile(title: const Text('列'), onTap: () {}))));
     final material = find.descendant(
         of: find.byType(PanelCard), matching: find.byType(Material));
     expect(material, findsWidgets);
-    expect(
-        find.ancestor(of: find.byType(ListTile), matching: material.first),
+    expect(find.ancestor(of: find.byType(ListTile), matching: material.first),
         findsOneWidget);
   });
 
   testWidgets('減少動態時 PanelCard 的 InkWell 沒有淡入與水波', (tester) async {
-    await tester.pumpWidget(host(PanelCard(onTap: () {}, child: const Text('卡片')),
+    await tester.pumpWidget(host(
+        PanelCard(onTap: () {}, child: const Text('卡片')),
         reduceMotion: true));
     final ink = tester.widget<InkWell>(find.descendant(
         of: find.byType(PanelCard), matching: find.byType(InkWell)));
     expect(ink.hoverDuration, Duration.zero);
     expect(ink.splashFactory, NoSplash.splashFactory);
+  });
+
+  testWidgets('有強調色時左側不圓角，色條不被裁掉', (tester) async {
+    await tester.pumpWidget(
+        host(const PanelCard(accent: AppColors.win, child: Text('卡片'))));
+    final r = decorationOf(tester).borderRadius! as BorderRadius;
+    expect(r.topLeft, Radius.zero);
+    expect(r.bottomLeft, Radius.zero);
+    expect(r.topRight, const Radius.circular(AppRadius.card));
+  });
+
+  testWidgets('可點擊的 PanelCard 是按鈕語意', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester
+        .pumpWidget(host(PanelCard(onTap: () {}, child: const Text('卡片'))));
+    final node = tester.getSemantics(find.text('卡片'));
+    expect(node.hasFlag(SemanticsFlag.isButton), isTrue);
+    expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+    handle.dispose();
   });
 
   testWidgets('StatusChip 在 60px 寬不 overflow', (tester) async {

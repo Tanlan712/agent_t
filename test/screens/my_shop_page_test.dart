@@ -118,6 +118,9 @@ void riotTests() {
     await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
     await tester.pumpAndSettle();
     expect(find.text('已登入：Tester#TW1（ap）'), findsOneWidget);
+    // 已登入時空區塊的提示改成同步，不再叫人登入。
+    expect(find.textContaining('登入 Riot 自動同步'), findsNothing);
+    expect(find.textContaining('從 Riot 同步'), findsWidgets);
     await tester.tap(find.text('從 Riot 同步'));
     await tester
         .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));

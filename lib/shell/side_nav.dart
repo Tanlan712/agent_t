@@ -71,7 +71,9 @@ class SideNav extends StatelessWidget {
               children: children,
             ),
           ),
-          if (footer != null) footer!,
+          // 透明 Material：footer（ListTile）的焦點與水波畫在側欄底色之上。
+          if (footer != null)
+            Material(type: MaterialType.transparency, child: footer!),
         ],
       ),
     );
@@ -144,7 +146,7 @@ class _NavTile extends StatelessWidget {
     if (!extended) tile = Tooltip(message: item.label, child: tile);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: Semantics(selected: selected, child: tile),
+      child: Semantics(button: true, selected: selected, child: tile),
     );
   }
 }

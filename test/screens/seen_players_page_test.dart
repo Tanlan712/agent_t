@@ -58,6 +58,20 @@ void main() {
     expect(find.textContaining('位玩家'), findsOneWidget);
   });
 
+  testWidgets('玩家卡片高度固定 88，不隨寬度變形', (tester) async {
+    for (final width in [575.0, 1440.0]) {
+      setWidth(tester, width);
+      final h = await seeded(tester);
+      await open(tester, h);
+      final card = find
+          .ancestor(
+              of: find.text('Foxtrot#TW1'), matching: find.byType(PanelCard))
+          .first;
+      expect(tester.getSize(card).height, 88, reason: '$width');
+      await tester.pumpWidget(const SizedBox());
+    }
+  });
+
   testWidgets('搜尋 Riot ID', (tester) async {
     setWidth(tester, 1400);
     final h = await seeded(tester);

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
@@ -148,6 +150,24 @@ void main() {
         matching: find.byType(InkWell)));
     expect(ink.hoverDuration, Duration.zero);
     expect(ink.splashFactory, NoSplash.splashFactory);
+  });
+
+  testWidgets('側欄項目是按鈕語意；底部 Riot 狀態列在透明 Material 上', (tester) async {
+    setWidth(tester, 1400);
+    final handle = tester.ensureSemantics();
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(home: shell()));
+    final node = tester.getSemantics(find.descendant(
+        of: find.byKey(const ValueKey('nav-/matches')),
+        matching: find.text('對戰紀錄')));
+    expect(node.hasFlag(SemanticsFlag.isButton), isTrue);
+    final riot = find.byKey(const ValueKey('nav-riot'));
+    final material = find.ancestor(of: riot, matching: find.byType(Material));
+    final sideNav = find.byType(SideNav);
+    // riot 與 SideNav 之間要有一層 Material（ink 才畫在側欄底色之上）。
+    expect(
+        find.descendant(of: sideNav, matching: material.first), findsOneWidget);
+    handle.dispose();
   });
 
   testWidgets('1440 寬頁首標題 28px', (tester) async {

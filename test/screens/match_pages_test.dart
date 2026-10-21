@@ -453,6 +453,24 @@ void scoreboardTests() {
           findsOneWidget);
     });
 
+    testWidgets('Bento：768 寬勝率卡至少 150px 寬，對戰列至少 76 高', (tester) async {
+      setWidth(tester, 768);
+      final h =
+          await Harness.create(tester, riotHttp: riotClient(historyTotal: 3));
+      await tester.runAsync(() => h.riot.login(fakeRedirect));
+      await tester.pumpWidget(h.wrap(home: const MatchHistoryPage()));
+      await tester.pump();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 80)));
+      await tester.pumpAndSettle();
+      final win = find.ancestor(
+          of: find.textContaining('勝率'), matching: find.byType(KpiTile));
+      expect(tester.getSize(win).width, greaterThanOrEqualTo(150));
+      expect(tester.getSize(find.byKey(const ValueKey('match-card-m1'))).height,
+          greaterThanOrEqualTo(76));
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('Bento：對戰列是可點擊的卡片，左側勝負色條', (tester) async {
       setWidth(tester, 1440);
       final h =
