@@ -11,6 +11,7 @@ import 'screens/match_detail_page.dart';
 import 'screens/match_history_page.dart';
 import 'screens/my_shop_page.dart';
 import 'screens/player_page.dart';
+import 'screens/progress_page.dart';
 import 'screens/playercards_page.dart';
 import 'screens/riot_login_page.dart';
 import 'screens/seen_players_page.dart';
@@ -29,6 +30,7 @@ final Map<String, WidgetBuilder> _topLevel = {
   '/live': (_) => const LivePage(),
   '/players': (_) => const SeenPlayersPage(),
   '/collection': (_) => const CollectionPage(),
+  '/progress': (_) => const ProgressPage(),
   '/agents': (_) => const AgentsPage(),
   '/weapons': (_) => const WeaponsPage(),
   '/maps': (_) => const MapsPage(),
