@@ -164,36 +164,30 @@ class _HistoryKpi extends StatelessWidget {
               rank: history.rank,
               recentRr: rr,
               ref: ref)),
+      // KPI 小卡：窄螢幕每列 2 張，不會各佔一整列。
       BentoTile(
-        span: 3,
-        medium: 2,
-        child: KpiTile(
-          key: const ValueKey('kpi-rr'),
-          label: '近 ${rr.length} 場 RR',
-          value: rr.isEmpty ? '—' : formatRr(rrSum),
-          up: rrUp(rr),
-        ),
-      ),
-      BentoTile(
-        span: 2,
-        medium: 2,
-        child: KpiTile(
-          label: '勝率（${decided.length} 場）',
-          value: decided.isEmpty
-              ? '—'
-              : '${(wins / decided.length * 100).round()}%',
-        ),
-      ),
-      BentoTile(
-        span: 3,
-        medium: 2,
-        child: KpiTile(
-          label: '平均 ACS',
-          value: details.isEmpty
-              ? '—'
-              : '${(details.fold<int>(0, (a, s) => a + s.acs) / details.length).round()}',
-        ),
-      ),
+          span: 8,
+          medium: 6,
+          child: KpiStrip(tiles: [
+            KpiTile(
+              key: const ValueKey('kpi-rr'),
+              label: '近 ${rr.length} 場 RR',
+              value: rr.isEmpty ? '—' : formatRr(rrSum),
+              up: rrUp(rr),
+            ),
+            KpiTile(
+              label: '勝率（${decided.length} 場）',
+              value: decided.isEmpty
+                  ? '—'
+                  : '${(wins / decided.length * 100).round()}%',
+            ),
+            KpiTile(
+              label: '平均 ACS',
+              value: details.isEmpty
+                  ? '—'
+                  : '${(details.fold<int>(0, (a, s) => a + s.acs) / details.length).round()}',
+            ),
+          ])),
     ]);
   }
 }

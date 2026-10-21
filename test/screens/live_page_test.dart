@@ -425,6 +425,18 @@ void main() {
       await leave(tester, h);
     });
 
+    testWidgets('375 寬地圖、模式兩張 KPI 同一列', (tester) async {
+      setWidth(tester, 375);
+      final h = await harness(tester, coreStatus: 200);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      final map = tester.getTopLeft(find.byKey(const ValueKey('live-kpi-map')));
+      final mode =
+          tester.getTopLeft(find.byKey(const ValueKey('live-kpi-mode')));
+      expect(mode.dy, map.dy);
+      await leave(tester, h);
+    });
+
     testWidgets('疑似小號標籤是 StatusChip，不用 emoji', (tester) async {
       setWidth(tester, 1400);
       final h = await harness(tester, coreStatus: 200);

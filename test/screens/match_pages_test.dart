@@ -471,6 +471,22 @@ void scoreboardTests() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('375 寬 RR、勝率兩張 KPI 同一列', (tester) async {
+      setWidth(tester, 375);
+      final h =
+          await Harness.create(tester, riotHttp: riotClient(historyTotal: 3));
+      await tester.runAsync(() => h.riot.login(fakeRedirect));
+      await tester.pumpWidget(h.wrap(home: const MatchHistoryPage()));
+      await tester.pump();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 80)));
+      await tester.pumpAndSettle();
+      final rr = tester.getTopLeft(find.byKey(const ValueKey('kpi-rr')));
+      final win = tester.getTopLeft(find.ancestor(
+          of: find.textContaining('勝率'), matching: find.byType(KpiTile)));
+      expect(win.dy, rr.dy);
+    });
+
     testWidgets('Bento：對戰列是可點擊的卡片，左側勝負色條', (tester) async {
       setWidth(tester, 1440);
       final h =

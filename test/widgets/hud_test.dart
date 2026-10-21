@@ -45,6 +45,33 @@ void main() {
     expect(third.dy, greaterThan(first.dy));
   });
 
+  for (final (width, n, perRow) in [
+    (343.0, 4, 2), // 手機：2+2
+    (528.0, 4, 2), // 小平板：放得下 3 張也排 2+2，不要 3+1
+    (528.0, 3, 3),
+    (900.0, 4, 4),
+    (343.0, 3, 2), // 2+1
+  ]) {
+    testWidgets('KpiStrip：${width.toInt()} 寬 $n 張 → 每列 $perRow 張',
+        (tester) async {
+      setWidth(tester, 1440);
+      await tester.pumpWidget(host(Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+              width: width,
+              child: KpiStrip(tiles: [
+                for (var i = 0; i < n; i++)
+                  KpiTile(key: ValueKey('k$i'), label: 'L', value: '$i'),
+              ])))));
+      final tops = [
+        for (var i = 0; i < n; i++)
+          tester.getTopLeft(find.byKey(ValueKey('k$i'))).dy,
+      ];
+      expect(tops.where((t) => t == tops.first).length, perRow);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('StatusChip：不換行、有提示', (tester) async {
     await tester.pumpWidget(host(
         const StatusChip(label: '疑似小號', color: AppColors.warn, tooltip: '推測')));

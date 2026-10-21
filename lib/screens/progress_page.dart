@@ -105,35 +105,27 @@ class _ProgressPageState extends State<ProgressPage> {
                 child: SkeletonBox(height: 96),
               )
           else ...[
-            BentoGrid(children: [
-              BentoTile(
-                  span: 3,
-                  child: KpiTile(
-                      key: const ValueKey('kpi-level'),
-                      label: '帳號等級',
-                      value: p.xp == null ? '—' : '${p.xp!.level}')),
-              BentoTile(
-                  span: 3,
-                  child: KpiTile(
-                      key: const ValueKey('kpi-xp'),
-                      label: '本級經驗',
-                      value: p.xp == null ? '—' : '${p.xp!.xp}')),
-              BentoTile(
-                  span: 3,
-                  child: KpiTile(
-                      key: const ValueKey('kpi-pass'),
-                      label: '通行證階級',
-                      value: pass == null
-                          ? '—'
-                          : '${pass.reached} / ${pass.tiers.length}')),
-              BentoTile(
-                  span: 3,
-                  child: KpiTile(
-                      key: const ValueKey('kpi-weekly'),
-                      label: '每週任務刷新',
-                      value: refill == null
-                          ? '—'
-                          : _countdown(refill.difference(now)))),
+            KpiStrip(tiles: [
+              KpiTile(
+                  key: const ValueKey('kpi-level'),
+                  label: '帳號等級',
+                  value: p.xp == null ? '—' : '${p.xp!.level}'),
+              KpiTile(
+                  key: const ValueKey('kpi-xp'),
+                  label: '本級經驗',
+                  value: p.xp == null ? '—' : '${p.xp!.xp}'),
+              KpiTile(
+                  key: const ValueKey('kpi-pass'),
+                  label: '通行證階級',
+                  value: pass == null
+                      ? '—'
+                      : '${pass.reached} / ${pass.tiers.length}'),
+              KpiTile(
+                  key: const ValueKey('kpi-weekly'),
+                  label: '每週任務刷新',
+                  value: refill == null
+                      ? '—'
+                      : _countdown(refill.difference(now))),
             ]),
             const SizedBox(height: 16),
             if (ref != null && contracts != null)

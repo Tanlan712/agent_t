@@ -61,6 +61,22 @@ void main() {
     expect(inKey('kpi-weekly', find.text('5 天 0 小時')), findsOneWidget);
   });
 
+  for (final width in [375.0, 560.0]) {
+    testWidgets('${width.toInt()} 寬 KPI 每列 2 張，不會每張佔滿整列', (tester) async {
+      setWidth(tester, width);
+      final h = await loggedIn(tester);
+      await open(tester, h);
+      final level = tester.getTopLeft(find.byKey(const ValueKey('kpi-level')));
+      final xp = tester.getTopLeft(find.byKey(const ValueKey('kpi-xp')));
+      final pass = tester.getTopLeft(find.byKey(const ValueKey('kpi-pass')));
+      final weekly =
+          tester.getTopLeft(find.byKey(const ValueKey('kpi-weekly')));
+      expect(xp.dy, level.dy);
+      expect(weekly.dy, pass.dy);
+      expect(pass.dy, greaterThan(level.dy));
+    });
+  }
+
   testWidgets('通行證：進度條、已達成打勾、下一階外框、獎勵名稱', (tester) async {
     setWidth(tester, 1440);
     final h = await loggedIn(tester);

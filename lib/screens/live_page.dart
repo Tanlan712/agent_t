@@ -344,26 +344,19 @@ class _MatchView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
-        BentoGrid(children: [
-          BentoTile(
-              span: 4,
-              child: KpiTile(
-                  key: const ValueKey('live-kpi-map'),
-                  label: '地圖',
-                  value: ref.map(match.mapId).name)),
-          BentoTile(
-              span: 4,
-              child: KpiTile(
-                  key: const ValueKey('live-kpi-mode'),
-                  label: '模式',
-                  value:
-                      match.queueId.isEmpty ? '—' : queueName(match.queueId))),
-          BentoTile(
-              span: 4,
-              child: KpiTile(
-                  key: const ValueKey('live-kpi-state'),
-                  label: '狀態',
-                  value: match.state == 'IN_PROGRESS' ? '進行中' : match.state)),
+        KpiStrip(tiles: [
+          KpiTile(
+              key: const ValueKey('live-kpi-map'),
+              label: '地圖',
+              value: ref.map(match.mapId).name),
+          KpiTile(
+              key: const ValueKey('live-kpi-mode'),
+              label: '模式',
+              value: match.queueId.isEmpty ? '—' : queueName(match.queueId)),
+          KpiTile(
+              key: const ValueKey('live-kpi-state'),
+              label: '狀態',
+              value: match.state == 'IN_PROGRESS' ? '進行中' : match.state),
         ]),
         const SizedBox(height: 16),
         // 12 欄時我方與敵方左右並排（各 6 欄），6 欄以下上下排列。
@@ -467,71 +460,92 @@ class _PlayerRow extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Tooltip(
-                  key: ValueKey('live-rank-${player.puuid}'),
-                  message: tier.name,
-                  child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: SkinIcon(url: tier.iconUrl)),
-                ),
-                const SizedBox(width: 8),
-                Tooltip(
-                  key: ValueKey('live-agent-${player.puuid}'),
-                  message: agent.name,
-                  child: SizedBox(
-                      width: 32,
-                      height: 32,
-                      child: SkinIcon(url: agent.iconUrl)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Row(
-                    children: [
-                      Flexible(
-                        child: Text(name,
-                            key: ValueKey('live-name-${player.puuid}'),
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                fontWeight: player.isMe
-                                    ? FontWeight.bold
-                                    : FontWeight.normal)),
-                      ),
-                      // 使用者要求：對局 10 人都判斷（包括自己），教練除外。
-                      if (!player.isCoach)
-                        _SuspicionTag(
-                            puuid: player.puuid,
-                            level: player.level,
-                            seasonWins: player.seasonWins,
-                            queue: queue,
-                            rules: rules),
-                      // 實測隱藏等級時 Riot 直接給 0，不顯示以免誤導。
-                      if (player.level > 0) ...[
-                        const SizedBox(width: 6),
-                        Text('Lv ${player.level}',
-                            key: ValueKey('live-level-${player.puuid}'),
-                            style: const TextStyle(
-                                color: AppColors.muted, fontSize: 12)),
-                      ],
-                      if (player.isCoach) ...[
-                        const SizedBox(width: 6),
-                        const Text('教練',
-                            style: TextStyle(
-                                color: AppColors.muted, fontSize: 12)),
-                      ],
-                    ],
-                  ),
-                ),
-                if (!player.isCoach)
-                  RecentFormCell(
+            // 窄螢幕（例如手機）把最近幾場移到下一行，避免玩家列 overflow。
+            LayoutBuilder(builder: (context, c) {
+              final narrow = c.maxWidth < 440;
+              final form = player.isCoach
+                  ? null
+                  : RecentFormCell(
                       key: ValueKey('form-${player.puuid}'),
                       puuid: player.puuid,
                       queue: queue,
-                      games: liveFormGames),
-              ],
-            ),
+                      games: liveFormGames);
+              final row = Row(
+                children: [
+                  Tooltip(
+                    key: ValueKey('live-rank-${player.puuid}'),
+                    message: tier.name,
+                    child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: SkinIcon(url: tier.iconUrl)),
+                  ),
+                  const SizedBox(width: 8),
+                  Tooltip(
+                    key: ValueKey('live-agent-${player.puuid}'),
+                    message: agent.name,
+                    child: SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: SkinIcon(url: agent.iconUrl)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(name,
+                              key: ValueKey('live-name-${player.puuid}'),
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontWeight: player.isMe
+                                      ? FontWeight.bold
+                                      : FontWeight.normal)),
+                        ),
+                        // 使用者要求：對局 10 人都判斷（包括自己），教練除外。
+                        if (!player.isCoach)
+                          _SuspicionTag(
+                              puuid: player.puuid,
+                              level: player.level,
+                              seasonWins: player.seasonWins,
+                              queue: queue,
+                              rules: rules),
+                        // 實測隱藏等級時 Riot 直接給 0，不顯示以免誤導。
+                        if (player.level > 0) ...[
+                          const SizedBox(width: 6),
+                          Text('Lv ${player.level}',
+                              key: ValueKey('live-level-${player.puuid}'),
+                              style: const TextStyle(
+                                  color: AppColors.muted, fontSize: 12)),
+                        ],
+                        if (player.isCoach) ...[
+                          const SizedBox(width: 6),
+                          const Text('教練',
+                              style: TextStyle(
+                                  color: AppColors.muted, fontSize: 12)),
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (!narrow && form != null) form,
+                ],
+              );
+              if (!narrow || form == null) return row;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  row,
+                  // 仍放不下時等比例縮小，不截斷數字。
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: form),
+                  ),
+                ],
+              );
+            }),
             if (!player.isCoach) _SkinStrip(puuid: player.puuid, live: live),
           ],
         ),

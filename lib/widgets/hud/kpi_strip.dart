@@ -93,7 +93,11 @@ class KpiStrip extends StatelessWidget {
     const gap = 8.0;
     return LayoutBuilder(builder: (context, c) {
       final fit = ((c.maxWidth + gap) / (minTileWidth + gap)).floor();
-      final perRow = fit.clamp(1, tiles.isEmpty ? 1 : tiles.length);
+      final n = tiles.isEmpty ? 1 : tiles.length;
+      // 放不下一列時平均分配到各列（4 張排 2+2，不排 3+1）。
+      final maxPerRow = fit.clamp(1, n);
+      final rows = (n / maxPerRow).ceil();
+      final perRow = (n / rows).ceil();
       final width = (c.maxWidth - gap * (perRow - 1)) / perRow;
       return Wrap(
         spacing: gap,
