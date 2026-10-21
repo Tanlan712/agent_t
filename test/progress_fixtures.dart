@@ -57,6 +57,7 @@ ProgressReference testProgressRef({DateTime? seasonEnd}) => ProgressReference(
       sprays: const {'spray-1': RefItem(name: '噴漆一')},
       cards: const {'card-1': RefItem(name: '卡片一')},
       titles: const {'title-1': RefItem(name: '稱號一')},
+      currencies: const {'vp': RefItem(name: '輻能點數')},
       contracts: const {
         'ac-paid': RefContract(
           name: '芮娜合約',

@@ -149,6 +149,9 @@ class BattlePass {
   final String name;
   final List<RefTier> tiers;
 
+  /// 章節；空的代表沒有章節資訊（整份算一章）。
+  final List<RefChapter> chapters;
+
   /// 已達成的階數（0 起算的數量）。
   final int reached;
   final int towardsNext;
@@ -159,6 +162,7 @@ class BattlePass {
   const BattlePass({
     required this.name,
     required this.tiers,
+    this.chapters = const [],
     required this.reached,
     required this.towardsNext,
     this.nextTierXp,
@@ -187,6 +191,7 @@ BattlePass? currentBattlePass(
     return BattlePass(
       name: c.name,
       tiers: c.tiers,
+      chapters: c.chapters,
       reached: reached,
       towardsNext: p?.towardsNext ?? 0,
       nextTierXp: reached < c.tiers.length ? c.tiers[reached].xp : null,
@@ -196,9 +201,10 @@ BattlePass? currentBattlePass(
 }
 
 /// 獎勵的顯示名稱；查不到時為「未知獎勵」。
+/// 貨幣只顯示名稱（例如輻能點數）：資料裡的數量無法確認，不顯示以免誤導。
 String rewardLabel(RefReward r, ProgressReference ref) =>
     switch (r.type) {
-      'Currency' => '貨幣 ×${r.amount}',
+      'Currency' => ref.currencies[r.uuid]?.name ?? '貨幣',
       'EquippableSkinLevel' => ref.skinLevels[r.uuid]?.skinName,
       'EquippableCharmLevel' => ref.buddyLevels[r.uuid]?.name,
       'Spray' => ref.sprays[r.uuid]?.name,
@@ -210,6 +216,7 @@ String rewardLabel(RefReward r, ProgressReference ref) =>
 
 /// 獎勵圖示；沒有時為 null。
 String? rewardIcon(RefReward r, ProgressReference ref) => switch (r.type) {
+      'Currency' => ref.currencies[r.uuid]?.iconUrl,
       'EquippableSkinLevel' => ref.skinLevels[r.uuid]?.iconUrl,
       'EquippableCharmLevel' => ref.buddyLevels[r.uuid]?.iconUrl,
       'Spray' => ref.sprays[r.uuid]?.iconUrl,
@@ -250,6 +257,68 @@ Map<MissionKind, List<MissionView>> joinMissions(
       xpGrant: def?.xpGrant ?? 0,
       complete: m.complete,
     ));
+  }
+  return out;
+}
+
+/// 獎勵類型的中文標籤。
+String rewardTypeLabel(String type) => switch (type) {
+      'EquippableSkinLevel' => '造型',
+      'EquippableCharmLevel' => '吊飾',
+      'Spray' => '噴漆',
+      'PlayerCard' => '玩家卡片',
+      'Title' => '稱號',
+      'Currency' => '貨幣',
+      _ => '獎勵',
+    };
+
+enum ChapterState { done, current, locked }
+
+class PassChapter {
+  /// 第幾章（1 起算）。
+  final int number;
+
+  /// 這一章第一階的階數（1 起算）。
+  final int startTier;
+  final List<RefTier> tiers;
+  final List<RefReward> freeRewards;
+  final bool isEpilogue;
+  final ChapterState state;
+
+  const PassChapter({
+    required this.number,
+    required this.startTier,
+    required this.tiers,
+    required this.freeRewards,
+    required this.isEpilogue,
+    required this.state,
+  });
+}
+
+/// 通行證依章節分組並判斷狀態：這章的階全部達成 → 已完成；
+/// 包含下一階 → 進行中；其餘 → 未解鎖。
+List<PassChapter> passChapters(BattlePass pass) {
+  final chapters =
+      pass.chapters.isEmpty ? [RefChapter(tiers: pass.tiers)] : pass.chapters;
+  final out = <PassChapter>[];
+  var start = 0;
+  for (var i = 0; i < chapters.length; i++) {
+    final ch = chapters[i];
+    final end = start + ch.tiers.length;
+    final state = pass.reached >= end
+        ? ChapterState.done
+        : pass.reached >= start
+            ? ChapterState.current
+            : ChapterState.locked;
+    out.add(PassChapter(
+      number: i + 1,
+      startTier: start + 1,
+      tiers: ch.tiers,
+      freeRewards: ch.freeRewards,
+      isEpilogue: ch.isEpilogue,
+      state: state,
+    ));
+    start = end;
   }
   return out;
 }

@@ -105,6 +105,7 @@ MockClient api({int failStatus = 200, List<Uri>? seen}) =>
                     ],
                   },
                   {
+                    'isEpilogue': true,
                     'levels': [
                       {
                         'reward': {
@@ -119,6 +120,13 @@ MockClient api({int failStatus = 200, List<Uri>? seen}) =>
                   },
                 ],
               },
+            },
+          ]),
+        '/v1/currencies' => data([
+            {
+              'uuid': 'E59AA87C-4CBF-517A-5983-6E81511BE9B7',
+              'displayName': '輻能點數',
+              'displayIcon': 'rad.png',
             },
           ]),
         '/v1/seasons' => data([
@@ -184,6 +192,13 @@ void main() {
     expect(bp.tiers[1].freeRewards.single.uuid, 't-1');
     expect(bp.tiers[0].freeRewards, isEmpty);
     expect(bp.tiers[2].reward.amount, 10);
+    expect(bp.chapters, hasLength(2));
+    expect(bp.chapters[0].tiers, hasLength(2));
+    expect(bp.chapters[0].freeRewards.single.uuid, 't-1');
+    expect(bp.chapters[0].isEpilogue, isFalse);
+    expect(bp.chapters[1].isEpilogue, isTrue);
+    expect(bp.chapters[1].freeRewards, isEmpty);
+    expect(r.currencies['e59aa87c-4cbf-517a-5983-6e81511be9b7']!.name, '輻能點數');
 
     expect(r.seasons['act-1']!.end, DateTime.utc(2026, 11, 1));
     expect(r.missions['m-1']!.kind, MissionKind.daily);

@@ -39,6 +39,9 @@ ProgressReference ref() => ProgressReference(
         'a-locked': RefAgent(name: '夜戮', role: '決鬥者', isBase: false),
       },
       buddyLevels: const {'buddy-1': RefItem(name: '小吊飾', iconUrl: 'b.png')},
+      currencies: const {
+        'vp': RefItem(name: '輻能點數', iconUrl: 'rad.png'),
+      },
       sprays: const {'spray-1': RefItem(name: '噴漆一', iconUrl: 's.png')},
       cards: const {'card-1': RefItem(name: '卡片一', iconUrl: 'c.png')},
       titles: const {'title-1': RefItem(name: '稱號一')},
@@ -184,7 +187,14 @@ void main() {
       expect(
           rewardLabel(
               const RefReward(type: 'Currency', uuid: 'vp', amount: 10), r),
-          '貨幣 ×10');
+          '輻能點數');
+      // 資料裡的數量（amount）無法確認，不顯示；未知貨幣顯示「貨幣」。
+      expect(
+          rewardLabel(
+              const RefReward(type: 'Currency', uuid: 'nope', amount: 10), r),
+          '貨幣');
+      expect(rewardIcon(const RefReward(type: 'Currency', uuid: 'vp'), r),
+          'rad.png');
       expect(
           rewardLabel(
               const RefReward(type: 'EquippableSkinLevel', uuid: 'lv-vandal-1'),
@@ -200,6 +210,31 @@ void main() {
       expect(
           rewardLabel(const RefReward(type: 'Spray', uuid: 'nope'), r), '未知獎勵');
       expect(rewardLabel(const RefReward(type: 'Weird', uuid: 'x'), r), '未知獎勵');
+    });
+  });
+
+  group('rewardTypeLabel', () {
+    test('每種獎勵的類型標籤', () {
+      expect(rewardTypeLabel('EquippableSkinLevel'), '造型');
+      expect(rewardTypeLabel('EquippableCharmLevel'), '吊飾');
+      expect(rewardTypeLabel('Spray'), '噴漆');
+      expect(rewardTypeLabel('PlayerCard'), '玩家卡片');
+      expect(rewardTypeLabel('Title'), '稱號');
+      expect(rewardTypeLabel('Currency'), '貨幣');
+      expect(rewardTypeLabel('Weird'), '獎勵');
+    });
+  });
+
+  group('passChapters', () {
+    test('依章節分組並判斷狀態；沒有章節資料時整份算一章', () {
+      final r = ref();
+      final bp = currentBattlePass(ContractsSnapshot.fromJson(contractsJson()),
+          r, DateTime.utc(2026, 10, 21))!;
+      final chapters = passChapters(bp);
+      expect(chapters, hasLength(1));
+      expect(chapters.single.startTier, 1);
+      expect(chapters.single.tiers, hasLength(3));
+      expect(chapters.single.state, ChapterState.current);
     });
   });
 

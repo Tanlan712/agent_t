@@ -78,17 +78,38 @@ class RefTier {
       {required this.reward, required this.xp, this.freeRewards = const []});
 }
 
+class RefChapter {
+  final List<RefTier> tiers;
+
+  /// 這一章的免費獎勵。
+  final List<RefReward> freeRewards;
+
+  /// 尾聲（最後一章）。
+  final bool isEpilogue;
+
+  const RefChapter(
+      {required this.tiers,
+      this.freeRewards = const [],
+      this.isEpilogue = false});
+}
+
 class RefContract {
   final String name;
   final String relationType;
   final String relationUuid;
+
+  /// 依序攤平的所有階級。
   final List<RefTier> tiers;
+
+  /// 章節（與 [tiers] 同一份資料）；空的代表沒有章節資訊。
+  final List<RefChapter> chapters;
 
   const RefContract({
     required this.name,
     required this.relationType,
     required this.relationUuid,
     required this.tiers,
+    this.chapters = const [],
   });
 }
 
@@ -127,6 +148,9 @@ class ProgressReference {
   final Map<String, RefItem> sprays;
   final Map<String, RefItem> cards;
   final Map<String, RefItem> titles;
+
+  /// 貨幣（例如輻能點數）。
+  final Map<String, RefItem> currencies;
   final Map<String, RefContract> contracts;
   final Map<String, RefSeason> seasons;
   final Map<String, RefMission> missions;
@@ -140,6 +164,7 @@ class ProgressReference {
     this.sprays = const {},
     this.cards = const {},
     this.titles = const {},
+    this.currencies = const {},
     this.contracts = const {},
     this.seasons = const {},
     this.missions = const {},

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:valorant_shop_tracker/models/progress_reference.dart';
 import 'package:valorant_shop_tracker/screens/progress_page.dart';
 import 'package:valorant_shop_tracker/shell/nav_items.dart';
 import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
@@ -91,7 +92,63 @@ void main() {
     expect(inKey('tier-3', find.byIcon(Icons.check_circle)), findsNothing);
     expect(find.byKey(const ValueKey('tier-next')), findsOneWidget);
     expect(inKey('tier-1', find.text('噴漆一')), findsOneWidget);
-    expect(inKey('tier-2', find.text('貨幣 ×10')), findsOneWidget);
+    expect(inKey('tier-2', find.text('輻能點數')), findsOneWidget);
+    expect(inKey('tier-1', find.text('噴漆')), findsOneWidget);
+  });
+
+  testWidgets('通行證依章節分區：目前章展開、其他章收合可點開，含免費獎勵', (tester) async {
+    setWidth(tester, 1440);
+    RefTier t(String type, String uuid) =>
+        RefTier(reward: RefReward(type: type, uuid: uuid), xp: 1000);
+    final base = testProgressRef();
+    final ch1 = [t('Spray', 'spray-1'), t('Currency', 'vp')];
+    final ch2 = [t('PlayerCard', 'card-1'), t('Spray', 'spray-1')];
+    final epi = [t('Currency', 'vp')];
+    final ref = ProgressReference(
+      weapons: base.weapons,
+      skinLevels: base.skinLevels,
+      sprays: base.sprays,
+      cards: base.cards,
+      titles: base.titles,
+      currencies: base.currencies,
+      seasons: base.seasons,
+      missions: base.missions,
+      contracts: {
+        'bp-now': RefContract(
+          name: '多章通行證',
+          relationType: 'Season',
+          relationUuid: 'act-now',
+          tiers: [...ch1, ...ch2, ...epi],
+          chapters: [
+            RefChapter(tiers: ch1, freeRewards: const [
+              RefReward(type: 'Title', uuid: 'title-1'),
+            ]),
+            RefChapter(tiers: ch2),
+            RefChapter(tiers: epi, isEpilogue: true),
+          ],
+        ),
+      },
+    );
+    final h = await Harness.create(tester,
+        riotHttp: riotClient(), progressApi: FakeProgressApi(ref));
+    await tester.runAsync(() => h.riot.login(fakeRedirect));
+    await open(tester, h);
+    // 已達 2 階：第 1 章完成、第 2 章進行中（展開）、尾聲未解鎖（收合）。
+    expect(find.text('第 1 章'), findsOneWidget);
+    expect(find.text('第 2 章'), findsOneWidget);
+    expect(find.text('尾聲'), findsOneWidget);
+    expect(inKey('chapter-1', find.text('已完成')), findsOneWidget);
+    expect(inKey('chapter-2', find.text('進行中')), findsOneWidget);
+    expect(inKey('chapter-3', find.text('未解鎖')), findsOneWidget);
+    expect(find.byKey(const ValueKey('tier-3')), findsOneWidget);
+    expect(find.byKey(const ValueKey('tier-1')), findsNothing);
+    expect(find.byKey(const ValueKey('tier-5')), findsNothing);
+    await tester.tap(find.text('第 1 章'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('tier-1')), findsOneWidget);
+    expect(inKey('free-1-0', find.text('免費')), findsOneWidget);
+    expect(inKey('free-1-0', find.text('稱號一')), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('已到最後一階時顯示已完成全部階級', (tester) async {

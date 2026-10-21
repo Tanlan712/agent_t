@@ -24,6 +24,7 @@ class ProgressReferenceApi {
     final contracts = await _data('/v1/contracts');
     final seasons = await _data('/v1/seasons');
     final missions = await _data('/v1/missions');
+    final currencies = await _data('/v1/currencies');
 
     final weaponList = <RefWeapon>[];
     final skinLevels = <String, RefSkinLevel>{};
@@ -104,6 +105,12 @@ class ProgressReferenceApi {
                   t['displayName'] as String? ??
                   ''),
       },
+      currencies: {
+        for (final c in currencies)
+          _id(c['uuid']): RefItem(
+              name: c['displayName'] as String? ?? '',
+              iconUrl: c['displayIcon'] as String?),
+      },
       contracts: {for (final c in contracts) _id(c['uuid']): _contract(c)},
       seasons: {
         for (final s in seasons)
@@ -147,6 +154,7 @@ class ProgressReferenceApi {
   static RefContract _contract(Map<String, dynamic> c) {
     final content = c['content'] as Map<String, dynamic>? ?? const {};
     final tiers = <RefTier>[];
+    final chapters = <RefChapter>[];
     for (final ch in (content['chapters'] as List<dynamic>? ?? const [])
         .cast<Map<String, dynamic>>()) {
       final levels = (ch['levels'] as List<dynamic>? ?? const [])
@@ -156,20 +164,27 @@ class ProgressReferenceApi {
             .cast<Map<String, dynamic>>())
           _reward(r),
       ];
+      final chapterTiers = <RefTier>[];
       for (var i = 0; i < levels.length; i++) {
-        tiers.add(RefTier(
+        chapterTiers.add(RefTier(
           reward:
               _reward(levels[i]['reward'] as Map<String, dynamic>? ?? const {}),
           xp: (levels[i]['xp'] as num?)?.toInt() ?? 0,
           freeRewards: i == levels.length - 1 ? free : const [],
         ));
       }
+      tiers.addAll(chapterTiers);
+      chapters.add(RefChapter(
+          tiers: chapterTiers,
+          freeRewards: free,
+          isEpilogue: ch['isEpilogue'] == true));
     }
     return RefContract(
       name: c['displayName'] as String? ?? '',
       relationType: content['relationType'] as String? ?? '',
       relationUuid: _id(content['relationUuid']),
       tiers: tiers,
+      chapters: chapters,
     );
   }
 
