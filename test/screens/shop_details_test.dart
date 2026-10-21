@@ -43,8 +43,10 @@ void main() {
   testWidgets('點每日商店的造型：看等級與炫彩', (tester) async {
     setWidth(tester, 1440);
     final h = await Harness.create(tester, shop: shop);
-    await tester.pumpWidget(h.wrap(
-        home: MyShopPage(now: () => now, catalogLoader: loader())));
+    await tester.pumpWidget(
+        h.wrap(home: MyShopPage(now: () => now, catalogLoader: loader())));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const ValueKey('shop-skin-o')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('shop-skin-o')));
     await tester.pumpAndSettle();
@@ -56,12 +58,12 @@ void main() {
   testWidgets('點精選組合包：看組合包內的造型', (tester) async {
     setWidth(tester, 1440);
     final h = await Harness.create(tester, shop: shop);
-    await tester.pumpWidget(h.wrap(
-        home: MyShopPage(now: () => now, catalogLoader: loader())));
+    await tester.pumpWidget(
+        h.wrap(home: MyShopPage(now: () => now, catalogLoader: loader())));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byKey(const ValueKey('shop-bundle')));
+    await tester.ensureVisible(find.byKey(const ValueKey('shop-bundle-b')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('shop-bundle')));
+    await tester.tap(find.byKey(const ValueKey('shop-bundle-b')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('db-skin-s1')), findsOneWidget);
     expect(find.byKey(const ValueKey('db-skin-o')), findsNothing);
@@ -74,8 +76,8 @@ void main() {
           daily: const [ShopEntry(skinUuid: 'zzz', price: 1275)],
           dailyExpiresAt: now.add(const Duration(hours: 2)),
         ));
-    await tester.pumpWidget(h.wrap(
-        home: MyShopPage(now: () => now, catalogLoader: loader())));
+    await tester.pumpWidget(
+        h.wrap(home: MyShopPage(now: () => now, catalogLoader: loader())));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('shop-skin-zzz')));
     await tester.pumpAndSettle();

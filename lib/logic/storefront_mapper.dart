@@ -44,16 +44,26 @@ CurrentShop mapStorefront(
   ];
 
   final featured = json['FeaturedBundle'] as Map<String, dynamic>?;
-  final bundles = featured?['Bundles'] as List<dynamic>?;
-  final bundle = featured?['Bundle'] as Map<String, dynamic>? ??
-      (bundles != null && bundles.isNotEmpty
-          ? bundles.first as Map<String, dynamic>
-          : null);
-  final bundleCost = bundle == null
-      ? 0
-      : (_vp(bundle['TotalDiscountedCost']) > 0
-          ? _vp(bundle['TotalDiscountedCost'])
-          : _vp(bundle['TotalBaseCost']));
+  // Bundles 是同時上架的所有組合包；沒有時用單一的 Bundle。
+  final rawBundles = [
+    for (final b in (featured?['Bundles'] as List<dynamic>? ?? const []))
+      if (b is Map<String, dynamic>) b
+  ];
+  if (rawBundles.isEmpty && featured?['Bundle'] is Map<String, dynamic>) {
+    rawBundles.add(featured!['Bundle'] as Map<String, dynamic>);
+  }
+  final fallbackSeconds = featured?['BundleRemainingDurationInSeconds'];
+  final bundles = [
+    for (final b in rawBundles)
+      BundleEntry(
+        bundleUuid: b['DataAssetID'] as String,
+        price: _vp(b['TotalDiscountedCost']) > 0
+            ? _vp(b['TotalDiscountedCost'])
+            : _vp(b['TotalBaseCost']),
+        endsAt: now
+            .add(_seconds(b['DurationRemainingInSeconds'] ?? fallbackSeconds)),
+      ),
+  ];
 
   return CurrentShop(
     daily: daily,
@@ -67,10 +77,8 @@ CurrentShop mapStorefront(
         ? null
         : now.add(_seconds(bonus?['BonusStoreRemainingDurationInSeconds'])),
     nightMarketUpdatedAt: night.isEmpty ? null : now,
-    featuredBundle: bundle == null
-        ? null
-        : BundleEntry(
-            bundleUuid: bundle['DataAssetID'] as String, price: bundleCost),
-    featuredBundleUpdatedAt: bundle == null ? null : now,
+    featuredBundle: bundles.firstOrNull,
+    featuredBundles: bundles,
+    featuredBundleUpdatedAt: bundles.isEmpty ? null : now,
   );
 }

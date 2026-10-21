@@ -38,7 +38,9 @@
   - `BonusStoreRemainingDurationInSeconds`
 - `FeaturedBundle`
   - `Bundle{ID, DataAssetID, CurrencyID, TotalBaseCost, TotalDiscountedCost, DurationRemainingInSeconds}`
-  - `BundleRemainingDurationInSeconds`
+  - `Bundles[]`：同時上架的所有精選組合包（欄位同 `Bundle`）；有時優先使用，沒有時用單一的 `Bundle`。
+    每個的 `DurationRemainingInSeconds` 是該組合包自己的剩餘秒數，顯示為「剩餘 N 天 H 小時」。
+  - `BundleRemainingDurationInSeconds`（組合包沒有自己的秒數時的後備值）
 
 ### `GET /store/v1/wallet/{puuid}` 🧩
 - `Balances{幣別ID: 數量}`

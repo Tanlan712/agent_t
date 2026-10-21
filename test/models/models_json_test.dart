@@ -83,9 +83,16 @@ void main() {
         nightMarketEndsAt: t2,
         nightMarketUpdatedAt: t1,
         featuredBundle: BundleEntry(bundleUuid: 'b', price: 7100),
+        featuredBundles: [
+          BundleEntry(bundleUuid: 'b', price: 7100, endsAt: t2),
+          BundleEntry(bundleUuid: 'b2', price: 5000),
+        ],
         featuredBundleUpdatedAt: t1,
       );
       final r = CurrentShop.fromJson(shop.toJson());
+      expect(r.featuredBundles.map((b) => b.bundleUuid), ['b', 'b2']);
+      expect(r.featuredBundles.first.endsAt, t2);
+      expect(r.featuredBundles.last.endsAt, isNull);
       expect(r.daily.single.skinUuid, 'a');
       expect(r.daily.single.price, 1275);
       expect(r.dailyExpiresAt, t2);

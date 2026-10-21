@@ -48,6 +48,7 @@ void main() {
   });
 
   testWidgets('目錄裡找不到的造型顯示未知造型', (tester) async {
+    setWidth(tester, 1440);
     final h =
         await Harness.create(tester, shop: dailyShop(['o', 'p', 'i', 'gone']));
     await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
@@ -73,8 +74,14 @@ void main() {
     expect(
         find.descendant(of: night.first, matching: find.textContaining('手動')),
         findsNothing);
-    expect(find.text('新增'), findsNWidgets(2));
+    // 只有每日商店能手動新增；精選組合包只能由登入同步取得。
+    expect(find.text('新增'), findsOneWidget);
     expect(find.text('精選組合包'), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byKey(const ValueKey('shop-bundles')),
+            matching: find.text('新增')),
+        findsNothing);
     expect(find.byType(EmptyState), findsNWidgets(3));
     expect(find.text('今天沒有願望清單造型'), findsOneWidget);
   });
@@ -191,16 +198,6 @@ void layoutTests() {
           tester.getTopLeft(find.byWidget(e.widget)).dy,
       ];
 
-  testWidgets('1400 寬：每日 4 款排成 2×2', (tester) async {
-    setWidth(tester, 1400);
-    final h = await Harness.create(tester, shop: shop);
-    await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
-    await tester.pumpAndSettle();
-    final tops = cardTops(tester);
-    expect(tops.length, 4);
-    expect(tops.toSet().length, 2);
-  });
-
   testWidgets('1440 寬：每日商店與右欄 KPI 同一列', (tester) async {
     setWidth(tester, 1440);
     final h = await Harness.create(tester, shop: shop);
@@ -226,26 +223,75 @@ void layoutTests() {
     expect(headerTop - barBottom, greaterThanOrEqualTo(16));
   });
 
-  for (final width in [1280.0, 768.0]) {
-    testWidgets('${width.toInt()} 寬：每日 4 款至少排成 2 欄', (tester) async {
+  for (final width in [390.0, 768.0, 1280.0, 1440.0]) {
+    testWidgets('${width.toInt()} 寬：每日 4 款排成一橫排，卡片不會太大', (tester) async {
       setWidth(tester, width);
       final h = await Harness.create(tester, shop: shop);
       await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
       await tester.pumpAndSettle();
       final tops = cardTops(tester);
-      expect(tops.length, 4);
-      expect(tops.toSet().length, lessThanOrEqualTo(2));
+      expect(tops.length, greaterThanOrEqualTo(2));
+      expect(tops.toSet().length, 1, reason: '同一橫排');
+      for (final e in find.byType(SkinCard).evaluate()) {
+        expect(tester.getSize(find.byWidget(e.widget)).width,
+            lessThanOrEqualTo(260));
+      }
+      expect(tester.takeException(), isNull);
     });
   }
 
-  testWidgets('390 寬：每日 4 款各佔一列', (tester) async {
-    setWidth(tester, 390);
-    final h = await Harness.create(tester, shop: shop);
-    await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
-    await tester.pumpAndSettle();
-    final tops = cardTops(tester);
-    expect(tops.toSet().length, tops.length);
-    expect(tester.takeException(), isNull);
+  group('精選組合包', () {
+    final bundled = CurrentShop(
+      daily: const [ShopEntry(skinUuid: 'o', price: 1275)],
+      dailyExpiresAt: now.add(const Duration(hours: 5)),
+      featuredBundles: [
+        BundleEntry(
+            bundleUuid: 'b',
+            price: 7100,
+            endsAt: now.add(const Duration(days: 3, hours: 4))),
+        BundleEntry(
+            bundleUuid: 'b2',
+            price: 5000,
+            endsAt: now.add(const Duration(hours: 2, minutes: 30))),
+      ],
+    );
+
+    testWidgets('放在每日商店上方；多個都顯示；有剩餘時間；不能編輯', (tester) async {
+      setWidth(tester, 1440);
+      final h = await Harness.create(tester, shop: bundled);
+      await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+      await tester.pumpAndSettle();
+      final section = find.byKey(const ValueKey('shop-bundles'));
+      expect(
+          tester.getTopLeft(section).dy,
+          lessThan(
+              tester.getTopLeft(find.byKey(const ValueKey('shop-daily'))).dy));
+      expect(find.byKey(const ValueKey('shop-bundle-b')), findsOneWidget);
+      expect(find.byKey(const ValueKey('shop-bundle-b2')), findsOneWidget);
+      expect(
+          find.descendant(
+              of: find.byKey(const ValueKey('shop-bundle-b')),
+              matching: find.text('剩餘 3 天 4 小時')),
+          findsOneWidget);
+      expect(
+          find.descendant(
+              of: find.byKey(const ValueKey('shop-bundle-b2')),
+              matching: find.text('剩餘 2 小時 30 分')),
+          findsOneWidget);
+      expect(find.descendant(of: section, matching: find.text('編輯')),
+          findsNothing);
+      expect(find.descendant(of: section, matching: find.text('新增')),
+          findsNothing);
+    });
+
+    testWidgets('375 寬：多個組合包不溢出', (tester) async {
+      setWidth(tester, 375);
+      final h = await Harness.create(tester, shop: bundled);
+      await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('shop-bundle-b')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('戰術 HUD', () {

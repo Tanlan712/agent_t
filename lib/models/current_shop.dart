@@ -41,14 +41,25 @@ class BundleEntry {
   final String bundleUuid;
   final int price;
 
-  const BundleEntry({required this.bundleUuid, required this.price});
+  /// 這個組合包下架的時間；手動輸入或舊資料沒有。
+  final DateTime? endsAt;
+
+  const BundleEntry(
+      {required this.bundleUuid, required this.price, this.endsAt});
 
   factory BundleEntry.fromJson(Map<String, dynamic> json) => BundleEntry(
         bundleUuid: json['bundleUuid'] as String,
         price: json['price'] as int,
+        endsAt: json['endsAt'] is String
+            ? DateTime.tryParse(json['endsAt'] as String)
+            : null,
       );
 
-  Map<String, dynamic> toJson() => {'bundleUuid': bundleUuid, 'price': price};
+  Map<String, dynamic> toJson() => {
+        'bundleUuid': bundleUuid,
+        'price': price,
+        if (endsAt != null) 'endsAt': endsAt!.toIso8601String(),
+      };
 }
 
 /// 使用者手動輸入的當前商店；只保留一份。
@@ -60,6 +71,9 @@ class CurrentShop {
   final DateTime? nightMarketEndsAt;
   final DateTime? nightMarketUpdatedAt;
   final BundleEntry? featuredBundle;
+
+  /// 所有精選組合包（Riot 同時上架多個）；舊資料只有 [featuredBundle]。
+  final List<BundleEntry> featuredBundles;
   final DateTime? featuredBundleUpdatedAt;
 
   const CurrentShop({
@@ -70,8 +84,14 @@ class CurrentShop {
     this.nightMarketEndsAt,
     this.nightMarketUpdatedAt,
     this.featuredBundle,
+    this.featuredBundles = const [],
     this.featuredBundleUpdatedAt,
   });
+
+  /// 要顯示的精選組合包：有 [featuredBundles] 用它，否則用 [featuredBundle]。
+  List<BundleEntry> get bundles => featuredBundles.isNotEmpty
+      ? featuredBundles
+      : [if (featuredBundle case final b?) b];
 
   CurrentShop copyWith({
     List<ShopEntry>? daily,
@@ -81,6 +101,7 @@ class CurrentShop {
     DateTime? nightMarketEndsAt,
     DateTime? nightMarketUpdatedAt,
     BundleEntry? featuredBundle,
+    List<BundleEntry>? featuredBundles,
     DateTime? featuredBundleUpdatedAt,
   }) {
     return CurrentShop(
@@ -91,6 +112,7 @@ class CurrentShop {
       nightMarketEndsAt: nightMarketEndsAt ?? this.nightMarketEndsAt,
       nightMarketUpdatedAt: nightMarketUpdatedAt ?? this.nightMarketUpdatedAt,
       featuredBundle: featuredBundle ?? this.featuredBundle,
+      featuredBundles: featuredBundles ?? this.featuredBundles,
       featuredBundleUpdatedAt:
           featuredBundleUpdatedAt ?? this.featuredBundleUpdatedAt,
     );
@@ -101,6 +123,7 @@ class CurrentShop {
         nightMarketEndsAt: nightMarketEndsAt,
         nightMarketUpdatedAt: nightMarketUpdatedAt,
         featuredBundle: featuredBundle,
+        featuredBundles: featuredBundles,
         featuredBundleUpdatedAt: featuredBundleUpdatedAt,
       );
 
@@ -109,6 +132,7 @@ class CurrentShop {
         dailyExpiresAt: dailyExpiresAt,
         dailyUpdatedAt: dailyUpdatedAt,
         featuredBundle: featuredBundle,
+        featuredBundles: featuredBundles,
         featuredBundleUpdatedAt: featuredBundleUpdatedAt,
       );
 
@@ -140,6 +164,10 @@ class CurrentShop {
       nightMarketEndsAt: date('nightMarketEndsAt'),
       nightMarketUpdatedAt: date('nightMarketUpdatedAt'),
       featuredBundle: bundle == null ? null : BundleEntry.fromJson(bundle),
+      featuredBundles: [
+        for (final b in json['featuredBundles'] as List<dynamic>? ?? const [])
+          if (b is Map<String, dynamic>) BundleEntry.fromJson(b),
+      ],
       featuredBundleUpdatedAt: date('featuredBundleUpdatedAt'),
     );
   }
@@ -152,6 +180,7 @@ class CurrentShop {
         'nightMarketEndsAt': nightMarketEndsAt?.toIso8601String(),
         'nightMarketUpdatedAt': nightMarketUpdatedAt?.toIso8601String(),
         'featuredBundle': featuredBundle?.toJson(),
+        'featuredBundles': featuredBundles.map((e) => e.toJson()).toList(),
         'featuredBundleUpdatedAt': featuredBundleUpdatedAt?.toIso8601String(),
       };
 }

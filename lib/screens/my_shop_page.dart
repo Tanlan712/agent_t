@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../logic/shop_time.dart';
 import '../logic/wishlist_match.dart';
+import '../models/current_shop.dart';
 import '../models/riot_session.dart';
 import '../providers/catalog_provider.dart';
 import '../providers/riot_provider.dart';
@@ -36,6 +37,48 @@ String _compact(Duration d) => '${d.inHours} 小時 ${d.inMinutes % 60} 分';
 /// KPI 用的短格式（時:分），窄欄也放得下。
 String _clock(Duration d) =>
     '${d.inHours}:${(d.inMinutes % 60).toString().padLeft(2, '0')}';
+
+/// 組合包的剩餘時間：一天以上顯示天與小時。
+String bundleRemaining(Duration d) {
+  if (d.isNegative) return '已結束，請更新';
+  if (d.inDays > 0) return '剩餘 ${d.inDays} 天 ${d.inHours % 24} 小時';
+  return formatRemaining(d);
+}
+
+/// 每日 4 款排成一橫排；寬度不夠時改成可左右滑動，卡片寬度固定。
+class _DailyRow extends StatelessWidget {
+  final List<Widget> cards;
+
+  const _DailyRow({required this.cards});
+
+  static const _minCard = 150.0;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, c) {
+        const gap = gridSpacing;
+        final n = cards.length;
+        if (c.maxWidth >= n * _minCard + (n - 1) * gap) {
+          return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            for (var i = 0; i < n; i++) ...[
+              if (i > 0) SizedBox(width: gap),
+              Expanded(
+                  child:
+                      AspectRatio(aspectRatio: _cardAspect, child: cards[i])),
+            ],
+          ]);
+        }
+        return SizedBox(
+          height: _minCard / _cardAspect,
+          child: ListView.separated(
+            key: const ValueKey('shop-daily-row'),
+            scrollDirection: Axis.horizontal,
+            itemCount: n,
+            separatorBuilder: (_, __) => SizedBox(width: gap),
+            itemBuilder: (_, i) => SizedBox(width: _minCard, child: cards[i]),
+          ),
+        );
+      });
+}
 
 int _discount(int original, int now) =>
     original <= 0 ? 0 : ((1 - now / original) * 100).round();
@@ -126,28 +169,18 @@ class MyShopPage extends StatelessWidget {
       onEdit: () => edit(ShopSection.daily),
       children: [
         if (shop.daily.isNotEmpty)
-          // 每日 4 款：可用寬度 ≥ 360 時固定 2×2，否則單欄。
-          LayoutBuilder(
-            builder: (context, c) => GridView.count(
-              crossAxisCount: c.maxWidth >= 360 ? 2 : 1,
-              childAspectRatio: _cardAspect,
-              mainAxisSpacing: gridSpacing,
-              crossAxisSpacing: gridSpacing,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                for (final e in shop.daily)
-                  SkinCard(
-                    key: ValueKey('shop-skin-${e.skinUuid}'),
-                    onTap: () => openSkin(e.skinUuid),
-                    skin: catalog.skinById(e.skinUuid),
-                    price: e.price,
-                    highlighted: dailyActive && matched.contains(e.skinUuid),
-                    owned: riot.isOwned(e.skinUuid),
-                  ),
-              ],
-            ),
-          ),
+          // 每日 4 款排成一橫排（圖片來源只有 512 寬，卡片太大會糊）。
+          _DailyRow(cards: [
+            for (final e in shop.daily)
+              SkinCard(
+                key: ValueKey('shop-skin-${e.skinUuid}'),
+                onTap: () => openSkin(e.skinUuid),
+                skin: catalog.skinById(e.skinUuid),
+                price: e.price,
+                highlighted: dailyActive && matched.contains(e.skinUuid),
+                owned: riot.isOwned(e.skinUuid),
+              ),
+          ]),
       ],
     );
 
@@ -189,27 +222,71 @@ class MyShopPage extends StatelessWidget {
       ],
     );
 
+    final bundles = shop.bundles;
+    void openBundle(BundleEntry b) {
+      final info = catalog.bundleById(b.bundleUuid);
+      if (info == null) return;
+      Navigator.push(
+          context,
+          MaterialPageRoute<void>(
+              builder: (_) =>
+                  BundleDetailPage(name: info.name, load: loader.load)));
+    }
+
+    Widget bundleTile(BundleEntry b) => Column(
+          key: ValueKey('shop-bundle-${b.bundleUuid}'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            BundleTile(
+                bundle: catalog.bundleById(b.bundleUuid),
+                price: b.price,
+                banner: true,
+                onTap: catalog.bundleById(b.bundleUuid) == null
+                    ? null
+                    : () => openBundle(b)),
+            if (b.endsAt case final end?)
+              Padding(
+                padding: const EdgeInsets.only(top: 6, left: 4),
+                child: Text(bundleRemaining(end.difference(t)),
+                    style: TextStyle(color: AppColors.muted, fontSize: 13)),
+              ),
+          ],
+        );
+
     final bundleSection = _Section(
-      emptyHint: emptyHint,
+      key: const ValueKey('shop-bundles'),
+      emptyHint: '登入 Riot 後會自動顯示',
       title: '精選組合包',
       emptyIcon: Icons.card_giftcard,
-      status: null,
-      onEdit: () => edit(ShopSection.featuredBundle),
+      status: bundles.length > 1 ? '${bundles.length} 組' : null,
+      // 精選組合包只能由登入同步取得，不提供手動編輯。
+      onEdit: null,
       children: [
-        if (shop.featuredBundle case final b?)
-          BundleTile(
-              key: const ValueKey('shop-bundle'),
-              bundle: catalog.bundleById(b.bundleUuid),
-              price: b.price,
-              banner: true,
-              onTap: catalog.bundleById(b.bundleUuid) == null
-                  ? null
-                  : () => Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                          builder: (_) => BundleDetailPage(
-                              name: catalog.bundleById(b.bundleUuid)!.name,
-                              load: loader.load)))),
+        if (bundles.isNotEmpty)
+          LayoutBuilder(builder: (context, c) {
+            // 寬螢幕一列兩個，窄螢幕一列一個。
+            final perRow = c.maxWidth >= 720 ? 2 : 1;
+            final rows = <Widget>[];
+            for (var i = 0; i < bundles.length; i += perRow) {
+              final chunk = bundles.skip(i).take(perRow).toList();
+              rows.add(Padding(
+                padding: EdgeInsets.only(top: i == 0 ? 0 : gridSpacing),
+                child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (var j = 0; j < perRow; j++) ...[
+                        if (j > 0) SizedBox(width: gridSpacing),
+                        Expanded(
+                            child: j < chunk.length
+                                ? bundleTile(chunk[j])
+                                : const SizedBox()),
+                      ],
+                    ]),
+              ));
+            }
+            return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch, children: rows);
+          }),
       ],
     );
 
@@ -229,6 +306,8 @@ class MyShopPage extends StatelessWidget {
                   child: riot.isLoggedIn
                       ? const _RiotBar()
                       : _LoginHero(onManual: () => edit(ShopSection.daily))),
+              // 有組合包時放在最上方；還沒有資料時放到最後，不把每日商店推下去。
+              if (bundles.isNotEmpty) BentoTile(span: 12, child: bundleSection),
               BentoTile(span: 8, child: dailySection),
               BentoTile(
                 span: 4,
@@ -254,7 +333,7 @@ class MyShopPage extends StatelessWidget {
                   ],
                 ),
               ),
-              BentoTile(span: 12, child: bundleSection),
+              if (bundles.isEmpty) BentoTile(span: 12, child: bundleSection),
             ]),
           ],
         ),

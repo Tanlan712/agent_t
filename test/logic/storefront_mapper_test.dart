@@ -37,6 +37,40 @@ void main() {
     expect(shop.featuredBundle!.price, 7100);
   });
 
+  test('多個精選組合包：全部保留，各自的剩餘時間', () {
+    final json = storefrontJson();
+    final featured = json['FeaturedBundle'] as Map<String, dynamic>;
+    final first = featured['Bundle'] as Map<String, dynamic>;
+    featured['Bundles'] = [
+      first,
+      {
+        ...first,
+        'ID': 'b2-offer',
+        'DataAssetID': 'bundle-2',
+        'TotalDiscountedCost': {vpCurrencyId: 0},
+        'TotalBaseCost': {vpCurrencyId: 5000},
+        'DurationRemainingInSeconds': 7200,
+      },
+    ];
+    final shop = mapStorefront(json, resolve, now);
+    expect(shop.featuredBundles.map((b) => b.bundleUuid),
+        ['bundle-rgx', 'bundle-2']);
+    expect(shop.featuredBundles.map((b) => b.price), [7100, 5000]);
+    expect(shop.featuredBundles.first.endsAt,
+        now.add(const Duration(seconds: 500000)));
+    expect(shop.featuredBundles.last.endsAt,
+        now.add(const Duration(seconds: 7200)));
+    // 相容：featuredBundle 是第一個。
+    expect(shop.featuredBundle!.bundleUuid, 'bundle-rgx');
+  });
+
+  test('只有 Bundle 時 featuredBundles 也有一個，含剩餘時間', () {
+    final shop = mapStorefront(storefrontJson(), resolve, now);
+    expect(shop.featuredBundles.single.bundleUuid, 'bundle-rgx');
+    expect(shop.featuredBundles.single.endsAt,
+        now.add(const Duration(seconds: 500000)));
+  });
+
   test('沒有 BonusStore 時夜市為空', () {
     final shop =
         mapStorefront(storefrontJson(withNightMarket: false), resolve, now);
