@@ -126,6 +126,8 @@ class MyShopPage extends StatelessWidget {
     final nightSection = _Section(
       title: '夜市',
       emptyIcon: Icons.nightlight_outlined,
+      emptyLabel: '尚未開放',
+      emptyTitle: '尚未開放',
       status: shop.nightMarket.isEmpty
           ? null
           : nightActive
@@ -313,6 +315,10 @@ class _Section extends StatelessWidget {
   final String title;
   final String? status;
   final IconData emptyIcon;
+
+  /// 沒有資料時標題旁的文字與空狀態標題（夜市為「尚未開放」）。
+  final String emptyLabel;
+  final String emptyTitle;
   final VoidCallback onEdit;
   final List<Widget> children;
 
@@ -321,6 +327,8 @@ class _Section extends StatelessWidget {
     required this.title,
     required this.status,
     required this.emptyIcon,
+    this.emptyLabel = '尚未輸入',
+    this.emptyTitle = '還沒有資料',
     required this.onEdit,
     required this.children,
   });
@@ -342,7 +350,7 @@ class _Section extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  empty ? '尚未輸入' : (status ?? ''),
+                  empty ? emptyLabel : (status ?? ''),
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color:
@@ -361,7 +369,7 @@ class _Section extends StatelessWidget {
           if (empty)
             EmptyState(
                 icon: emptyIcon,
-                title: '還沒有資料',
+                title: emptyTitle,
                 message: '登入 Riot 自動同步，或按「新增」手動輸入')
           else
             ...children,

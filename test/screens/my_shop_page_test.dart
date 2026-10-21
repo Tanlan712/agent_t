@@ -60,7 +60,9 @@ void main() {
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
     await tester.pumpAndSettle();
-    expect(find.text('尚未輸入'), findsNWidgets(3));
+    // 夜市沒有資料時顯示「尚未開放」，其他兩區仍是「尚未輸入」。
+    expect(find.text('尚未輸入'), findsNWidgets(2));
+    expect(find.text('尚未開放'), findsNWidgets(2));
     expect(find.text('每日商店'), findsOneWidget);
     expect(find.text('夜市'), findsOneWidget);
     expect(find.text('精選組合包'), findsOneWidget);
