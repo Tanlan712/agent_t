@@ -7,11 +7,32 @@ class ValorantApiService {
   static const String baseUrl = 'https://valorant-api.com/v1';
   static const String defaultLanguage = 'zh-TW';
 
+  final http.Client _client;
+
+  ValorantApiService({http.Client? client}) : _client = client ?? http.Client();
+
+  /// 取得所有主題（組合包以主題名稱配對造型）
+  Future<List<Map<String, dynamic>>> getThemes({
+    String language = defaultLanguage,
+  }) async {
+    final response = await _client.get(
+      Uri.parse('$baseUrl/themes?language=$language'),
+    );
+
+    if (response.statusCode == 200) {
+      final data =
+          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      return List<Map<String, dynamic>>.from(data['data'] as List);
+    } else {
+      throw Exception('無法取得主題資料: ${response.statusCode}');
+    }
+  }
+
   /// 取得所有可玩角色
   Future<List<Map<String, dynamic>>> getAgents({
     String language = defaultLanguage,
   }) async {
-    final response = await http.get(
+    final response = await _client.get(
       Uri.parse('$baseUrl/agents?language=$language&isPlayableCharacter=true'),
     );
 
@@ -28,7 +49,7 @@ class ValorantApiService {
     String uuid, {
     String language = defaultLanguage,
   }) async {
-    final response = await http.get(
+    final response = await _client.get(
       Uri.parse('$baseUrl/agents/$uuid?language=$language'),
     );
 
@@ -44,7 +65,7 @@ class ValorantApiService {
   Future<List<Map<String, dynamic>>> getWeapons({
     String language = defaultLanguage,
   }) async {
-    final response = await http.get(
+    final response = await _client.get(
       Uri.parse('$baseUrl/weapons?language=$language'),
     );
 
@@ -61,7 +82,7 @@ class ValorantApiService {
     String uuid, {
     String language = defaultLanguage,
   }) async {
-    final response = await http.get(
+    final response = await _client.get(
       Uri.parse('$baseUrl/weapons/$uuid?language=$language'),
     );
 
@@ -77,7 +98,7 @@ class ValorantApiService {
   Future<List<Map<String, dynamic>>> getMaps({
     String language = defaultLanguage,
   }) async {
-    final response = await http.get(
+    final response = await _client.get(
       Uri.parse('$baseUrl/maps?language=$language'),
     );
 
@@ -93,7 +114,7 @@ class ValorantApiService {
   Future<List<Map<String, dynamic>>> getBundles({
     String language = defaultLanguage,
   }) async {
-    final response = await http.get(
+    final response = await _client.get(
       Uri.parse('$baseUrl/bundles?language=$language'),
     );
 
@@ -109,7 +130,7 @@ class ValorantApiService {
   Future<List<Map<String, dynamic>>> getGamemodes({
     String language = defaultLanguage,
   }) async {
-    final response = await http.get(
+    final response = await _client.get(
       Uri.parse('$baseUrl/gamemodes?language=$language'),
     );
 
@@ -125,7 +146,7 @@ class ValorantApiService {
   Future<List<Map<String, dynamic>>> getPlayerCards({
     String language = defaultLanguage,
   }) async {
-    final response = await http.get(
+    final response = await _client.get(
       Uri.parse('$baseUrl/playercards?language=$language'),
     );
 
@@ -141,7 +162,7 @@ class ValorantApiService {
   Future<List<Map<String, dynamic>>> getSprays({
     String language = defaultLanguage,
   }) async {
-    final response = await http.get(
+    final response = await _client.get(
       Uri.parse('$baseUrl/sprays?language=$language'),
     );
 
@@ -157,7 +178,7 @@ class ValorantApiService {
   Future<List<Map<String, dynamic>>> getBuddies({
     String language = defaultLanguage,
   }) async {
-    final response = await http.get(
+    final response = await _client.get(
       Uri.parse('$baseUrl/buddies?language=$language'),
     );
 
