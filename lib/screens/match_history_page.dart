@@ -60,11 +60,11 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
 
     final Widget body;
     if (!riot.isLoggedIn) {
-      body = Align(
-        alignment: Alignment.topCenter,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 24),
-          child: PanelCard(
+      // 放在 ListView 裡：高度不受限，空狀態卡依內容高度、不撐滿整頁。
+      body = ListView(
+        padding: const EdgeInsets.only(top: 8, bottom: 24),
+        children: [
+          PanelCard(
             padding: const EdgeInsets.all(32),
             child: EmptyState(
               icon: Icons.history,
@@ -74,7 +74,7 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
               onAction: () => Navigator.pushNamed(context, '/riot-login'),
             ),
           ),
-        ),
+        ],
       );
     } else if (history.entries.isEmpty && history.isLoading) {
       body = const Center(child: CircularProgressIndicator());

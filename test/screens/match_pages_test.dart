@@ -477,6 +477,10 @@ void scoreboardTests() {
       await tester.pumpAndSettle();
       expect(find.byType(EmptyState), findsOneWidget);
       expect(find.widgetWithText(FilledButton, '登入 Riot'), findsOneWidget);
+      // 空狀態卡依內容高度，不撐滿整頁。
+      final card = find.ancestor(
+          of: find.byType(EmptyState), matching: find.byType(PanelCard));
+      expect(tester.getSize(card).height, lessThan(400));
     });
 
     testWidgets('詳情：數字欄等寬、MVP 是 StatusChip', (tester) async {
