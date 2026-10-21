@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:valorant_shop_tracker/screens/maps_page.dart';
 import 'package:valorant_shop_tracker/screens/weapons_page.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
@@ -94,6 +95,60 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('無射擊數據'), findsOneWidget);
       expect(find.byKey(const ValueKey('damage-table')), findsNothing);
+    });
+  });
+
+  group('地圖', () {
+    // 小地圖在詳細頁上不會被蓋住，可以保留圖片網址。
+    final api = fakeApi({
+      '/v1/maps': [
+        {...ascentJson(), 'splash': null},
+        {
+          'uuid': 'range',
+          'displayName': '靶場',
+          'displayIcon': null,
+          'splash': null,
+          'callouts': null,
+        },
+      ],
+    });
+
+    for (final width in [375.0, 1440.0]) {
+      testWidgets('$width 寬：點開看完整小地圖，可切換地點名稱', (tester) async {
+        setWidth(tester, width);
+        final h = await Harness.create(tester);
+        await tester.pumpWidget(h.wrap(home: MapsPage(api: api)));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('db-map-ascent')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('minimap')), findsOneWidget);
+        expect(find.byType(InteractiveViewer), findsOneWidget);
+        expect(find.text('A 大門'), findsNothing);
+        await tester.tap(find.byKey(const ValueKey('callouts-toggle')));
+        await tester.pumpAndSettle();
+        expect(find.text('A 大門'), findsOneWidget);
+        expect(find.text('中路'), findsOneWidget);
+        // 標籤的中心在 (u, v) × 小地圖邊長。
+        final box = tester.getRect(find.byKey(const ValueKey('minimap')));
+        final label = tester.getCenter(find.text('中路'));
+        expect(label.dx, closeTo(box.left + 0.8 * box.width, 1));
+        expect(label.dy, closeTo(box.top + 0.5 * box.height, 1));
+        await tester.scrollUntilVisible(find.text('A/B 據點'), 200,
+            scrollable: find.byType(Scrollable).last);
+        expect(find.text('A/B 據點'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('沒有小地圖的地圖', (tester) async {
+      setWidth(tester, 1440);
+      final h = await Harness.create(tester);
+      await tester.pumpWidget(h.wrap(home: MapsPage(api: api)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('db-map-range')));
+      await tester.pumpAndSettle();
+      expect(find.text('這張地圖沒有小地圖'), findsOneWidget);
+      expect(find.byKey(const ValueKey('callouts-toggle')), findsNothing);
     });
   });
 }

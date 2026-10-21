@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
+import '../models/game_data.dart';
 import '../shell/app_shell.dart';
+import 'details/map_detail_page.dart';
 import '../shell/responsive_grid.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
 class MapsPage extends StatefulWidget {
-  const MapsPage({super.key});
+  /// 測試時注入。
+  final ValorantApiService? api;
+
+  const MapsPage({super.key, this.api});
 
   @override
   State<MapsPage> createState() => _MapsPageState();
 }
 
 class _MapsPageState extends State<MapsPage> {
-  final ValorantApiService _apiService = ValorantApiService();
+  late final ValorantApiService _apiService =
+      widget.api ?? ValorantApiService();
   List<Map<String, dynamic>> _maps = [];
   bool _isLoading = true;
   String? _error;
@@ -87,71 +93,78 @@ class _MapsPageState extends State<MapsPage> {
     final coordinates = map['coordinates'] as String?;
 
     return Card(
+      key: ValueKey('db-map-${map['uuid']}'),
       clipBehavior: Clip.antiAlias,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (splash != null)
-            Image.network(
-              splash,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  color: AppColors.surfaceHigh,
-                  child: const Icon(Icons.map, size: 64),
-                );
-              },
-            )
-          else
-            Container(
-              color: AppColors.surfaceHigh,
-              child: const Icon(Icons.map, size: 64),
-            ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.8),
-                    Colors.transparent,
-                  ],
-                ),
+      child: InkWell(
+        onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+                builder: (_) => MapDetailPage(map: MapInfo.fromJson(map)))),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (splash != null)
+              Image.network(
+                splash,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: AppColors.surfaceHigh,
+                    child: const Icon(Icons.map, size: 64),
+                  );
+                },
+              )
+            else
+              Container(
+                color: AppColors.surfaceHigh,
+                child: const Icon(Icons.map, size: 64),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    displayName,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.8),
+                      Colors.transparent,
+                    ],
                   ),
-                  if (coordinates != null)
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     Text(
-                      coordinates,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.text,
+                      displayName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                ],
+                    if (coordinates != null)
+                      Text(
+                        coordinates,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.text,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
