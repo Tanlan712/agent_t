@@ -46,7 +46,7 @@ class BundleTile extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               SkinIcon(url: bundle?.iconUrl, fit: BoxFit.cover),
-              const DecoratedBox(
+              DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,

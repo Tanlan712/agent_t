@@ -141,9 +141,9 @@ class _DetailBody extends StatelessWidget {
                         color: resultColor(s.won),
                         fontWeight: FontWeight.bold)),
                 Text('${(s.durationMs / 60000).round()} 分鐘',
-                    style: const TextStyle(color: AppColors.muted)),
+                    style: TextStyle(color: AppColors.muted)),
                 Text(formatMatchTime(s.startTime),
-                    style: const TextStyle(color: AppColors.muted)),
+                    style: TextStyle(color: AppColors.muted)),
               ],
             ),
           ),
@@ -155,7 +155,7 @@ class _DetailBody extends StatelessWidget {
           tables[i],
         ],
         const SizedBox(height: 24),
-        const Center(
+        Center(
           child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊',
               style: TextStyle(color: AppColors.muted, fontSize: 12)),
         ),
@@ -217,7 +217,7 @@ class _TeamTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const muted = TextStyle(color: AppColors.muted, fontSize: 12);
+    final muted = TextStyle(color: AppColors.muted, fontSize: 12);
     final result = won == null ? '平手' : (won! ? '勝利' : '落敗');
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -251,8 +251,7 @@ class _TeamTable extends StatelessWidget {
                       DataRow(
                         // 自己那一列較亮；其餘奇數列用淡斑馬紋。
                         color: p.isMe
-                            ? const WidgetStatePropertyAll(
-                                AppColors.surfaceHigh)
+                            ? WidgetStatePropertyAll(AppColors.surfaceHigh)
                             : i.isOdd
                                 ? WidgetStatePropertyAll(
                                     AppColors.surfaceHigh.withOpacity(0.4))
@@ -295,7 +294,7 @@ class _TeamTable extends StatelessWidget {
                                 const SizedBox(width: 6),
                                 Text('Lv ${p.accountLevel}',
                                     key: ValueKey('level-${p.puuid}'),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         color: AppColors.muted, fontSize: 12)),
                                 if (p.mvp != MvpKind.none) ...[
                                   const SizedBox(width: 6),
@@ -351,9 +350,9 @@ class _MvpTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => kind == MvpKind.match
-      ? const StatusChip(
+      ? StatusChip(
           label: '全場 MVP', color: AppColors.warn, icon: Icons.emoji_events)
-      : const StatusChip(label: '隊伍 MVP', color: AppColors.info);
+      : StatusChip(label: '隊伍 MVP', color: AppColors.info);
 }
 
 /// 牌位小圖示：這場有牌位就用這場的，沒有時用背景查到的這季牌位。

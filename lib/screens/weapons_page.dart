@@ -52,7 +52,7 @@ class _WeaponsPageState extends State<WeaponsPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error, size: 64, color: AppColors.error),
+                      Icon(Icons.error, size: 64, color: AppColors.error),
                       const SizedBox(height: 16),
                       Text('載入失敗: $_error'),
                       const SizedBox(height: 16),
@@ -120,7 +120,7 @@ class _WeaponsPageState extends State<WeaponsPage> {
                 ),
                 Text(
                   cost > 0 ? '\$$cost' : '免費',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,
                   ),
@@ -131,7 +131,7 @@ class _WeaponsPageState extends State<WeaponsPage> {
               category,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: AppColors.muted, fontSize: 12),
+              style: TextStyle(color: AppColors.muted, fontSize: 12),
             ),
           ],
         ),

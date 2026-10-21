@@ -6,9 +6,17 @@
 - 來源：UI UX Pro Max（Data-Dense Dashboard 風格，Variance 6／Motion 3／Density 8），
   依 VALORANT 品牌改寫配色與字體（使用者 2026-10-21 選定方向 A「戰術 HUD」）。
 - 技術：Flutter Web。所有顏色只能來自 `AppColors`／`ThemeData`（`test/theme/no_hardcoded_colors_test.dart` 會檢查）。
+- **可切換主題（2026-10-21）**：8 種風格 × 4 種主色 × 3 種明暗，規格見 `docs/superpowers/specs/2026-10-21-ui-themes-design.md`。
+  顏色由 `lib/theme/app_palette.dart`（`AppPalette`）、形狀與排列由 `lib/theme/app_style.dart`（`AppStyle`）提供；
+  `AppColors.*` 讀目前主題，元件可用 `context.palette`／`context.appStyle`。預設為 A 編輯海報（淺色、特務紅）。
 - 對比度都已實際計算（WCAG 公式）。
 
 ## 1. 配色
+
+> 以下是「特務紅／深色」的數值（改版前的唯一配色，現為 B～D、F 的參考）。各風格 × 主色 × 明暗的完整色表在規格 §3，
+> 對比規則由 `test/theme/palette_contrast_test.dart` 對 64 組全部檢查：文字類 token 對 background／surface／surfaceHigh ≥ 4.5；
+> 非 EVA 風格的 primary 對 surfaceHigh 只要求 ≥ 3.0（仍不可用於 surfaceHigh 上 14px 以下文字）。
+> 狀態標籤（Chip）文字色為原色往 text 混 30%，疊在 15% 底色上仍 ≥ 4.5。
 
 ### 表面（由深到淺）
 
@@ -62,8 +70,9 @@
 | `space-xl` | 16 | 區塊間距 |
 | `space-2xl` | 24 | 頁面內距（桌機） |
 
-- 圓角：卡片 12（`AppRadius.card`）、按鈕 4、標籤 2。斜切已移除（2026-10-21 改版 B：儀表板 Bento 風）。
-- 版面：`PanelCard`（12 圓角、1px outline、可選左側 3px 強調條）、`BentoGrid`（12／6／1 欄）、`PageHeader`（28px 標題＋副標）、分組側欄 `SideNav`（248／72）。規格見 `docs/superpowers/specs/2026-10-21-ui-bento-design.md`。
+- 圓角、卡片樣式、頁首、KPI 列、格線間距、導覽型態都依風格（`AppStyle`），數值見規格 §4.1。Bento 風格已移除（2026-10-21）。
+- 版面元件：`PanelCard`、`BentoGrid`（12／6／1 欄）、`KpiStrip`、`PageHeader`、`ResponsiveGrid`；頁面只呼叫元件，排列差異由元件依風格處理。
+- 導覽：A／B／C／E 頂部列（600–1023 只有圖示）、D 窄側欄、F 系列 EVA 側欄；<600 一律底部導覽（4 項＋「更多」）。
 - 陰影：只用在浮起的元素（選單、對話框），卡片用邊框區分層次。
 - 格線：12 欄；寬度 ≥1024 時側邊導覽，600–1023 窄導覽，<600 底部導覽（最多 5 項）加「更多」。
 
@@ -76,7 +85,16 @@
 - **空狀態／錯誤**：圖示＋一句說明＋一個動作（例如「重試」「登入 Riot」）。
 - **載入**：骨架（skeleton）優先，避免版面跳動；長列表依序淡入。
 
-## 5. 動態（Motion 3／10）
+## 5. 動態（Motion 3／10；EVA 系列例外，見規格 §4.2–§4.4）
+
+- 例外：F1／F2／F3（EVA）可以有互動背景、掃描線、載入跑馬燈與倒數，但只用來揭示真實狀態；閃爍 ≤ 3 次／秒；
+  設定「動態背景」關閉或系統「減少動態效果」開啟時一律靜止。D 終端機的游標閃 4 次後保持亮著。
+- EVA 彩蛋、故事層與機密文件（規格 §4.4–§4.7）：
+  - 只讀已載入的資料，不為彩蛋觸發任何載入或 API 呼叫；token、PUUID 不出現在終端機與文件中。
+  - 文案全部原創，只取世界觀語彙；不使用 NERV 標誌、角色、原作台詞或官方字體（中文明朝體用 Noto Serif TC，只在 EVA 系列下載）。
+  - 閃爍 ≤ 3 次／秒（實作為 1 次／秒）；覆蓋畫面可 Esc 或點擊關閉；減少動態效果時直接顯示最終畫面。
+  - 輸入框聚焦時鍵盤彩蛋不觸發；設定頁可關閉彩蛋、切頁標題卡，並可重設劇集與彩蛋紀錄。
+  - 本機狀態（劇集、已發現的彩蛋等）只存在這個瀏覽器的 localStorage，不含他人資料。
 
 - hover／按下：150–200ms，`Curves.easeOut`；不改變尺寸，避免版面位移。
 - 列表與卡片進場：淡入＋位移 8px，每項間隔 40ms，總長不超過 400ms。

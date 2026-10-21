@@ -92,8 +92,7 @@ class _ProgressPageState extends State<ProgressPage> {
                 accent: AppColors.loss,
                 child: Row(children: [
                   Expanded(
-                      child: Text(e,
-                          style: const TextStyle(color: AppColors.error))),
+                      child: Text(e, style: TextStyle(color: AppColors.error))),
                   OutlinedButton(onPressed: p.refresh, child: const Text('重試')),
                 ]),
               ),
@@ -180,10 +179,10 @@ class _PassCard extends StatelessWidget {
             title: pass.name,
             trailing: Text('第 ${pass.reached} 階 / ${pass.tiers.length}',
                 style: AppText.tabular(
-                    const TextStyle(color: AppColors.muted, fontSize: 13))),
+                    TextStyle(color: AppColors.muted, fontSize: 13))),
           ),
           if (next == null)
-            const Text('已完成全部階級',
+            Text('已完成全部階級',
                 style: TextStyle(
                     color: AppColors.win, fontWeight: FontWeight.w600))
           else ...[
@@ -200,7 +199,7 @@ class _PassCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text('下一階 ${pass.towardsNext} / $next XP',
                 style: AppText.tabular(
-                    const TextStyle(color: AppColors.muted, fontSize: 12))),
+                    TextStyle(color: AppColors.muted, fontSize: 12))),
           ],
           const SizedBox(height: 16),
           for (final ch in chapters)
@@ -272,8 +271,7 @@ class _ChapterSectionState extends State<_ChapterSection> {
                     Text(
                         '第 ${ch.startTier}–${ch.startTier + ch.tiers.length - 1} 階'
                         '${ch.freeRewards.isEmpty ? '' : '・免費 ${ch.freeRewards.length}'}',
-                        style: const TextStyle(
-                            color: AppColors.muted, fontSize: 12)),
+                        style: TextStyle(color: AppColors.muted, fontSize: 12)),
                   Icon(_expanded ? Icons.expand_less : Icons.expand_more,
                       color: AppColors.muted),
                 ]),
@@ -363,16 +361,16 @@ class _RewardTile extends StatelessWidget {
                     fontWeight: free ? FontWeight.w600 : FontWeight.w400))),
             const Spacer(),
             if (reached)
-              const Icon(Icons.check_circle, size: 16, color: AppColors.win),
+              Icon(Icons.check_circle, size: 16, color: AppColors.win),
           ]),
           Expanded(
             child: icon == null
-                ? const Icon(Icons.card_giftcard, color: AppColors.muted)
+                ? Icon(Icons.card_giftcard, color: AppColors.muted)
                 : SkinIcon(url: icon),
           ),
           Text(rewardTypeLabel(reward.type),
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.muted, fontSize: 11)),
+              style: TextStyle(color: AppColors.muted, fontSize: 11)),
           Text(rewardLabel(reward, ref),
               maxLines: 2,
               textAlign: TextAlign.center,
@@ -397,7 +395,7 @@ class _MissionCard extends StatelessWidget {
           children: [
             SectionHeader(title: title),
             if (missions.isEmpty)
-              const Text('目前沒有任務', style: TextStyle(color: AppColors.muted))
+              Text('目前沒有任務', style: TextStyle(color: AppColors.muted))
             else
               for (final m in missions)
                 Padding(
@@ -410,7 +408,7 @@ class _MissionCard extends StatelessWidget {
                             child:
                                 Text(m.title, overflow: TextOverflow.ellipsis)),
                         if (m.complete)
-                          const StatusChip(
+                          StatusChip(
                               label: '完成',
                               color: AppColors.win,
                               icon: Icons.check),
@@ -430,11 +428,11 @@ class _MissionCard extends StatelessWidget {
                       Row(children: [
                         Text(
                             '${m.complete ? m.target : m.progress} / ${m.target}',
-                            style: AppText.tabular(const TextStyle(
+                            style: AppText.tabular(TextStyle(
                                 color: AppColors.muted, fontSize: 12))),
                         const Spacer(),
                         Text('+${m.xpGrant} XP',
-                            style: AppText.tabular(const TextStyle(
+                            style: AppText.tabular(TextStyle(
                                 color: AppColors.muted, fontSize: 12))),
                       ]),
                     ],

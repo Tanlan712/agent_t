@@ -427,18 +427,18 @@ class _AgentsTab extends StatelessWidget {
                                   const TextStyle(fontWeight: FontWeight.w600)),
                         ),
                         if (a.isBase)
-                          const StatusChip(label: '初始', color: AppColors.info),
+                          StatusChip(label: '初始', color: AppColors.info),
                       ]),
                       Text(a.role,
-                          style: const TextStyle(
-                              color: AppColors.muted, fontSize: 12)),
+                          style:
+                              TextStyle(color: AppColors.muted, fontSize: 12)),
                       const SizedBox(height: 6),
                       if (levelStatus != null)
                         Text(levelStatus!,
-                            style: const TextStyle(
-                                color: AppColors.muted, fontSize: 12))
+                            style:
+                                TextStyle(color: AppColors.muted, fontSize: 12))
                       else if (lv == null)
-                        const Text('尚未開始',
+                        Text('尚未開始',
                             style:
                                 TextStyle(color: AppColors.muted, fontSize: 12))
                       else ...[
@@ -509,7 +509,7 @@ class _TitleList extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 8),
               child: PanelCard(
                 child: Row(children: [
-                  const Icon(Icons.label_outline, color: AppColors.muted),
+                  Icon(Icons.label_outline, color: AppColors.muted),
                   const SizedBox(width: 12),
                   Expanded(child: Text(t.name)),
                 ]),

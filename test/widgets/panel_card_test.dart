@@ -3,11 +3,17 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:valorant_shop_tracker/theme/app_palette.dart';
+import 'package:valorant_shop_tracker/theme/app_style.dart';
 import 'package:valorant_shop_tracker/theme/app_theme.dart';
+import 'package:valorant_shop_tracker/theme/theme_ids.dart';
 import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 
+// B 數位霓虹：有邊框、10px 圓角；各風格的形狀另見 style_variants_test.dart。
 Widget host(Widget child, {bool reduceMotion = false}) => MaterialApp(
-      theme: buildAppTheme(useGoogleFonts: false),
+      theme: buildAppTheme(
+          choice: const ThemeChoice(style: ThemeStyleId.neon),
+          useGoogleFonts: false),
       home: MediaQuery(
         data: MediaQueryData(disableAnimations: reduceMotion),
         child: Scaffold(body: Center(child: child)),
@@ -21,19 +27,21 @@ void main() {
           of: find.byType(PanelCard), matching: find.byType(AnimatedContainer)))
       .decoration! as BoxDecoration;
 
-  testWidgets('PanelCard 圓角 12、outline 邊框', (tester) async {
+  testWidgets('PanelCard 圓角依風格、outline 邊框', (tester) async {
     await tester.pumpWidget(host(const PanelCard(child: Text('卡片'))));
     final d = decorationOf(tester);
-    expect(d.borderRadius, BorderRadius.circular(AppRadius.card));
+    expect(d.borderRadius,
+        BorderRadius.circular(AppStyle.of(ThemeStyleId.neon).cardRadius));
     expect((d.border! as Border).top.color, AppColors.outline);
   });
 
   testWidgets('PanelCard 有強調色時左側 3px 色條', (tester) async {
-    await tester.pumpWidget(
-        host(const PanelCard(accent: AppColors.win, child: Text('卡片'))));
+    final accent = AppColors.win;
+    await tester
+        .pumpWidget(host(PanelCard(accent: accent, child: const Text('卡片'))));
     final bar =
         tester.widget<Container>(find.byKey(const ValueKey('panel-accent')));
-    expect(bar.color, AppColors.win);
+    expect(bar.color, accent);
     expect(tester.getSize(find.byKey(const ValueKey('panel-accent'))).width, 3);
   });
 
@@ -81,11 +89,12 @@ void main() {
 
   testWidgets('有強調色時左側不圓角，色條不被裁掉', (tester) async {
     await tester.pumpWidget(
-        host(const PanelCard(accent: AppColors.win, child: Text('卡片'))));
+        host(PanelCard(accent: AppColors.win, child: const Text('卡片'))));
     final r = decorationOf(tester).borderRadius! as BorderRadius;
     expect(r.topLeft, Radius.zero);
     expect(r.bottomLeft, Radius.zero);
-    expect(r.topRight, const Radius.circular(AppRadius.card));
+    expect(
+        r.topRight, Radius.circular(AppStyle.of(ThemeStyleId.neon).cardRadius));
   });
 
   testWidgets('可點擊的 PanelCard 是按鈕語意', (tester) async {
@@ -99,7 +108,7 @@ void main() {
   });
 
   testWidgets('StatusChip 在 60px 寬不 overflow', (tester) async {
-    await tester.pumpWidget(host(const SizedBox(
+    await tester.pumpWidget(host(SizedBox(
         width: 60,
         child: StatusChip(
             label: '這是一段很長的狀態文字',
@@ -108,11 +117,17 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  test('CardTheme 是 12px 圓角', () {
-    final shape = buildAppTheme(useGoogleFonts: false).cardTheme.shape;
-    expect(shape, isA<RoundedRectangleBorder>());
-    expect((shape! as RoundedRectangleBorder).borderRadius,
-        BorderRadius.circular(12));
+  test('CardTheme 圓角依風格', () {
+    for (final style in ThemeStyleId.values) {
+      final shape = buildAppTheme(
+              choice: ThemeChoice(style: style), useGoogleFonts: false)
+          .cardTheme
+          .shape;
+      expect(shape, isA<RoundedRectangleBorder>());
+      expect((shape! as RoundedRectangleBorder).borderRadius,
+          BorderRadius.circular(AppStyle.of(style).cardRadius));
+    }
+    AppPalette.reset();
   });
 
   testWidgets('EmptyState 顯示標題、說明與按鈕', (tester) async {

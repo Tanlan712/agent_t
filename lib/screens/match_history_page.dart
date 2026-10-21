@@ -90,7 +90,7 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
                 spacing: 12,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Text(e, style: const TextStyle(color: AppColors.error)),
+                  Text(e, style: TextStyle(color: AppColors.error)),
                   // 第一頁失敗時頁面不會自動重試，給使用者手動重試的入口。
                   if (history.entries.isEmpty && !history.isLoading)
                     OutlinedButton(
@@ -126,7 +126,7 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
               ),
             ),
           const SizedBox(height: 24),
-          const Center(
+          Center(
             child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊',
                 style: TextStyle(color: AppColors.muted, fontSize: 12)),
           ),
@@ -221,7 +221,7 @@ class _RankHeader extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleLarge),
             if (rank != null) Text('${rank.rr} RR'),
             if (recentRr.isNotEmpty) ...[
-              const Text('最近：', style: TextStyle(color: AppColors.muted)),
+              Text('最近：', style: TextStyle(color: AppColors.muted)),
               for (final rr in recentRr)
                 Text(formatRr(rr),
                     style: TextStyle(
@@ -255,7 +255,7 @@ class MatchCard extends StatelessWidget {
         key: ValueKey('match-card-${entry.ref.matchId}'),
         child: Center(
           child: Text(entry.failed ? '無法載入這場' : '載入中…',
-              style: const TextStyle(color: AppColors.muted)),
+              style: TextStyle(color: AppColors.muted)),
         ),
       );
     }
@@ -283,11 +283,9 @@ class MatchCard extends StatelessWidget {
                 Text(map.name,
                     style: const TextStyle(fontWeight: FontWeight.bold)),
                 Text(queueName(s.queueId),
-                    style:
-                        const TextStyle(color: AppColors.muted, fontSize: 12)),
+                    style: TextStyle(color: AppColors.muted, fontSize: 12)),
                 Text(formatMatchTime(entry.ref.startTime),
-                    style:
-                        const TextStyle(color: AppColors.muted, fontSize: 12)),
+                    style: TextStyle(color: AppColors.muted, fontSize: 12)),
               ],
             ),
           ),
@@ -311,8 +309,7 @@ class MatchCard extends StatelessWidget {
                 Text('${s.kills} / ${s.deaths} / ${s.assists}'),
                 if (otherPlayer)
                   Text('ACS ${s.acs}',
-                      style: const TextStyle(
-                          color: AppColors.muted, fontSize: 12)),
+                      style: TextStyle(color: AppColors.muted, fontSize: 12)),
                 if (s.rrChange case final rr?)
                   Text(formatRr(rr),
                       style: TextStyle(

@@ -182,6 +182,23 @@ void main() {
       await p.setHighlightWishlist(false);
       expect(SettingsStorage(prefs).load().highlightWishlist, isFalse);
     });
+
+    test('setTheme 存檔並通知一次', () async {
+      final p = SettingsProvider(SettingsStorage(prefs));
+      var n = 0;
+      p.addListener(() => n++);
+      await p.setTheme(style: 'neon');
+      expect(n, 1);
+      final loaded = SettingsStorage(prefs).load();
+      expect(loaded.themeStyle, 'neon');
+      expect(loaded.themeAccent, 'red');
+    });
+
+    test('setBackgroundMotion 存檔', () async {
+      final p = SettingsProvider(SettingsStorage(prefs));
+      await p.setBackgroundMotion(false);
+      expect(SettingsStorage(prefs).load().backgroundMotion, isFalse);
+    });
   });
 }
 

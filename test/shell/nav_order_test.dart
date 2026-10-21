@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:valorant_shop_tracker/models/app_settings.dart';
+import 'package:valorant_shop_tracker/screens/settings_page.dart';
 import 'package:valorant_shop_tracker/shell/app_shell.dart';
 import 'package:valorant_shop_tracker/shell/nav_items.dart';
+import 'package:valorant_shop_tracker/theme/theme_ids.dart';
+import 'package:valorant_shop_tracker/widgets/nav_order_editor.dart';
 
 import '../app_harness.dart';
 import 'app_shell_test.dart' show setWidth;
@@ -51,51 +55,70 @@ void main() {
   Widget shell() => const AppShell(
       currentRoute: '/wishlist', title: '願望清單', child: Text('內容'));
 
-  double y(WidgetTester tester, String route) =>
-      tester.getTopLeft(find.byKey(ValueKey('nav-$route'))).dy;
-
-  testWidgets('側欄依設定的順序顯示', (tester) async {
+  testWidgets('各風格的導覽都依設定的順序顯示', (tester) async {
     setWidth(tester, 1400);
     final h = await Harness.create(tester);
     await h.settings.setNavOrder(const ['/live', '/']);
-    await tester.pumpWidget(h.wrap(home: shell()));
-    expect(y(tester, '/live'), lessThan(y(tester, '/')));
+    // D 終端機（窄側欄）與 F3（EVA 側欄）是直排，A 編輯海報是頂部橫排。
+    for (final (style, vertical) in [
+      (ThemeStyleId.terminal, true),
+      (ThemeStyleId.evaFusion, true),
+      (ThemeStyleId.editorial, false),
+    ]) {
+      await tester
+          .pumpWidget(h.wrap(choice: ThemeChoice(style: style), home: shell()));
+      await tester.pumpAndSettle();
+      final live = tester.getTopLeft(find.byKey(const ValueKey('nav-/live')));
+      final home = tester.getTopLeft(find.byKey(const ValueKey('nav-/')));
+      expect(
+          vertical ? live.dy : live.dx, lessThan(vertical ? home.dy : home.dx),
+          reason: style.name);
+    }
   });
 
-  testWidgets('編輯選單：上移後立即生效並保存，恢復預設可還原', (tester) async {
+  Widget editor(Harness h) => h.wrap(
+      home: Scaffold(body: ListView(children: const [NavOrderEditor()])));
+
+  testWidgets('設定頁選單順序：上移後立即保存，恢復預設可還原', (tester) async {
     setWidth(tester, 1400);
     final h = await Harness.create(tester);
-    await tester.pumpWidget(h.wrap(home: shell()));
-    await tester.tap(find.byKey(const ValueKey('nav-edit')));
+    await tester.pumpWidget(editor(h));
+    final reset = find.byKey(const ValueKey('order-reset'));
+    expect(tester.widget<TextButton>(reset).onPressed, isNull);
+    await tester.tap(find.byKey(const ValueKey('order-up-/matches')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('nav-up-/matches')));
-    await tester.pumpAndSettle();
-    expect(h.settings.settings.navOrder.indexOf('/matches'),
-        lessThan(h.settings.settings.navOrder.indexOf('/wishlist')));
-    await tester.tap(find.byKey(const ValueKey('nav-edit-done')));
-    await tester.pumpAndSettle();
-    expect(y(tester, '/matches'), lessThan(y(tester, '/wishlist')));
-
-    await tester.tap(find.byKey(const ValueKey('nav-edit')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('nav-edit-reset')));
+    final order = h.settings.settings.navOrder;
+    expect(order.indexOf('/matches'), lessThan(order.indexOf('/wishlist')));
+    expect(
+        tester.getTopLeft(find.byKey(const ValueKey('order-/matches'))).dy,
+        lessThan(tester
+            .getTopLeft(find.byKey(const ValueKey('order-/wishlist')))
+            .dy));
+    await tester.tap(reset);
     await tester.pumpAndSettle();
     expect(h.settings.settings.navOrder, isEmpty);
   });
 
-  testWidgets('組內第一項不能上移、最後一項不能下移', (tester) async {
+  testWidgets('設定頁選單順序：組內第一項不能上移、最後一項不能下移', (tester) async {
     setWidth(tester, 1400);
     final h = await Harness.create(tester);
-    await tester.pumpWidget(h.wrap(home: shell()));
-    await tester.tap(find.byKey(const ValueKey('nav-edit')));
-    await tester.pumpAndSettle();
+    await tester.pumpWidget(editor(h));
     final up =
-        tester.widget<IconButton>(find.byKey(const ValueKey('nav-up-/')));
+        tester.widget<IconButton>(find.byKey(const ValueKey('order-up-/')));
     expect(up.onPressed, isNull);
     final last = navItems.lastWhere((n) => n.group == NavGroup.shop).route;
     final down =
-        tester.widget<IconButton>(find.byKey(ValueKey('nav-down-$last')));
+        tester.widget<IconButton>(find.byKey(ValueKey('order-down-$last')));
     expect(down.onPressed, isNull);
+  });
+
+  testWidgets('設定頁有選單順序', (tester) async {
+    setWidth(tester, 1400);
+    dotenv.testLoad(fileInput: '');
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(home: const SettingsPage()));
+    await tester.pumpAndSettle();
+    expect(find.byType(NavOrderEditor), findsOneWidget);
   });
 
   testWidgets('手機「更多」也依自訂順序', (tester) async {

@@ -17,6 +17,7 @@ import 'providers/settings_provider.dart';
 import 'providers/shop_provider.dart';
 import 'providers/wishlist_provider.dart';
 import 'app_routes.dart';
+import 'logic/eva_progress.dart';
 import 'services/progress_reference_api.dart';
 import 'services/catalog_api.dart';
 import 'services/live_client.dart';
@@ -30,7 +31,7 @@ import 'storage/session_storage.dart';
 import 'storage/settings_storage.dart';
 import 'storage/shop_storage.dart';
 import 'storage/wishlist_storage.dart';
-import 'theme/app_theme.dart';
+import 'theme/themed_app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +44,9 @@ Future<void> main() async {
   }
 
   final prefs = await SharedPreferences.getInstance();
+  final settings = SettingsProvider(SettingsStorage(prefs));
+  // EVA 故事層的劇集：每個有打開 App 的日子前進一話（只存在這個瀏覽器）。
+  settings.updateEva((s) => recordOpen(s, DateTime.now()));
   final catalog = CatalogProvider(CatalogApi(), CatalogCache(prefs));
   // 不等待：先顯示畫面，目錄在背景載入。
   catalog.init();
@@ -73,8 +77,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ShopProvider(ShopStorage(prefs))),
         ChangeNotifierProvider(
             create: (_) => WishlistProvider(WishlistStorage(prefs))),
-        ChangeNotifierProvider(
-            create: (_) => SettingsProvider(SettingsStorage(prefs))),
+        ChangeNotifierProvider.value(value: settings),
         ChangeNotifierProvider.value(value: riot),
         ChangeNotifierProvider.value(value: collection),
         ChangeNotifierProvider.value(value: progress),
@@ -99,11 +102,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'VALORANT 商店追蹤',
-      debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
-      onGenerateRoute: onGenerateAppRoute,
+    return ThemedApp(
+      builder: (theme, builder) => MaterialApp(
+        title: 'VALORANT 商店追蹤',
+        debugShowCheckedModeBanner: false,
+        theme: theme,
+        // 主題立即切換：AppColors（全域）與 Theme.of 不會有一段時間不一致。
+        themeAnimationDuration: Duration.zero,
+        builder: builder,
+        onGenerateRoute: onGenerateAppRoute,
+      ),
     );
   }
 }

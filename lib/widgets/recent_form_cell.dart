@@ -19,20 +19,20 @@ class RecentFormCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loader = context.watch<RecentFormLoader>();
-    const muted = TextStyle(color: AppColors.muted);
+    final muted = TextStyle(color: AppColors.muted);
     switch (loader.status(puuid, queue: queue, games: games)) {
       case FormStatus.pending:
       case FormStatus.loading:
-        return const Text('…', style: muted);
+        return Text('…', style: muted);
       case FormStatus.failed:
-        return const Text('—', style: muted);
+        return Text('—', style: muted);
       case FormStatus.done:
         break;
     }
     final all = loader.form(puuid, queue: queue, games: games);
     final form = all == null ? null : RecentForm(all.games.take(5).toList());
     if (form == null || form.games.isEmpty) {
-      return const Text('—', style: muted);
+      return Text('—', style: muted);
     }
     return Row(
       mainAxisSize: MainAxisSize.min,

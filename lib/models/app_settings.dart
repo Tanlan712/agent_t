@@ -10,30 +10,102 @@ class AppSettings {
   /// 使用者自訂的側欄順序（路由）；空的代表預設順序。
   final List<String> navOrder;
 
+  /// 主題（規格 2026-10-21-ui-themes-design.md §2）；未知值由 ThemeChoice.fromSettings 退回預設。
+  final String themeStyle;
+  final String themeAccent;
+  final String themeBrightness;
+
+  /// EVA 系列的互動背景與掃描線。
+  final bool backgroundMotion;
+
+  /// EVA 系列的彩蛋與故事層（規格 §4.4、§4.5）；只存在這個瀏覽器，不含他人資料。
+  final bool evaEnabled;
+  final bool evaTitleCards;
+  final String? evaSeenUltraDate;
+  final int evaAngelCount;
+  final int evaAngelYear;
+  final String? evaBootDate;
+  final bool evaBerserkUnlocked;
+  final int evaEpisodeDays;
+  final String? evaLastOpenDate;
+  final List<String> evaFoundEggs;
+
   const AppSettings({
     this.resetHour = 8,
     this.resetMinute = 0,
     this.highlightWishlist = true,
     this.loginShard = 'ap',
     this.navOrder = const [],
+    this.themeStyle = 'editorial',
+    this.themeAccent = 'red',
+    this.themeBrightness = 'auto',
+    this.backgroundMotion = true,
+    this.evaEnabled = true,
+    this.evaTitleCards = true,
+    this.evaSeenUltraDate,
+    this.evaAngelCount = 0,
+    this.evaAngelYear = 0,
+    this.evaBootDate,
+    this.evaBerserkUnlocked = false,
+    this.evaEpisodeDays = 0,
+    this.evaLastOpenDate,
+    this.evaFoundEggs = const [],
   });
 
-  AppSettings copyWith(
-      {int? resetHour,
-      int? resetMinute,
-      bool? highlightWishlist,
-      String? loginShard,
-      List<String>? navOrder}) {
+  AppSettings copyWith({
+    int? resetHour,
+    int? resetMinute,
+    bool? highlightWishlist,
+    String? loginShard,
+    List<String>? navOrder,
+    String? themeStyle,
+    String? themeAccent,
+    String? themeBrightness,
+    bool? backgroundMotion,
+    bool? evaEnabled,
+    bool? evaTitleCards,
+    String? evaSeenUltraDate,
+    int? evaAngelCount,
+    int? evaAngelYear,
+    String? evaBootDate,
+    bool? evaBerserkUnlocked,
+    int? evaEpisodeDays,
+    String? evaLastOpenDate,
+    List<String>? evaFoundEggs,
+  }) {
     return AppSettings(
       resetHour: resetHour ?? this.resetHour,
       resetMinute: resetMinute ?? this.resetMinute,
       highlightWishlist: highlightWishlist ?? this.highlightWishlist,
       loginShard: loginShard ?? this.loginShard,
       navOrder: navOrder ?? this.navOrder,
+      themeStyle: themeStyle ?? this.themeStyle,
+      themeAccent: themeAccent ?? this.themeAccent,
+      themeBrightness: themeBrightness ?? this.themeBrightness,
+      backgroundMotion: backgroundMotion ?? this.backgroundMotion,
+      evaEnabled: evaEnabled ?? this.evaEnabled,
+      evaTitleCards: evaTitleCards ?? this.evaTitleCards,
+      evaSeenUltraDate: evaSeenUltraDate ?? this.evaSeenUltraDate,
+      evaAngelCount: evaAngelCount ?? this.evaAngelCount,
+      evaAngelYear: evaAngelYear ?? this.evaAngelYear,
+      evaBootDate: evaBootDate ?? this.evaBootDate,
+      evaBerserkUnlocked: evaBerserkUnlocked ?? this.evaBerserkUnlocked,
+      evaEpisodeDays: evaEpisodeDays ?? this.evaEpisodeDays,
+      evaLastOpenDate: evaLastOpenDate ?? this.evaLastOpenDate,
+      evaFoundEggs: evaFoundEggs ?? this.evaFoundEggs,
     );
   }
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
+    // 主題與 EVA 欄位型別不對時退回預設，不丟例外（舊版或被手動修改的 localStorage）。
+    String str(String key, String fallback) =>
+        json[key] is String ? json[key] as String : fallback;
+    String? optStr(String key) =>
+        json[key] is String ? json[key] as String : null;
+    bool flag(String key, bool fallback) =>
+        json[key] is bool ? json[key] as bool : fallback;
+    int number(String key) => json[key] is int ? json[key] as int : 0;
+    final eggs = json['evaFoundEggs'];
     return AppSettings(
       resetHour: json['resetHour'] as int? ?? 8,
       resetMinute: json['resetMinute'] as int? ?? 0,
@@ -43,6 +115,25 @@ class AppSettings {
         for (final r in json['navOrder'] as List<dynamic>? ?? const [])
           if (r is String) r,
       ],
+      themeStyle: str('themeStyle', 'editorial'),
+      themeAccent: str('themeAccent', 'red'),
+      themeBrightness: str('themeBrightness', 'auto'),
+      backgroundMotion: flag('backgroundMotion', true),
+      evaEnabled: flag('evaEnabled', true),
+      evaTitleCards: flag('evaTitleCards', true),
+      evaSeenUltraDate: optStr('evaSeenUltraDate'),
+      evaAngelCount: number('evaAngelCount'),
+      evaAngelYear: number('evaAngelYear'),
+      evaBootDate: optStr('evaBootDate'),
+      evaBerserkUnlocked: flag('evaBerserkUnlocked', false),
+      evaEpisodeDays: number('evaEpisodeDays'),
+      evaLastOpenDate: optStr('evaLastOpenDate'),
+      evaFoundEggs: eggs is List
+          ? [
+              for (final e in eggs)
+                if (e is String) e
+            ]
+          : const [],
     );
   }
 
@@ -52,5 +143,19 @@ class AppSettings {
         'highlightWishlist': highlightWishlist,
         'loginShard': loginShard,
         'navOrder': navOrder,
+        'themeStyle': themeStyle,
+        'themeAccent': themeAccent,
+        'themeBrightness': themeBrightness,
+        'backgroundMotion': backgroundMotion,
+        'evaEnabled': evaEnabled,
+        'evaTitleCards': evaTitleCards,
+        'evaSeenUltraDate': evaSeenUltraDate,
+        'evaAngelCount': evaAngelCount,
+        'evaAngelYear': evaAngelYear,
+        'evaBootDate': evaBootDate,
+        'evaBerserkUnlocked': evaBerserkUnlocked,
+        'evaEpisodeDays': evaEpisodeDays,
+        'evaLastOpenDate': evaLastOpenDate,
+        'evaFoundEggs': evaFoundEggs,
       };
 }

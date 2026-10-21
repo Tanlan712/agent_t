@@ -73,8 +73,8 @@ void main() {
   }
 
   testWidgets('StatusChip：不換行、有提示', (tester) async {
-    await tester.pumpWidget(host(
-        const StatusChip(label: '疑似小號', color: AppColors.warn, tooltip: '推測')));
+    await tester.pumpWidget(
+        host(StatusChip(label: '疑似小號', color: AppColors.warn, tooltip: '推測')));
     expect(tester.widget<Text>(find.text('疑似小號')).softWrap, isFalse);
     expect(find.byType(Tooltip), findsOneWidget);
   });

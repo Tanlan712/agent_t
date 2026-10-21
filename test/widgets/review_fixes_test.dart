@@ -5,7 +5,10 @@ import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 import 'package:valorant_shop_tracker/widgets/skin_card.dart';
 
 import '../catalog_helpers.dart';
-import '../theme/app_theme_test.dart' show contrast;
+import 'package:valorant_shop_tracker/theme/app_palette.dart';
+import 'package:valorant_shop_tracker/theme/theme_ids.dart';
+
+import '../theme/contrast.dart';
 
 /// 最終審查（2026-10-21）指出的問題。
 void main() {
@@ -38,15 +41,33 @@ void main() {
     }
   });
 
-  testWidgets('StatusChip 文字至少 12px，隊伍 MVP 在 surfaceHigh 上對比 ≥ 4.5',
+  testWidgets('StatusChip 文字至少 12px，所有主題下對 surface／surfaceHigh 對比 ≥ 4.5',
       (tester) async {
-    const chip = StatusChip(label: '隊伍 MVP', color: AppColors.info);
-    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: chip)));
-    final text = tester.widget<Text>(find.text('隊伍 MVP'));
-    expect(text.style!.fontSize, greaterThanOrEqualTo(12));
-    final bg = Color.alphaBlend(
-        AppColors.info.withOpacity(0.15), AppColors.surfaceHigh);
-    expect(contrast(text.style!.color!, bg), greaterThanOrEqualTo(4.5));
+    addTearDown(AppPalette.reset);
+    for (final style in ThemeStyleId.values) {
+      for (final mode in [BrightnessMode.dark, BrightnessMode.light]) {
+        final p = AppPalette.resolve(ThemeChoice(style: style, mode: mode));
+        AppPalette.current = p;
+        for (final color in [
+          p.win,
+          p.loss,
+          p.warn,
+          p.info,
+          ...p.tier,
+          ...p.party
+        ]) {
+          await tester.pumpWidget(MaterialApp(
+              home: Scaffold(body: StatusChip(label: '隊伍 MVP', color: color))));
+          final text = tester.widget<Text>(find.text('隊伍 MVP'));
+          expect(text.style!.fontSize, greaterThanOrEqualTo(12));
+          for (final base in [p.surface, p.surfaceHigh]) {
+            final bg = Color.alphaBlend(color.withOpacity(0.15), base);
+            expect(contrast(text.style!.color!, bg), greaterThanOrEqualTo(4.5),
+                reason: '$style $mode $color on $base');
+          }
+        }
+      }
+    }
   });
 
   testWidgets('SkinCard 的漸層畫在 Ink 上，點擊回饋不被蓋住', (tester) async {

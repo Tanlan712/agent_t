@@ -83,7 +83,7 @@ class _PlayerPageState extends State<PlayerPage> {
               spacing: 12,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Text(e, style: const TextStyle(color: AppColors.error)),
+                Text(e, style: TextStyle(color: AppColors.error)),
                 if (h.entries.isEmpty && !h.isLoading)
                   OutlinedButton(
                     onPressed: h.loadFirstPage,
@@ -117,7 +117,7 @@ class _PlayerPageState extends State<PlayerPage> {
             ),
           ),
         const SizedBox(height: 24),
-        const Center(
+        Center(
           child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊',
               style: TextStyle(color: AppColors.muted, fontSize: 12)),
         ),

@@ -9,7 +9,12 @@ import 'package:valorant_shop_tracker/widgets/my_shop_settings_card.dart';
 
 import '../app_harness.dart';
 import '../catalog_helpers.dart';
-import '../theme/app_theme_test.dart' show contrast;
+import '../theme/contrast.dart';
+
+/// 設定頁本身的捲動清單（頁內的選單順序清單也是 Scrollable，不能用 .last）。
+final settingsScrollable = find.descendant(
+    of: find.byKey(const ValueKey('settings-list')),
+    matching: find.byType(Scrollable)).first;
 
 void main() {
   setUp(() => dotenv.testLoad(fileInput: ''));
@@ -56,8 +61,7 @@ void main() {
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(home: const SettingsPage()));
     final label = find.text('複製 valorant-api.com 網址');
-    await tester.scrollUntilVisible(label, 300,
-        scrollable: find.byType(Scrollable).last);
+    await tester.scrollUntilVisible(label, 300, scrollable: settingsScrollable);
     final fg = tester.renderObject<RenderParagraph>(label).text.style!.color!;
     final bg = tester
         .widget<Material>(
@@ -70,7 +74,7 @@ void main() {
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(home: const SettingsPage()));
     await tester.scrollUntilVisible(find.byType(MyShopSettingsCard), 300,
-        scrollable: find.byType(Scrollable).last);
+        scrollable: settingsScrollable);
     expect(find.byType(MyShopSettingsCard), findsOneWidget);
   });
 }

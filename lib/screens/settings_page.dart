@@ -6,6 +6,8 @@ import 'package:valorant_shop_tracker/services/riot_api_key_manager.dart';
 import 'package:valorant_shop_tracker/shell/app_shell.dart';
 import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 import 'package:valorant_shop_tracker/widgets/my_shop_settings_card.dart';
+import 'package:valorant_shop_tracker/widgets/nav_order_editor.dart';
+import 'package:valorant_shop_tracker/widgets/theme/theme_picker.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -66,8 +68,13 @@ class _SettingsPageState extends State<SettingsPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 760),
           child: ListView(
+            key: const ValueKey('settings-list'),
             padding: const EdgeInsets.symmetric(vertical: 16),
             children: [
+              const ThemePicker(),
+              const SizedBox(height: 24),
+              const NavOrderEditor(),
+              const SizedBox(height: 24),
               _buildApiKeySection(),
               const SizedBox(height: 24),
               _buildRenewalInstructionsSection(),
@@ -96,9 +103,9 @@ class _SettingsPageState extends State<SettingsPage> {
               style: const TextStyle(fontFamily: 'monospace'),
             ),
             const SizedBox(height: 8),
-            const Row(children: [
+            Row(children: [
               Icon(Icons.schedule, size: 16, color: AppColors.muted),
-              SizedBox(width: 6),
+              const SizedBox(width: 6),
               Text('Development Key 有效期限：24 小時',
                   style: TextStyle(color: AppColors.muted)),
             ]),
@@ -119,10 +126,10 @@ class _SettingsPageState extends State<SettingsPage> {
               _StatusBox(status: _status, message: _statusMessage!),
             ],
           ] else ...[
-            const Row(children: [
+            Row(children: [
               Icon(Icons.cancel_outlined, size: 18, color: AppColors.loss),
-              SizedBox(width: 6),
-              Text('未設定 API Key'),
+              const SizedBox(width: 6),
+              const Text('未設定 API Key'),
             ]),
             const SizedBox(height: 8),
             const Text('請在 .env 檔案中設定 RIOT_API_KEY'),
