@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
+import '../models/game_data.dart';
 import '../shell/app_shell.dart';
+import 'details/agent_detail_page.dart';
 import '../shell/responsive_grid.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
 class AgentsPage extends StatefulWidget {
-  const AgentsPage({super.key});
+  /// 測試時注入。
+  final ValorantApiService? api;
+
+  const AgentsPage({super.key, this.api});
 
   @override
   State<AgentsPage> createState() => _AgentsPageState();
 }
 
 class _AgentsPageState extends State<AgentsPage> {
-  final ValorantApiService _apiService = ValorantApiService();
+  late final ValorantApiService _apiService =
+      widget.api ?? ValorantApiService();
   List<Map<String, dynamic>> _agents = [];
   bool _isLoading = true;
   String? _error;
@@ -88,70 +94,78 @@ class _AgentsPageState extends State<AgentsPage> {
     final background = agent['background'] as String?;
 
     return Card(
+      key: ValueKey('db-agent-${agent['uuid']}'),
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (background != null)
-                  Image.network(
-                    background,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: AppColors.surfaceHigh,
-                        child: const Icon(Icons.person, size: 64),
-                      );
-                    },
-                  )
-                else
-                  Container(
-                    color: AppColors.surfaceHigh,
-                    child: const Icon(Icons.person, size: 64),
-                  ),
-                if (displayIcon != null)
-                  Center(
-                    child: Image.network(
-                      displayIcon,
-                      width: 80,
-                      height: 80,
+      child: InkWell(
+        onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+                builder: (_) =>
+                    AgentDetailPage(agent: AgentInfo.fromJson(agent)))),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (background != null)
+                    Image.network(
+                      background,
+                      fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        return const SizedBox.shrink();
+                        return Container(
+                          color: AppColors.surfaceHigh,
+                          child: const Icon(Icons.person, size: 64),
+                        );
                       },
+                    )
+                  else
+                    Container(
+                      color: AppColors.surfaceHigh,
+                      child: const Icon(Icons.person, size: 64),
                     ),
-                  ),
-              ],
+                  if (displayIcon != null)
+                    Center(
+                      child: Image.network(
+                        displayIcon,
+                        width: 80,
+                        height: 80,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  displayName,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (role != null)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    role['displayName'] as String,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.muted,
+                    displayName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-              ],
+                  if (role != null)
+                    Text(
+                      role['displayName'] as String,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

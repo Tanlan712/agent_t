@@ -211,3 +211,13 @@
   `content{relationType, relationUuid, chapters[], premiumRewardScheduleUuid, premiumVPCost}`；
   `chapters[]{isEpilogue, levels[], freeRewards}`；`levels[]{reward, xp, vpCost, isPurchasableWithVP, doughCost, isPurchasableWithDough}`；`reward{type, uuid, amount, isHighlighted}`，type 有 `EquippableSkinLevel`、`EquippableCharmLevel`、`Spray`、`PlayerCard`、`Title`、`Currency` ✅ 2026-10-21 🧩。
 - `/v1/missions` ✅ 2026-10-21（983 項）：`{uuid, displayName, title, type, xpGrant, progressToComplete, activationDate, expirationDate, tags, objectives[]{objectiveUuid, value}, assetPath}`。
+- 資料庫詳細頁（規格 `2026-10-21-database-details-design.md`）✅ 2026-10-21 實測：
+  - `/v1/weapons`：`{uuid, displayName, category, displayIcon, shopData{cost, category, categoryText}, weaponStats, skins[]}`；`category` 為 `EEquippableCategory::{Sidearm, SMG, Shotgun, Rifle, Sniper, Heavy, Melee}`，近戰的 `shopData`、`weaponStats` 為 null。
+    `weaponStats{fireRate, magazineSize, runSpeedMultiplier, equipTimeSeconds, reloadTimeSeconds, firstBulletAccuracy, shotgunPelletCount, wallPenetration, feature, fireMode, altFireType, adsStats, altShotgunStats, airBurstStats, damageRanges[]}`；
+    `wallPenetration` 為 `EWallPenetrationDisplayType::{Low, Medium, High}`；`fireMode` 只有 `EWeaponFireModeDisplayType::SemiAutomatic` 或 null（全自動）；`feature` 為 `EWeaponStatsFeature::{ROFIncrease, Silenced, DualZoom}` 或 null；`altFireType` 為 `EWeaponAltFireDisplayType::{ADS, Shotgun, AirBurst}` 或 null；
+    `adsStats{zoomMultiplier, fireRate, runSpeedMultiplier, burstCount, firstBulletAccuracy}`；`damageRanges[]{rangeStartMeters, rangeEndMeters, headDamage, bodyDamage, legDamage}`。
+  - `skins[]{uuid, displayName, themeUuid, contentTierUuid, displayIcon, levels[]{uuid, displayName, displayIcon, streamedVideo}, chromas[]{uuid, displayName, displayIcon, fullRender, swatch, streamedVideo}}`。
+  - `/v1/themes`：`{uuid, displayName, displayIcon, storeFeaturedImage}`。`/v1/bundles` 沒有內含項目；以「組合包 `displayName` = 主題 `displayName`」配對 `skins[].themeUuid`，實測 328 個組合包有 290 個配得到。
+  - `/v1/maps`：`{uuid, displayName, displayIcon（小地圖，27 張中 9 張為 null）, splash, coordinates, tacticalDescription, xMultiplier, yMultiplier, xScalarToAdd, yScalarToAdd, callouts[]{regionName, superRegionName, location{x, y, z}}}`；
+    小地圖位置 `u = location.y × xMultiplier + xScalarToAdd`、`v = location.x × yMultiplier + yScalarToAdd`。
+  - `/v1/agents`：`{uuid, displayName, description, displayIcon, fullPortrait, background, role{displayName}, abilities[]{slot, displayName, description, displayIcon}, recruitmentData}`；`slot` 為 `Grenade`（C）、`Ability1`（Q）、`Ability2`（E）、`Ultimate`（X）、`Passive`。沒有技能價格欄位。

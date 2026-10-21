@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:valorant_shop_tracker/screens/agents_page.dart';
 import 'package:valorant_shop_tracker/screens/bundles_page.dart';
 import 'package:valorant_shop_tracker/screens/maps_page.dart';
 import 'package:valorant_shop_tracker/screens/weapons_page.dart';
@@ -289,5 +290,49 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('db-skin-s1')), findsOneWidget);
     });
+  });
+
+  group('特務', () {
+    Map<String, dynamic> agent() {
+      final j = noIcon(agentJson());
+      return {
+        ...j,
+        'fullPortrait': null,
+        'abilities': [
+          for (final a in j['abilities'] as List)
+            {...a as Map<String, dynamic>, 'displayIcon': null},
+        ],
+      };
+    }
+
+    for (final width in [375.0, 1440.0]) {
+      testWidgets('$width 寬：點開看技能（C、Q、E、X、被動）', (tester) async {
+        setWidth(tester, width);
+        final h = await Harness.create(tester);
+        await tester.pumpWidget(h.wrap(
+            home: AgentsPage(api: fakeApi({'/v1/agents': [agent()]}))));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('db-agent-jett')));
+        await tester.pumpAndSettle();
+        expect(find.text('來自南韓的決鬥者'), findsOneWidget);
+        final keys = ['C', 'Q', 'E', 'X', '被動'];
+        final ys = <double>[];
+        for (final k in keys) {
+          final f = find.byKey(ValueKey('ability-$k'));
+          await tester.scrollUntilVisible(f, 200,
+              scrollable: find.byType(Scrollable).last);
+          ys.add(tester.getTopLeft(f).dy +
+              tester.state<ScrollableState>(find.byType(Scrollable).last)
+                  .position
+                  .pixels);
+        }
+        // 依按鍵順序由上而下。
+        expect(ys, orderedEquals([...ys]..sort()));
+        expect(inKey('ability-C', find.text('技能 C')), findsOneWidget);
+        expect(inKey('ability-C', find.text('c')), findsOneWidget);
+        expect(find.textContaining('價格'), findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+    }
   });
 }
