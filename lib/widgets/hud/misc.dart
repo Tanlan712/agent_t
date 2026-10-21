@@ -66,8 +66,7 @@ class EmptyState extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(message!,
                     textAlign: TextAlign.center,
-                    style:
-                        TextStyle(fontSize: 14, color: AppColors.muted)),
+                    style: TextStyle(fontSize: 14, color: AppColors.muted)),
               ],
               if (actionLabel != null && onAction != null) ...[
                 const SizedBox(height: 16),

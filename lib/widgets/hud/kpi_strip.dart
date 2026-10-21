@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/app_style.dart';
 import '../../theme/app_theme.dart';
 import 'hud_card.dart';
 
@@ -90,6 +91,15 @@ class KpiStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (context.appStyle.kpi == KpiVariant.terminalLines) {
+      return PanelCard(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [for (final t in tiles) _TerminalLine(tile: t)],
+        ),
+      );
+    }
     const gap = 8.0;
     return LayoutBuilder(builder: (context, c) {
       final fit = ((c.maxWidth + gap) / (minTileWidth + gap)).floor();
@@ -107,5 +117,41 @@ class KpiStrip extends StatelessWidget {
         ],
       );
     });
+  }
+}
+
+/// D 終端機：`> 名稱 ……… 數值`。
+class _TerminalLine extends StatelessWidget {
+  final KpiTile tile;
+
+  const _TerminalLine({required this.tile});
+
+  @override
+  Widget build(BuildContext context) {
+    final mono = AppText.tabular(
+        const TextStyle(fontFamily: 'monospace', fontSize: 13, height: 1.6));
+    return Row(
+      key: const ValueKey('kpi-line'),
+      children: [
+        Text('> ${tile.label} ', style: mono.copyWith(color: AppColors.muted)),
+        Expanded(
+          child: Text('.' * 40,
+              maxLines: 1,
+              overflow: TextOverflow.clip,
+              softWrap: false,
+              style: mono.copyWith(color: AppColors.outline)),
+        ),
+        const SizedBox(width: 6),
+        Text(tile.value, style: mono.copyWith(color: AppColors.text)),
+        if (tile.delta != null)
+          Text(' ${tile.delta}',
+              style: mono.copyWith(
+                  color: switch (tile.up) {
+                true => AppColors.win,
+                false => AppColors.loss,
+                null => AppColors.muted,
+              })),
+      ],
+    );
   }
 }

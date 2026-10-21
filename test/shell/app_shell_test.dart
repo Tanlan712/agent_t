@@ -9,6 +9,8 @@ import 'package:valorant_shop_tracker/shell/side_nav.dart';
 import 'package:valorant_shop_tracker/theme/app_theme.dart';
 import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 
+import 'package:valorant_shop_tracker/theme/theme_ids.dart';
+
 import '../app_harness.dart';
 import '../riot_fixtures.dart';
 
@@ -170,10 +172,11 @@ void main() {
     handle.dispose();
   });
 
-  testWidgets('1440 寬頁首標題 28px', (tester) async {
+  testWidgets('1440 寬頁首標題字級依風格', (tester) async {
     setWidth(tester, 1440);
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(
+        choice: const ThemeChoice(style: ThemeStyleId.neon),
         home: const AppShell(
             currentRoute: '/wishlist',
             title: '願望清單',

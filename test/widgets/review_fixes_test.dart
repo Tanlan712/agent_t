@@ -48,7 +48,14 @@ void main() {
       for (final mode in [BrightnessMode.dark, BrightnessMode.light]) {
         final p = AppPalette.resolve(ThemeChoice(style: style, mode: mode));
         AppPalette.current = p;
-        for (final color in [p.win, p.loss, p.warn, p.info, ...p.tier, ...p.party]) {
+        for (final color in [
+          p.win,
+          p.loss,
+          p.warn,
+          p.info,
+          ...p.tier,
+          ...p.party
+        ]) {
           await tester.pumpWidget(MaterialApp(
               home: Scaffold(body: StatusChip(label: '隊伍 MVP', color: color))));
           final text = tester.widget<Text>(find.text('隊伍 MVP'));

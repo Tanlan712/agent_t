@@ -151,12 +151,14 @@ class Harness {
     Widget app(ThemeData theme, TransitionBuilder? builder) => useAppRoutes
         ? MaterialApp(
             theme: theme,
+            themeAnimationDuration: Duration.zero,
             builder: builder,
             onGenerateRoute: onGenerateAppRoute,
             navigatorObservers: observers,
           )
         : MaterialApp(
             theme: theme,
+            themeAnimationDuration: Duration.zero,
             builder: builder,
             home: home,
             routes: routes,

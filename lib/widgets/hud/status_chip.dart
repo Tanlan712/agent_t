@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_palette.dart';
+import '../../theme/app_style.dart';
+import '../../theme/theme_ids.dart';
 
 /// 狀態標籤：邊框與文字同色、15% 底色、不換行。
 class StatusChip extends StatelessWidget {
@@ -26,7 +28,14 @@ class StatusChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withOpacity(0.15),
         border: Border.all(color: color),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(switch (context.appStyle.id) {
+          ThemeStyleId.editorial ||
+          ThemeStyleId.airy ||
+          ThemeStyleId.terminal =>
+            0,
+          ThemeStyleId.dreamy => 999,
+          _ => 2,
+        }),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

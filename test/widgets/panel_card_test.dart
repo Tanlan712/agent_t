@@ -9,8 +9,11 @@ import 'package:valorant_shop_tracker/theme/app_theme.dart';
 import 'package:valorant_shop_tracker/theme/theme_ids.dart';
 import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 
+// B 數位霓虹：有邊框、10px 圓角；各風格的形狀另見 style_variants_test.dart。
 Widget host(Widget child, {bool reduceMotion = false}) => MaterialApp(
-      theme: buildAppTheme(useGoogleFonts: false),
+      theme: buildAppTheme(
+          choice: const ThemeChoice(style: ThemeStyleId.neon),
+          useGoogleFonts: false),
       home: MediaQuery(
         data: MediaQueryData(disableAnimations: reduceMotion),
         child: Scaffold(body: Center(child: child)),
@@ -24,19 +27,21 @@ void main() {
           of: find.byType(PanelCard), matching: find.byType(AnimatedContainer)))
       .decoration! as BoxDecoration;
 
-  testWidgets('PanelCard 圓角 12、outline 邊框', (tester) async {
+  testWidgets('PanelCard 圓角依風格、outline 邊框', (tester) async {
     await tester.pumpWidget(host(const PanelCard(child: Text('卡片'))));
     final d = decorationOf(tester);
-    expect(d.borderRadius, BorderRadius.circular(AppRadius.card));
+    expect(d.borderRadius,
+        BorderRadius.circular(AppStyle.of(ThemeStyleId.neon).cardRadius));
     expect((d.border! as Border).top.color, AppColors.outline);
   });
 
   testWidgets('PanelCard 有強調色時左側 3px 色條', (tester) async {
-    await tester.pumpWidget(
-        host(PanelCard(accent: AppColors.win, child: const Text('卡片'))));
+    final accent = AppColors.win;
+    await tester
+        .pumpWidget(host(PanelCard(accent: accent, child: const Text('卡片'))));
     final bar =
         tester.widget<Container>(find.byKey(const ValueKey('panel-accent')));
-    expect(bar.color, AppColors.win);
+    expect(bar.color, accent);
     expect(tester.getSize(find.byKey(const ValueKey('panel-accent'))).width, 3);
   });
 
@@ -88,7 +93,8 @@ void main() {
     final r = decorationOf(tester).borderRadius! as BorderRadius;
     expect(r.topLeft, Radius.zero);
     expect(r.bottomLeft, Radius.zero);
-    expect(r.topRight, const Radius.circular(AppRadius.card));
+    expect(
+        r.topRight, Radius.circular(AppStyle.of(ThemeStyleId.neon).cardRadius));
   });
 
   testWidgets('可點擊的 PanelCard 是按鈕語意', (tester) async {

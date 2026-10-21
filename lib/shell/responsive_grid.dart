@@ -2,11 +2,14 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_style.dart';
+
 const double gridSpacing = 16;
 
 /// 可用寬度能放下幾欄（每欄至少 [minTileWidth]），最少 1 欄。
-int columnsFor(double width, double minTileWidth) =>
-    max(1, ((width + gridSpacing) / (minTileWidth + gridSpacing)).floor());
+int columnsFor(double width, double minTileWidth,
+        {double spacing = gridSpacing}) =>
+    max(1, ((width + spacing) / (minTileWidth + spacing)).floor());
 
 /// 大量資料用的網格：本身可捲動、延遲建構（只建可見的卡片）。
 class ResponsiveGridView extends StatelessWidget {
@@ -31,15 +34,19 @@ class ResponsiveGridView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final style = context.appStyle;
+    final spacing = style.gridSpacing;
     return LayoutBuilder(
       builder: (context, constraints) => GridView.builder(
         padding: padding,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: columnsFor(constraints.maxWidth, minTileWidth),
+          crossAxisCount: columnsFor(
+              constraints.maxWidth, minTileWidth * style.tileWidthFactor,
+              spacing: spacing),
           childAspectRatio: childAspectRatio,
           mainAxisExtent: mainAxisExtent,
-          mainAxisSpacing: gridSpacing,
-          crossAxisSpacing: gridSpacing,
+          mainAxisSpacing: spacing,
+          crossAxisSpacing: spacing,
         ),
         itemCount: itemCount,
         itemBuilder: itemBuilder,
@@ -63,12 +70,16 @@ class ResponsiveGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final style = context.appStyle;
+    final spacing = style.gridSpacing;
     return LayoutBuilder(
       builder: (context, constraints) => GridView.count(
-        crossAxisCount: columnsFor(constraints.maxWidth, minTileWidth),
+        crossAxisCount: columnsFor(
+            constraints.maxWidth, minTileWidth * style.tileWidthFactor,
+            spacing: spacing),
         childAspectRatio: childAspectRatio,
-        mainAxisSpacing: gridSpacing,
-        crossAxisSpacing: gridSpacing,
+        mainAxisSpacing: spacing,
+        crossAxisSpacing: spacing,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         children: children,
