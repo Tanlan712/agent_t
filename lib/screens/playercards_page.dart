@@ -6,15 +6,20 @@ import '../shell/responsive_grid.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
 class PlayerCardsPage extends StatefulWidget {
-  const PlayerCardsPage({super.key});
+  /// 測試時注入。
+  final ValorantApiService? api;
+
+  const PlayerCardsPage({super.key, this.api});
 
   @override
   State<PlayerCardsPage> createState() => _PlayerCardsPageState();
 }
 
 class _PlayerCardsPageState extends State<PlayerCardsPage> {
-  final ValorantApiService _apiService = ValorantApiService();
+  late final ValorantApiService _apiService =
+      widget.api ?? ValorantApiService();
   List<Map<String, dynamic>> _playerCards = [];
+  String _query = '';
   bool _isLoading = true;
   String? _error;
 
@@ -70,17 +75,52 @@ class _PlayerCardsPageState extends State<PlayerCardsPage> {
                     ],
                   ),
                 )
-              : ResponsiveGridView.builder(
-                  minTileWidth: 200,
-                  childAspectRatio: 0.6,
-                  itemCount: _playerCards.length,
-                  itemBuilder: (context, index) {
-                    final card = _playerCards[index];
-                    return _buildPlayerCardWidget(card);
-                  },
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(children: [
+                        Expanded(
+                          child: TextField(
+                            key: const ValueKey('playercard-search'),
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(Icons.search),
+                              hintText: '搜尋卡片名稱',
+                              isDense: true,
+                            ),
+                            onChanged: (v) => setState(() => _query = v.trim()),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text('${_filtered.length} / ${_playerCards.length} 張',
+                            style: TextStyle(color: AppColors.muted)),
+                      ]),
+                    ),
+                    Expanded(
+                      // 直式卡面：手機一列 3 張，寬螢幕更多。
+                      child: ResponsiveGridView.builder(
+                        minTileWidth: 88,
+                        childAspectRatio: 0.45,
+                        itemCount: _filtered.length,
+                        itemBuilder: (context, index) =>
+                            _buildPlayerCardWidget(_filtered[index]),
+                      ),
+                    ),
+                  ],
                 ),
     );
   }
+
+  List<Map<String, dynamic>> get _filtered => _query.isEmpty
+      ? _playerCards
+      : [
+          for (final c in _playerCards)
+            if ((c['displayName'] as String? ?? '')
+                .toLowerCase()
+                .contains(_query.toLowerCase()))
+              c
+        ];
 
   Widget _buildPlayerCardWidget(Map<String, dynamic> card) {
     final displayName = card['displayName'] as String;
@@ -88,9 +128,11 @@ class _PlayerCardsPageState extends State<PlayerCardsPage> {
     final smallArt = card['smallArt'] as String?;
     final wideArt = card['wideArt'] as String?;
 
-    final imageUrl = wideArt ?? largeArt ?? smallArt;
+    // 直式網格用直式大圖。
+    final imageUrl = largeArt ?? smallArt ?? wideArt;
 
     return Card(
+      key: ValueKey('card-${card['uuid']}'),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         fit: StackFit.expand,

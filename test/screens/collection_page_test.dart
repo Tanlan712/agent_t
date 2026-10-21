@@ -1,3 +1,5 @@
+import 'package:http/http.dart' as http;
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:valorant_shop_tracker/models/progress_reference.dart';
@@ -11,6 +13,18 @@ import '../app_harness.dart';
 import '../progress_fixtures.dart';
 import '../riot_fixtures.dart';
 import '../shell/app_shell_test.dart' show setWidth;
+
+/// 造型（skin level）的請求永遠不回應，其他照常。
+class _HoldSkins extends http.BaseClient {
+  final http.Client inner;
+  _HoldSkins(this.inner);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) =>
+      request.url.path.endsWith(ItemTypes.skinLevel)
+          ? Completer<http.StreamedResponse>().future
+          : inner.send(request);
+}
 
 void main() {
   Future<Harness> loggedIn(WidgetTester tester,
@@ -101,6 +115,22 @@ void main() {
     expect(card('w-sheriff', '擁有 0 款'), findsOneWidget);
     // 造型名稱要點進槍枝才看得到。
     expect(find.text('光幻 暴徒'), findsNothing);
+  });
+
+  testWidgets('造型還在讀取時，槍枝卡片顯示讀取中，不是「擁有 0 款」', (tester) async {
+    setWidth(tester, 1440);
+    final h = await Harness.create(tester,
+        riotHttp: _HoldSkins(riotClient(skinLevels: ['lv-vandal-1'])),
+        progressApi: FakeProgressApi());
+    await tester.runAsync(() => h.riot.login(fakeRedirect));
+    await tester.pumpWidget(h.wrap(home: const CollectionPage()));
+    await settle(tester);
+    // 造型的請求一直沒有回應。
+    expect(h.collection.isLoading, isTrue);
+    Finder card(String id, String text) => find.descendant(
+        of: find.byKey(ValueKey('weapon-$id')), matching: find.text(text));
+    expect(card('w-vandal', '讀取中…'), findsOneWidget);
+    expect(find.text('擁有 0 款'), findsNothing);
   });
 
   testWidgets('造型分頁的槍枝依類型分區（商店順序）', (tester) async {

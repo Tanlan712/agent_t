@@ -63,6 +63,23 @@ void main() {
     expect(inKey('kpi-weekly', find.text('5 天')), findsOneWidget);
   });
 
+  testWidgets('每週刷新倒數不用換頁也會自己更新', (tester) async {
+    setWidth(tester, 1440);
+    final h = await loggedIn(tester);
+    var clock = now;
+    await tester.pumpWidget(h.wrap(home: ProgressPage(now: () => clock)));
+    await tester.pump();
+    await tester
+        .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await tester.pumpAndSettle();
+    expect(inKey('kpi-weekly', find.text('5 天')), findsOneWidget);
+    clock = clock.add(const Duration(days: 1));
+    await tester.pump(const Duration(minutes: 1));
+    expect(inKey('kpi-weekly', find.text('4 天')), findsOneWidget);
+    // 離開頁面時停止計時。
+    await tester.pumpWidget(h.wrap(home: const SizedBox()));
+  });
+
   test('每週刷新倒數的短格式', () {
     expect(kpiCountdown(const Duration(days: 5, hours: 3)), '5 天');
     expect(kpiCountdown(const Duration(hours: 7, minutes: 5)), '7:05');

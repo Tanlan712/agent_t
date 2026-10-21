@@ -238,6 +238,57 @@ void main() {
     });
   });
 
+  group('審閱修正', () {
+    test('特務合約沒有階級時視為沒有等級資料（不顯示「等級 0 / 0」）', () {
+      const r = ProgressReference(contracts: {
+        'agent-contract': RefContract(
+            name: '特務合約',
+            relationType: 'Agent',
+            relationUuid: 'agent-x',
+            tiers: []),
+      });
+      expect(
+          agentLevel(ContractsSnapshot.fromJson(contractsJson()), r, 'agent-x'),
+          isNull);
+    });
+
+    test('多個目標的任務：進度不超過目標', () {
+      final m = joinMissions(
+          ContractsSnapshot.fromJson(contractsJson(missions: [
+            {
+              'ID': 'm-daily',
+              'Objectives': {'a': 10, 'b': 5},
+              'Complete': false
+            },
+          ])),
+          ref());
+      final daily = m[MissionKind.daily]!.single;
+      expect(daily.progress, lessThanOrEqualTo(daily.target));
+    });
+
+    test('空章節的階數範圍：沒有階級時為空字串，不會出現「第 6–5 階」', () {
+      const empty = PassChapter(
+          number: 2,
+          startTier: 6,
+          tiers: [],
+          freeRewards: [],
+          isEpilogue: false,
+          state: ChapterState.locked);
+      expect(empty.tierRange, '');
+      final full = PassChapter(
+          number: 1,
+          startTier: 1,
+          tiers: const [
+            RefTier(reward: RefReward(type: 'Spray', uuid: 's'), xp: 1),
+            RefTier(reward: RefReward(type: 'Spray', uuid: 's'), xp: 1),
+          ],
+          freeRewards: const [],
+          isEpilogue: false,
+          state: ChapterState.current);
+      expect(full.tierRange, '第 1–2 階');
+    });
+  });
+
   group('joinMissions', () {
     test('依類型分組，帶入名稱、進度、目標與經驗', () {
       final m =

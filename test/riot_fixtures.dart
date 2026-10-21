@@ -345,6 +345,12 @@ MockClient riotClient({
       }
       if (path == '/store/v1/entitlements/puuid-1/$skinLevelType') {
         onEntitlement?.call(skinLevelType);
+        final n = throttled['ent-$skinLevelType'] =
+            (throttled['ent-$skinLevelType'] ?? 0) + 1;
+        if (n <= (entitlement429[skinLevelType] ?? 0)) {
+          return http.Response('{}', 429,
+              headers: retryAfter ? {'retry-after': '1'} : const {});
+        }
         return json({
           'ItemTypeID': skinLevelType,
           'Entitlements': [

@@ -172,6 +172,8 @@ class _CollectionPageState extends State<CollectionPage> {
                     [ItemTypes.skinLevel],
                     ref.weapons.isEmpty,
                     _WeaponGrid(
+                        loading: col.isLoading &&
+                            col.owned[ItemTypes.skinLevel] == null,
                         weapons: weaponSummaries(of(ItemTypes.skinLevel), ref),
                         launch: widget.launch)),
                 tab(
@@ -235,7 +237,11 @@ class _WeaponGrid extends StatelessWidget {
   final List<WeaponSummary> weapons;
   final Future<bool> Function(Uri) launch;
 
-  const _WeaponGrid({required this.weapons, required this.launch});
+  /// 造型還在讀取：顯示「讀取中…」，不要讓「擁有 0 款」看起來像真的沒有。
+  final bool loading;
+
+  const _WeaponGrid(
+      {required this.weapons, required this.launch, this.loading = false});
 
   @override
   Widget build(BuildContext context) => ListView(
@@ -246,7 +252,10 @@ class _WeaponGrid extends StatelessWidget {
             SectionHeader(
               key: ValueKey('weapon-section-$label'),
               title: label,
-              trailing: Text('擁有 ${list.fold(0, (n, w) => n + w.ownedCount)} 款',
+              trailing: Text(
+                  loading
+                      ? '讀取中…'
+                      : '擁有 ${list.fold(0, (n, w) => n + w.ownedCount)} 款',
                   style: TextStyle(color: AppColors.muted)),
             ),
             ResponsiveGrid(
@@ -283,7 +292,7 @@ class _WeaponGrid extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontWeight: FontWeight.w600)),
               ),
-              Text('擁有 ${w.ownedCount} 款',
+              Text(loading ? '讀取中…' : '擁有 ${w.ownedCount} 款',
                   style: TextStyle(
                       fontSize: 12,
                       color: none ? AppColors.muted : AppColors.text)),

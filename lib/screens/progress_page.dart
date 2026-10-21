@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -28,6 +30,23 @@ class ProgressPage extends StatefulWidget {
 }
 
 class _ProgressPageState extends State<ProgressPage> {
+  /// 每分鐘重畫一次，讓每週刷新倒數不用換頁也會更新。
+  Timer? _tick;
+
+  @override
+  void initState() {
+    super.initState();
+    _tick = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    super.dispose();
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -273,8 +292,11 @@ class _ChapterSectionState extends State<_ChapterSection> {
                   const Spacer(),
                   if (!_expanded)
                     Text(
-                        '第 ${ch.startTier}–${ch.startTier + ch.tiers.length - 1} 階'
-                        '${ch.freeRewards.isEmpty ? '' : '・免費 ${ch.freeRewards.length}'}',
+                        [
+                          if (ch.tierRange.isNotEmpty) ch.tierRange,
+                          if (ch.freeRewards.isNotEmpty)
+                            '免費 ${ch.freeRewards.length}',
+                        ].join('・'),
                         style: TextStyle(color: AppColors.muted, fontSize: 12)),
                   Icon(_expanded ? Icons.expand_less : Icons.expand_more,
                       color: AppColors.muted),

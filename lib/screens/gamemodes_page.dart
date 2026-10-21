@@ -6,14 +6,18 @@ import '../theme/app_theme.dart';
 import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
 
 class GamemodesPage extends StatefulWidget {
-  const GamemodesPage({super.key});
+  /// 測試時注入。
+  final ValorantApiService? api;
+
+  const GamemodesPage({super.key, this.api});
 
   @override
   State<GamemodesPage> createState() => _GamemodesPageState();
 }
 
 class _GamemodesPageState extends State<GamemodesPage> {
-  final ValorantApiService _apiService = ValorantApiService();
+  late final ValorantApiService _apiService =
+      widget.api ?? ValorantApiService();
   List<Map<String, dynamic>> _gamemodes = [];
   bool _isLoading = true;
   String? _error;
@@ -98,8 +102,12 @@ class _GamemodesPageState extends State<GamemodesPage> {
               width: 48,
               height: 48,
               child: displayIcon != null
+                  // 官方圖示是白色：用文字顏色重新上色，淺色主題也看得到。
                   ? Image.network(
                       displayIcon,
+                      key: ValueKey('mode-icon-${gamemode['uuid']}'),
+                      color: AppColors.text,
+                      colorBlendMode: BlendMode.srcIn,
                       errorBuilder: (context, error, stackTrace) =>
                           const Icon(Icons.sports_esports, size: 40),
                     )

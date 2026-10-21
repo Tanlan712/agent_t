@@ -136,7 +136,12 @@ AgentLevel? agentLevel(
   if (snapshot == null) return null;
   for (final e in ref.contracts.entries) {
     final c = e.value;
-    if (c.relationType != 'Agent' || c.relationUuid != agentUuid) continue;
+    // 沒有階級的合約不算等級資料（避免「等級 0 / 0」）。
+    if (c.relationType != 'Agent' ||
+        c.relationUuid != agentUuid ||
+        c.tiers.isEmpty) {
+      continue;
+    }
     for (final p in snapshot.contracts) {
       if (p.definitionId != e.key) continue;
       final reached = p.levelReached.clamp(0, c.tiers.length);
@@ -258,7 +263,8 @@ Map<MissionKind, List<MissionView>> joinMissions(
     out[kind]!.add(MissionView(
       title: def?.title ?? '未知任務',
       kind: kind,
-      progress: m.progress,
+      // 多個目標加總可能超過目標值，顯示時不超過目標。
+      progress: m.progress.clamp(0, def?.target ?? 1),
       target: def?.target ?? 1,
       xpGrant: def?.xpGrant ?? 0,
       complete: m.complete,
@@ -290,6 +296,10 @@ class PassChapter {
   final List<RefReward> freeRewards;
   final bool isEpilogue;
   final ChapterState state;
+
+  /// 「第 a–b 階」；這一章沒有階級時為空字串。
+  String get tierRange =>
+      tiers.isEmpty ? '' : '第 $startTier–${startTier + tiers.length - 1} 階';
 
   const PassChapter({
     required this.number,
