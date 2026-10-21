@@ -27,6 +27,9 @@ class CollectionProvider with ChangeNotifier {
   bool _isLoading = false;
   bool _disposed = false;
 
+  /// 換帳號、登出或重新整理時遞增；舊的載入看到不同的 generation 就丟棄結果。
+  int _generation = 0;
+
   CollectionProvider(this._riot, this._client,
       {Future<void> Function(Duration)? delay, this.maxConcurrent = 2})
       : _delay = delay ?? Future<void>.delayed {
@@ -40,13 +43,16 @@ class CollectionProvider with ChangeNotifier {
   String? get _puuid => _riot.isLoggedIn ? _riot.session?.puuid : null;
 
   void _onRiot() {
-    if (_loadedFor != null && _puuid != _loadedFor) _clear();
+    if ((_loadedFor != null || _isLoading) && _puuid != _loadedFor) _reset();
   }
 
-  void _clear() {
+  /// 清空並作廢進行中的載入。
+  void _reset() {
+    _generation++;
     _owned.clear();
     _errors.clear();
     _loadedFor = null;
+    _isLoading = false;
     _notify();
   }
 
@@ -56,6 +62,7 @@ class CollectionProvider with ChangeNotifier {
     final s = _riot.session;
     if (puuid == null || s == null || _isLoading) return;
     if (_loadedFor == puuid) return;
+    final gen = ++_generation;
     _isLoading = true;
     _errors.clear();
     _loadedFor = puuid;
@@ -63,33 +70,44 @@ class CollectionProvider with ChangeNotifier {
 
     final queue = [...types];
     Future<void> worker() async {
-      while (queue.isNotEmpty) {
+      while (queue.isNotEmpty && gen == _generation) {
         final type = queue.removeAt(0);
         try {
           final ids = await withRiotRetry(
               () => _client.fetchEntitlements(s, type),
               delay: _delay);
-          if (_puuid != puuid) return;
+          if (gen != _generation) return;
           _owned[type] = ids;
         } on RiotApiException catch (e) {
-          if (_puuid != puuid) return;
+          if (gen != _generation) return;
+          if (e.isAuthError) {
+            // AGENTS.md 第 4 節：授權失敗時立即登出並刪除保存的登入資訊。
+            _riot.logout();
+            return;
+          }
           _errors[type] = e.message;
+        } catch (_) {
+          if (gen != _generation) return;
+          _errors[type] = '取得收藏：回應格式不符';
         }
         _notify();
       }
     }
 
-    await Future.wait([
-      for (var i = 0; i < maxConcurrent && i < types.length; i++) worker(),
-    ]);
-    _isLoading = false;
-    _notify();
+    try {
+      await Future.wait([
+        for (var i = 0; i < maxConcurrent && i < types.length; i++) worker(),
+      ]);
+    } finally {
+      if (gen == _generation) {
+        _isLoading = false;
+        _notify();
+      }
+    }
   }
 
   Future<void> refresh() async {
-    _owned.clear();
-    _errors.clear();
-    _loadedFor = null;
+    _reset();
     await load();
   }
 

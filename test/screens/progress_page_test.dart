@@ -114,6 +114,15 @@ void main() {
         findsOneWidget);
   });
 
+  for (final width in [375.0, 768.0, 1024.0, 1440.0]) {
+    testWidgets('已登入：${width.toInt()} 寬不 overflow', (tester) async {
+      setWidth(tester, width);
+      final h = await loggedIn(tester);
+      await open(tester, h);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   for (final (width, sideBySide) in [(1440.0, true), (768.0, false)]) {
     testWidgets('${width.toInt()} 寬任務卡${sideBySide ? '同列' : '上下排'}',
         (tester) async {

@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -29,6 +32,38 @@ class _Counting extends http.BaseClient {
     }
   }
 }
+
+/// 卡住路徑含 [match] 的請求，直到 [gate] 完成。
+class _Gated extends http.BaseClient {
+  final http.Client inner;
+  final String match;
+  final Completer<void> gate = Completer<void>();
+  _Gated(this.inner, this.match);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (request.url.path.contains(match)) await gate.future;
+    return inner.send(request);
+  }
+}
+
+/// 回應格式不符：其他請求照常轉給假伺服器。
+class _Malformed extends http.BaseClient {
+  final http.Client inner = riotClient();
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (request.url.path.startsWith('/store/v1/entitlements/')) {
+      return http.StreamedResponse(
+          Stream.value(utf8
+              .encode('{"ItemTypeID":"x","Entitlements":[{"TypeID":"x"}]}')),
+          200);
+    }
+    return inner.send(request);
+  }
+}
+
+http.Client _malformed() => _Malformed();
 
 void main() {
   Future<(CollectionProvider, RiotProvider, List<Duration>)> make(
@@ -112,6 +147,61 @@ void main() {
     await p.load();
     expect(calls, CollectionProvider.types.length);
     expect(p.errors.keys, [ItemTypes.spray]);
+  });
+
+  test('載入中按重新整理：重新載入全部分類，不會只剩一部分', () async {
+    final gated = _Gated(
+        riotClient(entitlements: {
+          ItemTypes.spray: ['spray-1'],
+          ItemTypes.title: ['title-1'],
+        }),
+        ItemTypes.title);
+    final (p, _, _) = await make(gated);
+    final first = p.load();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    final second = p.refresh();
+    gated.gate.complete();
+    await first;
+    await second;
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(p.owned.keys, containsAll(CollectionProvider.types));
+    expect(p.owned[ItemTypes.spray], {'spray-1'});
+    expect(p.isLoading, isFalse);
+  });
+
+  test('載入中登出再登入：會為新的登入重新載入', () async {
+    final gated = _Gated(
+        riotClient(entitlements: {
+          ItemTypes.spray: ['spray-1'],
+        }),
+        ItemTypes.title);
+    final (p, riot, _) = await make(gated);
+    final first = p.load();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    riot.logout();
+    await riot.login(fakeRedirect);
+    final second = p.load();
+    gated.gate.complete();
+    await first;
+    await second;
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(p.owned.keys, containsAll(CollectionProvider.types));
+    expect(p.isLoading, isFalse);
+  });
+
+  test('401 時登出（刪除保存的登入資訊）', () async {
+    final (p, riot, _) =
+        await make(riotClient(entitlementStatus: {ItemTypes.spray: 401}));
+    await p.load();
+    expect(riot.isLoggedIn, isFalse);
+  });
+
+  test('回應格式不符時不會卡在載入中', () async {
+    final (p, _, _) = await make(_malformed());
+    await p.load();
+    expect(p.isLoading, isFalse);
+    expect(p.errors, isNotEmpty);
+    expect(p.errors.values.first, contains('格式'));
   });
 
   test('登出時清空，不留前一個帳號的資料', () async {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:valorant_shop_tracker/models/progress_reference.dart';
 import 'package:valorant_shop_tracker/screens/collection_page.dart';
 import 'package:valorant_shop_tracker/services/riot_client.dart';
 import 'package:valorant_shop_tracker/shell/nav_items.dart';
@@ -130,6 +131,50 @@ void main() {
     await openTab(tester, '稱號');
     expect(find.widgetWithText(FilledButton, '重試'), findsNothing);
   });
+
+  for (final width in [375.0, 768.0, 1024.0, 1440.0]) {
+    testWidgets('已登入、豐富資料：${width.toInt()} 寬不 overflow', (tester) async {
+      setWidth(tester, width);
+      final base = testProgressRef();
+      final rich = ProgressReference(
+        skinLevels: {
+          ...base.skinLevels,
+          'lv-long': const RefSkinLevel(
+              skinUuid: 'skin-long',
+              skinName: '這是一個名稱非常非常長的限定版造型名稱 暴徒',
+              weaponName: '暴徒',
+              levelIndex: 3,
+              videoUrl: 'https://example.test/long.mp4'),
+        },
+        chromas: {
+          for (var i = 0; i < 5; i++)
+            'ch-long-$i':
+                RefChroma(skinUuid: 'skin-long', swatchUrl: 'sw$i.png'),
+        },
+        agents: base.agents,
+        buddyLevels: base.buddyLevels,
+        sprays: base.sprays,
+        cards: base.cards,
+        titles: base.titles,
+      );
+      final h = await Harness.create(tester,
+          riotHttp: riotClient(skinLevels: [
+            'lv-long',
+            'lv-vandal-2',
+            'lv-phantom-1'
+          ], entitlements: {
+            ItemTypes.skinChroma: [for (var i = 0; i < 5; i++) 'ch-long-$i'],
+            ItemTypes.spray: ['spray-1'],
+            ItemTypes.title: ['title-1'],
+          }),
+          progressApi: FakeProgressApi(rich));
+      await tester.runAsync(() => h.riot.login(fakeRedirect));
+      await tester.pumpWidget(h.wrap(home: const CollectionPage()));
+      await settle(tester);
+      expect(tester.takeException(), isNull);
+      expect(find.text('預覽影片'), findsWidgets);
+    });
+  }
 
   testWidgets('375 寬不 overflow', (tester) async {
     setWidth(tester, 375);

@@ -25,6 +25,9 @@ class ProgressProvider with ChangeNotifier {
   String? _refError;
   bool _disposed = false;
 
+  /// 換帳號、登出或重新整理時遞增；舊的載入看到不同的 generation 就丟棄結果。
+  int _generation = 0;
+
   ProgressProvider(this._riot, this._client, this._api,
       {Future<void> Function(Duration)? delay})
       : _delay = delay ?? Future<void>.delayed {
@@ -43,13 +46,18 @@ class ProgressProvider with ChangeNotifier {
   String? get _puuid => _riot.isLoggedIn ? _riot.session?.puuid : null;
 
   void _onRiot() {
-    if (_loadedFor != null && _puuid != _loadedFor) {
-      _xp = null;
-      _contracts = null;
-      _error = null;
-      _loadedFor = null;
-      _notify();
-    }
+    if ((_loadedFor != null || _isLoading) && _puuid != _loadedFor) _reset();
+  }
+
+  /// 清空 Riot 資料並作廢進行中的載入（參考資料是公開的，保留）。
+  void _reset() {
+    _generation++;
+    _xp = null;
+    _contracts = null;
+    _error = null;
+    _loadedFor = null;
+    _isLoading = false;
+    _notify();
   }
 
   Future<void> load() async {
@@ -58,43 +66,54 @@ class ProgressProvider with ChangeNotifier {
     if (puuid == null || s == null || _isLoading) return;
     // 已為目前帳號載入過就不重抓（失敗時用 refresh 重試），避免畫面重建時反覆請求。
     if (_loadedFor == puuid) return;
+    final gen = ++_generation;
     _isLoading = true;
     _error = null;
     _loadedFor = puuid;
     _notify();
 
     final errors = <String>[];
-    // 同時最多 2 個 Riot 請求（等級、合約）。
-    await Future.wait([
-      () async {
-        try {
-          final v = await withRiotRetry(() => _client.fetchAccountXp(s),
-              delay: _delay);
-          if (_puuid == puuid) _xp = v;
-        } on RiotApiException catch (e) {
-          errors.add(e.message);
-        }
-      }(),
-      () async {
-        try {
-          final v = await withRiotRetry(() => _client.fetchContracts(s),
-              delay: _delay);
-          if (_puuid == puuid) _contracts = v;
-        } on RiotApiException catch (e) {
-          errors.add(e.message);
-        }
-      }(),
-    ]);
-    if (_ref == null) {
+    var authFailed = false;
+    Future<void> fetch<T>(
+        Future<T> Function() call, void Function(T) store, String label) async {
       try {
-        _ref = await _api.fetch();
+        final v = await withRiotRetry(call, delay: _delay);
+        if (gen == _generation) store(v);
+      } on RiotApiException catch (e) {
+        if (e.isAuthError) authFailed = true;
+        errors.add(e.message);
       } catch (_) {
-        errors.add('無法下載通行證與任務的顯示資料');
+        errors.add('$label：回應格式不符');
       }
     }
-    if (_puuid == puuid) _error = errors.isEmpty ? null : errors.join('；');
-    _isLoading = false;
-    _notify();
+
+    try {
+      // 同時最多 2 個 Riot 請求（等級、合約）。
+      await Future.wait([
+        fetch(() => _client.fetchAccountXp(s), (v) => _xp = v, '取得帳號等級'),
+        fetch(
+            () => _client.fetchContracts(s), (v) => _contracts = v, '取得通行證與任務'),
+      ]);
+      if (gen != _generation) return;
+      if (authFailed) {
+        // AGENTS.md 第 4 節：授權失敗時立即登出並刪除保存的登入資訊。
+        _riot.logout();
+        return;
+      }
+      if (_ref == null) {
+        try {
+          _ref = await _api.fetch();
+        } catch (_) {
+          errors.add('無法下載通行證與任務的顯示資料');
+        }
+      }
+      if (gen == _generation) _error = errors.isEmpty ? null : errors.join('；');
+    } finally {
+      if (gen == _generation) {
+        _isLoading = false;
+        _notify();
+      }
+    }
   }
 
   /// 只確保公開參考資料已下載（收藏頁用）；不送 Riot 請求。
@@ -112,8 +131,7 @@ class ProgressProvider with ChangeNotifier {
   }
 
   Future<void> refresh() async {
-    _loadedFor = null;
-    _error = null;
+    _reset();
     await load();
   }
 

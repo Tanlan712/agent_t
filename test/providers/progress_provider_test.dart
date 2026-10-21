@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:valorant_shop_tracker/models/progress_reference.dart';
@@ -19,6 +22,36 @@ class _FakeRefApi implements ProgressReferenceApi {
     return const ProgressReference();
   }
 }
+
+/// 卡住路徑含 [match] 的請求，直到 [gate] 完成。
+class _Gated extends http.BaseClient {
+  final http.Client inner;
+  final String match;
+  final Completer<void> gate = Completer<void>();
+  _Gated(this.inner, this.match);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (request.url.path.contains(match)) await gate.future;
+    return inner.send(request);
+  }
+}
+
+/// 回應格式不符：其他請求照常轉給假伺服器。
+class _Malformed extends http.BaseClient {
+  final http.Client inner = riotClient();
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (request.url.path.startsWith('/contracts/v1/contracts/')) {
+      return http.StreamedResponse(
+          Stream.value(utf8.encode('{"Contracts":[42]}')), 200);
+    }
+    return inner.send(request);
+  }
+}
+
+http.Client _malformed() => _Malformed();
 
 void main() {
   Future<(ProgressProvider, RiotProvider, _FakeRefApi, List<http.Request>)>
@@ -79,6 +112,46 @@ void main() {
     expect(p.ref, isNotNull);
     expect(api.calls, 1);
     expect(requests.length, n);
+  });
+
+  Future<(ProgressProvider, RiotProvider)> makeWith(http.Client c) async {
+    final client = RiotClient(client: c);
+    final riot = RiotProvider(client);
+    await riot.login(fakeRedirect);
+    return (
+      ProgressProvider(riot, client, _FakeRefApi(), delay: (_) async {}),
+      riot
+    );
+  }
+
+  test('載入中按重新整理：重新抓取等級與合約', () async {
+    final requests = <http.Request>[];
+    final gated = _Gated(riotClient(requests: requests), '/contracts/');
+    final (p, _) = await makeWith(gated);
+    final first = p.load();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    final second = p.refresh();
+    gated.gate.complete();
+    await first;
+    await second;
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(
+        requests.where((r) => r.url.path.startsWith('/account-xp/')).length, 2);
+    expect(p.isLoading, isFalse);
+    expect(p.contracts, isNotNull);
+  });
+
+  test('401 時登出（刪除保存的登入資訊）', () async {
+    final (p, riot) = await makeWith(riotClient(contractsStatus: 401));
+    await p.load();
+    expect(riot.isLoggedIn, isFalse);
+  });
+
+  test('回應格式不符時不會卡在載入中', () async {
+    final (p, _) = await makeWith(_malformed());
+    await p.load();
+    expect(p.isLoading, isFalse);
+    expect(p.error, contains('格式'));
   });
 
   test('登出時清空 Riot 資料', () async {

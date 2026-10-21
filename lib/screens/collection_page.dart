@@ -244,30 +244,33 @@ class _SkinCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                for (var i = 0; i < skin.swatches.length && i < 5; i++)
-                  Padding(
-                    key: ValueKey('swatch-${skin.skinUuid}-$i'),
-                    padding: const EdgeInsets.only(right: 4),
-                    child: ClipOval(
+            // 色票與影片按鈕可換行：窄格（例如 1024 寬三欄）時不會 overflow。
+            if (skin.swatches.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: [
+                  for (var i = 0; i < skin.swatches.length && i < 5; i++)
+                    ClipOval(
+                      key: ValueKey('swatch-${skin.skinUuid}-$i'),
                       child: SizedBox(
                           width: 18,
                           height: 18,
                           child: SkinIcon(
                               url: skin.swatches[i], fit: BoxFit.cover)),
                     ),
-                  ),
-                const Spacer(),
-                if (skin.videoUrl case final url?)
-                  OutlinedButton.icon(
-                    onPressed: () => launch(Uri.parse(url)),
-                    icon: const Icon(Icons.play_circle_outline, size: 18),
-                    label: const Text('預覽影片'),
-                  ),
-              ],
-            ),
+                ],
+              ),
+            ],
+            if (skin.videoUrl case final url?) ...[
+              const SizedBox(height: 6),
+              OutlinedButton.icon(
+                onPressed: () => launch(Uri.parse(url)),
+                icon: const Icon(Icons.play_circle_outline, size: 18),
+                label: const Text('預覽影片'),
+              ),
+            ],
           ],
         ),
       );
