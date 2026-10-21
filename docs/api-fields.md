@@ -181,8 +181,33 @@
   - 實測 21 項都有造型 socket；沒有換造型時是預設造型。
 - `pregame/v1/matches/{id}/loadouts`：📄 尚未實測。
 
+## 收藏、等級、通行證（pd，使用者決定 2026-10-21，只能 GET）
+
+### `GET /store/v1/entitlements/{puuid}/{ItemTypeID}` ✅ 2026-10-21
+- 回應 `{ItemTypeID, Entitlements[]}`；各類型都回 200。
+- ItemTypeID（📄 valapidocs，✅ 2026-10-21 皆回 200）：造型等級 `e7c63390-…a2433`（App 已用於「已擁有造型」🧩）、炫彩 `3ad1b2b2-acdb-4524-852f-954a76ddae0a`、
+  特務 `01bb38e1-da47-4e6a-9b3d-945fe4655707`、吊飾 `dd3bf334-87f3-40bd-b043-682a57a8dc3a`、噴漆 `d5f120f8-ff8c-4aac-92ea-f2b5acbe9475`、
+  玩家卡片 `3f296c07-64c3-494c-923b-fe692a4fa1bd`、稱號 `de7caa6b-adf7-4588-bbd1-143831e786c6`。
+- 實測：初始特務**不在** Entitlements 裡（新帳號只回 2 個特務），需要另外補上免費特務（📄 待確認 valorant-api 的判斷欄位）。
+
+### `GET /account-xp/v1/players/{puuid}` ✅ 2026-10-21
+- `{Version, Subject, Progress{Level, XP}, History[], LastTimeGrantedFirstWin, NextTimeFirstWinAvailable}`
+- `History[]{ID, CreatedAt, MatchStart, StartProgress{Level, XP}, EndProgress{Level, XP}, XPDelta, XPSources[], XPMultipliers[]}`（實測 5 筆）。
+- `XP` 是目前等級內累積的經驗；每級需要的經驗值 📄 待確認。
+
+### `GET /contracts/v1/contracts/{puuid}` ✅ 2026-10-21
+- `{Version, Subject, Contracts[], ActiveRecruitmentEventProgress, Missions[], MissionMetadata{WeeklyRefillTime}, BTEMilestone}`
+- `Contracts[]{ContractDefinitionID, ContractProgression{Version, TotalProgressionEarned}, ProgressionLevelReached, ProgressionTowardsNextLevel}`：
+  `ContractDefinitionID` 對應 valorant-api `/v1/contracts` 的 `uuid`；通行證是 `content.relationType == "Season"` 的那一份。
+- `Missions[]{ID, Objectives{objectiveUuid: 進度}, Complete, ExpirationTime}`：`ID` 對應 valorant-api `/v1/missions` 的 `uuid`。
+- 不得呼叫 `POST …/special/{id}`（啟用合約）。
+
 ## 公開遊戲資料（valorant-api.com）🧩
 
 - `/v1/weapons/skins`、`/v1/bundles`、`/v1/agents`、`/v1/maps`、`/v1/competitivetiers`、`/v1/playercards`、`/v1/gamemodes` 等；回傳格式都是 `{status, data}`。
 - 牌位圖示來自 `competitivetiers` 最後一季的 `tiers[]{tier, tierName, smallIcon}`；tier 0「牌階未定」的圖示是官方的問號圖。
 - 玩家卡圖片：`https://media.valorant-api.com/playercards/{PlayerCardID}/smallart.png`。
+- `/v1/contracts` ✅ 2026-10-21（88 項）：`{uuid, displayName, displayIcon, shipIt, useLevelVPCostOverride, levelVPCostOverride, freeRewardScheduleUuid, content, assetPath}`；
+  `content{relationType, relationUuid, chapters[], premiumRewardScheduleUuid, premiumVPCost}`；
+  `chapters[]{isEpilogue, levels[], freeRewards}`；`levels[]{reward, xp, vpCost, isPurchasableWithVP, doughCost, isPurchasableWithDough}`（`reward` 結構 📄 待確認）。
+- `/v1/missions` ✅ 2026-10-21（983 項）：`{uuid, displayName, title, type, xpGrant, progressToComplete, activationDate, expirationDate, tags, objectives[]{objectiveUuid, value}, assetPath}`。
