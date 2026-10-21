@@ -35,10 +35,12 @@ class _CollectionPageState extends State<CollectionPage> {
     super.didChangeDependencies();
     final riot = context.watch<RiotProvider>();
     if (riot.isLoggedIn) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
-        context.read<CollectionProvider>().load();
-        context.read<ProgressProvider>().ensureReference();
+        // 依序：收藏讀完才讀等級與合約（特務等級要用），Riot 請求同時最多 2 個。
+        final progress = context.read<ProgressProvider>();
+        await context.read<CollectionProvider>().load();
+        await progress.load();
       });
     }
   }
@@ -155,9 +157,19 @@ class _CollectionPageState extends State<CollectionPage> {
             const SizedBox(height: 16),
             Expanded(
               child: TabBarView(children: [
-                tab([ItemTypes.skinLevel, ItemTypes.skinChroma], skins.isEmpty,
-                    _SkinsTab(groups: skins, launch: widget.launch)),
-                tab([ItemTypes.agent], agents.isEmpty, _AgentsTab(agents)),
+                tab(
+                    [ItemTypes.skinLevel],
+                    ref.weapons.isEmpty,
+                    _WeaponGrid(
+                        weapons: weaponSummaries(of(ItemTypes.skinLevel), ref),
+                        launch: widget.launch)),
+                tab(
+                    [ItemTypes.agent],
+                    agents.isEmpty,
+                    _AgentsTab(agents: agents, levels: {
+                      for (final a in agents)
+                        a.uuid: agentLevel(progress.contracts, ref, a.uuid),
+                    })),
                 tab([ItemTypes.buddyLevel], buddies.isEmpty,
                     _ItemGrid(buddies)),
                 tab([ItemTypes.spray], sprays.isEmpty, _ItemGrid(sprays)),
@@ -198,33 +210,109 @@ class _Skeleton extends StatelessWidget {
       );
 }
 
-class _SkinsTab extends StatelessWidget {
-  final List<WeaponGroup> groups;
+/// 造型分頁：所有槍枝與擁有的造型數；點進去看該槍擁有的造型。
+class _WeaponGrid extends StatelessWidget {
+  final List<WeaponSummary> weapons;
   final Future<bool> Function(Uri) launch;
 
-  const _SkinsTab({required this.groups, required this.launch});
+  const _WeaponGrid({required this.weapons, required this.launch});
 
   @override
-  Widget build(BuildContext context) => ListView(
+  Widget build(BuildContext context) => ResponsiveGridView.builder(
+        minTileWidth: 200,
+        childAspectRatio: 1.6,
+        mainAxisExtent: 140,
         padding: const EdgeInsets.only(bottom: 24),
-        children: [
-          for (final g in groups) ...[
-            SectionHeader(
-              title: g.weaponName,
-              trailing: Text('${g.skins.length}',
-                  style: const TextStyle(color: AppColors.muted)),
+        itemCount: weapons.length,
+        itemBuilder: (context, i) {
+          final w = weapons[i];
+          final none = w.ownedCount == 0;
+          return PanelCard(
+            key: ValueKey('weapon-${w.uuid}'),
+            onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                    builder: (_) => WeaponSkinsPage(
+                        weaponUuid: w.uuid,
+                        weaponName: w.name,
+                        launch: launch))),
+            child: Opacity(
+              // 沒有造型的槍枝變淡，但仍可點進去。
+              opacity: none ? 0.5 : 1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: Center(child: SkinIcon(url: w.iconUrl))),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(
+                      child: Text(w.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                    Text('擁有 ${w.ownedCount} 款',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: none ? AppColors.muted : AppColors.text)),
+                  ]),
+                ],
+              ),
             ),
-            ResponsiveGrid(
-              minTileWidth: 220,
-              childAspectRatio: 1.1,
-              children: [
-                for (final s in g.skins) _SkinCard(skin: s, launch: launch),
-              ],
-            ),
-            const SizedBox(height: 24),
-          ],
-        ],
+          );
+        },
       );
+}
+
+/// 某把槍擁有的造型。
+class WeaponSkinsPage extends StatelessWidget {
+  final String weaponUuid;
+  final String weaponName;
+  final Future<bool> Function(Uri) launch;
+
+  const WeaponSkinsPage({
+    super.key,
+    required this.weaponUuid,
+    required this.weaponName,
+    this.launch = _openInNewTab,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final col = context.watch<CollectionProvider>();
+    final ref = context.watch<ProgressProvider>().ref;
+    final skins = ref == null
+        ? const <OwnedSkin>[]
+        : skinsForWeapon(col.owned[ItemTypes.skinLevel] ?? const {},
+            col.owned[ItemTypes.skinChroma] ?? const {}, ref, weaponUuid);
+    return Scaffold(
+      appBar: AppBar(title: Text('$weaponName・${skins.length} 款')),
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1280),
+          child: skins.isEmpty
+              ? ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: const [
+                    PanelCard(
+                      padding: EdgeInsets.all(24),
+                      child: EmptyState(
+                          icon: Icons.inventory_2_outlined, title: '還沒有這把槍的造型'),
+                    ),
+                  ],
+                )
+              : ResponsiveGridView.builder(
+                  minTileWidth: 220,
+                  childAspectRatio: 1.1,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: skins.length,
+                  itemBuilder: (context, i) =>
+                      _SkinCard(skin: skins[i], launch: launch),
+                ),
+        ),
+      ),
+    );
+  }
 }
 
 class _SkinCard extends StatelessWidget {
@@ -279,18 +367,24 @@ class _SkinCard extends StatelessWidget {
 class _AgentsTab extends StatelessWidget {
   final List<RefAgent> agents;
 
-  const _AgentsTab(this.agents);
+  /// 特務合約等級；null 代表沒有進度紀錄（尚未開始）。
+  final Map<String, AgentLevel?> levels;
+
+  const _AgentsTab({required this.agents, required this.levels});
 
   @override
   Widget build(BuildContext context) => ResponsiveGridView.builder(
-        minTileWidth: 240,
+        minTileWidth: 260,
         childAspectRatio: 3,
-        mainAxisExtent: 80,
+        mainAxisExtent: 104,
         padding: const EdgeInsets.only(bottom: 24),
         itemCount: agents.length,
         itemBuilder: (context, i) {
           final a = agents[i];
+          final lv = levels[a.uuid];
+          final next = lv?.nextTierXp;
           return PanelCard(
+            key: ValueKey('agent-${a.uuid}'),
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
@@ -302,17 +396,44 @@ class _AgentsTab extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(a.name,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Row(children: [
+                        Expanded(
+                          child: Text(a.name,
+                              overflow: TextOverflow.ellipsis,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600)),
+                        ),
+                        if (a.isBase)
+                          const StatusChip(label: '初始', color: AppColors.info),
+                      ]),
                       Text(a.role,
                           style: const TextStyle(
                               color: AppColors.muted, fontSize: 12)),
+                      const SizedBox(height: 6),
+                      if (lv == null)
+                        const Text('尚未開始',
+                            style:
+                                TextStyle(color: AppColors.muted, fontSize: 12))
+                      else ...[
+                        Text('等級 ${lv.reached} / ${lv.total}',
+                            style: AppText.tabular(const TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w600))),
+                        const SizedBox(height: 4),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(3),
+                          child: LinearProgressIndicator(
+                            value: lv.total == 0 ? 0 : lv.reached / lv.total,
+                            minHeight: 4,
+                            color: next == null
+                                ? AppColors.win
+                                : AppColors.primary,
+                            backgroundColor: AppColors.surfaceHigh,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
-                if (a.isBase)
-                  const StatusChip(label: '初始', color: AppColors.info),
               ],
             ),
           );

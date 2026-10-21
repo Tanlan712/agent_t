@@ -25,10 +25,16 @@ class ProgressReferenceApi {
     final seasons = await _data('/v1/seasons');
     final missions = await _data('/v1/missions');
 
+    final weaponList = <RefWeapon>[];
     final skinLevels = <String, RefSkinLevel>{};
     final chromas = <String, RefChroma>{};
     for (final w in weapons) {
       final weaponName = w['displayName'] as String? ?? '';
+      final weaponUuid = _id(w['uuid']);
+      weaponList.add(RefWeapon(
+          uuid: weaponUuid,
+          name: weaponName,
+          iconUrl: w['displayIcon'] as String?));
       for (final skin in (w['skins'] as List<dynamic>? ?? const [])
           .cast<Map<String, dynamic>>()) {
         final skinUuid = _id(skin['uuid']);
@@ -40,6 +46,7 @@ class ProgressReferenceApi {
             skinUuid: skinUuid,
             skinName: skinName,
             weaponName: weaponName,
+            weaponUuid: weaponUuid,
             levelIndex: i,
             iconUrl: levels[i]['displayIcon'] as String? ??
                 skin['displayIcon'] as String?,
@@ -55,11 +62,13 @@ class ProgressReferenceApi {
     }
 
     return ProgressReference(
+      weapons: weaponList,
       skinLevels: skinLevels,
       chromas: chromas,
       agents: {
         for (final a in agents)
           _id(a['uuid']): RefAgent(
+            uuid: _id(a['uuid']),
             name: a['displayName'] as String? ?? '',
             iconUrl: a['displayIcon'] as String?,
             role: (a['role'] as Map<String, dynamic>?)?['displayName']

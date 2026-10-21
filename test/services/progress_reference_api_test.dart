@@ -19,7 +19,9 @@ MockClient api({int failStatus = 200, List<Uri>? seen}) =>
       return switch (req.url.path) {
         '/v1/weapons' => data([
             {
+              'uuid': 'W-VANDAL',
               'displayName': '暴徒',
+              'displayIcon': 'vandal.png',
               'skins': [
                 {
                   'uuid': 'SKIN-V',
@@ -160,6 +162,11 @@ void main() {
     expect(lv2.weaponName, '暴徒');
     expect(lv2.levelIndex, 1);
     expect(lv2.videoUrl, 'b.mp4');
+    expect(lv2.weaponUuid, 'w-vandal');
+    expect(r.weapons.single.uuid, 'w-vandal');
+    expect(r.weapons.single.name, '暴徒');
+    expect(r.weapons.single.iconUrl, 'vandal.png');
+    expect(r.agents['ag-1']!.uuid, 'ag-1');
     expect(r.chromas['ch-1']!.swatchUrl, 'sw.png');
     expect(r.agents['ag-1']!.isBase, isTrue);
     expect(r.agents['ag-1']!.role, '決鬥者');

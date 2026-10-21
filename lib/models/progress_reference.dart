@@ -3,10 +3,19 @@ library;
 
 import 'match_models.dart' show RefItem;
 
+class RefWeapon {
+  final String uuid;
+  final String name;
+  final String? iconUrl;
+
+  const RefWeapon({required this.uuid, required this.name, this.iconUrl});
+}
+
 class RefSkinLevel {
   final String skinUuid;
   final String skinName;
   final String weaponName;
+  final String weaponUuid;
 
   /// 在造型 levels 裡的順序（0 起算）；數字越大等級越高。
   final int levelIndex;
@@ -17,6 +26,7 @@ class RefSkinLevel {
     required this.skinUuid,
     required this.skinName,
     required this.weaponName,
+    this.weaponUuid = '',
     required this.levelIndex,
     this.iconUrl,
     this.videoUrl,
@@ -31,6 +41,7 @@ class RefChroma {
 }
 
 class RefAgent {
+  final String uuid;
   final String name;
   final String? iconUrl;
   final String role;
@@ -39,7 +50,8 @@ class RefAgent {
   final bool isBase;
 
   const RefAgent(
-      {required this.name,
+      {this.uuid = '',
+      required this.name,
       this.iconUrl,
       required this.role,
       required this.isBase});
@@ -106,6 +118,8 @@ class RefMission {
 }
 
 class ProgressReference {
+  /// 所有槍枝（依 valorant-api 的順序）。
+  final List<RefWeapon> weapons;
   final Map<String, RefSkinLevel> skinLevels;
   final Map<String, RefChroma> chromas;
   final Map<String, RefAgent> agents;
@@ -118,6 +132,7 @@ class ProgressReference {
   final Map<String, RefMission> missions;
 
   const ProgressReference({
+    this.weapons = const [],
     this.skinLevels = const {},
     this.chromas = const {},
     this.agents = const {},

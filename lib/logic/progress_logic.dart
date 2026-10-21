@@ -66,6 +66,85 @@ List<WeaponGroup> groupOwnedSkins(
   ];
 }
 
+class WeaponSummary {
+  final String uuid;
+  final String name;
+  final String? iconUrl;
+  final int ownedCount;
+
+  const WeaponSummary(
+      {required this.uuid,
+      required this.name,
+      this.iconUrl,
+      required this.ownedCount});
+}
+
+/// 所有槍枝（含擁有 0 款）與擁有的造型數，依參考資料的槍枝順序。
+List<WeaponSummary> weaponSummaries(Set<String> levels, ProgressReference ref) {
+  final skinsByWeapon = <String, Set<String>>{};
+  for (final id in levels) {
+    final lv = ref.skinLevels[id];
+    if (lv == null) continue;
+    (skinsByWeapon[lv.weaponUuid] ??= {}).add(lv.skinUuid);
+  }
+  return [
+    for (final w in ref.weapons)
+      WeaponSummary(
+          uuid: w.uuid,
+          name: w.name,
+          iconUrl: w.iconUrl,
+          ownedCount: skinsByWeapon[w.uuid]?.length ?? 0),
+  ];
+}
+
+/// 某把槍擁有的造型（同一造型取最高等級），依名稱排序。
+List<OwnedSkin> skinsForWeapon(Set<String> levels, Set<String> chromas,
+    ProgressReference ref, String weaponUuid) {
+  final own = {
+    for (final id in levels)
+      if (ref.skinLevels[id]?.weaponUuid == weaponUuid) id,
+  };
+  return [
+    for (final g in groupOwnedSkins(own, chromas, ref)) ...g.skins,
+  ]..sort((a, b) => a.name.compareTo(b.name));
+}
+
+class AgentLevel {
+  final int reached;
+  final int total;
+  final int towardsNext;
+
+  /// 下一階需要的經驗；已到最後一階時為 null。
+  final int? nextTierXp;
+
+  const AgentLevel(
+      {required this.reached,
+      required this.total,
+      required this.towardsNext,
+      this.nextTierXp});
+}
+
+/// 特務合約的等級（`relationType == "Agent"` 的合約）；沒有進度紀錄時為 null（尚未開始）。
+AgentLevel? agentLevel(
+    ContractsSnapshot? snapshot, ProgressReference ref, String agentUuid) {
+  if (snapshot == null) return null;
+  for (final e in ref.contracts.entries) {
+    final c = e.value;
+    if (c.relationType != 'Agent' || c.relationUuid != agentUuid) continue;
+    for (final p in snapshot.contracts) {
+      if (p.definitionId != e.key) continue;
+      final reached = p.levelReached.clamp(0, c.tiers.length);
+      return AgentLevel(
+        reached: reached,
+        total: c.tiers.length,
+        towardsNext: p.towardsNext,
+        nextTierXp: reached < c.tiers.length ? c.tiers[reached].xp : null,
+      );
+    }
+  }
+  return null;
+}
+
 class BattlePass {
   final String name;
   final List<RefTier> tiers;

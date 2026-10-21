@@ -6,6 +6,7 @@ import 'package:valorant_shop_tracker/services/riot_client.dart';
 import 'package:valorant_shop_tracker/shell/nav_items.dart';
 import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 
+import '../account_fixtures.dart';
 import '../app_harness.dart';
 import '../progress_fixtures.dart';
 import '../riot_fixtures.dart';
@@ -73,9 +74,7 @@ void main() {
     expect(find.textContaining('共 '), findsOneWidget);
   });
 
-  testWidgets('造型分頁：依武器分組、最高等級、預覽影片開新分頁', (tester) async {
-    setWidth(tester, 1440);
-    final launched = <Uri>[];
+  Future<Harness> withSkins(WidgetTester tester) async {
     final h = await Harness.create(tester,
         riotHttp: riotClient(skinLevels: [
           'lv-vandal-1',
@@ -86,19 +85,70 @@ void main() {
         }),
         progressApi: FakeProgressApi());
     await tester.runAsync(() => h.riot.login(fakeRedirect));
+    return h;
+  }
+
+  testWidgets('造型分頁列出所有槍枝與擁有數量（含 0 款）', (tester) async {
+    setWidth(tester, 1440);
+    final h = await withSkins(tester);
+    await tester.pumpWidget(h.wrap(home: const CollectionPage()));
+    await settle(tester);
+    Finder card(String id, String text) => find.descendant(
+        of: find.byKey(ValueKey('weapon-$id')), matching: find.text(text));
+    expect(card('w-vandal', '暴徒'), findsOneWidget);
+    expect(card('w-vandal', '擁有 1 款'), findsOneWidget);
+    expect(card('w-phantom', '擁有 1 款'), findsOneWidget);
+    expect(card('w-sheriff', '擁有 0 款'), findsOneWidget);
+    // 造型名稱要點進槍枝才看得到。
+    expect(find.text('光幻 暴徒'), findsNothing);
+  });
+
+  testWidgets('點進槍枝：只列該槍擁有的造型，最高等級、色票、預覽影片', (tester) async {
+    setWidth(tester, 1440);
+    final launched = <Uri>[];
+    final h = await withSkins(tester);
     await tester.pumpWidget(h.wrap(home: CollectionPage(launch: (u) async {
       launched.add(u);
       return true;
     })));
     await settle(tester);
-    expect(find.text('暴徒'), findsOneWidget);
-    expect(find.text('幻象'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('weapon-w-vandal')));
+    await tester.pumpAndSettle();
     expect(find.text('光幻 暴徒'), findsOneWidget);
+    expect(find.text('光幻 幻象'), findsNothing);
     expect(find.byKey(const ValueKey('swatch-skin-v-0')), findsOneWidget);
     await tester.tap(find.text('預覽影片'));
     expect(launched, [Uri.parse('https://example.test/v2.mp4')]);
-    // 沒有影片的造型不顯示按鈕。
-    expect(find.text('預覽影片'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('weapon-w-sheriff')));
+    await tester.pumpAndSettle();
+    expect(find.text('還沒有這把槍的造型'), findsOneWidget);
+  });
+
+  testWidgets('特務分頁顯示特務等級；沒有紀錄的顯示尚未開始', (tester) async {
+    setWidth(tester, 1440);
+    final h = await Harness.create(tester,
+        riotHttp: riotClient(
+            entitlements: {
+              ItemTypes.agent: ['a-paid'],
+            },
+            contracts: contractsJson(contracts: [
+              {
+                'ContractDefinitionID': 'ac-paid',
+                'ProgressionLevelReached': 2,
+                'ProgressionTowardsNextLevel': 300,
+              },
+            ])),
+        progressApi: FakeProgressApi());
+    await tester.runAsync(() => h.riot.login(fakeRedirect));
+    await tester.pumpWidget(h.wrap(home: const CollectionPage()));
+    await settle(tester);
+    await openTab(tester, '特務');
+    Finder agent(String id, Finder f) =>
+        find.descendant(of: find.byKey(ValueKey('agent-$id')), matching: f);
+    expect(agent('a-paid', find.text('等級 2 / 3')), findsOneWidget);
+    expect(agent('a-base1', find.text('尚未開始')), findsOneWidget);
   });
 
   testWidgets('新帳號：特務分頁列出初始特務並標示', (tester) async {
@@ -143,6 +193,7 @@ void main() {
               skinUuid: 'skin-long',
               skinName: '這是一個名稱非常非常長的限定版造型名稱 暴徒',
               weaponName: '暴徒',
+              weaponUuid: 'w-vandal',
               levelIndex: 3,
               videoUrl: 'https://example.test/long.mp4'),
         },
@@ -151,6 +202,7 @@ void main() {
             'ch-long-$i':
                 RefChroma(skinUuid: 'skin-long', swatchUrl: 'sw$i.png'),
         },
+        weapons: base.weapons,
         agents: base.agents,
         buddyLevels: base.buddyLevels,
         sprays: base.sprays,
@@ -171,6 +223,9 @@ void main() {
       await tester.runAsync(() => h.riot.login(fakeRedirect));
       await tester.pumpWidget(h.wrap(home: const CollectionPage()));
       await settle(tester);
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.byKey(const ValueKey('weapon-w-vandal')));
+      await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       expect(find.text('預覽影片'), findsWidgets);
     });
