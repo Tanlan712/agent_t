@@ -12,6 +12,7 @@ import '../../../theme/app_style.dart';
 import '../../../theme/app_theme.dart';
 import '../../../theme/theme_ids.dart';
 import 'app_activity.dart';
+import 'eva_data_eggs.dart';
 import 'eva_bracket.dart';
 
 String _two(int n) => n.toString().padLeft(2, '0');
@@ -58,20 +59,40 @@ class _RefreshCountdownState extends _TickingState<RefreshCountdown> {
     final now = (widget.now ?? DateTime.now)();
     final left =
         nextResetAfter(now, s.resetHour, s.resetMinute).difference(now);
+    final phase = s.evaEnabled ? countdownPhase(left) : CountdownPhase.normal;
+    if (phase == CountdownPhase.reboot) {
+      return Container(
+        key: const ValueKey('countdown-reboot'),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(color: p.win),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text('再起動 REBOOT',
+              style: AppFonts.condensed(TextStyle(
+                  fontSize: 20, letterSpacing: 2, color: p.background))),
+          Text('請按重新整理', style: TextStyle(fontSize: 12, color: p.background)),
+        ]),
+      );
+    }
+    final last60 = phase == CountdownPhase.last60;
+    if (last60) recordEggOnce(context, 'E8');
     final urgent = left <= const Duration(minutes: 10);
     final text = '${_two(left.inHours)}:${_two(left.inMinutes % 60)}:'
         '${_two(left.inSeconds % 60)}';
     final bracketed = context.appStyle.id != ThemeStyleId.evaAlert;
     final fg = urgent ? p.onButton : (p.frame ?? p.primary);
     Widget number = Text(text,
-        style: AppText.tabular(
-            AppFonts.mono(TextStyle(fontSize: 20, height: 1.2, color: fg))));
+        style: AppText.tabular(AppFonts.mono(
+            TextStyle(fontSize: last60 ? 40 : 20, height: 1.2, color: fg))));
     if (bracketed) {
       number = EvaBracket(
           key: const ValueKey('countdown-bracket'), color: fg, child: number);
     }
     return Container(
-      key: urgent ? const ValueKey('countdown-urgent') : null,
+      key: last60
+          ? const ValueKey('countdown-final')
+          : urgent
+              ? const ValueKey('countdown-urgent')
+              : null,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: urgent ? p.loss : p.background,

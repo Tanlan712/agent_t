@@ -9,14 +9,22 @@ import '../../../theme/app_style.dart';
 import '../../../theme/eva_names.dart';
 import '../../../theme/nav_labels_en.dart';
 import '../../../theme/theme_ids.dart';
+import '../../../logic/eva_progress.dart';
 import 'app_activity.dart';
+import 'eva_data_eggs.dart';
 import 'eva_mincho.dart';
 import 'eva_status.dart';
 
 /// 頁首的代碼行（規格 §4.1）：`CODE:HHMM / {SHARD}-TW`，HHMM 是商店刷新時間。
 abstract final class EvaCodeLine {
+  /// 測試可替換的時鐘。
+  static DateTime Function() now = DateTime.now;
+
+  /// 夜間與 10 月 4 日改成特殊代碼行（E6／E19，彩蛋開啟時）。
   static String of(BuildContext context) {
     final s = context.watch<SettingsProvider>().settings;
+    final special = s.evaEnabled ? codeLineOverride(now()) : null;
+    if (special != null) return special;
     String two(int n) => n.toString().padLeft(2, '0');
     return 'CODE:${two(s.resetHour)}${two(s.resetMinute)} / '
         '${s.loginShard.toUpperCase()}-TW';
@@ -60,6 +68,7 @@ class EvaPageHeader extends StatelessWidget {
         _AlertBlock(title: title, story: story, route: r, loading: loading);
     final extras = [
       if (r == '/') const RefreshCountdown(),
+      if (fusion) const Psychograph(),
       if (fusion)
         const SizedBox(
             key: ValueKey('eva-header-side'),
@@ -68,7 +77,7 @@ class EvaPageHeader extends StatelessWidget {
     ];
     return LayoutBuilder(builder: (context, c) {
       // 窄寬度時倒數與右側欄位移到色塊下方，避免溢出。
-      final narrow = c.maxWidth < 120 + extras.length * 180;
+      final narrow = c.maxWidth < 120 + extras.length * 160;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -92,6 +101,7 @@ class EvaPageHeader extends StatelessWidget {
             const SizedBox(height: 4),
             const SourceStatus(style: ThemeStyleId.evaAlert),
           ],
+          EvaBanners(route: r),
           if (fusion) ...[
             const SizedBox(height: 6),
             TransferBar(active: loading),
@@ -300,13 +310,15 @@ class _MonitorHeader extends StatelessWidget {
                 const RefreshCountdown(),
                 const SizedBox(width: 8),
               ],
+              const Psychograph(),
+              const SizedBox(width: 8),
               const SizedBox(width: 128, child: EvaHeaderSide()),
             ],
             ...actions,
           ],
         );
     return LayoutBuilder(builder: (context, c) {
-      final narrow = c.maxWidth < 520;
+      final narrow = c.maxWidth < 660;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -316,6 +328,7 @@ class _MonitorHeader extends StatelessWidget {
             const SizedBox(height: 6),
             Wrap(spacing: 8, runSpacing: 6, children: [
               if (route == '/') const RefreshCountdown(),
+              const Psychograph(),
               const SizedBox(width: 128, child: EvaHeaderSide()),
             ]),
           ],
@@ -323,14 +336,16 @@ class _MonitorHeader extends StatelessWidget {
           TransferBar(active: loading),
           const SizedBox(height: 4),
           const SourceStatus(style: ThemeStyleId.evaMonitor),
+          EvaBanners(route: route),
         ],
       );
     });
   }
 }
 
-/// F2 淺色（機密文件）：印章框、報告書大標、德文副標；動態只有倒數與進度條。
-class _ClassifiedHeader extends StatelessWidget {
+/// F2 淺色（機密文件）：印章框、報告書大標、副標（故事名；雙擊標題切換德文，E18）；
+/// 動態只有倒數與進度條。
+class _ClassifiedHeader extends StatefulWidget {
   final String title;
   final String? route;
   final List<Widget> actions;
@@ -339,40 +354,79 @@ class _ClassifiedHeader extends StatelessWidget {
       {required this.title, this.route, required this.actions});
 
   @override
+  State<_ClassifiedHeader> createState() => _ClassifiedHeaderState();
+}
+
+class _ClassifiedHeaderState extends State<_ClassifiedHeader> {
+  bool _german = false;
+  DateTime? _lastTap;
+
+  void _tap() {
+    final now = DateTime.now();
+    final last = _lastTap;
+    _lastTap = now;
+    if (last == null ||
+        now.difference(last) > const Duration(milliseconds: 350)) {
+      return;
+    }
+    _lastTap = null;
+    if (!context.read<SettingsProvider>().settings.evaEnabled) return;
+    setState(() => _german = !_german);
+    context.read<SettingsProvider>().updateEva((s) => recordEgg(s, 'E18'));
+  }
+
+  @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final de = route == null ? null : navLabelsDe[route];
-    return Row(
+    final r = widget.route;
+    final de = r == null ? null : navLabelsDe[r];
+    final story = r == null ? null : evaStoryNames[r]?.$1;
+    final sub = _german ? de : story;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                key: const ValueKey('eva-stamp'),
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                decoration: BoxDecoration(
-                    border: Border.all(color: p.text, width: 2),
-                    borderRadius: BorderRadius.circular(3)),
-                child: EvaMincho('機密', size: 14, squeeze: 1, color: p.text),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    key: const ValueKey('eva-stamp'),
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    decoration: BoxDecoration(
+                        border: Border.all(color: p.text, width: 2),
+                        borderRadius: BorderRadius.circular(3)),
+                    child: EvaMincho('機密', size: 14, squeeze: 1, color: p.text),
+                  ),
+                  const SizedBox(height: 4),
+                  GestureDetector(
+                    key: const ValueKey('classified-title'),
+                    onTap: _tap,
+                    child: EvaMincho('${widget.title}報告書',
+                        size: 34, squeeze: 0.9, color: p.text),
+                  ),
+                  if (sub != null)
+                    Text(sub,
+                        style: _german
+                            ? AppFonts.serif(
+                                TextStyle(fontSize: 13, color: p.muted))
+                            : TextStyle(fontSize: 13, color: p.muted)),
+                  // 機密文件只保留倒數（首頁）與進度條兩個動態元件。
+                  const SizedBox(height: 8),
+                  TransferBar(active: AppActivity.loading(context)),
+                ],
               ),
-              const SizedBox(height: 4),
-              EvaMincho('$title報告書', size: 34, squeeze: 0.9, color: p.text),
-              if (de != null)
-                Text(de,
-                    style: AppFonts.serif(
-                        TextStyle(fontSize: 13, color: p.muted))),
-              // 機密文件只保留倒數（首頁）與進度條兩個動態元件。
-              const SizedBox(height: 8),
-              TransferBar(active: AppActivity.loading(context)),
+            ),
+            if (r == '/') ...[
+              const SizedBox(width: 12),
+              const RefreshCountdown(),
             ],
-          ),
+            ...widget.actions,
+          ],
         ),
-        if (route == '/') ...[
-          const SizedBox(width: 12),
-          const RefreshCountdown(),
-        ],
-        ...actions,
+        EvaBanners(route: r),
       ],
     );
   }

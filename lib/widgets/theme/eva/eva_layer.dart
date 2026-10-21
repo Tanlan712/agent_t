@@ -9,10 +9,15 @@ import '../../../providers/match_history_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../providers/shop_provider.dart';
 import '../../../providers/wishlist_provider.dart';
+import '../../../shell/nav/eva_nav.dart';
 import '../../../shell/nav_items.dart';
 import '../../../theme/eva_names.dart';
 import '../../../theme/nav_labels_en.dart';
+import '../../../providers/catalog_provider.dart';
+import '../../../providers/progress_provider.dart';
+import '../../../theme/app_palette.dart';
 import 'egg_detector.dart';
+import 'eva_data_eggs.dart';
 import 'eva_overlays.dart';
 
 /// 讓子元件（EVA 側欄的品牌字）回報點擊。
@@ -56,6 +61,18 @@ class _EvaLayerState extends State<EvaLayer> {
   DateTime? _lastTap;
   Offset? _lastTapAt;
   int _seq = 0;
+  bool _boot = false;
+  final _timers = <Timer>[];
+
+  void _later(Duration d, VoidCallback f) => _timers.add(Timer(d, () {
+        if (mounted) f();
+      }));
+  bool _atBottom = false;
+  final _failures = {
+    'catalog': FailureCounter(),
+    'matches': FailureCounter(),
+    'progress': FailureCounter(),
+  };
 
   bool get _eggsOn => context.read<SettingsProvider>().settings.evaEnabled;
   bool get _still => MediaQuery.disableAnimationsOf(context);
@@ -67,7 +84,10 @@ class _EvaLayerState extends State<EvaLayer> {
     // 立刻建立：閒置計時從頁面出現就開始。
     _detector = EggDetector(onEgg: _onEgg);
     HardwareKeyboard.instance.addHandler(_onKey);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeTitleCard());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _maybeTitleCard();
+      _startup();
+    });
   }
 
   @override
@@ -75,6 +95,9 @@ class _EvaLayerState extends State<EvaLayer> {
     HardwareKeyboard.instance.removeHandler(_onKey);
     _detector.dispose();
     _close?.cancel();
+    for (final t in _timers) {
+      t.cancel();
+    }
     super.dispose();
   }
 
@@ -91,6 +114,73 @@ class _EvaLayerState extends State<EvaLayer> {
         TitleCardOverlay(
             number: number, title: label, story: evaStoryNames[route]?.$1),
         const Duration(milliseconds: 600));
+  }
+
+  /// 每天第一次開啟的開機自檢（E10）、首頁的使徒接近（E3）、夜間／紀念日（E6／E19）。
+  void _startup() {
+    if (!mounted || !_eggsOn) return;
+    final settings = context.read<SettingsProvider>();
+    final now = DateTime.now();
+    final today = dayKey(now);
+    final special = codeLineOverride(now);
+    if (special != null) {
+      settings.updateEva((s) =>
+          recordEgg(s, special.startsWith('ANNIVERSARY') ? 'E19' : 'E6'));
+    }
+    var delay = Duration.zero;
+    if (settings.settings.evaBootDate != today) {
+      settings
+          .updateEva((s) => recordEgg(s.copyWith(evaBootDate: today), 'E10'));
+      setState(() => _boot = true);
+      _later(const Duration(milliseconds: 800),
+          () => setState(() => _boot = false));
+      delay = const Duration(milliseconds: 900);
+    }
+    if (canonicalRoute(widget.currentRoute) != '/') return;
+    final catalog = context.read<CatalogProvider>();
+    final tier = angelTier(context
+        .read<ShopProvider>()
+        .shop
+        .daily
+        .map((e) => catalog.skinById(e.skinUuid)?.tier));
+    if (tier == null || settings.settings.evaSeenUltraDate == today) return;
+    final (next, n) = recordAngel(settings.settings, now);
+    settings.updateEva((_) => recordEgg(next, 'E3'));
+    _later(
+        delay,
+        () => _show(
+            AngelOverlay(number: n, tier: tier), const Duration(seconds: 3)));
+  }
+
+  /// E16：同一個 provider 連續失敗的次數（取最大）。
+  int _failureCount(BuildContext context) {
+    final catalog = context.watch<CatalogProvider>();
+    final matches = context.watch<MatchHistoryProvider>();
+    final progress = context.watch<ProgressProvider>();
+    _failures['catalog']!
+        .update(loading: catalog.isLoading, error: catalog.error);
+    _failures['matches']!
+        .update(loading: matches.isLoading, error: matches.error);
+    _failures['progress']!
+        .update(loading: progress.isLoading, error: progress.error);
+    return _failures.values.map((c) => c.count).reduce((a, b) => a > b ? a : b);
+  }
+
+  bool _onScroll(ScrollNotification n) {
+    final m = n.metrics;
+    if (m.axis != Axis.vertical) return false;
+    // 只看頁面內容的捲動，不看 EVA 側欄。
+    if (n.context?.findAncestorWidgetOfExactType<EvaNav>() != null) {
+      return false;
+    }
+    final bottom = m.maxScrollExtent > 0 && m.extentAfter <= 1;
+    if (bottom != _atBottom) {
+      setState(() => _atBottom = bottom);
+      if (bottom && _eggsOn) {
+        context.read<SettingsProvider>().updateEva((s) => recordEgg(s, 'E17'));
+      }
+    }
+    return false;
   }
 
   void _show(Widget overlay, Duration? autoClose, {String? egg}) {
@@ -184,16 +274,17 @@ class _EvaLayerState extends State<EvaLayer> {
       final key = ValueKey('refused-${_seq++}');
       setState(() => _refused.add((key, at)));
       context.read<SettingsProvider>().updateEva((s) => recordEgg(s, 'E7'));
-      Timer(const Duration(seconds: 2), () {
-        if (mounted) setState(() => _refused.removeWhere((r) => r.$1 == key));
-      });
+      _later(const Duration(seconds: 2),
+          () => setState(() => _refused.removeWhere((r) => r.$1 == key)));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     // 讀設定讓開關改變時重建。
-    context.select<SettingsProvider, bool>((s) => s.settings.evaEnabled);
+    final eggsOn =
+        context.select<SettingsProvider, bool>((s) => s.settings.evaEnabled);
+    final failures = eggsOn ? _failureCount(context) : 0;
     return EvaEggScope(
       onBrandTap: () {
         if (_eggsOn) _detector.tapBrand();
@@ -210,7 +301,46 @@ class _EvaLayerState extends State<EvaLayer> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              widget.child,
+              NotificationListener<ScrollNotification>(
+                onNotification: _onScroll,
+                child: widget.child,
+              ),
+              if (eggsOn && _atBottom)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: IgnorePointer(
+                    child: TweenAnimationBuilder<double>(
+                      key: const ValueKey('lcl-fill'),
+                      tween: Tween(begin: 0, end: 1),
+                      duration: _still
+                          ? Duration.zero
+                          : const Duration(milliseconds: 600),
+                      builder: (context, t, _) => Container(
+                        height: 28 * t,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              (context.palette.frame ?? context.palette.primary)
+                                  .withOpacity(0.15),
+                              (context.palette.frame ?? context.palette.primary)
+                                  .withOpacity(0.45),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  child: ConnectionLostBar(failures: failures)),
+              if (_boot) const Positioned.fill(child: BootOverlay()),
               for (final (key, at) in _ripples)
                 Positioned.fill(
                   child: AtFieldRipple(

@@ -50,12 +50,13 @@ void main() {
       expect(find.byKey(const ValueKey('eva-alert-block')), findsNothing);
     });
 
-    testWidgets('F2 淺色：機密印章與報告書標題、德文副標', (tester) async {
+    testWidgets('F2 淺色：機密印章與報告書標題、故事名副標（雙擊才是德文，見 E18）',
+        (tester) async {
       await pump(tester, ThemeStyleId.evaMonitor, header,
           mode: BrightnessMode.light);
       expect(find.byKey(const ValueKey('eva-stamp')), findsOneWidget);
       expect(find.text('對戰紀錄報告書'), findsOneWidget);
-      expect(find.text('Einsatzprotokoll'), findsOneWidget);
+      expect(find.text('作戰記錄'), findsOneWidget);
     });
 
     testWidgets('F3 色塊頁首＋右側欄位', (tester) async {
