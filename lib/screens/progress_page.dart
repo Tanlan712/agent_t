@@ -10,8 +10,12 @@ import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
 
-String _countdown(Duration d) =>
-    d.isNegative ? '—' : '${d.inDays} 天 ${d.inHours % 24} 小時';
+/// KPI 窄欄用的倒數：超過一天只顯示天數，不足一天用 時:分（避免被截斷）。
+String kpiCountdown(Duration d) {
+  if (d.isNegative) return '—';
+  if (d.inDays > 0) return '${d.inDays} 天';
+  return '${d.inHours}:${(d.inMinutes % 60).toString().padLeft(2, '0')}';
+}
 
 /// 通行證與任務：只讀登入者自己的等級、合約與任務（AGENTS.md 第 3 節）。
 class ProgressPage extends StatefulWidget {
@@ -124,7 +128,7 @@ class _ProgressPageState extends State<ProgressPage> {
                   label: '每週任務刷新',
                   value: refill == null
                       ? '—'
-                      : _countdown(refill.difference(now))),
+                      : kpiCountdown(refill.difference(now))),
             ]),
             const SizedBox(height: 16),
             if (ref != null && contracts != null)

@@ -59,7 +59,14 @@ void main() {
     expect(inKey('kpi-level', find.text('4')), findsOneWidget);
     expect(inKey('kpi-xp', find.text('855')), findsOneWidget);
     expect(inKey('kpi-pass', find.text('2 / 3')), findsOneWidget);
-    expect(inKey('kpi-weekly', find.text('5 天 0 小時')), findsOneWidget);
+    // KPI 窄欄用短格式：超過一天只顯示天數，不足一天用 時:分。
+    expect(inKey('kpi-weekly', find.text('5 天')), findsOneWidget);
+  });
+
+  test('每週刷新倒數的短格式', () {
+    expect(kpiCountdown(const Duration(days: 5, hours: 3)), '5 天');
+    expect(kpiCountdown(const Duration(hours: 7, minutes: 5)), '7:05');
+    expect(kpiCountdown(const Duration(minutes: -1)), '—');
   });
 
   for (final width in [375.0, 560.0]) {

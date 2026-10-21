@@ -59,14 +59,16 @@ Future<void> main() async {
   // 自己的收藏、等級、通行證與任務（只讀 GET，AGENTS.md 第 3 節）。
   final collection = CollectionProvider(riot, riotClient);
   final progress = ProgressProvider(riot, riotClient, ProgressReferenceApi());
-  // 登入後先在背景讀一次（依序、同時最多 2 個 Riot 請求）。
-  LoginPrefetcher(riot, collection, progress);
+  final shop = ShopProvider(ShopStorage(prefs));
+  // 登入後（含重新開頁恢復登入）先在背景讀一次：商店與錢包、收藏、通行證
+  // （依序、同時最多 2 個 Riot 請求）。
+  LoginPrefetcher(riot, collection, progress, shop: shop, catalog: catalog);
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: catalog),
-        ChangeNotifierProvider(create: (_) => ShopProvider(ShopStorage(prefs))),
+        ChangeNotifierProvider.value(value: shop),
         ChangeNotifierProvider(
             create: (_) => WishlistProvider(WishlistStorage(prefs))),
         ChangeNotifierProvider.value(value: settings),

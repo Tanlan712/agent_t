@@ -1,11 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:valorant_shop_tracker/providers/catalog_provider.dart';
+import 'package:valorant_shop_tracker/providers/shop_provider.dart';
+import 'package:valorant_shop_tracker/services/catalog_api.dart';
+import 'package:valorant_shop_tracker/storage/catalog_cache.dart';
+import 'package:valorant_shop_tracker/storage/shop_storage.dart';
 import 'package:valorant_shop_tracker/providers/collection_provider.dart';
 import 'package:valorant_shop_tracker/providers/login_prefetcher.dart';
 import 'package:valorant_shop_tracker/providers/progress_provider.dart';
 import 'package:valorant_shop_tracker/providers/riot_provider.dart';
 import 'package:valorant_shop_tracker/services/riot_client.dart';
 
+import '../fixtures.dart';
 import '../progress_fixtures.dart';
 import '../riot_fixtures.dart';
 
@@ -36,6 +44,18 @@ class _Counting extends http.BaseClient {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  Future<(ShopProvider, CatalogProvider)> shopAndCatalog(
+      {bool loadCatalog = true}) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final catalog = CatalogProvider(
+        CatalogApi(client: MockClient(fixtureHandler)), CatalogCache(prefs));
+    if (loadCatalog) await catalog.init();
+    return (ShopProvider(ShopStorage(prefs)), catalog);
+  }
+
   Future<void> settle() =>
       Future<void>.delayed(const Duration(milliseconds: 200));
 
@@ -80,11 +100,8 @@ void main() {
     final http = _Counting();
     final client = RiotClient(client: http);
     final riot = RiotProvider(client);
-    LoginPrefetcher(
-        riot,
-        CollectionProvider(riot, client, delay: (_) async {}),
-        ProgressProvider(riot, client, FakeProgressApi(),
-            delay: (_) async {}));
+    LoginPrefetcher(riot, CollectionProvider(riot, client, delay: (_) async {}),
+        ProgressProvider(riot, client, FakeProgressApi(), delay: (_) async {}));
     await settle();
     expect(http.pdRequests, 0);
   });
@@ -105,5 +122,38 @@ void main() {
     await settle();
     expect(col.owned[ItemTypes.spray], {'spray-1'});
     expect(prog.xp, isNotNull);
+  });
+
+  test('登入後（含重新開頁恢復登入）也先同步一次商店與錢包', () async {
+    final http = _Counting();
+    final client = RiotClient(client: http);
+    final riot = RiotProvider(client);
+    final (shop, catalog) = await shopAndCatalog();
+    LoginPrefetcher(riot, CollectionProvider(riot, client, delay: (_) async {}),
+        ProgressProvider(riot, client, FakeProgressApi(), delay: (_) async {}),
+        shop: shop, catalog: catalog);
+    await riot.login(fakeRedirect);
+    await settle();
+    expect(riot.wallet, isNotNull);
+    expect(riot.wallet!.vp, 1500);
+    expect(shop.shop.daily, hasLength(4));
+    expect(http.maxInFlight, lessThanOrEqualTo(2));
+  });
+
+  test('造型目錄還沒載入時，等目錄好了再同步（商店才對得到造型）', () async {
+    final http = _Counting();
+    final client = RiotClient(client: http);
+    final riot = RiotProvider(client);
+    final (shop, catalog) = await shopAndCatalog(loadCatalog: false);
+    LoginPrefetcher(riot, CollectionProvider(riot, client, delay: (_) async {}),
+        ProgressProvider(riot, client, FakeProgressApi(), delay: (_) async {}),
+        shop: shop, catalog: catalog);
+    await riot.login(fakeRedirect);
+    await settle();
+    expect(riot.wallet, isNull);
+    await catalog.init();
+    await settle();
+    expect(riot.wallet, isNotNull);
+    expect(shop.shop.daily.first.skinUuid, 'skin-odin');
   });
 }
