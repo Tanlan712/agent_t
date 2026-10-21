@@ -180,6 +180,52 @@ void main() {
       expect(env.requestsFor('/mmr/v1/players/r1'), 1);
     });
 
+    Future<void> profileSettled(String p) async {
+      for (var i = 0; i < 400; i++) {
+        final st = env.loader.profileStatus(p);
+        if (st == FormStatus.done || st == FormStatus.failed) return;
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+      fail('MMR 未在時限內完成：${env.loader.profileStatus(p)}');
+    }
+
+    test('卡住修正：離開頁面取消後，其他頁面用不同場數要求仍會讀 MMR', () async {
+      env = await setup(maxConcurrent: 1);
+      final page = Object();
+      // 先佔住唯一的名額，r1 的工作才會排在佇列裡。
+      env.loader.request(['r2'], queue: 'unrated');
+      env.loader.request(['r1'],
+          owner: page, queue: standardQueues, profileFor: {'r1'});
+      env.loader.cancelPending(owner: page);
+      env.loader
+          .request(['r1'], queue: standardQueues, games: 1, profileFor: {'r1'});
+      await profileSettled('r1');
+      expect(env.loader.profileStatus('r1'), FormStatus.done);
+      expect(env.loader.mmr('r1'), isNotNull);
+    });
+
+    test('卡住修正：MMR 回 401 時標成失敗，不會一直讀取中', () async {
+      env = await setup(otherMmrStatus: {'r1': 401});
+      env.loader
+          .request(['r1'], queue: standardQueues, games: 1, profileFor: {'r1'});
+      await profileSettled('r1');
+      expect(env.loader.profileStatus('r1'), FormStatus.failed);
+    });
+
+    test('卡住修正：戰績還在讀取時按同步（forget）後，MMR 仍會重讀', () async {
+      env = await setup();
+      env.loader.request(['r1'],
+          queue: standardQueues, games: 10, profileFor: {'r1'});
+      await profileSettled('r1');
+      // 戰績（10 場）可能還在讀取；這時清掉並重新要求。
+      env.loader.forget('r1');
+      env.loader.request(['r1'],
+          queue: standardQueues, games: 10, profileFor: {'r1'});
+      await profileSettled('r1');
+      expect(env.loader.profileStatus('r1'), FormStatus.done);
+      expect(env.requestsFor('/mmr/v1/players/r1'), 2);
+    });
+
     test('重新讀取：清掉這位玩家的結果後再要求會重抓', () async {
       env = await setup();
       env.loader

@@ -121,8 +121,8 @@ class RecentFormLoader with ChangeNotifier {
   final Map<String, Map<String, dynamic>> _mmr = {};
   final Map<String, FormStatus> _profileStatus = {};
 
-  /// 佇列鍵 → 需要一起讀 MMR 的玩家。
-  final Map<String, String> _profileFor = {};
+  /// MMR 是獨立的佇列工作（不綁在某個場數的戰績上）：鍵是 `profile|玩家`。
+  static const _profilePrefix = 'profile|';
   static final _anonymous = Object();
   int _running = 0;
   bool _disposed = false;
@@ -195,9 +195,15 @@ class RecentFormLoader with ChangeNotifier {
       if (rankFor.contains(puuid) && seasonId.isNotEmpty) {
         _rankSeason[p] = seasonId;
       }
-      if (profileFor.contains(puuid) && _profileStatus[puuid] == null) {
-        _profileFor[p] = puuid;
-        _profileStatus[puuid] = FormStatus.pending;
+      if (profileFor.contains(puuid)) {
+        final ps = _profileStatus[puuid];
+        if (ps != FormStatus.loading && ps != FormStatus.done) {
+          final k = '$_profilePrefix$puuid';
+          (_owners[k] ??= {}).add(o);
+          _queue.remove(k);
+          _profileStatus[puuid] = FormStatus.pending;
+          if (!front.contains(k)) front.add(k);
+        }
       }
       final st = _status[p];
       if (st == FormStatus.loading || st == FormStatus.done) continue;
@@ -231,6 +237,9 @@ class RecentFormLoader with ChangeNotifier {
       _queue.remove(p);
       _status.remove(p);
       _owners.remove(p);
+      if (p.startsWith(_profilePrefix)) {
+        _profileStatus.remove(p.substring(_profilePrefix.length));
+      }
     }
   }
 
@@ -263,13 +272,25 @@ class RecentFormLoader with ChangeNotifier {
       _failAll(key);
       return;
     }
+    if (key.startsWith(_profilePrefix)) {
+      try {
+        await _loadProfile(s, key.substring(_profilePrefix.length));
+      } on RiotApiException {
+        // _loadProfile 只在 401 時拋出：登出並讓排隊中的工作失敗。
+        if (_disposed) return;
+        _riot.logout();
+        _failAll(key);
+      } on _Cancelled {
+        return;
+      }
+      return;
+    }
     _status[key] = FormStatus.loading;
     _notify();
     try {
       final (puuid, queue, count) = _targets[key]!;
       final season = _rankSeason.remove(key);
       if (season != null) await _loadRank(s, puuid, season);
-      if (_profileFor.remove(key) != null) await _loadProfile(s, puuid);
       final form = await _load(s, puuid, queue, count);
       if (_disposed) return;
       _forms[key] = form;
@@ -318,8 +339,12 @@ class RecentFormLoader with ChangeNotifier {
       _mmr[puuid] = await _retry(() => _client.fetchMmrJson(s, puuid));
       _profileStatus[puuid] = FormStatus.done;
     } on RiotApiException catch (e) {
-      if (e.statusCode == 401) rethrow;
       _profileStatus[puuid] = FormStatus.failed;
+      _notify();
+      if (e.statusCode == 401) rethrow;
+      return;
+    } on _Cancelled {
+      rethrow;
     } catch (_) {
       _profileStatus[puuid] = FormStatus.failed;
     }
@@ -382,9 +407,17 @@ class RecentFormLoader with ChangeNotifier {
 
   /// 登入失效：目前這位與佇列中的玩家都標成失敗。
   void _failAll(String current) {
-    _status[current] = FormStatus.failed;
+    void fail(String k) {
+      if (k.startsWith(_profilePrefix)) {
+        _profileStatus[k.substring(_profilePrefix.length)] = FormStatus.failed;
+      } else {
+        _status[k] = FormStatus.failed;
+      }
+    }
+
+    fail(current);
     for (final p in _queue) {
-      _status[p] = FormStatus.failed;
+      fail(p);
     }
     _queue.clear();
     _notify();

@@ -136,6 +136,58 @@ void main() {
         isNull);
   });
 
+  group('provider：快取過期時重新下載', () {
+    MatchReference cached(Map<String, SeasonRef> seasons) => MatchReference(
+        agents: const {},
+        maps: const {},
+        tiers: const {18: RefItem(name: '舊快取')},
+        seasons: seasons);
+
+    test('快取沒有本幕（下一幕已開始，或賽季下載失敗過）時重新下載', () async {
+      var calls = 0;
+      final cache = MatchReferenceCache(prefs);
+      await cache.save(cached(const {}));
+      final p = MatchReferenceProvider(
+          MatchReferenceApi(client: referenceClient(onRequest: () => calls++)),
+          cache,
+          now: () => DateTime.utc(2026, 10, 22));
+      await p.init();
+      expect(calls, greaterThan(0));
+      expect(p.tier(18).name, '鑽石 2');
+      expect(p.reference!.seasons['act-6'], isNotNull);
+      expect(cache.load()!.seasons['act-6'], isNotNull);
+    });
+
+    test('快取有本幕時不重新下載', () async {
+      var calls = 0;
+      final cache = MatchReferenceCache(prefs);
+      await cache.save(cached({
+        'act-6': SeasonRef(
+            name: 'V26 第六幕',
+            start: DateTime.utc(2026, 10, 14),
+            end: DateTime.utc(2027, 1, 6),
+            isAct: true),
+      }));
+      final p = MatchReferenceProvider(
+          MatchReferenceApi(client: referenceClient(onRequest: () => calls++)),
+          cache,
+          now: () => DateTime.utc(2026, 10, 22));
+      await p.init();
+      expect(calls, 0);
+      expect(p.tier(18).name, '舊快取');
+    });
+
+    test('重新下載失敗時保留舊快取', () async {
+      final cache = MatchReferenceCache(prefs);
+      await cache.save(cached(const {}));
+      final p = MatchReferenceProvider(
+          MatchReferenceApi(client: referenceClient(fail: true)), cache,
+          now: () => DateTime.utc(2026, 10, 22));
+      await p.init();
+      expect(p.tier(18).name, '舊快取');
+    });
+  });
+
   test('provider：特務 uuid 不分大小寫、找不到時用縮寫', () async {
     final p = MatchReferenceProvider(
         MatchReferenceApi(client: referenceClient()),
@@ -158,13 +210,22 @@ void main() {
     expect(p.agent('ABCDEFGH-1234').iconUrl, isNull);
   });
 
-  test('provider：有快取時不呼叫 API', () async {
-    await MatchReferenceCache(prefs).save(const MatchReference(
-        agents: {}, maps: {}, tiers: {18: RefItem(name: '鑽石 2')}));
+  test('provider：有快取（含本幕）時不呼叫 API', () async {
+    await MatchReferenceCache(prefs)
+        .save(MatchReference(agents: const {}, maps: const {}, tiers: const {
+      18: RefItem(name: '鑽石 2')
+    }, seasons: {
+      'act': SeasonRef(
+          name: 'V26 第六幕',
+          start: DateTime.utc(2026, 10, 14),
+          end: DateTime.utc(2027, 1, 6),
+          isAct: true),
+    }));
     var requests = 0;
     final p = MatchReferenceProvider(
         MatchReferenceApi(client: referenceClient(onRequest: () => requests++)),
-        MatchReferenceCache(prefs));
+        MatchReferenceCache(prefs),
+        now: () => DateTime.utc(2026, 10, 22));
     await p.init();
     expect(requests, 0);
     expect(p.tier(18).name, '鑽石 2');

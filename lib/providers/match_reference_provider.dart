@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../logic/combat_stats.dart' show currentActId;
 import '../models/match_models.dart';
 import '../services/match_reference_api.dart';
 import '../storage/match_reference_cache.dart';
@@ -8,18 +9,23 @@ import '../storage/match_reference_cache.dart';
 class MatchReferenceProvider with ChangeNotifier {
   final MatchReferenceApi _api;
   final MatchReferenceCache _cache;
+  final DateTime Function() _now;
   MatchReference? _reference;
 
-  MatchReferenceProvider(this._api, this._cache);
+  MatchReferenceProvider(this._api, this._cache,
+      {DateTime Function() now = DateTime.now})
+      : _now = now;
 
   MatchReference? get reference => _reference;
 
+  /// 先用快取；快取裡沒有涵蓋現在的幕（下一幕已開始，或之前賽季下載失敗）時重新下載，
+  /// 下載失敗就繼續用舊快取。
   Future<void> init() async {
     final cached = _cache.load();
     if (cached != null) {
       _reference = cached;
       notifyListeners();
-      return;
+      if (currentActId(cached.seasons, _now()) != null) return;
     }
     try {
       final fresh = await _api.fetch();

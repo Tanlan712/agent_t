@@ -63,8 +63,10 @@ class CombatStatsView extends StatelessWidget {
 
     String loading(FormStatus s) => s == FormStatus.failed ? '無法取得' : '讀取中…';
 
-    final current =
-        mmr == null ? null : currentRank(mmr, currentActId(seasons, now()));
+    // 參考資料還沒有本幕時，用 MMR 最近一次競技更新的賽季。
+    final current = mmr == null
+        ? null
+        : currentRank(mmr, currentActId(seasons, now()) ?? latestSeasonId(mmr));
     final peak = mmr == null ? null : peakRank(mmr, seasons);
     final last = form?.games.firstOrNull;
 

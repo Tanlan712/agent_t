@@ -88,6 +88,11 @@ void main() {
     expect(normalizeTier(20, DateTime.utc(2021)), 20);
     expect(normalizeTier(21, DateTime.utc(2023)), 21);
     expect(normalizeTier(21, null), 21);
+    // 第五章第一幕 2022-06-21 開始（valorant-api 實測）：當天起是新制。
+    expect(normalizeTier(21, DateTime.utc(2022, 6, 21)), 21);
+    expect(normalizeTier(26, DateTime.utc(2022, 6, 21)), 26);
+    // 第四章第三幕（舊制）。
+    expect(normalizeTier(21, DateTime.utc(2022, 4, 27)), 24);
   });
 
   test('最高牌位同分時取較新的一季；沒有任何牌位時為 null', () {
@@ -104,6 +109,15 @@ void main() {
             seasons),
         isNull);
     expect(peakRank(const {}, seasons), isNull);
+  });
+
+  test('本幕查不到時，改用 MMR 最近一次競技更新的賽季', () {
+    expect(
+        latestSeasonId({
+          'LatestCompetitiveUpdate': {'SeasonID': 'NOW'}
+        }),
+        'now');
+    expect(latestSeasonId(const {}), isNull);
   });
 
   test('賽季名稱：查不到時顯示「未知賽季」', () {

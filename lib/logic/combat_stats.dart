@@ -19,8 +19,8 @@ class PeakRank {
   const PeakRank({required this.tier, required this.seasonId});
 }
 
-/// 第五章第一幕開始；之前的舊制 tier 21～23 是神話 1～3、24 是輻能。
-final _newTierSystem = DateTime.utc(2022, 6, 22);
+/// 第五章第一幕開始（valorant-api 實測 2022-06-21）；之前的舊制 tier 21～23 是神話 1～3、24 是輻能。
+final _newTierSystem = DateTime.utc(2022, 6, 21);
 
 /// 把舊制 tier 換成新制（新制在鑽石之後多了超凡 21～23）。
 int normalizeTier(int tier, DateTime? seasonStart) {
@@ -43,10 +43,23 @@ String? currentActId(Map<String, SeasonRef> seasons, DateTime now) {
   return null;
 }
 
+/// MMR 最近一次競技更新所在的賽季（小寫）；本幕查不到時的後備。
+String? latestSeasonId(Map<String, dynamic> mmr) {
+  final id =
+      (mmr['LatestCompetitiveUpdate'] as Map<String, dynamic>?)?['SeasonID'];
+  return id is String && id.isNotEmpty ? id.toLowerCase() : null;
+}
+
 /// 這一幕的競技牌位與 RR；沒有資料或未定級時為 null。
 RankSnapshot? currentRank(Map<String, dynamic> mmr, String? actId) {
   if (actId == null) return null;
-  final info = _seasonal(mmr)[actId] as Map<String, dynamic>?;
+  final seasonal = _seasonal(mmr);
+  // MMR 的賽季 ID 可能是大寫。
+  final info = (seasonal[actId] ??
+      seasonal.entries
+          .where((e) => e.key.toLowerCase() == actId.toLowerCase())
+          .firstOrNull
+          ?.value) as Map<String, dynamic>?;
   final tier = _int(info?['CompetitiveTier']);
   if (tier <= 0) return null;
   return RankSnapshot(tier: tier, rr: _int(info?['RankedRating']));
