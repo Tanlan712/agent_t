@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -35,13 +34,6 @@ import 'theme/themed_app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 載入環境變數 (如果 .env 不存在也不會報錯)
-  try {
-    await dotenv.load(fileName: '.env');
-  } catch (e) {
-    debugPrint('未找到 .env 檔案，使用預設設定');
-  }
 
   final prefs = await SharedPreferences.getInstance();
   final settings = SettingsProvider(SettingsStorage(prefs));

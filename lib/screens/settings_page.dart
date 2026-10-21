@@ -30,7 +30,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _loadApiKey() {
     setState(() {
-      _apiKey = dotenv.env['RIOT_API_KEY'];
+      // 網頁版不載入 .env（不打包機密）；只有測試或本機另行載入時才有值。
+      _apiKey = dotenv.isInitialized ? dotenv.env['RIOT_API_KEY'] : null;
     });
   }
 
@@ -132,7 +133,8 @@ class _SettingsPageState extends State<SettingsPage> {
               const Text('未設定 API Key'),
             ]),
             const SizedBox(height: 8),
-            const Text('請在 .env 檔案中設定 RIOT_API_KEY'),
+            const Text('網頁版不內建 API Key：網站的檔案會公開，金鑰放進去任何人都能取得。'
+                '本 App 的商店、戰績等功能使用你登入後的授權，不需要 API Key。'),
           ],
         ],
       ),

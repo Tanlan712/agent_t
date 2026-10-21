@@ -69,9 +69,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
-  assets:
-    - .env
+  # 不打包 .env：網頁版的資產會原樣公開在 build/web/assets/，機密不得放進去。
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
