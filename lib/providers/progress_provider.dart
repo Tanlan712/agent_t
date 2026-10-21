@@ -102,7 +102,7 @@ class ProgressProvider with ChangeNotifier {
       }
       if (_ref == null) {
         try {
-          _ref = await _api.fetch();
+          _ref = await _fetchRef();
         } catch (_) {
           errors.add('無法下載通行證與任務的顯示資料');
           _refError = '無法下載顯示資料';
@@ -117,6 +117,12 @@ class ProgressProvider with ChangeNotifier {
     }
   }
 
+  /// 進行中的參考資料下載；load 與 ensureReference 同時需要時共用，只下載一次。
+  Future<ProgressReference>? _refFetch;
+
+  Future<ProgressReference> _fetchRef() =>
+      _refFetch ??= _api.fetch().whenComplete(() => _refFetch = null);
+
   /// 只確保公開參考資料已下載（收藏頁用）；不送 Riot 請求。
   Future<void> ensureReference() async {
     if (_ref != null || _refLoading) return;
@@ -124,7 +130,7 @@ class ProgressProvider with ChangeNotifier {
     _refError = null;
     _notify();
     try {
-      _ref = await _api.fetch();
+      _ref = await _fetchRef();
       _refError = null;
     } catch (_) {
       _refError = '無法下載顯示資料';

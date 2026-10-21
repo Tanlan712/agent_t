@@ -59,24 +59,31 @@ class KpiTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: AppFonts.mono(
                     TextStyle(fontSize: 11, letterSpacing: 1, color: frame))),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Flexible(
-                child: kpi == KpiVariant.evaBracket
-                    ? EvaBracket(
-                        key: const ValueKey('kpi-bracket'), child: number)
-                    : number,
-              ),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, color: p.text)),
-              ),
-            ],
-          ),
+          // 窄卡片（例如手機一列兩張）把標籤放到數字下方，數字和標籤都不會被截斷。
+          LayoutBuilder(builder: (context, c) {
+            final numberBox = kpi == KpiVariant.evaBracket
+                ? EvaBracket(key: const ValueKey('kpi-bracket'), child: number)
+                : number;
+            final labelText = Text(label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, color: p.text));
+            if (c.maxWidth < 200) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [numberBox, const SizedBox(height: 4), labelText],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Flexible(child: numberBox),
+                const SizedBox(width: 6),
+                Flexible(child: labelText),
+              ],
+            );
+          }),
           if (delta != null)
             Text(delta!,
                 style: AppText.tabular(TextStyle(

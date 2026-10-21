@@ -15,9 +15,13 @@ class _FakeRefApi implements ProgressReferenceApi {
   int calls = 0;
   bool fail = false;
 
+  /// 下載所需時間（用來重現兩邊同時下載）。
+  Duration delay = Duration.zero;
+
   @override
   Future<ProgressReference> fetch() async {
     calls++;
+    if (delay > Duration.zero) await Future<void>.delayed(delay);
     if (fail) throw Exception('down');
     return const ProgressReference();
   }
@@ -75,6 +79,14 @@ void main() {
     expect(p.ref, isNotNull);
     expect(api.calls, 1);
     expect(p.error, isNull);
+  });
+
+  test('收藏頁的 ensureReference 與 load 同時開始時，參考資料只下載一次', () async {
+    final (p, _, api, _) = await make();
+    api.delay = const Duration(milliseconds: 200);
+    await Future.wait([p.ensureReference(), p.load()]);
+    expect(api.calls, 1);
+    expect(p.ref, isNotNull);
   });
 
   test('只對 pd 送 GET', () async {

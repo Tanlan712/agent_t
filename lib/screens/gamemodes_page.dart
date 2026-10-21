@@ -31,11 +31,14 @@ class _GamemodesPageState extends State<GamemodesPage> {
   Future<void> _loadGamemodes() async {
     try {
       final gamemodes = await _apiService.getGamemodes();
+      // 讀取完成前離開頁面時不要再更新畫面。
+      if (!mounted) return;
       setState(() {
         _gamemodes = gamemodes;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;

@@ -39,11 +39,14 @@ class _BundlesPageState extends State<BundlesPage> {
   Future<void> _loadBundles() async {
     try {
       final bundles = await _apiService.getBundles();
+      // 讀取完成前離開頁面時不要再更新畫面。
+      if (!mounted) return;
       setState(() {
         _bundles = bundles;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;

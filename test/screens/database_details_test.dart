@@ -164,6 +164,40 @@ void main() {
       });
     }
 
+    testWidgets('貼近小地圖邊緣的地點名稱完整顯示，不被裁掉一半', (tester) async {
+      setWidth(tester, 1440);
+      final edge = fakeApi({
+        '/v1/maps': [
+          {
+            ...ascentJson(),
+            'uuid': 'edge',
+            'splash': null,
+            'xMultiplier': 0,
+            'yMultiplier': 0,
+            'xScalarToAdd': 0.0,
+            'yScalarToAdd': 0.5,
+            'callouts': [
+              {
+                'regionName': '最左邊的長地點名稱',
+                'superRegionName': '最左邊的長地點名稱',
+                'location': {'x': 0, 'y': 0, 'z': 0},
+              },
+            ],
+          },
+        ],
+      });
+      final h = await Harness.create(tester);
+      await tester.pumpWidget(h.wrap(home: MapsPage(api: edge)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('db-map-edge')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('callouts-toggle')));
+      await tester.pumpAndSettle();
+      final viewer = tester.getRect(find.byType(InteractiveViewer));
+      final label = tester.getRect(find.text('最左邊的長地點名稱'));
+      expect(label.left, greaterThanOrEqualTo(viewer.left));
+    });
+
     testWidgets('沒有小地圖的地圖', (tester) async {
       setWidth(tester, 1440);
       final h = await Harness.create(tester);

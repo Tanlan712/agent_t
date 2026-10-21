@@ -33,11 +33,14 @@ class _MapsPageState extends State<MapsPage> {
   Future<void> _loadMaps() async {
     try {
       final maps = await _apiService.getMaps();
+      // 讀取完成前離開頁面時不要再更新畫面。
+      if (!mounted) return;
       setState(() {
         _maps = maps;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;

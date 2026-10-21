@@ -33,11 +33,14 @@ class _AgentsPageState extends State<AgentsPage> {
   Future<void> _loadAgents() async {
     try {
       final agents = await _apiService.getAgents();
+      // 讀取完成前離開頁面時不要再更新畫面。
+      if (!mounted) return;
       setState(() {
         _agents = agents;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;

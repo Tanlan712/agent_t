@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:valorant_shop_tracker/screens/agents_page.dart';
+import 'package:valorant_shop_tracker/screens/bundles_page.dart';
+import 'package:valorant_shop_tracker/screens/maps_page.dart';
+import 'package:valorant_shop_tracker/screens/weapons_page.dart';
+import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
+import 'package:http/testing.dart';
+import 'package:http/http.dart' as http;
 import 'package:valorant_shop_tracker/screens/gamemodes_page.dart';
 import 'package:valorant_shop_tracker/screens/playercards_page.dart';
 import 'package:valorant_shop_tracker/theme/app_theme.dart';
@@ -71,5 +78,30 @@ void main() {
       expect(find.byKey(const ValueKey('card-c0')), findsNothing);
       expect(find.text('1 / 12 張'), findsOneWidget);
     });
+  });
+
+  testWidgets('資料庫列表頁：讀取完成前離開頁面，不會丟出 setState after dispose', (tester) async {
+    setWidth(tester, 1440);
+    final h = await Harness.create(tester);
+    final slow = ValorantApiService(client: MockClient((req) async {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      return http.Response('{"status":200,"data":[]}', 200);
+    }));
+    for (final page in <Widget>[
+      WeaponsPage(api: slow),
+      MapsPage(api: slow),
+      BundlesPage(api: slow),
+      AgentsPage(api: slow),
+      GamemodesPage(api: slow),
+      PlayerCardsPage(api: slow),
+    ]) {
+      await tester.pumpWidget(h.wrap(home: page));
+      await tester.pump();
+      // 讀取還沒完成就換頁。
+      await tester.pumpWidget(h.wrap(home: const SizedBox()));
+      // 讓延遲的回應在頁面已離開後才回來。
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(tester.takeException(), isNull, reason: '${page.runtimeType}');
+    }
   });
 }

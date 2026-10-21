@@ -68,7 +68,7 @@ class _MapDetailPageState extends State<MapDetailPage> {
                                 left: c.u * side,
                                 top: c.v * side,
                                 child: FractionalTranslation(
-                                  translation: const Offset(-0.5, -0.5),
+                                  translation: calloutAnchor(c.u, c.v),
                                   child: _CalloutLabel(c.label),
                                 ),
                               ),
@@ -92,6 +92,16 @@ class _MapDetailPageState extends State<MapDetailPage> {
         ),
     ]);
   }
+}
+
+/// 標籤相對座標點的位移：一般置中；貼近邊緣（15% 以內）時往內側對齊，不會被裁掉一半。
+Offset calloutAnchor(double u, double v) {
+  double axis(double t) => t < 0.15
+      ? 0
+      : t > 0.85
+          ? -1
+          : -0.5;
+  return Offset(axis(u), axis(v));
 }
 
 class _CalloutLabel extends StatelessWidget {

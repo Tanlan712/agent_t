@@ -35,11 +35,14 @@ class _WeaponsPageState extends State<WeaponsPage> {
   Future<void> _loadWeapons() async {
     try {
       final weapons = await _apiService.getWeapons();
+      // 讀取完成前離開頁面時不要再更新畫面。
+      if (!mounted) return;
       setState(() {
         _weapons = [for (final w in weapons) WeaponInfo.fromJson(w)];
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;

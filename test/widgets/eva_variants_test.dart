@@ -64,6 +64,31 @@ void main() {
       expect(find.byKey(const ValueKey('eva-header-side')), findsOneWidget);
     });
 
+    for (final (width, stacked) in [(150.0, true), (320.0, false)]) {
+      testWidgets(
+          'KPI ${width.toInt()} 寬：${stacked ? '窄卡片標籤放到數字下方' : '寬卡片數字與標籤同一行'}',
+          (tester) async {
+        await pump(
+            tester,
+            ThemeStyleId.evaAlert,
+            Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                  width: width,
+                  child: const KpiTile(label: '每週任務刷新', value: '5 天')),
+            ));
+        await tester.pumpAndSettle();
+        final number = tester.getRect(find.text('5 天'));
+        final label = tester.getRect(find.text('每週任務刷新'));
+        if (stacked) {
+          expect(label.top, greaterThanOrEqualTo(number.bottom - 1));
+        } else {
+          expect(label.left, greaterThan(number.right - 1));
+        }
+        expect(tester.takeException(), isNull);
+      });
+    }
+
     testWidgets('375 寬 F1 頁首 20 字不 overflow', (tester) async {
       await pump(tester, ThemeStyleId.evaAlert,
           const PageHeader(title: '一二三四五六七八九十一二三四五六七八九十', route: '/'),
