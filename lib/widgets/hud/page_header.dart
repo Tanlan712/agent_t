@@ -30,7 +30,7 @@ class PageHeader extends StatelessWidget {
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
                   Text(subtitle!,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 14, color: AppColors.muted)),
                 ],
               ],

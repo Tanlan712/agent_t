@@ -93,7 +93,7 @@ class _ProgressPageState extends State<ProgressPage> {
                 child: Row(children: [
                   Expanded(
                       child: Text(e,
-                          style: const TextStyle(color: AppColors.error))),
+                          style: TextStyle(color: AppColors.error))),
                   OutlinedButton(onPressed: p.refresh, child: const Text('重試')),
                 ]),
               ),
@@ -177,7 +177,7 @@ class _PassCard extends StatelessWidget {
         children: [
           SectionHeader(title: pass.name),
           if (next == null)
-            const Text('已完成全部階級',
+            Text('已完成全部階級',
                 style: TextStyle(
                     color: AppColors.win, fontWeight: FontWeight.w600))
           else ...[
@@ -194,7 +194,7 @@ class _PassCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text('下一階 ${pass.towardsNext} / $next XP',
                 style: AppText.tabular(
-                    const TextStyle(color: AppColors.muted, fontSize: 12))),
+                    TextStyle(color: AppColors.muted, fontSize: 12))),
           ],
           const SizedBox(height: 16),
           Wrap(
@@ -255,14 +255,14 @@ class _TierTile extends StatelessWidget {
           Row(children: [
             Text('$number',
                 style: AppText.tabular(
-                    const TextStyle(color: AppColors.muted, fontSize: 12))),
+                    TextStyle(color: AppColors.muted, fontSize: 12))),
             const Spacer(),
             if (reached)
-              const Icon(Icons.check_circle, size: 16, color: AppColors.win),
+              Icon(Icons.check_circle, size: 16, color: AppColors.win),
           ]),
           Expanded(
             child: icon == null
-                ? const Icon(Icons.card_giftcard, color: AppColors.muted)
+                ? Icon(Icons.card_giftcard, color: AppColors.muted)
                 : SkinIcon(url: icon),
           ),
           Text(rewardLabel(tier.reward, ref),
@@ -289,7 +289,7 @@ class _MissionCard extends StatelessWidget {
           children: [
             SectionHeader(title: title),
             if (missions.isEmpty)
-              const Text('目前沒有任務', style: TextStyle(color: AppColors.muted))
+              Text('目前沒有任務', style: TextStyle(color: AppColors.muted))
             else
               for (final m in missions)
                 Padding(
@@ -302,7 +302,7 @@ class _MissionCard extends StatelessWidget {
                             child:
                                 Text(m.title, overflow: TextOverflow.ellipsis)),
                         if (m.complete)
-                          const StatusChip(
+                          StatusChip(
                               label: '完成',
                               color: AppColors.win,
                               icon: Icons.check),
@@ -322,11 +322,11 @@ class _MissionCard extends StatelessWidget {
                       Row(children: [
                         Text(
                             '${m.complete ? m.target : m.progress} / ${m.target}',
-                            style: AppText.tabular(const TextStyle(
+                            style: AppText.tabular(TextStyle(
                                 color: AppColors.muted, fontSize: 12))),
                         const Spacer(),
                         Text('+${m.xpGrant} XP',
-                            style: AppText.tabular(const TextStyle(
+                            style: AppText.tabular(TextStyle(
                                 color: AppColors.muted, fontSize: 12))),
                       ]),
                     ],

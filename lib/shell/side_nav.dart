@@ -35,7 +35,7 @@ class SideNav extends StatelessWidget {
           children.add(Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 12, 6),
             child: Text(navGroupLabels[group]!,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 11, color: AppColors.muted, letterSpacing: 0.6)),
           ));
         }
@@ -58,11 +58,11 @@ class SideNav extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(extended ? 20 : 0, 20, 12, 4),
             child: extended
                 ? Text(brand,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppColors.primary,
                         fontSize: 18,
                         fontWeight: FontWeight.bold))
-                : const Icon(Icons.local_fire_department,
+                : Icon(Icons.local_fire_department,
                     color: AppColors.primary),
           ),
           Expanded(

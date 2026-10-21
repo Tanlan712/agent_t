@@ -263,7 +263,7 @@ class _ExpiryBannerState extends State<ExpiryBanner> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
         children: [
-          const Icon(Icons.timer_outlined,
+          Icon(Icons.timer_outlined,
               size: 18, color: AppColors.wishlistGold),
           const SizedBox(width: 8),
           Expanded(child: Text('Riot 登入將在 $minutes 分鐘後過期')),

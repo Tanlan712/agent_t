@@ -1,41 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// VALORANT 風格深色主題的色彩 tokens。
+import 'app_palette.dart';
+
+/// 目前主題的色彩；讀 [AppPalette.current]（由 [buildAppTheme] 設定）。
+/// 名稱沿用改版前，呼叫端不用改。
 abstract final class AppColors {
-  static const background = Color(0xFF0F1923);
-  static const surface = Color(0xFF1A2530);
-  static const surfaceHigh = Color(0xFF243240);
-  static const outline = Color(0xFF2F3D4B);
+  static Color get background => AppPalette.current.background;
+  static Color get surface => AppPalette.current.surface;
+  static Color get surfaceHigh => AppPalette.current.surfaceHigh;
+  static Color get outline => AppPalette.current.outline;
 
-  /// 文字、圖示、選中標示用的品牌紅（在背景上對比 5.29）。
-  static const primary = Color(0xFFFF4655);
+  /// 文字、圖示、選中標示用的主色。
+  static Color get primary => AppPalette.current.primary;
 
-  /// 按鈕底色：白字在 #FF4655 上只有 3.36，改用較深的紅（4.96）。
-  static const buttonRed = Color(0xFFD7263D);
-  static const onPrimary = Color(0xFFFFFFFF);
-  static const text = Color(0xFFECE8E1);
-  static const muted = Color(0xFF9AA6B2);
-  static const error = Color(0xFFFF6B6B);
-  static const wishlistGold = Color(0xFFFFC107);
-  static const owned = Color(0xFF4ADE80);
+  /// 主要按鈕的底色與上面的文字色。
+  static Color get buttonRed => AppPalette.current.buttonFill;
+  static Color get onPrimary => AppPalette.current.onButton;
+  static Color get text => AppPalette.current.text;
+  static Color get muted => AppPalette.current.muted;
+  static Color get error => AppPalette.current.loss;
+  static Color get wishlistGold => AppPalette.current.warn;
+  static Color get owned => AppPalette.current.win;
 
-  /// 資訊、連結、進行中、鍵盤焦點（對 surface 7.3）。
-  static const info = Color(0xFF38BDF8);
+  /// 資訊、連結、進行中、鍵盤焦點。
+  static Color get info => AppPalette.current.info;
 
   /// 語意別名（MASTER.md 第 1 節）：勝利／已擁有、落敗／錯誤、警示。
-  static const win = owned;
-  static const loss = error;
-  static const warn = wishlistGold;
+  static Color get win => AppPalette.current.win;
+  static Color get loss => AppPalette.current.loss;
+  static Color get warn => AppPalette.current.warn;
 
   /// 對戰計分板的組隊標記；同一組隊用同一個顏色。
-  static const partyColors = [
-    Color(0xFF60A5FA),
-    Color(0xFFF472B6),
-    Color(0xFFFBBF24),
-    Color(0xFF34D399),
-    Color(0xFFA78BFA),
-  ];
+  static List<Color> get partyColors => AppPalette.current.party;
 }
 
 const _radius = BorderRadius.all(Radius.circular(4));
@@ -49,7 +46,7 @@ abstract final class AppRadius {
 WidgetStateProperty<BorderSide?> _focusSide([BorderSide? normal]) =>
     WidgetStateProperty.resolveWith((states) =>
         states.contains(WidgetState.focused)
-            ? const BorderSide(color: AppColors.info, width: 2)
+            ? BorderSide(color: AppColors.info, width: 2)
             : normal);
 
 /// 共用文字樣式（MASTER.md 第 2 節）。
@@ -63,7 +60,7 @@ abstract final class AppText {
       tabular(Theme.of(context).textTheme.headlineSmall?.copyWith(
           fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.text));
 
-  static const label =
+  static TextStyle get label =>
       TextStyle(color: AppColors.muted, fontSize: 12, letterSpacing: 0.4);
 }
 
@@ -86,7 +83,7 @@ TextTheme _textTheme(bool useGoogleFonts) {
 }
 
 ThemeData buildAppTheme({bool useGoogleFonts = true}) {
-  const scheme = ColorScheme.dark(
+  final scheme = ColorScheme.dark(
     primary: AppColors.primary,
     onPrimary: AppColors.onPrimary,
     secondary: AppColors.primary,
@@ -117,19 +114,19 @@ ThemeData buildAppTheme({bool useGoogleFonts = true}) {
     textTheme: _textTheme(useGoogleFonts),
     // 半透明，讓焦點列上的文字仍清楚可讀（對比 ≥ 4.5）。
     focusColor: AppColors.info.withOpacity(0.2),
-    chipTheme: const ChipThemeData(
+    chipTheme: ChipThemeData(
       backgroundColor: AppColors.surfaceHigh,
       side: BorderSide(color: AppColors.outline),
-      shape: RoundedRectangleBorder(borderRadius: _radius),
+      shape: const RoundedRectangleBorder(borderRadius: _radius),
       labelStyle: TextStyle(color: AppColors.text, fontSize: 12),
     ),
-    dataTableTheme: const DataTableThemeData(
+    dataTableTheme: DataTableThemeData(
       headingRowHeight: 36,
       dataRowMinHeight: 36,
       headingTextStyle: AppText.label,
       dividerThickness: 0.5,
     ),
-    tooltipTheme: const TooltipThemeData(
+    tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(
           color: AppColors.surfaceHigh,
           borderRadius: _radius,
@@ -140,14 +137,14 @@ ThemeData buildAppTheme({bool useGoogleFonts = true}) {
     scaffoldBackgroundColor: AppColors.background,
     canvasColor: AppColors.background,
     dividerColor: AppColors.outline,
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       backgroundColor: AppColors.background,
       foregroundColor: AppColors.text,
       elevation: 0,
       scrolledUnderElevation: 0,
     ),
     // Bento：所有卡片 12px 圓角、細邊框。
-    cardTheme: const CardTheme(
+    cardTheme: CardTheme(
       color: AppColors.surface,
       elevation: 0,
       margin: EdgeInsets.zero,
@@ -168,19 +165,19 @@ ThemeData buildAppTheme({bool useGoogleFonts = true}) {
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.text,
         shape: const RoundedRectangleBorder(borderRadius: _radius),
-      ).copyWith(side: _focusSide(const BorderSide(color: AppColors.outline))),
+      ).copyWith(side: _focusSide(BorderSide(color: AppColors.outline))),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(foregroundColor: AppColors.primary)
           .copyWith(side: _focusSide()),
     ),
-    inputDecorationTheme: const InputDecorationTheme(
+    inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.surfaceHigh,
-      border: OutlineInputBorder(
+      border: const OutlineInputBorder(
           borderRadius: _radius, borderSide: BorderSide.none),
     ),
-    navigationRailTheme: const NavigationRailThemeData(
+    navigationRailTheme: NavigationRailThemeData(
       backgroundColor: AppColors.surface,
       indicatorColor: AppColors.surfaceHigh,
       selectedIconTheme: IconThemeData(color: AppColors.primary),
@@ -189,8 +186,8 @@ ThemeData buildAppTheme({bool useGoogleFonts = true}) {
           TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
       unselectedLabelTextStyle: TextStyle(color: AppColors.muted),
     ),
-    drawerTheme: const DrawerThemeData(backgroundColor: AppColors.surface),
-    snackBarTheme: const SnackBarThemeData(
+    drawerTheme: DrawerThemeData(backgroundColor: AppColors.surface),
+    snackBarTheme: SnackBarThemeData(
       backgroundColor: AppColors.surfaceHigh,
       contentTextStyle: TextStyle(color: AppColors.text),
     ),

@@ -53,7 +53,7 @@ class EmptyState extends StatelessWidget {
               Container(
                 width: 48,
                 height: 48,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                     color: AppColors.surfaceHigh, shape: BoxShape.circle),
                 child: Icon(icon, size: 24, color: AppColors.muted),
               ),
@@ -67,7 +67,7 @@ class EmptyState extends StatelessWidget {
                 Text(message!,
                     textAlign: TextAlign.center,
                     style:
-                        const TextStyle(fontSize: 14, color: AppColors.muted)),
+                        TextStyle(fontSize: 14, color: AppColors.muted)),
               ],
               if (actionLabel != null && onAction != null) ...[
                 const SizedBox(height: 16),

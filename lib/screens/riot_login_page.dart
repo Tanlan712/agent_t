@@ -74,9 +74,9 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
             padding: const EdgeInsets.all(16),
             children: [
               // 風險提示：警示色條＋圖示（MASTER.md：不用 emoji 當圖示）。
-              const PanelCard(
+              PanelCard(
                 accent: AppColors.warn,
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -99,7 +99,7 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
               if (riot.isLoggedIn && session != null) ...[
                 ListTile(
                   leading:
-                      const Icon(Icons.verified_user, color: AppColors.owned),
+                      Icon(Icons.verified_user, color: AppColors.owned),
                   title: Text('已登入：${session.displayName}（${session.shard}）'),
                 ),
                 OutlinedButton(onPressed: riot.logout, child: const Text('登出')),

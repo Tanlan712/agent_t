@@ -96,9 +96,9 @@ class _SettingsPageState extends State<SettingsPage> {
               style: const TextStyle(fontFamily: 'monospace'),
             ),
             const SizedBox(height: 8),
-            const Row(children: [
+            Row(children: [
               Icon(Icons.schedule, size: 16, color: AppColors.muted),
-              SizedBox(width: 6),
+              const SizedBox(width: 6),
               Text('Development Key 有效期限：24 小時',
                   style: TextStyle(color: AppColors.muted)),
             ]),
@@ -119,10 +119,10 @@ class _SettingsPageState extends State<SettingsPage> {
               _StatusBox(status: _status, message: _statusMessage!),
             ],
           ] else ...[
-            const Row(children: [
+            Row(children: [
               Icon(Icons.cancel_outlined, size: 18, color: AppColors.loss),
-              SizedBox(width: 6),
-              Text('未設定 API Key'),
+              const SizedBox(width: 6),
+              const Text('未設定 API Key'),
             ]),
             const SizedBox(height: 8),
             const Text('請在 .env 檔案中設定 RIOT_API_KEY'),

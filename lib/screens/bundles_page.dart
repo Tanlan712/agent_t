@@ -52,7 +52,7 @@ class _BundlesPageState extends State<BundlesPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error, size: 64, color: AppColors.error),
+                      Icon(Icons.error, size: 64, color: AppColors.error),
                       const SizedBox(height: 16),
                       Text('載入失敗: $_error'),
                       const SizedBox(height: 16),
@@ -85,9 +85,9 @@ class _BundlesPageState extends State<BundlesPage> {
     final displayName = bundle['displayName'] as String;
     final displayIcon = bundle['displayIcon'] as String?;
 
-    const placeholder = ColoredBox(
+    final placeholder = ColoredBox(
       color: AppColors.surfaceHigh,
-      child: Center(child: Icon(Icons.card_giftcard, size: 48)),
+      child: const Center(child: Icon(Icons.card_giftcard, size: 48)),
     );
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -102,7 +102,7 @@ class _BundlesPageState extends State<BundlesPage> {
             )
           else
             placeholder,
-          const DecoratedBox(
+          DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,

@@ -52,7 +52,7 @@ class _GamemodesPageState extends State<GamemodesPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error, size: 64, color: AppColors.error),
+                      Icon(Icons.error, size: 64, color: AppColors.error),
                       const SizedBox(height: 16),
                       Text('載入失敗: $_error'),
                       const SizedBox(height: 16),
@@ -131,7 +131,7 @@ class _GamemodesPageState extends State<GamemodesPage> {
                     Text(
                       '時長: $duration',
                       style:
-                          const TextStyle(fontSize: 12, color: AppColors.muted),
+                          TextStyle(fontSize: 12, color: AppColors.muted),
                     ),
                   ],
                 ],

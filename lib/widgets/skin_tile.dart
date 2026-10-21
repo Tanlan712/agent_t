@@ -4,7 +4,7 @@ import '../models/skin_info.dart';
 import '../theme/app_theme.dart';
 import 'tier_badge.dart';
 
-const wishlistGold = AppColors.wishlistGold;
+Color get wishlistGold => AppColors.wishlistGold;
 
 /// 造型卡片；[skin] 為 null 時顯示「未知造型」佔位。
 class SkinTile extends StatelessWidget {
@@ -34,7 +34,7 @@ class SkinTile extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: highlighted
-            ? const BorderSide(color: wishlistGold, width: 3)
+            ? BorderSide(color: wishlistGold, width: 3)
             : BorderSide.none,
       ),
       child: ListTile(
@@ -49,11 +49,11 @@ class SkinTile extends StatelessWidget {
             if (skin != null) Text(skin.weaponName),
             if (skin != null) TierBadge(tier: skin.tier),
             if (owned)
-              const Text('已擁有',
+              Text('已擁有',
                   style: TextStyle(
                       color: AppColors.owned, fontWeight: FontWeight.bold)),
             if (highlighted)
-              const Text('★ 願望清單',
+              Text('★ 願望清單',
                   style: TextStyle(
                       color: wishlistGold, fontWeight: FontWeight.bold)),
           ],

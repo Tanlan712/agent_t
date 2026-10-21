@@ -46,7 +46,7 @@ class _SeenPlayersPageState extends State<SeenPlayersPage> {
 
     final Widget body;
     if (seen.players.isEmpty) {
-      body = const Center(
+      body = Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -89,7 +89,7 @@ class _SeenPlayersPageState extends State<SeenPlayersPage> {
                             title: Text(p.riotId),
                             subtitle: Text(
                                 '最後遇到：${p.lastSeenKnown ? formatMatchTime(p.lastSeen) : '—'}',
-                                style: const TextStyle(color: AppColors.muted)),
+                                style: TextStyle(color: AppColors.muted)),
                             trailing: IconButton(
                               key: ValueKey('seen-delete-${p.puuid}'),
                               icon: const Icon(Icons.delete_outline),
@@ -109,7 +109,7 @@ class _SeenPlayersPageState extends State<SeenPlayersPage> {
           Padding(
             padding: const EdgeInsets.all(12),
             child: Text('共 ${seen.players.length} 位・只存在這個瀏覽器，請勿公開或分享他人資訊',
-                style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+                style: TextStyle(color: AppColors.muted, fontSize: 12)),
           ),
         ],
       );

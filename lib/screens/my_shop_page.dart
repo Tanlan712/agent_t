@@ -244,7 +244,7 @@ class _LoginHero extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           alignment: WrapAlignment.spaceBetween,
           children: [
-            const Row(
+            Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.login, color: AppColors.primary, size: 28),
@@ -294,19 +294,19 @@ class _WishlistHits extends StatelessWidget {
           children: [
             const SectionHeader(title: '願望清單上架'),
             if (!enabled)
-              const Text('已關閉願望清單標示', style: TextStyle(color: AppColors.muted))
+              Text('已關閉願望清單標示', style: TextStyle(color: AppColors.muted))
             else if (names.isEmpty)
-              const Text('今天沒有願望清單造型', style: TextStyle(color: AppColors.muted))
+              Text('今天沒有願望清單造型', style: TextStyle(color: AppColors.muted))
             else ...[
               Text('今天有 ${names.length} 個願望清單造型上架',
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: wishlistGold, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               for (final n in names)
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Row(children: [
-                    const Icon(Icons.star, size: 16, color: wishlistGold),
+                    Icon(Icons.star, size: 16, color: wishlistGold),
                     const SizedBox(width: 6),
                     Expanded(child: Text(n, overflow: TextOverflow.ellipsis)),
                   ]),
@@ -416,7 +416,7 @@ class _RiotBar extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.verified_user, color: AppColors.owned),
+                Icon(Icons.verified_user, color: AppColors.owned),
                 const SizedBox(width: 12),
                 // Flexible：文字在 Wrap 給的最大寬度內換行，不會溢出。
                 Flexible(

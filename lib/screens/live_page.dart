@@ -159,7 +159,7 @@ class _LivePageState extends State<LivePage> {
         case LiveStatus.loggedOut:
           return Center(
               child: Text(_live.error ?? '讀取失敗',
-                  style: const TextStyle(color: AppColors.error)));
+                  style: TextStyle(color: AppColors.error)));
         default:
           return const Center(child: CircularProgressIndicator());
       }
@@ -171,7 +171,7 @@ class _LivePageState extends State<LivePage> {
         if (_live.error case final e?)
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: Text(e, style: const TextStyle(color: AppColors.error)),
+            child: Text(e, style: TextStyle(color: AppColors.error)),
           ),
         const SizedBox(height: 16),
         ResponsiveGrid(
@@ -183,7 +183,7 @@ class _LivePageState extends State<LivePage> {
           ],
         ),
         const SizedBox(height: 24),
-        const Center(
+        Center(
           child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊（包含隱藏名稱的成員）。',
               style: TextStyle(color: AppColors.muted, fontSize: 12)),
         ),
@@ -215,11 +215,11 @@ class _PartyHeader extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleLarge),
             if (party.queueId.isNotEmpty) Text(queueName(party.queueId)),
             Text(party.isOpen ? '公開' : '不公開',
-                style: const TextStyle(color: AppColors.muted)),
+                style: TextStyle(color: AppColors.muted)),
             if (waited != null && !waited.isNegative)
               Text(
                   '已排隊 ${waited.inMinutes}:${(waited.inSeconds % 60).toString().padLeft(2, '0')}',
-                  style: const TextStyle(color: AppColors.muted)),
+                  style: TextStyle(color: AppColors.muted)),
           ],
         ),
       ),
@@ -302,7 +302,7 @@ class _MemberCard extends StatelessWidget {
                         ...[
                           Text('Lv ${member.level}',
                               key: ValueKey('live-level-${member.puuid}'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                   color: AppColors.muted, fontSize: 12)),
                           const SizedBox(width: 12),
                         ],
@@ -403,7 +403,7 @@ class _MatchView extends StatelessWidget {
           ]);
         }),
         const SizedBox(height: 24),
-        const Center(
+        Center(
           child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊。',
               style: TextStyle(color: AppColors.muted, fontSize: 12)),
         ),
@@ -515,12 +515,12 @@ class _PlayerRow extends StatelessWidget {
                           const SizedBox(width: 6),
                           Text('Lv ${player.level}',
                               key: ValueKey('live-level-${player.puuid}'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                   color: AppColors.muted, fontSize: 12)),
                         ],
                         if (player.isCoach) ...[
                           const SizedBox(width: 6),
-                          const Text('教練',
+                          Text('教練',
                               style: TextStyle(
                                   color: AppColors.muted, fontSize: 12)),
                         ],
@@ -614,17 +614,17 @@ class _PregameViewState extends State<_PregameView> {
                 Text(widget.ref.map(pre.mapId).name,
                     style: Theme.of(context).textTheme.titleLarge),
                 if (pre.queueId.isNotEmpty) Text(queueName(pre.queueId)),
-                const Text('選角中', style: TextStyle(color: AppColors.owned)),
+                Text('選角中', style: TextStyle(color: AppColors.owned)),
                 Text('剩餘 $seconds 秒',
                     key: const ValueKey('pregame-remaining'),
-                    style: const TextStyle(color: AppColors.muted)),
+                    style: TextStyle(color: AppColors.muted)),
               ],
             ),
           ),
         ),
         const SizedBox(height: 16),
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text('我方',
               style: TextStyle(
                   fontWeight: FontWeight.bold, color: AppColors.owned)),
@@ -647,10 +647,10 @@ class _PregameViewState extends State<_PregameView> {
         Padding(
           padding: const EdgeInsets.only(left: 4),
           child: Text('敵方 ${pre.enemySize} 人，已鎖定 ${pre.enemyLocked} 人',
-              style: const TextStyle(color: AppColors.muted)),
+              style: TextStyle(color: AppColors.muted)),
         ),
         const SizedBox(height: 24),
-        const Center(
+        Center(
           child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊。',
               style: TextStyle(color: AppColors.muted, fontSize: 12)),
         ),
@@ -756,7 +756,7 @@ class _PregameRow extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text('Lv ${player.level}',
                         key: ValueKey('live-level-${player.puuid}'),
-                        style: const TextStyle(
+                        style: TextStyle(
                             color: AppColors.muted, fontSize: 12)),
                   ],
                 ],

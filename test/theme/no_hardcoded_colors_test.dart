@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// 只有主題定義檔與稀有度定義檔可以寫死色碼。
 void main() {
   test('lib/ 沒有寫死的顏色', () {
-    const allowed = {'app_theme.dart', 'tier.dart'};
+    const allowed = {'app_theme.dart', 'app_palette.dart', 'tier.dart'};
     // \b 排除 AppColors.xxx。
     final pattern =
         RegExp(r'\bColors\.(?!transparent\b|white\b|black\b)\w+|\bColor\(0x');

@@ -37,8 +37,8 @@ class SkinCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: const BorderRadius.all(Radius.circular(AppRadius.card)),
         side: highlighted
-            ? const BorderSide(color: AppColors.wishlistGold, width: 3)
-            : const BorderSide(color: AppColors.outline),
+            ? BorderSide(color: AppColors.wishlistGold, width: 3)
+            : BorderSide(color: AppColors.outline),
       ),
       // Ink：漸層畫在 Material 上，InkWell 的水波與焦點高亮才看得到。
       child: Ink(
@@ -88,12 +88,12 @@ class SkinCard extends StatelessWidget {
                                   ?.copyWith(color: AppColors.muted)),
                         if (skin != null) TierBadge(tier: skin.tier),
                         if (owned)
-                          const Text('已擁有',
+                          Text('已擁有',
                               style: TextStyle(
                                   color: AppColors.owned,
                                   fontWeight: FontWeight.bold)),
                         if (highlighted)
-                          const Text('★ 願望清單',
+                          Text('★ 願望清單',
                               style: TextStyle(
                                   color: AppColors.wishlistGold,
                                   fontWeight: FontWeight.bold)),

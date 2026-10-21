@@ -30,7 +30,7 @@ void main() {
 
   testWidgets('PanelCard 有強調色時左側 3px 色條', (tester) async {
     await tester.pumpWidget(
-        host(const PanelCard(accent: AppColors.win, child: Text('卡片'))));
+        host(PanelCard(accent: AppColors.win, child: const Text('卡片'))));
     final bar =
         tester.widget<Container>(find.byKey(const ValueKey('panel-accent')));
     expect(bar.color, AppColors.win);
@@ -81,7 +81,7 @@ void main() {
 
   testWidgets('有強調色時左側不圓角，色條不被裁掉', (tester) async {
     await tester.pumpWidget(
-        host(const PanelCard(accent: AppColors.win, child: Text('卡片'))));
+        host(PanelCard(accent: AppColors.win, child: const Text('卡片'))));
     final r = decorationOf(tester).borderRadius! as BorderRadius;
     expect(r.topLeft, Radius.zero);
     expect(r.bottomLeft, Radius.zero);
@@ -99,7 +99,7 @@ void main() {
   });
 
   testWidgets('StatusChip 在 60px 寬不 overflow', (tester) async {
-    await tester.pumpWidget(host(const SizedBox(
+    await tester.pumpWidget(host(SizedBox(
         width: 60,
         child: StatusChip(
             label: '這是一段很長的狀態文字',

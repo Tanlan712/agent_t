@@ -9,7 +9,7 @@ import 'package:valorant_shop_tracker/widgets/my_shop_settings_card.dart';
 
 import '../app_harness.dart';
 import '../catalog_helpers.dart';
-import '../theme/app_theme_test.dart' show contrast;
+import '../theme/contrast.dart';
 
 void main() {
   setUp(() => dotenv.testLoad(fileInput: ''));
