@@ -407,6 +407,24 @@ void main() {
       }
     });
 
+    testWidgets('Bento：地圖、模式、狀態三張 KPI 同一列，隊伍卡用 BentoGrid', (tester) async {
+      setWidth(tester, 1440);
+      final h = await harness(tester, coreStatus: 200);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      final ys = [
+        for (final k in ['live-kpi-map', 'live-kpi-mode', 'live-kpi-state'])
+          tester.getTopLeft(find.byKey(ValueKey(k))).dy,
+      ];
+      expect(ys.toSet().length, 1);
+      expect(
+          find.ancestor(
+              of: find.byKey(const ValueKey('live-team-Blue')),
+              matching: find.byType(BentoGrid)),
+          findsOneWidget);
+      await leave(tester, h);
+    });
+
     testWidgets('疑似小號標籤是 StatusChip，不用 emoji', (tester) async {
       setWidth(tester, 1400);
       final h = await harness(tester, coreStatus: 200);

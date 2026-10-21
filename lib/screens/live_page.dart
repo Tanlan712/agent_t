@@ -344,73 +344,70 @@ class _MatchView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
-        KpiStrip(tiles: [
-          KpiTile(label: '地圖', value: ref.map(match.mapId).name),
-          KpiTile(
-              label: '模式',
-              value: match.queueId.isEmpty ? '—' : queueName(match.queueId)),
-          KpiTile(
-              label: '狀態',
-              value: match.state == 'IN_PROGRESS' ? '進行中' : match.state),
+        BentoGrid(children: [
+          BentoTile(
+              span: 4,
+              child: KpiTile(
+                  key: const ValueKey('live-kpi-map'),
+                  label: '地圖',
+                  value: ref.map(match.mapId).name)),
+          BentoTile(
+              span: 4,
+              child: KpiTile(
+                  key: const ValueKey('live-kpi-mode'),
+                  label: '模式',
+                  value:
+                      match.queueId.isEmpty ? '—' : queueName(match.queueId))),
+          BentoTile(
+              span: 4,
+              child: KpiTile(
+                  key: const ValueKey('live-kpi-state'),
+                  label: '狀態',
+                  value: match.state == 'IN_PROGRESS' ? '進行中' : match.state)),
         ]),
         const SizedBox(height: 16),
-        // 寬螢幕我方與敵方左右並排，窄螢幕上下排列。
+        // 12 欄時我方與敵方左右並排（各 6 欄），6 欄以下上下排列。
         LayoutBuilder(builder: (context, c) {
-          final teams = [
+          final span = bentoColumns(c.maxWidth) == 12 ? 6 : 12;
+          return BentoGrid(children: [
             for (final teamId in match.teamIds)
-              Column(
-                key: ValueKey('live-team-$teamId'),
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 8),
-                    child: Text(teamId == match.myTeamId ? '我方' : '敵方',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: teamId == match.myTeamId
-                                ? AppColors.win
-                                : AppColors.loss)),
-                  ),
-                  PanelCard(
-                    padding: EdgeInsets.zero,
-                    accent: teamId == match.myTeamId
-                        ? AppColors.win
-                        : AppColors.loss,
-                    child: Column(
-                      children: [
-                        for (final p in match.team(teamId))
-                          _PlayerRow(
-                              player: p,
-                              live: live,
-                              ref: ref,
-                              queue: match.queueId,
-                              seasonId: match.seasonId,
-                              rules: rules),
-                      ],
+              BentoTile(
+                span: match.teamIds.length == 2 ? span : 12,
+                child: Column(
+                  key: ValueKey('live-team-$teamId'),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 8),
+                      child: Text(teamId == match.myTeamId ? '我方' : '敵方',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: teamId == match.myTeamId
+                                  ? AppColors.win
+                                  : AppColors.loss)),
                     ),
-                  ),
-                ],
+                    PanelCard(
+                      padding: EdgeInsets.zero,
+                      accent: teamId == match.myTeamId
+                          ? AppColors.win
+                          : AppColors.loss,
+                      child: Column(
+                        children: [
+                          for (final p in match.team(teamId))
+                            _PlayerRow(
+                                player: p,
+                                live: live,
+                                ref: ref,
+                                queue: match.queueId,
+                                seasonId: match.seasonId,
+                                rules: rules),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-          ];
-          if (c.maxWidth >= 1000 && teams.length == 2) {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: teams[0]),
-                const SizedBox(width: 12),
-                Expanded(child: teams[1]),
-              ],
-            );
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (var i = 0; i < teams.length; i++) ...[
-                if (i > 0) const SizedBox(height: 16),
-                teams[i],
-              ],
-            ],
-          );
+          ]);
         }),
         const SizedBox(height: 24),
         const Center(
