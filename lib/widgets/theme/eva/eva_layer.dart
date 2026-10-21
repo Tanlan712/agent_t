@@ -44,11 +44,17 @@ class EvaEggScope extends InheritedWidget {
 
 /// EVA 系列的彩蛋與常駐互動層（規格 §4.4）：包住殼層，負責鍵盤序列、連點、閒置、
 /// 點擊波紋與各覆蓋畫面。只讀已經在記憶體裡的資料，不觸發任何載入。
+/// 殼層一律包這一層（[enabled] 只在 EVA 風格為 true），切換風格時樹的結構不變。
 class EvaLayer extends StatefulWidget {
   final String currentRoute;
+  final bool enabled;
   final Widget child;
 
-  const EvaLayer({super.key, required this.currentRoute, required this.child});
+  const EvaLayer(
+      {super.key,
+      required this.currentRoute,
+      this.enabled = true,
+      required this.child});
 
   static String? _pendingTitleCard;
 
@@ -82,7 +88,8 @@ class _EvaLayerState extends State<EvaLayer> {
     'progress': FailureCounter(),
   };
 
-  bool get _eggsOn => context.read<SettingsProvider>().settings.evaEnabled;
+  bool get _eggsOn =>
+      widget.enabled && context.read<SettingsProvider>().settings.evaEnabled;
   bool get _still => MediaQuery.disableAnimationsOf(context);
   bool get _isCurrent => ModalRoute.of(context)?.isCurrent ?? true;
 
@@ -114,6 +121,7 @@ class _EvaLayerState extends State<EvaLayer> {
     final route = canonicalRoute(widget.currentRoute);
     if (!mounted || pending != route) return;
     EvaLayer._pendingTitleCard = null;
+    if (!widget.enabled) return;
     if (!context.read<SettingsProvider>().settings.evaTitleCards) return;
     if (navNumberOf(route) == null) return;
     final settings = context.read<SettingsProvider>().settings;
@@ -226,7 +234,11 @@ class _EvaLayerState extends State<EvaLayer> {
   }
 
   bool _onKey(KeyEvent e) {
-    if (e is! KeyDownEvent || !mounted || !_isCurrent) return false;
+    if (e is! KeyDownEvent || !mounted || !_isCurrent || !widget.enabled) {
+      return false;
+    }
+    // 任何按鍵（包括在輸入框打字）都算活動，重新計算閒置。
+    _detector.activity();
     if (_overlay is DummyOverlay) {
       _hide();
       return false;
@@ -242,6 +254,7 @@ class _EvaLayerState extends State<EvaLayer> {
 
   void _onEgg(EggEvent event) {
     if (!mounted || !_isCurrent || !_eggsOn) return;
+    if (event == EggEvent.idle && !widget.enabled) return;
     const three = Duration(seconds: 3);
     switch (event) {
       case EggEvent.konami:
@@ -272,6 +285,7 @@ class _EvaLayerState extends State<EvaLayer> {
   }
 
   void _activity() {
+    if (!widget.enabled) return;
     _detector.activity();
     if (_overlay is DummyOverlay) _hide();
   }
@@ -303,7 +317,7 @@ class _EvaLayerState extends State<EvaLayer> {
   @override
   Widget build(BuildContext context) {
     // 讀設定讓開關改變時重建。
-    final eggsOn =
+    final eggsOn = widget.enabled &&
         context.select<SettingsProvider, bool>((s) => s.settings.evaEnabled);
     final found = context
         .select<SettingsProvider, int>((s) => s.settings.evaFoundEggs.length);
@@ -326,7 +340,7 @@ class _EvaLayerState extends State<EvaLayer> {
         onPointerSignal: (_) => _activity(),
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
-          onTapUp: _onTapUp,
+          onTapUp: widget.enabled ? _onTapUp : null,
           child: Stack(
             fit: StackFit.expand,
             children: [

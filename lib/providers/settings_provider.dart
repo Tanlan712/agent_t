@@ -29,8 +29,12 @@ class SettingsProvider with ChangeNotifier {
       _save(_settings.copyWith(backgroundMotion: value));
 
   /// EVA 本機狀態（劇集、彩蛋發現等）的更新。
-  Future<void> updateEva(AppSettings Function(AppSettings) update) =>
-      _save(update(_settings));
+  Future<void> updateEva(AppSettings Function(AppSettings) update) async {
+    final next = update(_settings);
+    // 沒有改變（例如已經記錄過的彩蛋）時不存檔、不通知。
+    if (identical(next, _settings)) return;
+    await _save(next);
+  }
 
   Future<void> resetEva() => _save(clearEva(_settings));
 

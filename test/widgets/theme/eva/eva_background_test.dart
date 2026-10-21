@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:valorant_shop_tracker/shell/app_shell.dart';
 import 'package:valorant_shop_tracker/theme/theme_ids.dart';
 import 'package:valorant_shop_tracker/widgets/theme/eva/eva_background.dart';
+import 'package:valorant_shop_tracker/widgets/theme/style_background.dart';
 
 import '../../../app_harness.dart';
 
@@ -90,7 +91,8 @@ void main() {
     await mouse.addPointer(location: const Offset(700, 500));
     await mouse.moveTo(const Offset(720, 520));
     await tester.pump();
-    final state = tester.state<EvaBackgroundState>(find.byType(EvaBackground));
+    final state =
+        tester.state<StyleBackgroundState>(find.byType(StyleBackground));
     expect(state.pointer.value, isNotNull);
     await mouse.removePointer();
     await tester.pump();

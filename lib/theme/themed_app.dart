@@ -8,7 +8,7 @@ import 'theme_ids.dart';
 /// 依設定建主題，交給 [builder] 組成 MaterialApp。
 /// 主題改變時讓整棵子樹重建（`AppColors.*` 不是 InheritedWidget，不會自動通知），
 /// 但保留元件狀態與頁面堆疊。
-class ThemedApp extends StatelessWidget {
+class ThemedApp extends StatefulWidget {
   final bool useGoogleFonts;
   final Widget Function(ThemeData theme, TransitionBuilder builder) builder;
 
@@ -16,12 +16,26 @@ class ThemedApp extends StatelessWidget {
       {super.key, this.useGoogleFonts = true, required this.builder});
 
   @override
+  State<ThemedApp> createState() => _ThemedAppState();
+}
+
+class _ThemedAppState extends State<ThemedApp> {
+  String? _key;
+  ThemeData? _theme;
+
+  @override
   Widget build(BuildContext context) {
     final choice =
         ThemeChoice.fromSettings(context.watch<SettingsProvider>().settings);
-    final theme = buildAppTheme(choice: choice, useGoogleFonts: useGoogleFonts);
-    return builder(
-        theme,
+    // 主題沒變（例如只記錄了一個彩蛋）時沿用同一個 ThemeData，避免整個 App 重建。
+    final key = '${choice.key}-${widget.useGoogleFonts}';
+    if (key != _key || _theme == null) {
+      _key = key;
+      _theme =
+          buildAppTheme(choice: choice, useGoogleFonts: widget.useGoogleFonts);
+    }
+    return widget.builder(
+        _theme!,
         (context, child) => RebuildOnChange(
             token: choice.key, child: child ?? const SizedBox()));
   }

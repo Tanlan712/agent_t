@@ -187,9 +187,9 @@ class AppShell extends StatelessWidget {
           ),
         ),
       );
-      return style.id.isEva
-          ? EvaLayer(currentRoute: currentRoute, child: scaffold)
-          : scaffold;
+      // EvaLayer 一律存在（只在 EVA 風格啟用），切換風格時頁面狀態保留。
+      return EvaLayer(
+          currentRoute: currentRoute, enabled: style.id.isEva, child: scaffold);
     });
   }
 }

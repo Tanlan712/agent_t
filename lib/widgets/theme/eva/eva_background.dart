@@ -12,16 +12,18 @@ import '../../../theme/theme_ids.dart';
 /// - F3：六角格＋F2 的準星、刻度與紅光。
 /// 靜態格線只畫一次；動態層只畫滑鼠附近與掃描線。掃描線掃 3 秒、停 8 秒。
 /// [motion] 為 false、系統「減少動態效果」或頁面不在前景時完全靜止。
+/// 只畫背景（不包住內容）；滑鼠位置由 [StyleBackground] 的 [pointer] 提供，
+/// 讓切換風格時殼層的樹結構不變。
 class EvaBackground extends StatefulWidget {
   final ThemeStyleId style;
   final bool motion;
-  final Widget child;
+  final ValueNotifier<Offset?> pointer;
 
   const EvaBackground(
       {super.key,
       required this.style,
       required this.motion,
-      required this.child});
+      required this.pointer});
 
   @override
   State<EvaBackground> createState() => EvaBackgroundState();
@@ -29,8 +31,8 @@ class EvaBackground extends StatefulWidget {
 
 class EvaBackgroundState extends State<EvaBackground>
     with SingleTickerProviderStateMixin {
-  /// 滑鼠位置；null 表示不在畫面上（或觸控裝置）。
-  final pointer = ValueNotifier<Offset?>(null);
+  /// 動態關閉時不跟著滑鼠亮起。
+  final _idle = ValueNotifier<Offset?>(null);
 
   late final AnimationController _scan =
       AnimationController(vsync: this, duration: const Duration(seconds: 3))
@@ -60,7 +62,6 @@ class EvaBackgroundState extends State<EvaBackground>
       _scan.stop();
       _scan.value = 0;
       _pause?.cancel();
-      pointer.value = null;
     }
   }
 
@@ -80,7 +81,7 @@ class EvaBackgroundState extends State<EvaBackground>
   void dispose() {
     _pause?.cancel();
     _scan.dispose();
-    pointer.dispose();
+    _idle.dispose();
     super.dispose();
   }
 
@@ -91,48 +92,32 @@ class EvaBackgroundState extends State<EvaBackground>
         p.brightness == Brightness.light;
     final hex = widget.style != ThemeStyleId.evaMonitor;
     final lattice = widget.style != ThemeStyleId.evaAlert && !paper;
-    final active = _active;
-    return MouseRegion(
-      opaque: false,
-      onHover: active ? (e) => pointer.value = e.localPosition : null,
-      onExit: (_) => pointer.value = null,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned.fill(
-            child: IgnorePointer(
-              child: RepaintBoundary(
-                child: Stack(fit: StackFit.expand, children: [
-                  if (hex)
-                    CustomPaint(
-                        key: const ValueKey('bg-eva-hex'),
-                        painter: _HexGrid(p)),
-                  if (lattice)
-                    CustomPaint(
-                        key: const ValueKey('bg-eva-lattice'),
-                        painter: _Lattice(p)),
-                ]),
-              ),
+    final pointer = _active ? widget.pointer : _idle;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        RepaintBoundary(
+          child: Stack(fit: StackFit.expand, children: [
+            if (hex)
+              CustomPaint(
+                  key: const ValueKey('bg-eva-hex'), painter: _HexGrid(p)),
+            if (lattice)
+              CustomPaint(
+                  key: const ValueKey('bg-eva-lattice'), painter: _Lattice(p)),
+          ]),
+        ),
+        if (!paper)
+          RepaintBoundary(
+            child: CustomPaint(
+              painter: _Dynamic(
+                  palette: p,
+                  hex: hex,
+                  pointer: pointer,
+                  scan: _scan,
+                  repaint: Listenable.merge([pointer, _scan])),
             ),
           ),
-          if (!paper)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: RepaintBoundary(
-                  child: CustomPaint(
-                    painter: _Dynamic(
-                        palette: p,
-                        hex: hex,
-                        pointer: pointer,
-                        scan: _scan,
-                        repaint: Listenable.merge([pointer, _scan])),
-                  ),
-                ),
-              ),
-            ),
-          widget.child,
-        ],
-      ),
+      ],
     );
   }
 }

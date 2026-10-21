@@ -60,11 +60,14 @@ void main() {
     await type(tester, 'ba');
   }
 
-  testWidgets('EVA 風格才有 EvaLayer', (tester) async {
+  testWidgets('EvaLayer 只在 EVA 風格啟用', (tester) async {
     await pump(tester);
-    expect(find.byType(EvaLayer), findsOneWidget);
+    expect(tester.widget<EvaLayer>(find.byType(EvaLayer)).enabled, isTrue);
     await pump(tester, style: ThemeStyleId.editorial);
-    expect(find.byType(EvaLayer), findsNothing);
+    // 一律存在（樹結構不變），但非 EVA 風格時不啟用。
+    expect(tester.widget<EvaLayer>(find.byType(EvaLayer)).enabled, isFalse);
+    await type(tester, 'sync');
+    expect(find.byType(SyncOverlay), findsNothing);
   });
 
   testWidgets('鍵入 sync：沒有載入場次時 NO DATA，並記錄 E5', (tester) async {

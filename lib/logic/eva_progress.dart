@@ -51,15 +51,12 @@ bool allEggsFound(AppSettings s) =>
 }
 
 /// 清除所有 EVA 本機狀態（設定頁「重設劇集與彩蛋紀錄」）；主題與其他設定不變。
-AppSettings clearEva(AppSettings s) => AppSettings(
-      resetHour: s.resetHour,
-      resetMinute: s.resetMinute,
-      highlightWishlist: s.highlightWishlist,
-      loginShard: s.loginShard,
-      themeStyle: s.themeStyle,
-      themeAccent: s.themeAccent == 'berserk' ? 'red' : s.themeAccent,
-      themeBrightness: s.themeBrightness,
-      backgroundMotion: s.backgroundMotion,
-      evaEnabled: s.evaEnabled,
-      evaTitleCards: s.evaTitleCards,
-    );
+/// 透過 JSON 過濾 `eva*` 欄位（兩個開關除外），日後新增的設定欄位也會保留。
+/// 暴走主色的解鎖會被清除，所以目前若是暴走就改回紅。
+AppSettings clearEva(AppSettings s) {
+  const keep = {'evaEnabled', 'evaTitleCards'};
+  final json = s.toJson()
+    ..removeWhere((k, _) => k.startsWith('eva') && !keep.contains(k));
+  if (json['themeAccent'] == 'berserk') json['themeAccent'] = 'red';
+  return AppSettings.fromJson(json);
+}

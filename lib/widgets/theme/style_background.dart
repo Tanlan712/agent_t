@@ -10,51 +10,63 @@ import 'eva/eva_background.dart';
 /// E 夢幻漸層的裝飾色不透明度：漸層上的 text／muted 對比仍 ≥ 4.5（有測試）。
 double dreamyDecorOpacity(Brightness b) => b == Brightness.dark ? 0.12 : 0.35;
 
-/// 殼層內容後面的風格背景（規格 §4.2）；靜態，不承載文字。
-class StyleBackground extends StatelessWidget {
+/// 殼層內容後面的風格背景（規格 §4.2）；不承載文字。
+/// 不論哪種風格，樹的結構都是 MouseRegion > Stack[背景, 內容]，
+/// 切換風格時內容子樹（捲動位置、頁面狀態）會保留。
+class StyleBackground extends StatefulWidget {
   final ThemeStyleId style;
   final Widget child;
 
   const StyleBackground({super.key, required this.style, required this.child});
 
   @override
-  Widget build(BuildContext context) {
+  State<StyleBackground> createState() => StyleBackgroundState();
+}
+
+class StyleBackgroundState extends State<StyleBackground> {
+  /// EVA 互動背景用的滑鼠位置；null 表示不在畫面上（或觸控裝置）。
+  final pointer = ValueNotifier<Offset?>(null);
+
+  @override
+  void dispose() {
+    pointer.dispose();
+    super.dispose();
+  }
+
+  Widget _backdrop(BuildContext context) {
+    final style = widget.style;
     if (style.isEva) {
       return EvaBackground(
           style: style,
           motion: context.watch<SettingsProvider>().settings.backgroundMotion,
-          child: child);
+          pointer: pointer);
     }
     final p = context.palette;
-    final CustomPainter? painter;
-    final String? key;
-    switch (style) {
-      case ThemeStyleId.neon:
-        painter = _NeonPainter(p);
-        key = 'bg-neon';
-      case ThemeStyleId.terminal:
-        painter = _TerminalPainter(p);
-        key = 'bg-terminal';
-      case ThemeStyleId.dreamy:
-        painter = _DreamyPainter(p);
-        key = 'bg-dreamy';
-      default:
-        painter = null;
-        key = null;
-    }
-    if (painter == null || key == null) return child;
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Positioned.fill(
-          child: RepaintBoundary(
-            child: IgnorePointer(
-              child: CustomPaint(key: ValueKey<String>(key), painter: painter),
-            ),
-          ),
-        ),
-        child,
-      ],
+    final (CustomPainter? painter, String? key) = switch (style) {
+      ThemeStyleId.neon => (_NeonPainter(p), 'bg-neon'),
+      ThemeStyleId.terminal => (_TerminalPainter(p), 'bg-terminal'),
+      ThemeStyleId.dreamy => (_DreamyPainter(p), 'bg-dreamy'),
+      _ => (null, null),
+    };
+    if (painter == null || key == null) return const SizedBox.shrink();
+    return RepaintBoundary(
+        child: CustomPaint(key: ValueKey<String>(key), painter: painter));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final eva = widget.style.isEva;
+    return MouseRegion(
+      opaque: false,
+      onHover: eva ? (e) => pointer.value = e.localPosition : null,
+      onExit: (_) => pointer.value = null,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned.fill(child: IgnorePointer(child: _backdrop(context))),
+          widget.child,
+        ],
+      ),
     );
   }
 }
