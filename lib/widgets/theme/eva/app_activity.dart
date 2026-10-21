@@ -53,15 +53,18 @@ abstract final class AppActivity {
       context.watch<ProgressProvider>().isLoading ||
       context.watch<CatalogProvider>().isLoading;
 
-  static List<SourceState> sources(BuildContext context, {DateTime? now}) {
-    final riot = context.watch<RiotProvider>();
+  /// [listen] 為 false 時可在事件處理中呼叫（例如終端機的 status）。
+  static List<SourceState> sources(BuildContext context,
+      {DateTime? now, bool listen = true}) {
+    T of<T>() => Provider.of<T>(context, listen: listen);
+    final riot = of<RiotProvider>();
     return computeSources(
       loggedIn: riot.isLoggedIn,
-      dailyActive: isDailyActive(
-          context.watch<ShopProvider>().shop, now ?? DateTime.now()),
+      dailyActive:
+          isDailyActive(of<ShopProvider>().shop, now ?? DateTime.now()),
       walletLoaded: riot.wallet != null,
-      collectionErrors: context.watch<CollectionProvider>().errors,
-      progressError: context.watch<ProgressProvider>().error,
+      collectionErrors: of<CollectionProvider>().errors,
+      progressError: of<ProgressProvider>().error,
     );
   }
 }

@@ -19,6 +19,7 @@ import '../../../theme/app_palette.dart';
 import 'egg_detector.dart';
 import 'eva_data_eggs.dart';
 import 'eva_overlays.dart';
+import 'eva_terminal.dart';
 
 /// 讓子元件（EVA 側欄的品牌字）回報點擊。
 class EvaEggScope extends InheritedWidget {
@@ -246,7 +247,7 @@ class _EvaLayerState extends State<EvaLayer> {
             .map((e) => e.detail?.summary.won);
         _show(SyncOverlay(ratio: syncRatioOf(results)), three, egg: 'E5');
       case EggEvent.terminal:
-        break;
+        _show(EvaTerminal(onExit: _hide), null, egg: 'E11');
     }
   }
 
@@ -355,8 +356,10 @@ class _EvaLayerState extends State<EvaLayer> {
                 Positioned.fill(
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTap: _hide,
-                    child: _overlay,
+                    onTap: _overlay is EvaTerminal ? null : _hide,
+                    // 覆蓋畫面在 Scaffold 之外；TextField（終端機）需要 Material。
+                    child: Material(
+                        type: MaterialType.transparency, child: _overlay),
                   ),
                 ),
             ],
