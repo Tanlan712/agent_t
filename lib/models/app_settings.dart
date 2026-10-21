@@ -7,23 +7,29 @@ class AppSettings {
   /// 上次選的 Riot 伺服器區域（不是機密；token 另由 SessionStorage 保存）。
   final String loginShard;
 
+  /// 使用者自訂的側欄順序（路由）；空的代表預設順序。
+  final List<String> navOrder;
+
   const AppSettings({
     this.resetHour = 8,
     this.resetMinute = 0,
     this.highlightWishlist = true,
     this.loginShard = 'ap',
+    this.navOrder = const [],
   });
 
   AppSettings copyWith(
       {int? resetHour,
       int? resetMinute,
       bool? highlightWishlist,
-      String? loginShard}) {
+      String? loginShard,
+      List<String>? navOrder}) {
     return AppSettings(
       resetHour: resetHour ?? this.resetHour,
       resetMinute: resetMinute ?? this.resetMinute,
       highlightWishlist: highlightWishlist ?? this.highlightWishlist,
       loginShard: loginShard ?? this.loginShard,
+      navOrder: navOrder ?? this.navOrder,
     );
   }
 
@@ -33,6 +39,10 @@ class AppSettings {
       resetMinute: json['resetMinute'] as int? ?? 0,
       highlightWishlist: json['highlightWishlist'] as bool? ?? true,
       loginShard: json['loginShard'] as String? ?? 'ap',
+      navOrder: [
+        for (final r in json['navOrder'] as List<dynamic>? ?? const [])
+          if (r is String) r,
+      ],
     );
   }
 
@@ -41,5 +51,6 @@ class AppSettings {
         'resetMinute': resetMinute,
         'highlightWishlist': highlightWishlist,
         'loginShard': loginShard,
+        'navOrder': navOrder,
       };
 }

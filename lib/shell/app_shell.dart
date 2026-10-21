@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/riot_provider.dart';
+import '../providers/settings_provider.dart';
 import '../theme/app_theme.dart';
 import 'layout.dart';
 import 'nav_items.dart';
@@ -164,7 +165,8 @@ class _MoreSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final tiles = <Widget>[];
     NavGroup? group;
-    for (final item in navItems) {
+    final order = context.watch<SettingsProvider>().settings.navOrder;
+    for (final item in orderedNavItems(order)) {
       if (bottomNavRoutes.contains(item.route)) continue;
       if (item.group != group) {
         group = item.group;

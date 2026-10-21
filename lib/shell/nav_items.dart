@@ -40,3 +40,18 @@ String canonicalRoute(String route) => route == '/my-shop' ? '/' : route;
 
 /// 手機底部導覽的 4 個常用頁面（第 5 項是「更多」）。
 const bottomNavRoutes = ['/', '/matches', '/live', '/wishlist'];
+
+/// 依使用者自訂順序排列導覽項目：只在同一組內調整，組的先後不變；
+/// 沒列在 [order] 的項目照預設順序接在組尾，未知的路由忽略。
+List<NavItem> orderedNavItems(List<String> order) {
+  int rank(NavItem n) {
+    final i = order.indexOf(n.route);
+    return i < 0 ? order.length + navItems.indexOf(n) : i;
+  }
+
+  return [
+    for (final g in NavGroup.values)
+      ...navItems.where((n) => n.group == g).toList()
+        ..sort((a, b) => rank(a).compareTo(rank(b))),
+  ];
+}
