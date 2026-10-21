@@ -105,6 +105,7 @@ class ProgressProvider with ChangeNotifier {
           _ref = await _api.fetch();
         } catch (_) {
           errors.add('無法下載通行證與任務的顯示資料');
+          _refError = '無法下載顯示資料';
         }
       }
       if (gen == _generation) _error = errors.isEmpty ? null : errors.join('；');
@@ -120,6 +121,8 @@ class ProgressProvider with ChangeNotifier {
   Future<void> ensureReference() async {
     if (_ref != null || _refLoading) return;
     _refLoading = true;
+    _refError = null;
+    _notify();
     try {
       _ref = await _api.fetch();
       _refError = null;

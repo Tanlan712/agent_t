@@ -162,6 +162,38 @@ void main() {
     expect(find.widgetWithText(StatusChip, '初始'), findsNWidgets(2));
   });
 
+  testWidgets('參考資料下載失敗時顯示重試，按下後重新下載', (tester) async {
+    setWidth(tester, 1440);
+    final api = FakeProgressApi()..fail = true;
+    final h =
+        await Harness.create(tester, riotHttp: riotClient(), progressApi: api);
+    await tester.runAsync(() => h.riot.login(fakeRedirect));
+    await tester.pumpWidget(h.wrap(home: const CollectionPage()));
+    await settle(tester);
+    expect(find.widgetWithText(FilledButton, '重試'), findsOneWidget);
+    api.fail = false;
+    await tester.tap(find.widgetWithText(FilledButton, '重試'));
+    await settle(tester);
+    expect(find.byKey(const ValueKey('weapon-w-vandal')), findsOneWidget);
+  });
+
+  testWidgets('合約讀取失敗時，特務顯示無法取得等級（不是尚未開始）', (tester) async {
+    setWidth(tester, 1440);
+    final h = await Harness.create(tester,
+        riotHttp: riotClient(contractsStatus: 500),
+        progressApi: FakeProgressApi());
+    await tester.runAsync(() => h.riot.login(fakeRedirect));
+    await tester.pumpWidget(h.wrap(home: const CollectionPage()));
+    await settle(tester);
+    await openTab(tester, '特務');
+    expect(
+        find.descendant(
+            of: find.byKey(const ValueKey('agent-a-base1')),
+            matching: find.text('無法取得等級')),
+        findsOneWidget);
+    expect(find.text('尚未開始'), findsNothing);
+  });
+
   testWidgets('沒有項目的分頁顯示空狀態', (tester) async {
     setWidth(tester, 1440);
     final h = await loggedIn(tester);

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import '../models/account_progress.dart';
 
@@ -52,7 +53,10 @@ class RiotClient {
 
   final http.Client _client;
 
-  RiotClient({http.Client? client}) : _client = client ?? http.Client();
+  /// 對 Riot 遊戲伺服器（*.a.pvp.net）的請求全部經過同一個限流：
+  /// 不論哪個頁面或 provider 發出，同時最多 [maxPvpConcurrent] 個（AGENTS.md 第 3 節）。
+  RiotClient({http.Client? client, int maxPvpConcurrent = 2})
+      : _client = _PvpLimitedClient(client ?? http.Client(), maxPvpConcurrent);
 
   /// 瀏覽器實測：userinfo 與 riot-geo 的實際回應沒有 CORS 標頭會被擋下，
   /// 所以 puuid 從 access_token（JWT）解出，名稱優先取 id_token 的 acct，
@@ -268,4 +272,48 @@ class RiotClient {
       throw RiotApiException(response.statusCode, '$label：回應格式不符');
     }
   }
+}
+
+/// 限制 *.a.pvp.net 同時進行中的請求數；其他主機（登入、valorant-api）不受影響。
+class _PvpLimitedClient extends http.BaseClient {
+  final http.Client _inner;
+  final int _max;
+  int _running = 0;
+  final _waiting = <Completer<void>>[];
+
+  _PvpLimitedClient(this._inner, this._max);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (!request.url.host.endsWith('.a.pvp.net')) return _inner.send(request);
+    if (_running < _max) {
+      _running++;
+    } else {
+      // 等前面的請求把名額直接交給這裡（名額數不變），避免中間被插隊。
+      final slot = Completer<void>();
+      _waiting.add(slot);
+      await slot.future;
+    }
+    try {
+      // 等回應內容讀完才釋放名額，避免串流還沒讀完就送出下一個請求。
+      final res = await _inner.send(request);
+      final bytes = await res.stream.toBytes();
+      return http.StreamedResponse(Stream.value(bytes), res.statusCode,
+          contentLength: bytes.length,
+          request: res.request,
+          headers: res.headers,
+          isRedirect: res.isRedirect,
+          persistentConnection: res.persistentConnection,
+          reasonPhrase: res.reasonPhrase);
+    } finally {
+      if (_waiting.isNotEmpty) {
+        _waiting.removeAt(0).complete();
+      } else {
+        _running--;
+      }
+    }
+  }
+
+  @override
+  void close() => _inner.close();
 }

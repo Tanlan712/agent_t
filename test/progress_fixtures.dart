@@ -5,12 +5,16 @@ import 'package:valorant_shop_tracker/services/progress_reference_api.dart';
 
 class FakeProgressApi implements ProgressReferenceApi {
   int calls = 0;
+
+  /// true 時下載失敗（模擬 valorant-api 暫時無法使用）。
+  bool fail = false;
   final ProgressReference ref;
   FakeProgressApi([ProgressReference? ref]) : ref = ref ?? testProgressRef();
 
   @override
   Future<ProgressReference> fetch() async {
     calls++;
+    if (fail) throw Exception('down');
     return ref;
   }
 }

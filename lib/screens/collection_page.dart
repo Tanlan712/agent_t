@@ -30,15 +30,25 @@ class CollectionPage extends StatefulWidget {
 }
 
 class _CollectionPageState extends State<CollectionPage> {
+  /// 已為哪個帳號啟動過載入；同一帳號只自動載入一次，失敗時由「重試」按鈕處理。
+  /// （build 裡 watch 的 provider 每次通知都會觸發 didChangeDependencies。）
+  String? _startedFor;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final riot = context.watch<RiotProvider>();
-    if (riot.isLoggedIn) {
+    final puuid = riot.isLoggedIn ? riot.session?.puuid : null;
+    if (puuid == _startedFor) return;
+    _startedFor = puuid;
+    if (puuid != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
         // 依序：收藏讀完才讀等級與合約（特務等級要用），Riot 請求同時最多 2 個。
         final progress = context.read<ProgressProvider>();
+        // 先下載公開參考資料（不送 Riot 請求），首屏不必等 Riot 端；
+        // Riot 請求另有全域限流（同時最多 2 個）。
+        progress.ensureReference();
         await context.read<CollectionProvider>().load();
         await progress.load();
       });
@@ -166,10 +176,19 @@ class _CollectionPageState extends State<CollectionPage> {
                 tab(
                     [ItemTypes.agent],
                     agents.isEmpty,
-                    _AgentsTab(agents: agents, levels: {
-                      for (final a in agents)
-                        a.uuid: agentLevel(progress.contracts, ref, a.uuid),
-                    })),
+                    _AgentsTab(
+                        agents: agents,
+                        levelStatus: progress.contracts != null
+                            ? null
+                            : progress.isLoading
+                                ? '讀取等級中…'
+                                : progress.error != null
+                                    ? '無法取得等級'
+                                    : null,
+                        levels: {
+                          for (final a in agents)
+                            a.uuid: agentLevel(progress.contracts, ref, a.uuid),
+                        })),
                 tab([ItemTypes.buddyLevel], buddies.isEmpty,
                     _ItemGrid(buddies)),
                 tab([ItemTypes.spray], sprays.isEmpty, _ItemGrid(sprays)),
@@ -370,7 +389,11 @@ class _AgentsTab extends StatelessWidget {
   /// 特務合約等級；null 代表沒有進度紀錄（尚未開始）。
   final Map<String, AgentLevel?> levels;
 
-  const _AgentsTab({required this.agents, required this.levels});
+  /// 合約資料還沒到或讀取失敗時，取代「尚未開始」的說明。
+  final String? levelStatus;
+
+  const _AgentsTab(
+      {required this.agents, required this.levels, this.levelStatus});
 
   @override
   Widget build(BuildContext context) => ResponsiveGridView.builder(
@@ -410,7 +433,11 @@ class _AgentsTab extends StatelessWidget {
                           style: const TextStyle(
                               color: AppColors.muted, fontSize: 12)),
                       const SizedBox(height: 6),
-                      if (lv == null)
+                      if (levelStatus != null)
+                        Text(levelStatus!,
+                            style: const TextStyle(
+                                color: AppColors.muted, fontSize: 12))
+                      else if (lv == null)
                         const Text('尚未開始',
                             style:
                                 TextStyle(color: AppColors.muted, fontSize: 12))
