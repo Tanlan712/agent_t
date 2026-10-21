@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:valorant_shop_tracker/models/app_settings.dart';
 import 'package:valorant_shop_tracker/shell/app_shell.dart';
+import 'package:valorant_shop_tracker/shell/nav_items.dart';
 import 'package:valorant_shop_tracker/theme/app_palette.dart';
 import 'package:valorant_shop_tracker/theme/eva_names.dart';
 import 'package:valorant_shop_tracker/theme/theme_ids.dart';
@@ -34,7 +35,19 @@ void main() {
     return h;
   }
 
-  testWidgets('切頁標題卡顯示今天這一話的原創標題', (tester) async {
+  test('每一頁的標題卡都不一樣，隔天也會換', () {
+    final routes = [for (final n in navItems) n.route];
+    for (final ep in [1, 12, 26]) {
+      final titles = {for (final r in routes) pageEpisodeTitle(ep, r)};
+      expect(titles, hasLength(routes.length), reason: '第 $ep 話');
+    }
+    for (final r in routes) {
+      expect(pageEpisodeTitle(1, r), isNot(pageEpisodeTitle(2, r)), reason: r);
+      expect(evaEpisodeTitles, contains(pageEpisodeTitle(1, r)));
+    }
+  });
+
+  testWidgets('切頁標題卡顯示今天這一話、這一頁的原創標題', (tester) async {
     final h = await pump(tester, routes: true);
     await h.settings.updateEva((s) => s.copyWith(evaEpisodeDays: 12));
     await tester.tap(find.byKey(const ValueKey('nav-/matches')));
@@ -42,7 +55,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.byType(TitleCardOverlay), findsOneWidget);
     expect(find.text('第 拾弐 話'), findsOneWidget);
-    expect(find.text(evaEpisodeTitles[11].$1), findsOneWidget);
+    expect(find.text(pageEpisodeTitle(12, '/matches').$1), findsOneWidget);
     expect(find.text('EPISODE:12 / OPERATION LOG'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
   });

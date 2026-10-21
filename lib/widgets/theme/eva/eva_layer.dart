@@ -130,6 +130,7 @@ class _EvaLayerState extends State<EvaLayer> {
         TitleCardOverlay(
             episode: episodeOf(settings),
             finale: isFinale(settings),
+            route: route,
             pageCode: 'EPISODE:${twoDigits(episodeOf(settings))} / '
                 '${story?.$2 ?? navLabelsEn[route] ?? ''}'),
         const Duration(milliseconds: 600));
