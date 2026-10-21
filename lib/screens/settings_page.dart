@@ -6,6 +6,7 @@ import 'package:valorant_shop_tracker/services/riot_api_key_manager.dart';
 import 'package:valorant_shop_tracker/shell/app_shell.dart';
 import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 import 'package:valorant_shop_tracker/widgets/my_shop_settings_card.dart';
+import 'package:valorant_shop_tracker/widgets/theme/theme_picker.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -68,6 +69,8 @@ class _SettingsPageState extends State<SettingsPage> {
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: 16),
             children: [
+              const ThemePicker(),
+              const SizedBox(height: 24),
               _buildApiKeySection(),
               const SizedBox(height: 24),
               _buildRenewalInstructionsSection(),
