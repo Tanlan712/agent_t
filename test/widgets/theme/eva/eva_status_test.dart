@@ -209,4 +209,20 @@ void main() {
       expect(find.byType(SourceStatus), findsOneWidget);
     }
   });
+
+  testWidgets('F2 淺色（機密文件）首頁仍有倒數與進度條', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1440, 900);
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(
+        choice: const ThemeChoice(
+            style: ThemeStyleId.evaMonitor, mode: BrightnessMode.light),
+        home: const AppShell(
+            currentRoute: '/', title: '我的商店', child: Text('x'))));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('eva-stamp')), findsOneWidget);
+    expect(find.byType(RefreshCountdown), findsOneWidget);
+    expect(find.byType(TransferBar), findsOneWidget);
+  });
 }

@@ -329,7 +329,7 @@ class _MonitorHeader extends StatelessWidget {
   }
 }
 
-/// F2 淺色（機密文件）：印章框、報告書大標、德文副標。
+/// F2 淺色（機密文件）：印章框、報告書大標、德文副標；動態只有倒數與進度條。
 class _ClassifiedHeader extends StatelessWidget {
   final String title;
   final String? route;
@@ -362,9 +362,16 @@ class _ClassifiedHeader extends StatelessWidget {
                 Text(de,
                     style: AppFonts.serif(
                         TextStyle(fontSize: 13, color: p.muted))),
+              // 機密文件只保留倒數（首頁）與進度條兩個動態元件。
+              const SizedBox(height: 8),
+              TransferBar(active: AppActivity.loading(context)),
             ],
           ),
         ),
+        if (route == '/') ...[
+          const SizedBox(width: 12),
+          const RefreshCountdown(),
+        ],
         ...actions,
       ],
     );
