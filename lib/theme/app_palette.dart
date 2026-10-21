@@ -60,9 +60,13 @@ class AppPalette extends ThemeExtension<AppPalette> {
   static AppPalette resolve(ThemeChoice c) {
     final dark = c.brightness == Brightness.dark;
     final n = (dark ? _neutralDark : _neutralLight)[c.style]!;
+    // 暴走只在 EVA 系列有效，其他風格當成紅。
+    final accent = !c.style.isEva && c.accent == AccentId.berserk
+        ? AccentId.red
+        : c.accent;
     final (primary, fill, on) = c.style.isEva
-        ? (dark ? _evaAccentDark : _evaAccentLight)[c.accent]!
-        : (dark ? _accentDark : _accentLight)[c.accent]!;
+        ? (dark ? _evaAccentDark : _evaAccentLight)[accent]!
+        : (dark ? _accentDark : _accentLight)[accent]!;
     final usesFrame =
         c.style == ThemeStyleId.evaMonitor || c.style == ThemeStyleId.evaFusion;
     return AppPalette(
@@ -85,7 +89,11 @@ class AppPalette extends ThemeExtension<AppPalette> {
       frame: usesFrame
           ? (dark ? const Color(0xFFFF9A1F) : const Color(0xFF5E5A3A))
           : null,
-      decor: c.style == ThemeStyleId.dreamy ? _dreamyDecor : null,
+      decor: c.style == ThemeStyleId.dreamy
+          ? _dreamyDecor
+          : c.style.isEva && accent == AccentId.berserk
+              ? _berserkDecor
+              : null,
     );
   }
 
@@ -167,6 +175,7 @@ const _evaAccentDark = <AccentId, (Color, Color, Color)>{
   AccentId.blue: (Color(0xFFF5B800), Color(0xFFF5B800), Color(0xFF0B1226)),
   AccentId.green: (Color(0xFF2BFF88), Color(0xFF2BFF88), Color(0xFF02140A)),
   AccentId.violet: (Color(0xFF9D6BFF), Color(0xFF9D6BFF), Color(0xFF0E0718)),
+  AccentId.berserk: (Color(0xFF9D6BFF), Color(0xFF9D6BFF), Color(0xFF0E0718)),
 };
 
 const _evaAccentLight = <AccentId, (Color, Color, Color)>{
@@ -174,6 +183,7 @@ const _evaAccentLight = <AccentId, (Color, Color, Color)>{
   AccentId.blue: (Color(0xFF8A5A00), Color(0xFF8A5A00), _white),
   AccentId.green: (Color(0xFF2F6B3A), Color(0xFF2F6B3A), _white),
   AccentId.violet: (Color(0xFF5B2DB0), Color(0xFF5B2DB0), _white),
+  AccentId.berserk: (Color(0xFF5B2DB0), Color(0xFF5B2DB0), _white),
 };
 
 // 稀有度：select、deluxe、premium、exclusive、ultra（規格 §3.3）。
@@ -206,5 +216,8 @@ const _partyLight = [
   Color(0xFF03664A),
   Color(0xFF6D28D9),
 ];
+
+/// 暴走主色的輔助綠（初號機的綠色紋路），只用在裝飾。
+const _berserkDecor = [Color(0xFF7CFF4F)];
 
 const _dreamyDecor = [Color(0xFFF7A1C4), Color(0xFFB9A7F5), Color(0xFF8FC9F7)];

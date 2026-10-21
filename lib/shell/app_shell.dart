@@ -297,8 +297,10 @@ class _RiotStatus extends StatelessWidget {
   Widget build(BuildContext context) {
     final riot = context.watch<RiotProvider>();
     final session = riot.session;
-    final label =
-        riot.isLoggedIn && session != null ? session.displayName : '登入 Riot';
+    final eva = context.appStyle.id.isEva;
+    final label = riot.isLoggedIn && session != null
+        ? (eva ? '適格者 ${session.displayName} 登錄済' : session.displayName)
+        : (eva ? '適格者 未登錄' : '登入 Riot');
     final icon = Icon(
       riot.isLoggedIn ? Icons.verified_user : Icons.login,
       color: riot.isLoggedIn ? AppColors.owned : AppColors.muted,

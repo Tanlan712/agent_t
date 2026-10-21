@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../theme/app_fonts.dart';
 import '../../../theme/app_palette.dart';
 import '../../../theme/eva_names.dart';
+import '../../../theme/theme_ids.dart';
 import 'eva_mincho.dart';
 
 /// MAGI 三面板的表決（E2）：命中 ≥2 件 3:0、1 件 2:1、0 件 0:3。
@@ -264,25 +265,61 @@ class SyncOverlay extends StatelessWidget {
   }
 }
 
-/// R2：切頁標題卡「第 N 話　頁名」。
+/// R2：切頁標題卡：今天這一話的原創標題（規格 §4.5），下方是頁名代碼行；終劇後顯示「終劇」。
 class TitleCardOverlay extends StatelessWidget {
-  final int number;
-  final String title;
-  final String? story;
+  final int episode;
+  final bool finale;
+  final String pageCode;
 
   const TitleCardOverlay(
-      {super.key, required this.number, required this.title, this.story});
+      {super.key,
+      required this.episode,
+      required this.finale,
+      required this.pageCode});
 
   @override
-  Widget build(BuildContext context) => ColoredBox(
-        color: context.palette.background,
-        child: Center(
-          child: EvaTitleCard(
-              episode: '第 ${kanjiNumber(number)} 話',
-              big: title,
-              small: story ?? ''),
-        ),
-      );
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final (big, small) = evaEpisodeTitles[(episode - 1).clamp(0, 25)];
+    return ColoredBox(
+      color: p.background,
+      child: Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          if (finale)
+            EvaMincho('終劇', size: 72, squeeze: 0.75, color: p.text)
+          else
+            EvaTitleCard(
+                episode: '第 ${kanjiNumber(episode)} 話', big: big, small: small),
+          const SizedBox(height: 10),
+          Text(pageCode, style: _mono(context, 12, p.muted, spacing: 1)),
+        ]),
+      ),
+    );
+  }
+}
+
+/// 全部 20 個彩蛋發現時顯示一次的「補完完了」（白底明朝大字）。
+class FinaleOverlay extends StatelessWidget {
+  const FinaleOverlay({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // 白底黑字：EVA 系列的淺色紙張。
+    const paper =
+        ThemeChoice(style: ThemeStyleId.evaMonitor, mode: BrightnessMode.light);
+    final p = AppPalette.resolve(paper);
+    return ColoredBox(
+      color: p.surface,
+      child: Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          EvaMincho('補完完了', size: 64, squeeze: 0.8, color: p.text),
+          const SizedBox(height: 8),
+          Text('ALL 20 SECRETS DECLASSIFIED · 附錄 Z 已解鎖',
+              style: _mono(context, 12, p.muted, spacing: 1)),
+        ]),
+      ),
+    );
+  }
 }
 
 /// R3：點擊空白處的八角形力場波紋（3 層、0.8 秒）。

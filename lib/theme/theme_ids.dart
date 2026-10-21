@@ -22,7 +22,8 @@ enum ThemeStyleId {
       };
 }
 
-enum AccentId { red, blue, green, violet }
+/// [berserk]（暴走）是隱藏主色：只在 EVA 系列、設定頁解鎖後（E9）可選。
+enum AccentId { red, blue, green, violet, berserk }
 
 enum BrightnessMode { auto, dark, light }
 
@@ -56,9 +57,13 @@ class ThemeChoice {
       return fallback;
     }
 
+    final style =
+        pick(ThemeStyleId.values, s.themeStyle, ThemeStyleId.editorial);
+    var accent = pick(AccentId.values, s.themeAccent, AccentId.red);
+    if (accent == AccentId.berserk && !style.isEva) accent = AccentId.red;
     return ThemeChoice(
-      style: pick(ThemeStyleId.values, s.themeStyle, ThemeStyleId.editorial),
-      accent: pick(AccentId.values, s.themeAccent, AccentId.red),
+      style: style,
+      accent: accent,
       mode: pick(BrightnessMode.values, s.themeBrightness, BrightnessMode.auto),
     );
   }

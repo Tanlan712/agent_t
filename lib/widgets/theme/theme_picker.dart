@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../logic/eva_progress.dart';
 import '../../providers/settings_provider.dart';
 import '../../theme/app_fonts.dart';
 import '../../theme/app_palette.dart';
@@ -29,11 +30,37 @@ String accentName(AccentId a, {required bool eva}) => eva
         AccentId.blue: '輻能藍',
         AccentId.green: '翠綠',
         AccentId.violet: '紫羅蘭',
+        AccentId.berserk: '暴走',
       }[a]!;
 
 /// 設定頁「外觀」：風格縮圖、主色、明暗、動態背景；選擇後立即套用並存檔。
-class ThemePicker extends StatelessWidget {
+class ThemePicker extends StatefulWidget {
   const ThemePicker({super.key});
+
+  @override
+  State<ThemePicker> createState() => _ThemePickerState();
+}
+
+class _ThemePickerState extends State<ThemePicker> {
+  final _evaTaps = <DateTime>[];
+
+  /// E9：1.5 秒內連點 EVA 縮圖 7 下解鎖暴走主色。
+  void _countEvaTap(SettingsProvider settings) {
+    final now = DateTime.now();
+    _evaTaps
+      ..add(now)
+      ..removeWhere(
+          (t) => now.difference(t) > const Duration(milliseconds: 1500));
+    if (_evaTaps.length < 7) return;
+    _evaTaps.clear();
+    if (!settings.settings.evaEnabled || settings.settings.evaBerserkUnlocked) {
+      return;
+    }
+    settings.updateEva(
+        (s) => recordEgg(s.copyWith(evaBerserkUnlocked: true), 'E9'));
+    ScaffoldMessenger.maybeOf(context)
+        ?.showSnackBar(const SnackBar(content: Text('隱藏主色「暴走」已解鎖')));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +100,10 @@ class ThemePicker extends StatelessWidget {
                     choice: ThemeChoice(
                         style: s, accent: choice.accent, mode: choice.mode),
                     selected: s == choice.style,
-                    onTap: () => settings.setTheme(style: s.name),
+                    onTap: () {
+                      settings.setTheme(style: s.name);
+                      if (s.isEva) _countEvaTap(settings);
+                    },
                   ),
               ],
             );
@@ -86,18 +116,21 @@ class ThemePicker extends StatelessWidget {
             runSpacing: 8,
             children: [
               for (final a in AccentId.values)
-                ChoiceChip(
-                  key: ValueKey('theme-accent-${a.name}'),
-                  selected: a == choice.accent,
-                  avatar: CircleAvatar(
-                      backgroundColor: AppPalette.resolve(ThemeChoice(
-                              style: choice.style,
-                              accent: a,
-                              mode: choice.mode))
-                          .primary),
-                  label: Text(accentName(a, eva: choice.style.isEva)),
-                  onSelected: (_) => settings.setTheme(accent: a.name),
-                ),
+                if (a != AccentId.berserk ||
+                    (choice.style.isEva &&
+                        settings.settings.evaBerserkUnlocked))
+                  ChoiceChip(
+                    key: ValueKey('theme-accent-${a.name}'),
+                    selected: a == choice.accent,
+                    avatar: CircleAvatar(
+                        backgroundColor: AppPalette.resolve(ThemeChoice(
+                                style: choice.style,
+                                accent: a,
+                                mode: choice.mode))
+                            .primary),
+                    label: Text(accentName(a, eva: choice.style.isEva)),
+                    onSelected: (_) => settings.setTheme(accent: a.name),
+                  ),
             ],
           ),
           const SizedBox(height: 16),

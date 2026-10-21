@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../providers/riot_provider.dart';
 import '../../../providers/settings_provider.dart';
+import '../../../providers/wishlist_provider.dart';
 import '../../../shell/nav_items.dart';
 import '../../../theme/app_fonts.dart';
 import '../../../theme/app_palette.dart';
@@ -102,6 +104,7 @@ class EvaPageHeader extends StatelessWidget {
             const SourceStatus(style: ThemeStyleId.evaAlert),
           ],
           EvaBanners(route: r),
+          if (r == '/wishlist') const CompletionMeter(),
           if (fusion) ...[
             const SizedBox(height: 6),
             TransferBar(active: loading),
@@ -337,6 +340,7 @@ class _MonitorHeader extends StatelessWidget {
           const SizedBox(height: 4),
           const SourceStatus(style: ThemeStyleId.evaMonitor),
           EvaBanners(route: route),
+          if (route == '/wishlist') const CompletionMeter(),
         ],
       );
     });
@@ -427,7 +431,55 @@ class _ClassifiedHeaderState extends State<_ClassifiedHeader> {
           ],
         ),
         EvaBanners(route: r),
+        if (r == '/wishlist') const CompletionMeter(),
       ],
+    );
+  }
+}
+
+/// 補完計畫進捗：願望清單中已擁有的比例；願望清單是空的時為 null。
+double? completionRatio(Set<String> wishlist, bool Function(String) owned) =>
+    wishlist.isEmpty ? null : wishlist.where(owned).length / wishlist.length;
+
+/// 願望清單頁首的補完計畫進捗（未登入或收藏未讀取時顯示 — %）。
+class CompletionMeter extends StatelessWidget {
+  const CompletionMeter({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final frame = p.frame ?? p.primary;
+    final riot = context.watch<RiotProvider>();
+    final wish = context.watch<WishlistProvider>().uuids;
+    final r = riot.isLoggedIn ? completionRatio(wish, riot.isOwned) : null;
+    final owned = r == null ? 0 : wish.where(riot.isOwned).length;
+    return Container(
+      key: const ValueKey('eva-completion'),
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(border: Border.all(color: frame)),
+      child: Row(children: [
+        Text('補完計畫 進捗',
+            style: AppFonts.mono(TextStyle(fontSize: 11, color: frame))),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            height: 10,
+            decoration: BoxDecoration(border: Border.all(color: frame)),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: r ?? 0,
+              child: ColoredBox(color: frame),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+            r == null
+                ? '— %'
+                : '${(r * 100).toStringAsFixed(1)}%（$owned／${wish.length} 件）',
+            style: AppFonts.mono(TextStyle(fontSize: 12, color: p.text))),
+      ]),
     );
   }
 }

@@ -205,7 +205,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.byType(TitleCardOverlay), findsOneWidget);
-    expect(find.text('第 参 話'), findsOneWidget);
+    // 話數是劇集進度（新設定為第 1 話），不是導覽順序。
+    expect(find.text('第 壱 話'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(TitleCardOverlay), findsNothing);
   });

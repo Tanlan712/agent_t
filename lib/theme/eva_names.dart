@@ -27,6 +27,7 @@ const Map<AccentId, String> evaAccentNames = {
   AccentId.blue: '琥珀',
   AccentId.green: '訊號綠',
   AccentId.violet: '初號機紫',
+  AccentId.berserk: '暴走',
 };
 
 /// F2 機密文件的德文副標（E18）。

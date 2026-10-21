@@ -115,12 +115,15 @@ class _EvaLayerState extends State<EvaLayer> {
     if (!mounted || pending != route) return;
     EvaLayer._pendingTitleCard = null;
     if (!context.read<SettingsProvider>().settings.evaTitleCards) return;
-    final number = navNumberOf(route);
-    if (number == null) return;
-    final label = navItems.firstWhere((n) => n.route == route).label;
+    if (navNumberOf(route) == null) return;
+    final settings = context.read<SettingsProvider>().settings;
+    final story = evaStoryNames[route];
     _show(
         TitleCardOverlay(
-            number: number, title: label, story: evaStoryNames[route]?.$1),
+            episode: episodeOf(settings),
+            finale: isFinale(settings),
+            pageCode: 'EPISODE:${twoDigits(episodeOf(settings))} / '
+                '${story?.$2 ?? navLabelsEn[route] ?? ''}'),
         const Duration(milliseconds: 600));
   }
 
@@ -172,6 +175,16 @@ class _EvaLayerState extends State<EvaLayer> {
     _failures['progress']!
         .update(loading: progress.isLoading, error: progress.error);
     return _failures.values.map((c) => c.count).reduce((a, b) => a > b ? a : b);
+  }
+
+  /// 20 個彩蛋全部發現後只顯示一次「補完完了」。
+  void _maybeFinale() {
+    if (!mounted || !_isCurrent || _overlay != null) return;
+    final settings = context.read<SettingsProvider>();
+    final s = settings.settings;
+    if (!allEggsFound(s) || s.evaFoundEggs.contains('FINALE')) return;
+    settings.updateEva((s) => recordEgg(s, 'FINALE'));
+    _show(const FinaleOverlay(), const Duration(seconds: 4));
   }
 
   bool _onScroll(ScrollNotification n) {
@@ -292,6 +305,11 @@ class _EvaLayerState extends State<EvaLayer> {
     // 讀設定讓開關改變時重建。
     final eggsOn =
         context.select<SettingsProvider, bool>((s) => s.settings.evaEnabled);
+    final found = context
+        .select<SettingsProvider, int>((s) => s.settings.evaFoundEggs.length);
+    if (eggsOn && found >= evaEggIds.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _maybeFinale());
+    }
     final failures = eggsOn ? _failureCount(context) : 0;
     return EvaEggScope(
       onBrandTap: () {

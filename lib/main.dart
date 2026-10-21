@@ -16,6 +16,7 @@ import 'providers/settings_provider.dart';
 import 'providers/shop_provider.dart';
 import 'providers/wishlist_provider.dart';
 import 'app_routes.dart';
+import 'logic/eva_progress.dart';
 import 'services/progress_reference_api.dart';
 import 'services/catalog_api.dart';
 import 'services/live_client.dart';
@@ -42,6 +43,9 @@ Future<void> main() async {
   }
 
   final prefs = await SharedPreferences.getInstance();
+  final settings = SettingsProvider(SettingsStorage(prefs));
+  // EVA 故事層的劇集：每個有打開 App 的日子前進一話（只存在這個瀏覽器）。
+  settings.updateEva((s) => recordOpen(s, DateTime.now()));
   final catalog = CatalogProvider(CatalogApi(), CatalogCache(prefs));
   // 不等待：先顯示畫面，目錄在背景載入。
   catalog.init();
@@ -70,8 +74,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ShopProvider(ShopStorage(prefs))),
         ChangeNotifierProvider(
             create: (_) => WishlistProvider(WishlistStorage(prefs))),
-        ChangeNotifierProvider(
-            create: (_) => SettingsProvider(SettingsStorage(prefs))),
+        ChangeNotifierProvider.value(value: settings),
         ChangeNotifierProvider.value(value: riot),
         ChangeNotifierProvider.value(value: collection),
         ChangeNotifierProvider.value(value: progress),
