@@ -119,4 +119,10 @@ void main() {
     expect(r.evaFoundEggs, isEmpty);
     expect(r.evaBerserkUnlocked, isFalse);
   });
+
+  test('resetEva 時暴走主色改回紅（解鎖已清除）', () {
+    final s = base.copyWith(themeAccent: 'berserk', evaBerserkUnlocked: true);
+    expect(clearEva(s).themeAccent, 'red');
+    expect(clearEva(base.copyWith(themeAccent: 'green')).themeAccent, 'green');
+  });
 }

@@ -62,6 +62,24 @@ class _ThemePickerState extends State<ThemePicker> {
         ?.showSnackBar(const SnackBar(content: Text('隱藏主色「暴走」已解鎖')));
   }
 
+  Future<void> _confirmReset(SettingsProvider settings) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('重設劇集與彩蛋紀錄？'),
+        content: const Text('劇集會回到第 1 話，已發現的彩蛋與解鎖的暴走主色會清除；主題與其他設定不變。'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('取消')),
+          FilledButton(
+              onPressed: () => Navigator.pop(c, true), child: const Text('重設')),
+        ],
+      ),
+    );
+    if (ok == true) await settings.resetEva();
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
@@ -163,6 +181,32 @@ class _ThemePickerState extends State<ThemePicker> {
               subtitle: const Text('互動格線與掃描線；系統開啟「減少動態效果」時一律靜止'),
               value: settings.settings.backgroundMotion,
               onChanged: settings.setBackgroundMotion,
+            ),
+            SwitchListTile(
+              key: const ValueKey('theme-eva-eggs'),
+              contentPadding: EdgeInsets.zero,
+              title: const Text('彩蛋'),
+              subtitle: const Text('隱藏的觸發與機密文件；只讀已載入的資料，不會另外連線'),
+              value: settings.settings.evaEnabled,
+              onChanged: (v) =>
+                  settings.updateEva((s) => s.copyWith(evaEnabled: v)),
+            ),
+            SwitchListTile(
+              key: const ValueKey('theme-eva-titlecards'),
+              contentPadding: EdgeInsets.zero,
+              title: const Text('切頁標題卡'),
+              value: settings.settings.evaTitleCards,
+              onChanged: (v) =>
+                  settings.updateEva((s) => s.copyWith(evaTitleCards: v)),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: const ValueKey('theme-eva-reset'),
+                icon: const Icon(Icons.restart_alt),
+                label: const Text('重設劇集與彩蛋紀錄'),
+                onPressed: () => _confirmReset(settings),
+              ),
             ),
           ],
         ],

@@ -101,4 +101,35 @@ void main() {
     expect(tester.widget<Text>(find.text('跟隨風格')).softWrap, isFalse);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('EVA 風格：彩蛋與標題卡開關、重設劇集與彩蛋紀錄', (tester) async {
+    final h = await pump(tester);
+    expect(find.byKey(const ValueKey('theme-eva-eggs')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('theme-style-evaMonitor')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('theme-eva-eggs')));
+    await tester.pumpAndSettle();
+    expect(h.settings.settings.evaEnabled, isFalse);
+    await tester.tap(find.byKey(const ValueKey('theme-eva-titlecards')));
+    await tester.pumpAndSettle();
+    expect(h.settings.settings.evaTitleCards, isFalse);
+
+    await h.settings
+        .updateEva((s) => s.copyWith(evaFoundEggs: ['E1'], evaEpisodeDays: 5));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const ValueKey('theme-eva-reset')));
+    await tester.tap(find.byKey(const ValueKey('theme-eva-reset')));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(h.settings.settings.evaFoundEggs, ['E1']);
+    await tester.tap(find.byKey(const ValueKey('theme-eva-reset')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('重設'));
+    await tester.pumpAndSettle();
+    expect(h.settings.settings.evaFoundEggs, isEmpty);
+    expect(h.settings.settings.evaEpisodeDays, 0);
+    expect(h.settings.settings.themeStyle, 'evaMonitor');
+  });
 }

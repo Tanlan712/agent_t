@@ -57,7 +57,7 @@ AppSettings clearEva(AppSettings s) => AppSettings(
       highlightWishlist: s.highlightWishlist,
       loginShard: s.loginShard,
       themeStyle: s.themeStyle,
-      themeAccent: s.themeAccent,
+      themeAccent: s.themeAccent == 'berserk' ? 'red' : s.themeAccent,
       themeBrightness: s.themeBrightness,
       backgroundMotion: s.backgroundMotion,
       evaEnabled: s.evaEnabled,

@@ -50,8 +50,7 @@ void main() {
       expect(find.byKey(const ValueKey('eva-alert-block')), findsNothing);
     });
 
-    testWidgets('F2 淺色：機密印章與報告書標題、故事名副標（雙擊才是德文，見 E18）',
-        (tester) async {
+    testWidgets('F2 淺色：機密印章與報告書標題、故事名副標（雙擊才是德文，見 E18）', (tester) async {
       await pump(tester, ThemeStyleId.evaMonitor, header,
           mode: BrightnessMode.light);
       expect(find.byKey(const ValueKey('eva-stamp')), findsOneWidget);
