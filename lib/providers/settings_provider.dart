@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/app_settings.dart';
 import '../storage/settings_storage.dart';
+import '../logic/eva_progress.dart';
 
 class SettingsProvider with ChangeNotifier {
   final SettingsStorage _storage;
@@ -26,6 +27,12 @@ class SettingsProvider with ChangeNotifier {
 
   Future<void> setBackgroundMotion(bool value) =>
       _save(_settings.copyWith(backgroundMotion: value));
+
+  /// EVA 本機狀態（劇集、彩蛋發現等）的更新。
+  Future<void> updateEva(AppSettings Function(AppSettings) update) =>
+      _save(update(_settings));
+
+  Future<void> resetEva() => _save(clearEva(_settings));
 
   Future<void> _save(AppSettings next) async {
     _settings = next;
