@@ -74,16 +74,23 @@ void main() {
     expect(
         find.descendant(of: night.first, matching: find.textContaining('手動')),
         findsNothing);
-    // 只有每日商店能手動新增；精選組合包只能由登入同步取得。
-    expect(find.text('新增'), findsOneWidget);
+    // 商店只能由登入同步取得（使用者決定 2026-10-22）：三區都沒有新增／編輯，
+    // 也沒有「手動輸入」。
+    expect(find.text('新增'), findsNothing);
+    expect(find.text('編輯'), findsNothing);
+    expect(find.textContaining('手動'), findsNothing);
     expect(find.text('精選組合包'), findsOneWidget);
-    expect(
-        find.descendant(
-            of: find.byKey(const ValueKey('shop-bundles')),
-            matching: find.text('新增')),
-        findsNothing);
     expect(find.byType(EmptyState), findsNWidgets(3));
     expect(find.text('今天沒有願望清單造型'), findsOneWidget);
+  });
+
+  testWidgets('有每日商店資料時也不能編輯', (tester) async {
+    setWidth(tester, 1440);
+    final h = await Harness.create(tester, shop: dailyShop(['o', 'p']));
+    await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+    await tester.pumpAndSettle();
+    expect(find.text('編輯'), findsNothing);
+    expect(find.text('新增'), findsNothing);
   });
 
   testWidgets('關閉標示願望清單時不顯示金框', (tester) async {

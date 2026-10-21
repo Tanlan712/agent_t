@@ -56,8 +56,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(BottomSheet), findsNothing);
     // 手機版的頁面標題在 PageHeader（與網頁版相同），不在 AppBar。
-    expect(
-        tester.widget<Text>(find.byKey(const ValueKey('header-title'))).data,
+    expect(tester.widget<Text>(find.byKey(const ValueKey('header-title'))).data,
         '角色');
   });
 
@@ -72,5 +71,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(BackButton), findsOneWidget);
     expect(find.text('選擇造型'), findsOneWidget);
+  });
+
+  testWidgets('手動編輯商店的頁面已關閉：/my-shop/edit 不會打開編輯頁', (tester) async {
+    setWidth(tester, 1400);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(useAppRoutes: true));
+    await tester.pumpAndSettle();
+    final nav = tester.state<NavigatorState>(find.byType(Navigator).first);
+    nav.pushNamed('/my-shop/edit');
+    await tester.pumpAndSettle();
+    expect(find.text('編輯每日商店'), findsNothing);
+    expect(find.text('儲存'), findsNothing);
   });
 }

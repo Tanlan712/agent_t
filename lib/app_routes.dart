@@ -16,7 +16,6 @@ import 'screens/playercards_page.dart';
 import 'screens/riot_login_page.dart';
 import 'screens/seen_players_page.dart';
 import 'screens/settings_page.dart';
-import 'screens/shop_edit_page.dart';
 import 'screens/skin_picker_page.dart';
 import 'screens/weapons_page.dart';
 import 'screens/wishlist_page.dart';
@@ -25,6 +24,8 @@ import 'screens/wishlist_page.dart';
 final Map<String, WidgetBuilder> _topLevel = {
   '/': (_) => const MyShopPage(),
   '/my-shop': (_) => const MyShopPage(),
+  // 商店只能由登入同步取得（使用者決定 2026-10-22）；舊的編輯網址改回商店頁。
+  '/my-shop/edit': (_) => const MyShopPage(),
   '/wishlist': (_) => const WishlistPage(),
   '/matches': (_) => const MatchHistoryPage(),
   '/live': (_) => const LivePage(),
@@ -51,15 +52,6 @@ Route<dynamic>? onGenerateAppRoute(RouteSettings settings) {
     );
   }
   switch (settings.name) {
-    case '/my-shop/edit':
-      final requested = settings.arguments as ShopSection? ?? ShopSection.daily;
-      // 夜市只能由登入同步取得，不開放手動編輯。
-      final section =
-          requested == ShopSection.nightMarket ? ShopSection.daily : requested;
-      return MaterialPageRoute<void>(
-        settings: settings,
-        builder: (_) => ShopEditPage(section: section),
-      );
     case '/skin-picker':
       return MaterialPageRoute(
         settings: settings,

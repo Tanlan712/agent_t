@@ -24,7 +24,6 @@ import 'details/bundle_detail_page.dart'
         BundleDetailPage,
         ShopSkinDetailPage,
         sharedBundleCatalog;
-import 'shop_edit_page.dart';
 
 /// 商店造型卡片的寬高比。
 const _cardAspect = 0.78;
@@ -150,11 +149,8 @@ class MyShopPage extends StatelessWidget {
                 title: catalog.skinById(uuid)?.name ?? '造型',
                 load: loader.load)));
 
-    void edit(ShopSection section) =>
-        Navigator.pushNamed(context, '/my-shop/edit', arguments: section);
-
-    final emptyHint =
-        riot.isLoggedIn ? '按「從 Riot 同步」，或按「新增」手動輸入' : '登入 Riot 自動同步，或按「新增」手動輸入';
+    // 商店只能由登入同步取得（使用者決定 2026-10-22），不提供手動輸入。
+    final emptyHint = riot.isLoggedIn ? '按「從 Riot 同步」讀取' : '登入 Riot 後會自動同步';
 
     final dailySection = _Section(
       emptyHint: emptyHint,
@@ -166,7 +162,7 @@ class MyShopPage extends StatelessWidget {
           : dailyActive
               ? formatRemaining(shop.dailyExpiresAt!.difference(t))
               : '已過期，請更新',
-      onEdit: () => edit(ShopSection.daily),
+      onEdit: null,
       children: [
         if (shop.daily.isNotEmpty)
           // 每日 4 款排成一橫排（圖片來源只有 512 寬，卡片太大會糊）。
@@ -335,7 +331,7 @@ class MyShopPage extends StatelessWidget {
                     span: 12,
                     child: riot.isLoggedIn
                         ? const _RiotBar()
-                        : _LoginHero(onManual: () => edit(ShopSection.daily))),
+                        : const _LoginHero()),
                 // 有組合包時放在最上方；還沒有資料時放到最後，不把每日商店推下去。
                 if (bundles.isNotEmpty)
                   BentoTile(span: 12, child: bundleSection),
@@ -361,9 +357,7 @@ class MyShopPage extends StatelessWidget {
 
 /// 未登入時的登入大卡。
 class _LoginHero extends StatelessWidget {
-  final VoidCallback onManual;
-
-  const _LoginHero({required this.onManual});
+  const _LoginHero();
 
   @override
   Widget build(BuildContext context) => PanelCard(
@@ -390,7 +384,7 @@ class _LoginHero extends StatelessWidget {
                           style: TextStyle(
                               fontSize: 18, fontWeight: FontWeight.w600)),
                       SizedBox(height: 4),
-                      Text('自動讀取每日商店、夜市與錢包；也可以手動輸入商店內容',
+                      Text('自動讀取每日商店、夜市、精選組合包與錢包',
                           style:
                               TextStyle(fontSize: 14, color: AppColors.muted)),
                     ],
@@ -398,13 +392,10 @@ class _LoginHero extends StatelessWidget {
                 ),
               ],
             ),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              FilledButton(
-                onPressed: () => Navigator.pushNamed(context, '/riot-login'),
-                child: const Text('登入 Riot'),
-              ),
-              OutlinedButton(onPressed: onManual, child: const Text('手動輸入')),
-            ]),
+            FilledButton(
+              onPressed: () => Navigator.pushNamed(context, '/riot-login'),
+              child: const Text('登入 Riot'),
+            ),
           ],
         ),
       );
