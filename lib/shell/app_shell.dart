@@ -11,6 +11,8 @@ import 'nav/bottom_nav.dart';
 import 'nav/eva_nav.dart';
 import 'nav/top_nav.dart';
 import 'side_nav.dart';
+import '../theme/app_fonts.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_style.dart';
 import '../widgets/theme/style_background.dart';
 import '../widgets/hud/page_header.dart';
@@ -354,6 +356,7 @@ class _ExpiryBannerState extends State<ExpiryBanner> {
     final riot = context.watch<RiotProvider>();
     if (!riot.expiresSoon) return const SizedBox.shrink();
     final minutes = (riot.timeLeft.inSeconds / 60).ceil();
+    if (context.appStyle.id.isEva) return _EvaEmergency(minutes: minutes);
     return Container(
       key: const ValueKey('expiry-banner'),
       color: AppColors.surfaceHigh,
@@ -369,6 +372,52 @@ class _ExpiryBannerState extends State<ExpiryBanner> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// EVA 系列的到期提醒：▲ 列框住的 EMERGENCY。
+class _EvaEmergency extends StatelessWidget {
+  final int minutes;
+
+  const _EvaEmergency({required this.minutes});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    Widget triangles() => Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = 0; i < 12; i++)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Icon(Icons.change_history, size: 10, color: p.onButton),
+              ),
+          ],
+        );
+    return Container(
+      key: const ValueKey('eva-emergency'),
+      color: p.loss,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        ClipRect(child: triangles()),
+        Row(children: [
+          Text('EMERGENCY',
+              style: AppFonts.condensed(TextStyle(
+                  fontSize: 18, letterSpacing: 2, color: p.onButton))),
+          const SizedBox(width: 12),
+          Expanded(
+              child: Text('Riot 登入將在 $minutes 分鐘後過期',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: p.onButton))),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: p.onButton),
+            onPressed: () => Navigator.pushNamed(context, '/riot-login'),
+            child: const Text('重新登入'),
+          ),
+        ]),
+        ClipRect(child: triangles()),
+      ]),
     );
   }
 }

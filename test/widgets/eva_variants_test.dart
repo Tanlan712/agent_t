@@ -143,11 +143,11 @@ void main() {
   });
 
   testWidgets('StatusChip EVA：直角實心底', (tester) async {
-    final win = AppPalette.resolve(
-            const ThemeChoice(style: ThemeStyleId.evaFusion))
-        .win;
-    await pump(tester, ThemeStyleId.evaFusion,
-        StatusChip(label: 'LIVE', color: win));
+    final win =
+        AppPalette.resolve(const ThemeChoice(style: ThemeStyleId.evaFusion))
+            .win;
+    await pump(
+        tester, ThemeStyleId.evaFusion, StatusChip(label: 'LIVE', color: win));
     final c = tester.widget<Container>(find.descendant(
         of: find.byType(StatusChip), matching: find.byType(Container)));
     final d = c.decoration! as BoxDecoration;

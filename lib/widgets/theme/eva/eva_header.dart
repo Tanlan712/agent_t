@@ -9,7 +9,9 @@ import '../../../theme/app_style.dart';
 import '../../../theme/eva_names.dart';
 import '../../../theme/nav_labels_en.dart';
 import '../../../theme/theme_ids.dart';
+import 'app_activity.dart';
 import 'eva_mincho.dart';
+import 'eva_status.dart';
 
 /// 頁首的代碼行（規格 §4.1）：`CODE:HHMM / {SHARD}-TW`，HHMM 是商店刷新時間。
 abstract final class EvaCodeLine {
@@ -46,23 +48,59 @@ class EvaPageHeader extends StatelessWidget {
       return p.brightness == Brightness.light
           ? _ClassifiedHeader(title: title, route: r, actions: actions)
           : _MonitorHeader(
-              title: title, story: story, subtitle: subtitle, actions: actions);
+              title: title,
+              story: story,
+              subtitle: subtitle,
+              route: r,
+              actions: actions);
     }
-    final block = _AlertBlock(title: title, story: story, route: r);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(child: block),
-        if (style.id == ThemeStyleId.evaFusion) ...[
-          const SizedBox(width: 8),
-          const SizedBox(
-              key: ValueKey('eva-header-side'),
-              width: 128,
-              child: EvaHeaderSide()),
+    final loading = AppActivity.loading(context);
+    final fusion = style.id == ThemeStyleId.evaFusion;
+    final block =
+        _AlertBlock(title: title, story: story, route: r, loading: loading);
+    final extras = [
+      if (r == '/') const RefreshCountdown(),
+      if (fusion)
+        const SizedBox(
+            key: ValueKey('eva-header-side'),
+            width: 128,
+            child: EvaHeaderSide()),
+    ];
+    return LayoutBuilder(builder: (context, c) {
+      // 窄寬度時倒數與右側欄位移到色塊下方，避免溢出。
+      final narrow = c.maxWidth < 120 + extras.length * 180;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AlertStripe(moving: loading),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: block),
+              if (!narrow)
+                for (final e in extras) ...[const SizedBox(width: 8), e],
+              ...actions,
+            ],
+          ),
+          if (narrow && extras.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Wrap(spacing: 8, runSpacing: 6, children: extras),
+          ],
+          if (!fusion) ...[
+            const SizedBox(height: 4),
+            const SourceStatus(style: ThemeStyleId.evaAlert),
+          ],
+          if (fusion) ...[
+            const SizedBox(height: 6),
+            TransferBar(active: loading),
+            const SizedBox(height: 4),
+            const SourceStatus(style: ThemeStyleId.evaFusion),
+          ],
         ],
-        ...actions,
-      ],
-    );
+      );
+    });
   }
 }
 
@@ -71,8 +109,10 @@ class _AlertBlock extends StatelessWidget {
   final String title;
   final (String, String)? story;
   final String? route;
+  final bool loading;
 
-  const _AlertBlock({required this.title, this.story, this.route});
+  const _AlertBlock(
+      {required this.title, this.story, this.route, this.loading = false});
 
   @override
   Widget build(BuildContext context) {
@@ -90,9 +130,14 @@ class _AlertBlock extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(children: [
-            Text('PRECAUTION', style: small),
+            Flexible(
+                child: Text('PRECAUTION',
+                    maxLines: 1, overflow: TextOverflow.clip, style: small)),
             const Spacer(),
-            if (en != null) Text(en, style: small),
+            if (en != null)
+              Flexible(
+                  child: Text(en,
+                      maxLines: 1, overflow: TextOverflow.clip, style: small)),
           ]),
           Row(
             children: [
@@ -122,26 +167,59 @@ class _AlertBlock extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 3),
-          EvaTicker(color: ink),
+          EvaTicker(color: ink, moving: loading),
         ],
       ),
     );
   }
 }
 
-/// 斜向編號列（00223、00224…）；[moving] 為 true 時向左捲動（載入中）。
-class EvaTicker extends StatelessWidget {
+/// 斜向編號列（00223、00224…）；[moving] 為 true（載入中）時向左捲動。
+class EvaTicker extends StatefulWidget {
   final Color color;
   final bool moving;
 
   const EvaTicker({super.key, required this.color, this.moving = false});
 
   @override
+  State<EvaTicker> createState() => _EvaTickerState();
+}
+
+class _EvaTickerState extends State<EvaTicker>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c =
+      AnimationController(vsync: this, duration: const Duration(seconds: 6));
+
+  void _sync() {
+    final run = widget.moving && !MediaQuery.disableAnimationsOf(context);
+    if (run && !_c.isAnimating) _c.repeat();
+    if (!run && _c.isAnimating) _c.stop();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sync();
+  }
+
+  @override
+  void didUpdateWidget(EvaTicker old) {
+    super.didUpdateWidget(old);
+    _sync();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final mono = AppFonts.mono(TextStyle(fontSize: 11, color: color));
+    final mono = AppFonts.mono(TextStyle(fontSize: 11, color: widget.color));
     final row = Row(mainAxisSize: MainAxisSize.min, children: [
       for (var i = 0; i < 16; i++) ...[
-        Container(width: 20, height: 6, color: color),
+        Container(width: 20, height: 6, color: widget.color),
         const SizedBox(width: 4),
         Text('00${223 + i}', style: mono),
         const SizedBox(width: 12),
@@ -156,7 +234,12 @@ class EvaTicker extends StatelessWidget {
           child: OverflowBox(
             alignment: Alignment.centerLeft,
             maxWidth: double.infinity,
-            child: row,
+            child: AnimatedBuilder(
+              animation: _c,
+              builder: (context, child) => Transform.translate(
+                  offset: Offset(-_c.value * 400, 0), child: child),
+              child: row,
+            ),
           ),
         ),
       ),
@@ -169,10 +252,15 @@ class _MonitorHeader extends StatelessWidget {
   final String title;
   final (String, String)? story;
   final String? subtitle;
+  final String? route;
   final List<Widget> actions;
 
   const _MonitorHeader(
-      {required this.title, this.story, this.subtitle, required this.actions});
+      {required this.title,
+      this.story,
+      this.subtitle,
+      this.route,
+      required this.actions});
 
   @override
   Widget build(BuildContext context) {
@@ -183,33 +271,61 @@ class _MonitorHeader extends StatelessWidget {
       if (story != null) story!.$1,
       if (subtitle != null) subtitle!
     ].join(' / ');
-    return Row(
-      children: [
-        Container(width: 3, height: 44, color: frame),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text('${story?.$2 ?? title}:',
-                    style: AppFonts.condensed(TextStyle(
-                        fontSize: 26, letterSpacing: 1, color: frame))),
+    final loading = AppActivity.loading(context);
+    Widget row(bool narrow) => Row(
+          children: [
+            Container(width: 3, height: 44, color: frame),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text('${story?.$2 ?? title}:',
+                        style: AppFonts.condensed(TextStyle(
+                            fontSize: 26, letterSpacing: 1, color: frame))),
+                  ),
+                  Text(sub,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 13, color: p.text)),
+                ],
               ),
-              Text(sub,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13, color: p.text)),
+            ),
+            if (!narrow) ...[
+              if (route == '/') ...[
+                const RefreshCountdown(),
+                const SizedBox(width: 8),
+              ],
+              const SizedBox(width: 128, child: EvaHeaderSide()),
             ],
-          ),
-        ),
-        const SizedBox(width: 128, child: EvaHeaderSide()),
-        ...actions,
-      ],
-    );
+            ...actions,
+          ],
+        );
+    return LayoutBuilder(builder: (context, c) {
+      final narrow = c.maxWidth < 520;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          row(narrow),
+          if (narrow) ...[
+            const SizedBox(height: 6),
+            Wrap(spacing: 8, runSpacing: 6, children: [
+              if (route == '/') const RefreshCountdown(),
+              const SizedBox(width: 128, child: EvaHeaderSide()),
+            ]),
+          ],
+          const SizedBox(height: 6),
+          TransferBar(active: loading),
+          const SizedBox(height: 4),
+          const SourceStatus(style: ThemeStyleId.evaMonitor),
+        ],
+      );
+    });
   }
 }
 
@@ -255,10 +371,14 @@ class _ClassifiedHeader extends StatelessWidget {
   }
 }
 
-/// 頁首右側欄位（電源指示、標準時鐘）；內容在 eva_status.dart。
+/// 頁首右側欄位：電源指示（R1）與標準時鐘（R5）。
 class EvaHeaderSide extends StatelessWidget {
   const EvaHeaderSide({super.key});
 
   @override
-  Widget build(BuildContext context) => const SizedBox.shrink();
+  Widget build(BuildContext context) => const Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [PowerIndicator(), SizedBox(height: 4), StandardClock()],
+      );
 }
