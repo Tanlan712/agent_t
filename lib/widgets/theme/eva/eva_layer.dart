@@ -18,6 +18,7 @@ import '../../../providers/progress_provider.dart';
 import '../../../theme/app_palette.dart';
 import 'egg_detector.dart';
 import 'eva_data_eggs.dart';
+import 'eva_documents.dart';
 import 'eva_overlays.dart';
 import 'eva_terminal.dart';
 
@@ -25,8 +26,14 @@ import 'eva_terminal.dart';
 class EvaEggScope extends InheritedWidget {
   final VoidCallback onBrandTap;
 
+  /// 品牌字按右鍵或長按：開啟機密文件庫（E12）。
+  final VoidCallback onBrandSecondary;
+
   const EvaEggScope(
-      {super.key, required this.onBrandTap, required super.child});
+      {super.key,
+      required this.onBrandTap,
+      required this.onBrandSecondary,
+      required super.child});
 
   static EvaEggScope? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<EvaEggScope>();
@@ -289,6 +296,9 @@ class _EvaLayerState extends State<EvaLayer> {
     return EvaEggScope(
       onBrandTap: () {
         if (_eggsOn) _detector.tapBrand();
+      },
+      onBrandSecondary: () {
+        if (_eggsOn) _show(EvaArchive(onClose: _hide), null, egg: 'E12');
       },
       child: Listener(
         behavior: HitTestBehavior.translucent,

@@ -57,6 +57,10 @@ class EvaNav extends StatelessWidget {
                 GestureDetector(
                   key: const ValueKey('eva-brand'),
                   onTap: () => EvaEggScope.maybeOf(context)?.onBrandTap(),
+                  onSecondaryTap: () =>
+                      EvaEggScope.maybeOf(context)?.onBrandSecondary(),
+                  onLongPress: () =>
+                      EvaEggScope.maybeOf(context)?.onBrandSecondary(),
                   child: Text('VAL-SYS',
                       style: AppFonts.condensed(TextStyle(
                           fontSize: extended ? 18 : 13,
