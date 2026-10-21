@@ -60,20 +60,28 @@ class ThemePicker extends StatelessWidget {
           const SizedBox(height: 16),
           label('風格'),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              for (final s in ThemeStyleId.values)
-                _StyleThumb(
-                  key: ValueKey('theme-style-${s.name}'),
-                  choice: ThemeChoice(
-                      style: s, accent: choice.accent, mode: choice.mode),
-                  selected: s == choice.style,
-                  onTap: () => settings.setTheme(style: s.name),
-                ),
-            ],
-          ),
+          LayoutBuilder(builder: (context, c) {
+            // 窄螢幕一列兩張，其餘固定 156 寬。
+            const gap = 10.0;
+            final width = c.maxWidth < 2 * 156 + gap
+                ? ((c.maxWidth - gap) / 2).floorToDouble()
+                : 156.0;
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: [
+                for (final s in ThemeStyleId.values)
+                  _StyleThumb(
+                    key: ValueKey('theme-style-${s.name}'),
+                    width: width,
+                    choice: ThemeChoice(
+                        style: s, accent: choice.accent, mode: choice.mode),
+                    selected: s == choice.style,
+                    onTap: () => settings.setTheme(style: s.name),
+                  ),
+              ],
+            );
+          }),
           const SizedBox(height: 16),
           label('主色'),
           const SizedBox(height: 8),
@@ -103,9 +111,15 @@ class ThemePicker extends StatelessWidget {
             key: const ValueKey('theme-brightness'),
             showSelectedIcon: false,
             segments: const [
-              ButtonSegment(value: BrightnessMode.auto, label: Text('跟隨風格')),
-              ButtonSegment(value: BrightnessMode.dark, label: Text('深色')),
-              ButtonSegment(value: BrightnessMode.light, label: Text('淺色')),
+              ButtonSegment(
+                  value: BrightnessMode.auto,
+                  label: Text('跟隨風格', softWrap: false)),
+              ButtonSegment(
+                  value: BrightnessMode.dark,
+                  label: Text('深色', softWrap: false)),
+              ButtonSegment(
+                  value: BrightnessMode.light,
+                  label: Text('淺色', softWrap: false)),
             ],
             selected: {choice.mode},
             onSelectionChanged: (v) =>
@@ -131,12 +145,14 @@ class ThemePicker extends StatelessWidget {
 /// 風格縮圖：在該主題下縮小繪製頁首與卡片，所見即所得。
 class _StyleThumb extends StatelessWidget {
   final ThemeChoice choice;
+  final double width;
   final bool selected;
   final VoidCallback onTap;
 
   const _StyleThumb(
       {super.key,
       required this.choice,
+      required this.width,
       required this.selected,
       required this.onTap});
 
@@ -154,7 +170,7 @@ class _StyleThumb extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          width: 156,
+          width: width,
           padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             border: Border.all(

@@ -15,8 +15,8 @@ void main() {
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(
         useSettingsTheme: true,
-        home: const Scaffold(
-            body: SingleChildScrollView(child: ThemePicker()))));
+        home:
+            const Scaffold(body: SingleChildScrollView(child: ThemePicker()))));
     await tester.pumpAndSettle();
     return h;
   }
@@ -33,7 +33,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('theme-style-neon')));
     await tester.pumpAndSettle();
     expect(h.settings.settings.themeStyle, 'neon');
-    expect(AppColors.background,
+    expect(
+        AppColors.background,
         AppPalette.resolve(const ThemeChoice(style: ThemeStyleId.neon))
             .background);
   });
@@ -79,9 +80,25 @@ void main() {
     setWidth(tester, 375);
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(
-        home: const Scaffold(
-            body: SingleChildScrollView(child: ThemePicker()))));
+        home:
+            const Scaffold(body: SingleChildScrollView(child: ThemePicker()))));
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('375 寬一列兩張縮圖、明暗標籤不換行', (tester) async {
+    setWidth(tester, 375);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(
+        home: const Scaffold(
+            body: SingleChildScrollView(
+                padding: EdgeInsets.all(16), child: ThemePicker()))));
+    await tester.pumpAndSettle();
+    final a =
+        tester.getTopLeft(find.byKey(const ValueKey('theme-style-editorial')));
+    final b = tester.getTopLeft(find.byKey(const ValueKey('theme-style-neon')));
+    expect(b.dy, a.dy);
+    expect(tester.widget<Text>(find.text('跟隨風格')).softWrap, isFalse);
     expect(tester.takeException(), isNull);
   });
 }
