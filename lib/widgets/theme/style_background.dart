@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../providers/settings_provider.dart';
 
 import '../../theme/app_palette.dart';
 import '../../theme/theme_ids.dart';
+import 'eva/eva_background.dart';
 
 /// E 夢幻漸層的裝飾色不透明度：漸層上的 text／muted 對比仍 ≥ 4.5（有測試）。
 double dreamyDecorOpacity(Brightness b) => b == Brightness.dark ? 0.12 : 0.35;
@@ -15,6 +19,12 @@ class StyleBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (style.isEva) {
+      return EvaBackground(
+          style: style,
+          motion: context.watch<SettingsProvider>().settings.backgroundMotion,
+          child: child);
+    }
     final p = context.palette;
     final CustomPainter? painter;
     final String? key;
