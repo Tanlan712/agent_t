@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -259,14 +260,19 @@ void main() {
     testWidgets('造型資料讀取失敗可重試', (tester) async {
       setWidth(tester, 1440);
       var fail = true;
-      final flaky = ValorantApiService(
-          client: MockClient((req) async {
+      Completer<void>? hold;
+      final flaky = ValorantApiService(client: MockClient((req) async {
+        if (req.url.path == '/v1/themes') await hold?.future;
         if (req.url.path == '/v1/themes' && fail) {
           return http.Response('', 500);
         }
         return fakeApiResponse(req.url.path, {
           '/v1/bundles': [
-            {'uuid': 'b-rgx', 'displayName': 'RGX 11z Pro', 'displayIcon': null},
+            {
+              'uuid': 'b-rgx',
+              'displayName': 'RGX 11z Pro',
+              'displayIcon': null
+            },
           ],
           '/v1/themes': [
             {'uuid': 't-rgx', 'displayName': 'RGX 11z Pro'},
@@ -286,7 +292,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('造型資料讀取失敗'), findsOneWidget);
       fail = false;
+      hold = Completer<void>();
       await tester.tap(find.text('重試'));
+      await tester.pump();
+      // 重試期間顯示讀取中，不是停在錯誤畫面。
+      expect(find.text('造型資料讀取失敗'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      hold.complete();
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('db-skin-s1')), findsOneWidget);
     });
@@ -310,7 +322,10 @@ void main() {
         setWidth(tester, width);
         final h = await Harness.create(tester);
         await tester.pumpWidget(h.wrap(
-            home: AgentsPage(api: fakeApi({'/v1/agents': [agent()]}))));
+            home: AgentsPage(
+                api: fakeApi({
+          '/v1/agents': [agent()]
+        }))));
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const ValueKey('db-agent-jett')));
         await tester.pumpAndSettle();
@@ -322,7 +337,8 @@ void main() {
           await tester.scrollUntilVisible(f, 200,
               scrollable: find.byType(Scrollable).last);
           ys.add(tester.getTopLeft(f).dy +
-              tester.state<ScrollableState>(find.byType(Scrollable).last)
+              tester
+                  .state<ScrollableState>(find.byType(Scrollable).last)
                   .position
                   .pixels);
         }

@@ -73,6 +73,12 @@ class _BundleDetailPageState extends State<BundleDetailPage> {
   Widget build(BuildContext context) => FutureBuilder<BundleCatalog>(
         future: _future,
         builder: (context, snap) {
+          // 先看是否讀取中：重試時 FutureBuilder 會保留上一次的錯誤。
+          if (snap.connectionState == ConnectionState.waiting) {
+            return DetailScaffold(title: widget.name, children: const [
+              Center(child: CircularProgressIndicator()),
+            ]);
+          }
           if (snap.hasError) {
             return DetailScaffold(title: widget.name, children: [
               PanelCard(

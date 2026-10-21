@@ -121,7 +121,7 @@ class AppShell extends StatelessWidget {
                         color: AppColors.primary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold)),
-                actions: const [_RiotStatus(compact: true)])
+                actions: const [_RiotStatus(compact: true, appBar: true)])
             : null,
         drawer: top && style.nav == NavLayout.topHamburger
             ? Drawer(
@@ -319,7 +319,11 @@ class _RiotStatus extends StatelessWidget {
   /// 頂部列寬螢幕：圖示＋名稱的文字按鈕。
   final bool inline;
 
-  const _RiotStatus({required this.compact, this.inline = false});
+  /// 手機上方列：不加側欄底部的留白，與返回鍵垂直置中。
+  final bool appBar;
+
+  const _RiotStatus(
+      {required this.compact, this.inline = false, this.appBar = false});
 
   @override
   Widget build(BuildContext context) {
@@ -345,7 +349,7 @@ class _RiotStatus extends StatelessWidget {
     }
     if (compact) {
       return Padding(
-        padding: const EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.only(bottom: appBar ? 0 : 12),
         child: IconButton(
           key: const ValueKey('nav-riot'),
           tooltip: label,

@@ -122,6 +122,18 @@ void main() {
     expect(find.byType(BackButton), findsNothing);
   });
 
+  testWidgets('400 寬：上方列的 Riot 狀態圖示與返回鍵垂直置中對齊', (tester) async {
+    setWidth(tester, 400);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(home: shell()));
+    await tester.pumpAndSettle();
+    final buttons = find.descendant(
+        of: find.byType(AppBar), matching: find.byType(IconButton));
+    final home = tester.getCenter(find.byKey(const ValueKey('shell-home')));
+    final riot = tester.getCenter(buttons.last);
+    expect(riot.dy, closeTo(home.dy, 1));
+  });
+
   testWidgets('首頁即使疊在其他頁面上也沒有返回鍵', (tester) async {
     setWidth(tester, 400);
     final h = await Harness.create(tester);
