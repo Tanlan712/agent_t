@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 import 'layout.dart';
 import 'nav_items.dart';
 import 'nav/bottom_nav.dart';
+import 'nav/eva_nav.dart';
 import 'nav/top_nav.dart';
 import 'side_nav.dart';
 import '../theme/app_style.dart';
@@ -124,7 +125,15 @@ class AppShell extends StatelessWidget {
           style: style.id,
           child: Row(
             children: [
-              if (side)
+              if (side && style.nav == NavLayout.evaColumn)
+                EvaNav(
+                  currentRoute: currentRoute,
+                  extended: extended,
+                  style: style.id,
+                  onSelect: go,
+                  footer: _RiotStatus(compact: !extended),
+                )
+              else if (side)
                 SideNav(
                   currentRoute: currentRoute,
                   // D 終端機一律是窄側欄。
@@ -134,7 +143,8 @@ class AppShell extends StatelessWidget {
                   footer: _RiotStatus(
                       compact: !extended || style.nav == NavLayout.sideRail),
                 ),
-              if (side) const VerticalDivider(width: 1),
+              if (side && style.nav != NavLayout.evaColumn)
+                const VerticalDivider(width: 1),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
