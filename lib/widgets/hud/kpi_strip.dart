@@ -41,9 +41,21 @@ class KpiTile extends StatelessWidget {
               children: [
                 Text(label, style: AppText.label),
                 const SizedBox(height: 2),
-                Text(value,
-                    style: AppText.kpi(context),
-                    overflow: TextOverflow.ellipsis),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(value,
+                          style: AppText.kpi(context),
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                    if (up != null && delta == null) ...[
+                      const SizedBox(width: 4),
+                      Icon(up! ? Icons.arrow_upward : Icons.arrow_downward,
+                          size: 18, color: color),
+                    ],
+                  ],
+                ),
                 if (delta != null)
                   Row(
                     mainAxisSize: MainAxisSize.min,

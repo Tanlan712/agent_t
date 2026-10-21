@@ -7,7 +7,6 @@ import '../providers/match_history_provider.dart';
 import '../providers/match_reference_provider.dart';
 import '../providers/riot_provider.dart';
 import '../shell/app_shell.dart';
-import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
@@ -18,6 +17,12 @@ String formatMatchTime(DateTime t) =>
     '${t.month}/${t.day} ${_two(t.hour)}:${_two(t.minute)}';
 
 String formatRr(int rr) => rr > 0 ? '+$rr' : '$rr';
+
+/// 近幾場 RR 合計的方向：正數上升、負數下降、0 或沒有資料為 null。
+bool? rrUp(List<int> rr) {
+  final sum = rr.fold<int>(0, (a, b) => a + b);
+  return sum == 0 ? null : sum > 0;
+}
 
 String resultLabel(bool? won) => won == null ? '平' : (won ? '勝' : '敗');
 
@@ -55,17 +60,20 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
 
     final Widget body;
     if (!riot.isLoggedIn) {
-      body = Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('登入 Riot 以查看對戰紀錄'),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: () => Navigator.pushNamed(context, '/riot-login'),
-              child: const Text('登入 Riot'),
+      body = Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 24),
+          child: PanelCard(
+            padding: const EdgeInsets.all(32),
+            child: EmptyState(
+              icon: Icons.history,
+              title: '登入 Riot 以查看對戰紀錄',
+              message: '登入後會列出最近的對戰、RR 變化與表現',
+              actionLabel: '登入 Riot',
+              onAction: () => Navigator.pushNamed(context, '/riot-login'),
             ),
-          ],
+          ),
         ),
       );
     } else if (history.entries.isEmpty && history.isLoading) {
@@ -74,9 +82,7 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
       body = ListView(
         padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
-          _RankHeader(rank: history.rank, recentRr: history.recentRr, ref: ref),
-          const SizedBox(height: 8),
-          _HistoryKpi(history: history),
+          _HistoryKpi(history: history, ref: ref),
           if (history.error case final e?)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -95,13 +101,12 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
               ),
             ),
           const SizedBox(height: 16),
-          ResponsiveGrid(
-            minTileWidth: 420,
-            childAspectRatio: 3.4,
-            children: [
-              for (final e in history.entries) MatchCard(entry: e, ref: ref),
-            ],
-          ),
+          // 列表：每場一列，細邊框＋左側勝負色條。
+          for (final e in history.entries)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: SizedBox(height: 76, child: MatchCard(entry: e, ref: ref)),
+            ),
           if (history.hasMore)
             Padding(
               padding: const EdgeInsets.only(top: 16),
@@ -133,8 +138,9 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
 /// 頁首 KPI：只用已載入的資料計算（近 5 場 RR 合計、勝率、平均 ACS）。
 class _HistoryKpi extends StatelessWidget {
   final MatchHistoryProvider history;
+  final MatchReferenceProvider ref;
 
-  const _HistoryKpi({required this.history});
+  const _HistoryKpi({required this.history, required this.ref});
 
   @override
   Widget build(BuildContext context) {
@@ -146,22 +152,40 @@ class _HistoryKpi extends StatelessWidget {
     final rrSum = rr.fold<int>(0, (a, b) => a + b);
     final decided = details.where((s) => s.won != null).toList();
     final wins = decided.where((s) => s.won == true).length;
-    return KpiStrip(key: const ValueKey('history-kpi'), tiles: [
-      KpiTile(
-        label: '近 ${rr.length} 場 RR',
-        value: rr.isEmpty ? '—' : formatRr(rrSum),
-        up: rr.isEmpty ? null : rrSum >= 0,
+    return BentoGrid(key: const ValueKey('history-kpi'), children: [
+      BentoTile(
+          span: 4,
+          child: _RankHeader(
+              key: const ValueKey('history-rank'),
+              rank: history.rank,
+              recentRr: rr,
+              ref: ref)),
+      BentoTile(
+        span: 3,
+        child: KpiTile(
+          key: const ValueKey('kpi-rr'),
+          label: '近 ${rr.length} 場 RR',
+          value: rr.isEmpty ? '—' : formatRr(rrSum),
+          up: rrUp(rr),
+        ),
       ),
-      KpiTile(
-        label: '勝率（${decided.length} 場）',
-        value:
-            decided.isEmpty ? '—' : '${(wins / decided.length * 100).round()}%',
+      BentoTile(
+        span: 2,
+        child: KpiTile(
+          label: '勝率（${decided.length} 場）',
+          value: decided.isEmpty
+              ? '—'
+              : '${(wins / decided.length * 100).round()}%',
+        ),
       ),
-      KpiTile(
-        label: '平均 ACS',
-        value: details.isEmpty
-            ? '—'
-            : '${(details.fold<int>(0, (a, s) => a + s.acs) / details.length).round()}',
+      BentoTile(
+        span: 3,
+        child: KpiTile(
+          label: '平均 ACS',
+          value: details.isEmpty
+              ? '—'
+              : '${(details.fold<int>(0, (a, s) => a + s.acs) / details.length).round()}',
+        ),
       ),
     ]);
   }
@@ -173,17 +197,20 @@ class _RankHeader extends StatelessWidget {
   final MatchReferenceProvider ref;
 
   const _RankHeader(
-      {required this.rank, required this.recentRr, required this.ref});
+      {super.key,
+      required this.rank,
+      required this.recentRr,
+      required this.ref});
 
   @override
   Widget build(BuildContext context) {
     final rank = this.rank;
     final tier = rank == null ? null : ref.tier(rank.tier);
-    return Card(
+    return PanelCard(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.zero,
         child: Wrap(
-          spacing: 16,
+          spacing: 12,
           runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
@@ -223,7 +250,7 @@ class MatchCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final d = entry.detail;
     if (d == null) {
-      return Card(
+      return PanelCard(
         key: ValueKey('match-card-${entry.ref.matchId}'),
         child: Center(
           child: Text(entry.failed ? '無法載入這場' : '載入中…',
@@ -234,69 +261,66 @@ class MatchCard extends StatelessWidget {
     final s = d.summary;
     final map = ref.map(s.mapId);
     final agent = ref.agent(s.myAgentId);
-    return Card(
+    return PanelCard(
       key: ValueKey('match-card-${s.matchId}'),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        // 玩家頁的場次不在自己的紀錄裡，直接把詳情傳給詳情頁。
-        onTap: () => Navigator.pushNamed(context, '/matches/detail',
-            arguments: otherPlayer ? d : entry.ref.matchId),
-        child: Row(
-          children: [
-            Container(width: 6, color: resultColor(s.won)),
-            SizedBox(width: 72, child: SkinIcon(url: map.iconUrl)),
-            const SizedBox(width: 12),
-            SizedBox(
-                width: 40, height: 40, child: SkinIcon(url: agent.iconUrl)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(map.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  Text(queueName(s.queueId),
-                      style: const TextStyle(
-                          color: AppColors.muted, fontSize: 12)),
-                  Text(formatMatchTime(entry.ref.startTime),
-                      style: const TextStyle(
-                          color: AppColors.muted, fontSize: 12)),
-                ],
-              ),
+      accent: resultColor(s.won),
+      padding: EdgeInsets.zero,
+      // 玩家頁的場次不在自己的紀錄裡，直接把詳情傳給詳情頁。
+      onTap: () => Navigator.pushNamed(context, '/matches/detail',
+          arguments: otherPlayer ? d : entry.ref.matchId),
+      child: Row(
+        children: [
+          SizedBox(width: 72, child: SkinIcon(url: map.iconUrl)),
+          const SizedBox(width: 12),
+          SizedBox(width: 40, height: 40, child: SkinIcon(url: agent.iconUrl)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(map.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(queueName(s.queueId),
+                    style:
+                        const TextStyle(color: AppColors.muted, fontSize: 12)),
+                Text(formatMatchTime(entry.ref.startTime),
+                    style:
+                        const TextStyle(color: AppColors.muted, fontSize: 12)),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(resultLabel(s.won),
-                          style: TextStyle(
-                              color: resultColor(s.won),
-                              fontWeight: FontWeight.bold)),
-                      const SizedBox(width: 8),
-                      Text('${s.myScore} : ${s.enemyScore}'),
-                    ],
-                  ),
-                  Text('${s.kills} / ${s.deaths} / ${s.assists}'),
-                  if (otherPlayer)
-                    Text('ACS ${s.acs}',
-                        style: const TextStyle(
-                            color: AppColors.muted, fontSize: 12)),
-                  if (s.rrChange case final rr?)
-                    Text(formatRr(rr),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(resultLabel(s.won),
                         style: TextStyle(
-                            color: rr >= 0 ? AppColors.owned : AppColors.error,
+                            color: resultColor(s.won),
                             fontWeight: FontWeight.bold)),
-                ],
-              ),
+                    const SizedBox(width: 8),
+                    Text('${s.myScore} : ${s.enemyScore}'),
+                  ],
+                ),
+                Text('${s.kills} / ${s.deaths} / ${s.assists}'),
+                if (otherPlayer)
+                  Text('ACS ${s.acs}',
+                      style: const TextStyle(
+                          color: AppColors.muted, fontSize: 12)),
+                if (s.rrChange case final rr?)
+                  Text(formatRr(rr),
+                      style: TextStyle(
+                          color: rr >= 0 ? AppColors.owned : AppColors.error,
+                          fontWeight: FontWeight.bold)),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

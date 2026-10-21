@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/match_models.dart';
 import '../providers/seen_players_provider.dart';
 import '../shell/app_shell.dart';
+import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
 import 'match_history_page.dart' show formatMatchTime;
@@ -60,7 +61,7 @@ class _SeenPlayersPageState extends State<SeenPlayersPage> {
       body = Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.only(bottom: 16),
             child: TextField(
               decoration: const InputDecoration(
                 prefixIcon: Icon(Icons.search),
@@ -72,26 +73,34 @@ class _SeenPlayersPageState extends State<SeenPlayersPage> {
           Expanded(
             child: list.isEmpty
                 ? const EmptyState(icon: Icons.person_search, title: '找不到符合的玩家')
-                : ListView.builder(
+                : ResponsiveGridView.builder(
+                    minTileWidth: 280,
+                    childAspectRatio: 3.6,
+                    padding: const EdgeInsets.only(bottom: 16),
                     itemCount: list.length,
                     itemBuilder: (context, i) {
                       final p = list[i];
-                      return ListTile(
-                        leading: const Icon(Icons.person_outline),
-                        title: Text(p.riotId),
-                        subtitle: Text(
-                            '最後遇到：${p.lastSeenKnown ? formatMatchTime(p.lastSeen) : '—'}',
-                            style: const TextStyle(color: AppColors.muted)),
-                        trailing: IconButton(
-                          key: ValueKey('seen-delete-${p.puuid}'),
-                          icon: const Icon(Icons.delete_outline),
-                          tooltip: '刪除',
-                          onPressed: () => seen.remove(p.puuid),
+                      return PanelCard(
+                        padding: EdgeInsets.zero,
+                        child: Center(
+                          child: ListTile(
+                            leading: const Icon(Icons.person_outline),
+                            title: Text(p.riotId),
+                            subtitle: Text(
+                                '最後遇到：${p.lastSeenKnown ? formatMatchTime(p.lastSeen) : '—'}',
+                                style: const TextStyle(color: AppColors.muted)),
+                            trailing: IconButton(
+                              key: ValueKey('seen-delete-${p.puuid}'),
+                              icon: const Icon(Icons.delete_outline),
+                              tooltip: '刪除',
+                              onPressed: () => seen.remove(p.puuid),
+                            ),
+                            onTap: () => Navigator.pushNamed(
+                                context, '/players/detail',
+                                arguments: PlayerRef(
+                                    puuid: p.puuid, riotId: p.riotId)),
+                          ),
                         ),
-                        onTap: () => Navigator.pushNamed(
-                            context, '/players/detail',
-                            arguments:
-                                PlayerRef(puuid: p.puuid, riotId: p.riotId)),
                       );
                     },
                   ),
@@ -108,6 +117,7 @@ class _SeenPlayersPageState extends State<SeenPlayersPage> {
     return AppShell(
       currentRoute: '/players',
       title: '遇過的玩家',
+      subtitle: seen.players.isEmpty ? null : '${seen.players.length} 位玩家',
       actions: [
         if (seen.players.isNotEmpty)
           TextButton(

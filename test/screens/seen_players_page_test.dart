@@ -44,6 +44,20 @@ void main() {
     expect(find.textContaining('請勿公開或分享他人資訊'), findsOneWidget);
   });
 
+  testWidgets('Bento：1440 寬玩家卡片多欄排列，頁首顯示人數', (tester) async {
+    setWidth(tester, 1440);
+    final h = await seeded(tester);
+    await open(tester, h);
+    final tops = [
+      for (final e in find.byType(PanelCard).evaluate())
+        tester.getTopLeft(find.byWidget(e.widget)).dy,
+    ];
+    expect(tops.length, greaterThan(1));
+    expect(tops.toSet().length, lessThan(tops.length));
+    expect(find.byType(PanelCard), findsWidgets);
+    expect(find.textContaining('位玩家'), findsOneWidget);
+  });
+
   testWidgets('搜尋 Riot ID', (tester) async {
     setWidth(tester, 1400);
     final h = await seeded(tester);

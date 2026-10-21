@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:valorant_shop_tracker/theme/app_theme.dart';
 import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -421,6 +422,61 @@ void scoreboardTests() {
       expect(kpi('+3'), findsOneWidget);
       expect(kpi('100%'), findsOneWidget);
       expect(kpi('191'), findsOneWidget);
+    });
+
+    test('rrUp：正數上升、負數下降、0 與沒有資料為中性', () {
+      expect(rrUp(const [18, -15]), isTrue);
+      expect(rrUp(const [-18, 5]), isFalse);
+      expect(rrUp(const [10, -10]), isNull);
+      expect(rrUp(const []), isNull);
+    });
+
+    testWidgets('Bento：1440 寬牌位卡與 RR 同一列、RR 有上升箭頭', (tester) async {
+      setWidth(tester, 1440);
+      final h =
+          await Harness.create(tester, riotHttp: riotClient(historyTotal: 3));
+      await tester.runAsync(() => h.riot.login(fakeRedirect));
+      await tester.pumpWidget(h.wrap(home: const MatchHistoryPage()));
+      await tester.pump();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 80)));
+      await tester.pumpAndSettle();
+      final rank =
+          tester.getTopLeft(find.byKey(const ValueKey('history-rank')));
+      final rr = tester.getTopLeft(find.byKey(const ValueKey('kpi-rr')));
+      expect(rr.dy, rank.dy);
+      expect(rr.dx, greaterThan(rank.dx));
+      expect(
+          find.descendant(
+              of: find.byKey(const ValueKey('kpi-rr')),
+              matching: find.byIcon(Icons.arrow_upward)),
+          findsOneWidget);
+    });
+
+    testWidgets('Bento：對戰列是可點擊的卡片，左側勝負色條', (tester) async {
+      setWidth(tester, 1440);
+      final h =
+          await Harness.create(tester, riotHttp: riotClient(historyTotal: 3));
+      await tester.runAsync(() => h.riot.login(fakeRedirect));
+      await tester.pumpWidget(h.wrap(home: const MatchHistoryPage()));
+      await tester.pump();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 80)));
+      await tester.pumpAndSettle();
+      final card = find.byKey(const ValueKey('match-card-m1'));
+      expect(tester.widget<PanelCard>(card).onTap, isNotNull);
+      final bar = tester.widget<Container>(find.descendant(
+          of: card, matching: find.byKey(const ValueKey('panel-accent'))));
+      expect(bar.color, AppColors.win);
+    });
+
+    testWidgets('Bento：未登入時顯示空狀態卡與登入按鈕', (tester) async {
+      setWidth(tester, 1440);
+      final h = await Harness.create(tester);
+      await tester.pumpWidget(h.wrap(home: const MatchHistoryPage()));
+      await tester.pumpAndSettle();
+      expect(find.byType(EmptyState), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, '登入 Riot'), findsOneWidget);
     });
 
     testWidgets('詳情：數字欄等寬、MVP 是 StatusChip', (tester) async {
