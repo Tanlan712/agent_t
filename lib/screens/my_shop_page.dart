@@ -17,6 +17,12 @@ import '../widgets/catalog_gate.dart';
 import '../widgets/hud/hud.dart';
 import '../widgets/skin_card.dart';
 import '../widgets/skin_tile.dart' show wishlistGold;
+import 'details/bundle_detail_page.dart'
+    show
+        BundleCatalogLoader,
+        BundleDetailPage,
+        ShopSkinDetailPage,
+        sharedBundleCatalog;
 import 'shop_edit_page.dart';
 
 /// 商店造型卡片的寬高比。
@@ -26,6 +32,10 @@ String formatRemaining(Duration d) =>
     '剩餘 ${d.inHours} 小時 ${d.inMinutes % 60} 分';
 
 String _compact(Duration d) => '${d.inHours} 小時 ${d.inMinutes % 60} 分';
+
+/// KPI 用的短格式（時:分），窄欄也放得下。
+String _clock(Duration d) =>
+    '${d.inHours}:${(d.inMinutes % 60).toString().padLeft(2, '0')}';
 
 int _discount(int original, int now) =>
     original <= 0 ? 0 : ((1 - now / original) * 100).round();
@@ -68,7 +78,10 @@ class _ShopKpi extends StatelessWidget {
 class MyShopPage extends StatelessWidget {
   final DateTime Function() now;
 
-  const MyShopPage({super.key, this.now = DateTime.now});
+  /// 造型等級／炫彩與組合包內容的公開資料（測試時注入）。
+  final BundleCatalogLoader? catalogLoader;
+
+  const MyShopPage({super.key, this.now = DateTime.now, this.catalogLoader});
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +97,15 @@ class MyShopPage extends StatelessWidget {
         highlight ? wishlistUuidsInShop(shop, wishlist.uuids, t) : <String>{};
     final dailyActive = isDailyActive(shop, t);
     final nightActive = isNightMarketActive(shop, t);
+
+    final loader = catalogLoader ?? sharedBundleCatalog;
+    void openSkin(String uuid) => Navigator.push(
+        context,
+        MaterialPageRoute<void>(
+            builder: (_) => ShopSkinDetailPage(
+                skinUuid: uuid,
+                title: catalog.skinById(uuid)?.name ?? '造型',
+                load: loader.load)));
 
     void edit(ShopSection section) =>
         Navigator.pushNamed(context, '/my-shop/edit', arguments: section);
@@ -116,6 +138,8 @@ class MyShopPage extends StatelessWidget {
               children: [
                 for (final e in shop.daily)
                   SkinCard(
+                    key: ValueKey('shop-skin-${e.skinUuid}'),
+                    onTap: () => openSkin(e.skinUuid),
                     skin: catalog.skinById(e.skinUuid),
                     price: e.price,
                     highlighted: dailyActive && matched.contains(e.skinUuid),
@@ -148,6 +172,8 @@ class MyShopPage extends StatelessWidget {
             children: [
               for (final e in shop.nightMarket)
                 SkinCard(
+                  key: ValueKey('shop-night-${e.skinUuid}'),
+                  onTap: () => openSkin(e.skinUuid),
                   skin: catalog.skinById(e.skinUuid),
                   price: e.discountedPrice,
                   originalPrice: e.originalPrice,
@@ -172,9 +198,18 @@ class MyShopPage extends StatelessWidget {
       children: [
         if (shop.featuredBundle case final b?)
           BundleTile(
+              key: const ValueKey('shop-bundle'),
               bundle: catalog.bundleById(b.bundleUuid),
               price: b.price,
-              banner: true),
+              banner: true,
+              onTap: catalog.bundleById(b.bundleUuid) == null
+                  ? null
+                  : () => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                          builder: (_) => BundleDetailPage(
+                              name: catalog.bundleById(b.bundleUuid)!.name,
+                              load: loader.load)))),
       ],
     );
 
@@ -201,7 +236,7 @@ class MyShopPage extends StatelessWidget {
                   daily: shop.daily.isEmpty
                       ? '—'
                       : dailyActive
-                          ? _compact(shop.dailyExpiresAt!.difference(t))
+                          ? _clock(shop.dailyExpiresAt!.difference(t))
                           : '已過期',
                   wallet: riot.wallet,
                   owned:

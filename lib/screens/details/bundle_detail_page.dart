@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../logic/database_logic.dart';
 import '../../models/game_data.dart';
+import '../../services/valorant_api_service.dart';
 import '../../shell/responsive_grid.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/hud/hud.dart';
@@ -15,6 +16,36 @@ class BundleCatalog {
 
   const BundleCatalog({required this.themes, required this.skins});
 }
+
+/// 下載並快取 [BundleCatalog]：第一次需要時才下載，之後重用；失敗時清掉以便重試。
+class BundleCatalogLoader {
+  final ValorantApiService _api;
+  Future<BundleCatalog>? _catalog;
+
+  BundleCatalogLoader([ValorantApiService? api])
+      : _api = api ?? ValorantApiService();
+
+  Future<BundleCatalog> load() => _catalog ??= () async {
+        try {
+          final themes = await _api.getThemes();
+          final weapons = await _api.getWeapons();
+          return BundleCatalog(
+            themes: [for (final t in themes) ThemeRef.fromJson(t)],
+            skins: [
+              for (final w in weapons)
+                for (final s in (w['skins'] as List? ?? const []))
+                  if (s is Map<String, dynamic>) SkinInfo.fromJson(s),
+            ],
+          );
+        } catch (_) {
+          _catalog = null;
+          rethrow;
+        }
+      }();
+}
+
+/// 整個 App 共用（公開資料，不含個人資訊）。
+final sharedBundleCatalog = BundleCatalogLoader();
 
 /// 組合包詳細頁：依主題名稱配對的槍枝造型；點造型看等級與炫彩。
 class BundleDetailPage extends StatefulWidget {
@@ -210,5 +241,69 @@ class SkinDetailPage extends StatelessWidget {
                 ]),
           ),
         ],
+      );
+}
+
+/// 從商店開啟的造型頁：用造型 uuid 在 [BundleCatalog] 找到造型後顯示等級與炫彩。
+class ShopSkinDetailPage extends StatefulWidget {
+  final String skinUuid;
+  final String title;
+  final Future<BundleCatalog> Function() load;
+  final Future<bool> Function(Uri) launch;
+
+  const ShopSkinDetailPage({
+    super.key,
+    required this.skinUuid,
+    required this.title,
+    required this.load,
+    this.launch = openInNewTab,
+  });
+
+  @override
+  State<ShopSkinDetailPage> createState() => _ShopSkinDetailPageState();
+}
+
+class _ShopSkinDetailPageState extends State<ShopSkinDetailPage> {
+  late Future<BundleCatalog> _future = widget.load();
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<BundleCatalog>(
+        future: _future,
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return DetailScaffold(title: widget.title, children: const [
+              Center(child: CircularProgressIndicator()),
+            ]);
+          }
+          if (snap.hasError) {
+            return DetailScaffold(title: widget.title, children: [
+              PanelCard(
+                padding: const EdgeInsets.all(24),
+                child: EmptyState(
+                  icon: Icons.cloud_off,
+                  title: '造型資料讀取失敗',
+                  message: '請稍後再試',
+                  actionLabel: '重試',
+                  onAction: () => setState(() {
+                    _future = widget.load();
+                  }),
+                ),
+              ),
+            ]);
+          }
+          final skin = snap.data!.skins
+              .where((s) => s.uuid == widget.skinUuid)
+              .firstOrNull;
+          if (skin == null) {
+            return DetailScaffold(title: widget.title, children: const [
+              PanelCard(
+                padding: EdgeInsets.all(24),
+                child:
+                    EmptyState(icon: Icons.help_outline, title: '找不到這款造型的資料'),
+              ),
+            ]);
+          }
+          return SkinDetailPage(skin: skin, launch: widget.launch);
+        },
       );
 }

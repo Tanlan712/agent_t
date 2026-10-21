@@ -260,7 +260,7 @@ void layoutTests() {
       Finder kpi(String t) => find.descendant(
           of: find.byKey(const ValueKey('shop-kpi')), matching: find.text(t));
       expect(kpi('商店刷新'), findsOneWidget);
-      expect(kpi('22 小時 0 分'), findsOneWidget);
+      expect(kpi('22:00'), findsOneWidget);
       expect(kpi('VP'), findsNothing);
     });
 

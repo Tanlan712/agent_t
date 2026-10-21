@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../models/game_data.dart';
 import '../shell/app_shell.dart';
 import 'details/bundle_detail_page.dart';
 import 'details/detail_scaffold.dart';
@@ -23,26 +22,10 @@ class _BundlesPageState extends State<BundlesPage> {
   late final ValorantApiService _apiService =
       widget.api ?? ValorantApiService();
 
-  /// 主題與造型：第一次點組合包時才下載，之後重用；失敗時清掉以便重試。
-  Future<BundleCatalog>? _catalog;
-
-  Future<BundleCatalog> _loadCatalog() => _catalog ??= () async {
-        try {
-          final themes = await _apiService.getThemes();
-          final weapons = await _apiService.getWeapons();
-          return BundleCatalog(
-            themes: [for (final t in themes) ThemeRef.fromJson(t)],
-            skins: [
-              for (final w in weapons)
-                for (final s in (w['skins'] as List? ?? const []))
-                  if (s is Map<String, dynamic>) SkinInfo.fromJson(s),
-            ],
-          );
-        } catch (_) {
-          _catalog = null;
-          rethrow;
-        }
-      }();
+  /// 主題與造型：第一次點組合包時才下載，之後重用（注入服務時各自快取）。
+  late final BundleCatalogLoader _catalog = widget.api == null
+      ? sharedBundleCatalog
+      : BundleCatalogLoader(widget.api);
   List<Map<String, dynamic>> _bundles = [];
   bool _isLoading = true;
   String? _error;
@@ -127,7 +110,7 @@ class _BundlesPageState extends State<BundlesPage> {
             MaterialPageRoute<void>(
                 builder: (_) => BundleDetailPage(
                     name: displayName,
-                    load: _loadCatalog,
+                    load: _catalog.load,
                     launch: widget.launch))),
         child: Stack(
           fit: StackFit.expand,
