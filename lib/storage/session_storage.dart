@@ -10,9 +10,20 @@ import '../models/riot_session.dart';
 class SessionStorage {
   static const key = 'riotSession';
 
+  /// App 內登入後設為 true：之後由內嵌頁在背景自動續期（AGENTS.md 第 3 節）；不含 token。
+  static const autoRenewKey = 'riotAutoRenew';
+
   final SharedPreferences _prefs;
 
   SessionStorage(this._prefs);
+
+  /// 最近一次 [load] 讀到的是已過期的登入資訊（已刪除）；用來提示重新登入。
+  bool expiredOnLoad = false;
+
+  bool get autoRenew => _prefs.getBool(autoRenewKey) ?? false;
+
+  Future<void> setAutoRenew(bool on) =>
+      on ? _prefs.setBool(autoRenewKey, true) : _prefs.remove(autoRenewKey);
 
   /// 讀回未過期的登入資訊；沒有、損毀或已過期時刪除並回傳 null。
   RiotSession? load(DateTime now) {
@@ -26,6 +37,7 @@ class SessionStorage {
       debugPrint('$key 資料損壞，已刪除：${e.runtimeType}');
     }
     if (session == null || !now.isBefore(session.expiresAt)) {
+      expiredOnLoad = session != null;
       clear();
       return null;
     }

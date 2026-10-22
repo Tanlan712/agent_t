@@ -94,12 +94,14 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
   Future<void> _openInAppLogin() async {
     final url = await widget.openInAppLogin(context);
     if (url == null || !mounted) return;
-    await _loginWith(url);
+    // App 內登入的 Riot 登入記錄留在內嵌頁，之後可以在背景續期（AGENTS.md 第 3 節）。
+    await _loginWith(url, autoRenew: true);
   }
 
-  Future<void> _loginWith(String url) async {
-    final error =
-        await context.read<RiotProvider>().login(url, fallbackShard: _shard);
+  Future<void> _loginWith(String url, {bool autoRenew = false}) async {
+    final error = await context
+        .read<RiotProvider>()
+        .login(url, fallbackShard: _shard, autoRenew: autoRenew);
     if (!mounted) return;
     setState(() => _error = error);
     if (error == null) _controller.clear();
@@ -109,6 +111,7 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
   Widget build(BuildContext context) {
     final riot = context.watch<RiotProvider>();
     final session = riot.session;
+    final inApp = widget.inAppLoginAvailable ?? inAppLoginSupported;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Riot 帳號')),
@@ -149,14 +152,15 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
                 ),
                 OutlinedButton(onPressed: riot.logout, child: const Text('登出')),
               ] else ...[
-                if (widget.inAppLoginAvailable ?? inAppLoginSupported) ...[
+                if (inApp) ...[
                   FilledButton.icon(
                     onPressed: riot.isBusy ? null : _openInAppLogin,
                     icon: const Icon(Icons.login),
                     label: const Text('在 App 內登入 Riot'),
                   ),
                   const SizedBox(height: 8),
-                  const Text('在 Riot 官方頁面登入後會自動回到 App。'
+                  const Text('在 Riot 官方頁面登入後會自動回到 App，之後 App 會在背景自動續期，'
+                      '直到 Riot 要求重新輸入密碼（按「登出」會一併清除）。'
                       '登入不了時，也可以改用下面的網頁登入方式。'),
                   const SizedBox(height: 16),
                 ],

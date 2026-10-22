@@ -170,7 +170,7 @@ class LivePartyProvider with ChangeNotifier {
       if (_disposed) return;
       if (e.statusCode == 401) {
         stop();
-        _riot.logout();
+        _riot.expire();
         _party = null;
         _liveMatch = null;
         _status = LiveStatus.loggedOut;

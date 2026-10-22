@@ -278,7 +278,7 @@ class RecentFormLoader with ChangeNotifier {
       } on RiotApiException {
         // _loadProfile 只在 401 時拋出：登出並讓排隊中的工作失敗。
         if (_disposed) return;
-        _riot.logout();
+        _riot.expire();
         _failAll(key);
       } on _Cancelled {
         return;
@@ -298,7 +298,7 @@ class RecentFormLoader with ChangeNotifier {
     } on RiotApiException catch (e) {
       if (_disposed) return;
       if (e.statusCode == 401) {
-        _riot.logout();
+        _riot.expire();
         _failAll(key);
         return;
       }

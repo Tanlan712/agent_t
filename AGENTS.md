@@ -93,8 +93,15 @@ Riot 的第三方 App 說明指出：暴露隱藏資訊、即時分析或帶來�
   不得加 JavaScript channel、不得讀取表單或 cookie 的內容。
 - 偵測到跳轉到 `https://playvalorant.com/opt_in#access_token=…` 時攔下這次導覽（不載入 playvalorant.com），
   只把網址交給既有的 `RiotProvider.login`；網址與 token 不寫入 log。
-- **不做** token 自動續期（用 Riot 的 `ssid` cookie 重新授權等於模擬 Riot Client 登入，ToS 風險較高）；
-  過期後由使用者再按一次登入。WebView 自己保存的 Riot 登入 cookie 只由 WebView 使用，效果和瀏覽器的「保持登入」相同。
+- **使用者決定（2026-10-22）**：App 背景自動續期。上次是在 App 內登入（`SessionStorage.autoRenewKey`）、
+  且 token 剩不到 10 分鐘或已過期時，`RiotAutoRenew` 在 1×1、不接收點擊的內嵌頁重開 `riotLoginUrl`，
+  攔下跳轉網址交給 `RiotProvider.renew`。仍然**不得**讀取、保存或重送 `ssid` 等 cookie，
+  cookie 只由 WebView 自己帶；Riot 要求輸入密碼時 45 秒逾時放棄，連續失敗 3 次就停止，由使用者自己登入。
+  按「登出」會停止續期並清除 WebView 的 Riot cookie。網頁版做不到（瀏覽器讀不到 Riot 的 cookie），
+  只提供過期時的一鍵重新登入。
+  已向使用者說明風險：等於社群的 Cookie Reauth，Riot 可能視為自動化登入；
+  手機被別人拿走時，在 Riot 登入記錄過期前（約數週）對方都能讀取帳號資料。
+  拿不到 refresh token：目前的隱含流程不發 refresh token，`/token` 端點要 Riot 核准的 RSO client secret。
 - 允許的主機、只讀與頻率限制與上表完全相同；原生 App 沒有 CORS 限制，**不可**因此呼叫上表以外的端點。
 - APK／IPA 由 GitHub Actions 建置並放在 GitHub Release（iOS 是未簽章的 IPA，由使用者自己簽章）；`lib/` 仍不可使用 `dart:io`。
 

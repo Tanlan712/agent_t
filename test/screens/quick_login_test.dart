@@ -32,6 +32,9 @@ void main() {
     testWidgets('切換區域會記住，下次打開登入頁自動選好', (tester) async {
       final h = await Harness.create(tester);
       await tester.pumpWidget(h.wrap(home: const RiotLoginPage()));
+      // 測試預設是 Android，上方有 App 內登入說明，下拉選單可能在畫面外。
+      await tester.ensureVisible(find.text('亞太（ap）'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('亞太（ap）'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('韓國（kr）').last);
@@ -129,6 +132,21 @@ void main() {
       expect(find.byKey(const ValueKey('expiry-banner')), findsOneWidget);
       expect(find.textContaining('分鐘後過期'), findsOneWidget);
       expect(find.text('重新登入'), findsOneWidget);
+      await tester.pumpWidget(h.wrap(home: const SizedBox()));
+    });
+
+    testWidgets('過期後提醒列改成「已過期」', (tester) async {
+      var now = DateTime(2026, 10, 21, 12);
+      final h = await Harness.create(tester, now: () => now);
+      await tester.runAsync(() => h.riot.login(fakeRedirect));
+      await tester.pumpWidget(h.wrap(home: const WishlistPage()));
+      now = now.add(const Duration(hours: 2));
+      await tester.pump(const Duration(seconds: 31));
+      expect(find.text('Riot 登入已過期'), findsOneWidget);
+      expect(find.text('重新登入'), findsOneWidget);
+      h.riot.logout();
+      await tester.pump();
+      expect(find.byKey(const ValueKey('expiry-banner')), findsNothing);
       await tester.pumpWidget(h.wrap(home: const SizedBox()));
     });
   });
