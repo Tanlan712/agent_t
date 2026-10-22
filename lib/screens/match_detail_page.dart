@@ -270,6 +270,7 @@ class _TeamTable extends StatelessWidget {
                               SizedBox(width: 6, child: _partyDot(p)),
                               const SizedBox(width: 6),
                               Tooltip(
+                                triggerMode: TooltipTriggerMode.tap,
                                 message: ref.agent(p.agentId).name,
                                 child: SizedBox(
                                     width: 28,
@@ -380,6 +381,7 @@ class _RankIcon extends StatelessWidget {
     final item = ref.tier(tier);
     return Tooltip(
       key: ValueKey('rank-${player.puuid}'),
+      triggerMode: TooltipTriggerMode.tap,
       message: item.name,
       child:
           SizedBox(width: 24, height: 24, child: SkinIcon(url: item.iconUrl)),
