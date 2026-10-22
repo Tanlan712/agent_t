@@ -107,6 +107,10 @@ Riot 的第三方 App 說明指出：暴露隱藏資訊、即時分析或帶來�
     按「登出」或 API 回報授權失敗時立即刪除；token 約 1 小時過期，過期後下次開啟頁面讀回時刪除、不使用。
     已向使用者說明風險：能使用這台電腦這個瀏覽器的人或擴充功能，在 token 過期前都能用它讀取帳號資料。
     同時取消「從剪貼簿貼上並登入」。
+  - **使用者決定（2026-10-22）**：Android「分享」登入。manifest 的 `share_target` 以 POST 送到 `share-login`，
+    由 `web/share_login_sw.js` 在本機攔截，分享的文字只暫存在 Cache Storage，登入頁取出後立即刪除（超過 10 分鐘丟棄）；
+    service worker 不得對外送出任何資料，也不快取網站。已說明風險：service worker 不在時（例如清除網站資料但 App 還在），
+    瀏覽器會把含 token 的表單直接 POST 到 GitHub Pages。
 - core-game 的 `ConnectionDetails`（遊戲伺服器 IP、連接埠、PlayerKey）、`TeamMatchToken` 與語音／聊天 ID，
   一律不讀取內容、不顯示、不記錄、不傳送。
 - 不得讀取或輸出 `.env` 的內容。

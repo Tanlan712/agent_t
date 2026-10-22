@@ -7,16 +7,22 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/riot_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/riot_auth.dart';
+import '../services/shared_login.dart';
 import '../widgets/hud/hud.dart';
 import 'riot_web_login_page.dart';
 
-/// Riot 登入：使用者在 Riot 官方頁面登入後，把跳轉網址貼回來。
+/// Riot 登入：使用者在 Riot 官方頁面登入後，把跳轉網址貼回來，
+/// 或在 Android 上把跳轉頁「分享」給本 App（[takeShared]）。
 /// Android／iOS App 另外提供內嵌登入，登入完成後自動帶回跳轉網址。
 class RiotLoginPage extends StatefulWidget {
+  static const sharedBadMessage =
+      '分享的網址找不到登入資訊，請在登入後跳到的 playvalorant.com 頁面按「分享」';
+
   const RiotLoginPage({
     super.key,
     this.inAppLoginAvailable,
     this.openInAppLogin = openRiotWebLogin,
+    this.takeShared = takeSharedLogin,
   });
 
   /// null 時依平台判斷（[inAppLoginSupported]）。
@@ -24,6 +30,9 @@ class RiotLoginPage extends StatefulWidget {
 
   /// 開啟內嵌登入頁，回傳跳轉網址；使用者取消時回傳 null。
   final Future<String?> Function(BuildContext context) openInAppLogin;
+
+  /// 取出 Android 分享進來的文字（取出後即刪除）；預設讀 service worker 暫存的內容。
+  final Future<String?> Function() takeShared;
 
   @override
   State<RiotLoginPage> createState() => _RiotLoginPageState();
@@ -40,6 +49,24 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
     'na': '北美／拉美／巴西（na）',
     'eu': '歐洲（eu）',
   };
+
+  @override
+  void initState() {
+    super.initState();
+    _receiveShared();
+  }
+
+  Future<void> _receiveShared() async {
+    final shared = await widget.takeShared();
+    if (shared == null || !mounted) return;
+    final url = findRiotRedirect(shared);
+    if (url == null) {
+      setState(() => _error = RiotLoginPage.sharedBadMessage);
+      return;
+    }
+    _controller.text = url;
+    await _submit();
+  }
 
   @override
   void dispose() {
@@ -154,7 +181,8 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
                 ),
                 const SizedBox(height: 16),
                 const Text('2. 登入後網頁會跳到 playvalorant.com，'
-                    '複製網址列的完整網址，貼到下方後按「完成登入」。'),
+                    '複製網址列的完整網址，貼到下方後按「完成登入」。\n'
+                    'Android：把本站安裝成 App 後，在跳轉頁按瀏覽器的「分享」選本 App，就會直接登入。'),
                 const SizedBox(height: 8),
                 TextField(
                   key: const ValueKey('redirect-field'),

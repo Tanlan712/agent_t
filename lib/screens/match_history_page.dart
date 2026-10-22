@@ -282,6 +282,9 @@ class _RankHeader extends StatelessWidget {
   }
 }
 
+/// 卡片寬度小於這個值時不顯示地圖縮圖。
+const _mapThumbMinWidth = 400.0;
+
 /// 一場對戰的卡片；點擊進入單場詳情。[otherPlayer] 用於玩家頁：多顯示 ACS。
 class MatchCard extends StatelessWidget {
   final MatchEntry entry;
@@ -316,56 +319,69 @@ class MatchCard extends StatelessWidget {
       // 玩家頁的場次不在自己的紀錄裡，直接把詳情傳給詳情頁。
       onTap: () => Navigator.pushNamed(context, '/matches/detail',
           arguments: otherPlayer ? d : entry.ref.matchId),
-      child: Row(
-        children: [
-          SizedBox(width: 72, child: SkinIcon(url: map.iconUrl)),
-          const SizedBox(width: 12),
-          SizedBox(width: 40, height: 40, child: SkinIcon(url: agent.iconUrl)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(map.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text(queueName(s.queueId),
-                    style: TextStyle(color: AppColors.muted, fontSize: 12)),
-                Text(formatMatchTime(entry.ref.startTime),
-                    style: TextStyle(color: AppColors.muted, fontSize: 12)),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(resultLabel(s.won),
-                        style: TextStyle(
-                            color: resultColor(s.won),
-                            fontWeight: FontWeight.bold)),
-                    const SizedBox(width: 8),
-                    Text('${s.myScore} : ${s.enemyScore}'),
-                  ],
-                ),
-                Text('${s.kills} / ${s.deaths} / ${s.assists}'),
-                if (otherPlayer)
-                  Text('ACS ${s.acs}',
+      // 手機寬度放不下地圖縮圖，只留特務圖示（地圖名稱仍在文字裡）。
+      child: LayoutBuilder(
+        builder: (context, c) => Row(
+          children: [
+            if (c.maxWidth >= _mapThumbMinWidth) ...[
+              SizedBox(width: 72, child: SkinIcon(url: map.iconUrl)),
+              const SizedBox(width: 12),
+            ] else
+              const SizedBox(width: 8),
+            SizedBox(
+                width: 40, height: 40, child: SkinIcon(url: agent.iconUrl)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(map.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text(queueName(s.queueId),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: AppColors.muted, fontSize: 12)),
-                if (s.rrChange case final rr?)
-                  Text(formatRr(rr),
-                      style: TextStyle(
-                          color: rr >= 0 ? AppColors.owned : AppColors.error,
-                          fontWeight: FontWeight.bold)),
-              ],
+                  Text(formatMatchTime(entry.ref.startTime),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: AppColors.muted, fontSize: 12)),
+                ],
+              ),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(resultLabel(s.won),
+                          style: TextStyle(
+                              color: resultColor(s.won),
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(width: 8),
+                      Text('${s.myScore} : ${s.enemyScore}'),
+                    ],
+                  ),
+                  Text('${s.kills} / ${s.deaths} / ${s.assists}'),
+                  if (otherPlayer)
+                    Text('ACS ${s.acs}',
+                        style: TextStyle(color: AppColors.muted, fontSize: 12)),
+                  if (s.rrChange case final rr?)
+                    Text(formatRr(rr),
+                        style: TextStyle(
+                            color: rr >= 0 ? AppColors.owned : AppColors.error,
+                            fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
