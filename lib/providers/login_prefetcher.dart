@@ -2,14 +2,12 @@ import 'dart:async';
 
 import 'catalog_provider.dart';
 import 'collection_provider.dart';
-import 'offer_price_provider.dart';
 import 'progress_provider.dart';
 import 'riot_provider.dart';
 import 'shop_provider.dart';
 
 /// 登入後（包括重新開頁時恢復登入）在背景預先讀取一次：
-/// 商店、錢包與已擁有造型（給了 [shop] 與 [catalog] 時），再讀收藏、等級、通行證與任務，
-/// 最後是全物品定價（給了 [prices] 時，快取超過一天才重抓）。
+/// 商店、錢包與已擁有造型（給了 [shop] 與 [catalog] 時），再讀收藏、等級、通行證與任務。
 /// 依序執行，Riot 請求同時最多 2 個（AGENTS.md 第 3 節）。
 class LoginPrefetcher {
   final RiotProvider _riot;
@@ -17,16 +15,12 @@ class LoginPrefetcher {
   final ProgressProvider _progress;
   final ShopProvider? _shop;
   final CatalogProvider? _catalog;
-  final OfferPriceProvider? _prices;
   String? _prefetchedFor;
 
   LoginPrefetcher(this._riot, this._collection, this._progress,
-      {ShopProvider? shop,
-      CatalogProvider? catalog,
-      OfferPriceProvider? prices})
+      {ShopProvider? shop, CatalogProvider? catalog})
       : _shop = shop,
-        _catalog = catalog,
-        _prices = prices {
+        _catalog = catalog {
     _riot.addListener(_onRiot);
     _onRiot();
   }
@@ -54,7 +48,6 @@ class LoginPrefetcher {
     }
     await _collection.load();
     await _progress.load();
-    await _prices?.load();
   }
 
   /// 目錄已載入、或下載結束（失敗也算，錢包仍可同步）時完成。

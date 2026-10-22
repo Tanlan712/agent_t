@@ -7,7 +7,6 @@ import 'package:valorant_shop_tracker/screens/progress_page.dart';
 import 'package:valorant_shop_tracker/screens/shop_edit_page.dart';
 import 'package:valorant_shop_tracker/screens/wishlist_page.dart';
 
-import '../account_fixtures.dart';
 import '../app_harness.dart';
 import '../catalog_helpers.dart';
 import '../progress_fixtures.dart';
@@ -19,26 +18,13 @@ const _primeLv = SkinInfo(
     name: 'Prime 幻象',
     weaponName: '幻象',
     tier: Tier.premium,
-    levelUuid: 'lvl-prime');
+    levelUuid: 'lvl-noicon');
 const _odinLv = SkinInfo(
     uuid: 'o',
     name: '凌空之志 奧丁',
     weaponName: '奧丁',
     tier: Tier.deluxe,
     levelUuid: 'lvl-odin');
-
-/// 只有 Prime 幻象有定價（而且和推估價不同），用來分辨是不是實際定價。
-Map<String, dynamic> _offers() => {
-      'Offers': [
-        {
-          'OfferID': 'lvl-prime',
-          'Cost': {vpId: 2000},
-          'Rewards': [
-            {'ItemTypeID': 'skin-level', 'ItemID': 'lvl-prime', 'Quantity': 1}
-          ],
-        },
-      ],
-    };
 
 Future<void> _settle(WidgetTester tester) async {
   await tester.pump();
@@ -50,17 +36,16 @@ Future<void> _settle(WidgetTester tester) async {
 void main() {
   final now = DateTime(2026, 10, 22, 12);
 
+  /// 從 Riot 同步一次商店：每日商店的假資料有 lvl-noicon 2475（Prime 幻象推估 1775）與 lvl-odin 1275。
   Future<Harness> withPrices(WidgetTester tester,
       {List<String> wishlist = const []}) async {
     final catalog = await loadedCatalog(tester,
         skins: const [_primeLv, _odinLv, ion, reaver]);
     final h = await Harness.create(tester,
-        catalog: catalog,
-        wishlist: wishlist,
-        riotHttp: riotClient(offers: _offers()));
+        catalog: catalog, wishlist: wishlist, riotHttp: riotClient());
     await tester.runAsync(() async {
       await h.riot.login(fakeRedirect);
-      await h.prices.load();
+      await h.riot.sync(shop: h.shop, catalog: h.catalog);
     });
     return h;
   }
@@ -87,7 +72,7 @@ void main() {
       await tester.ensureVisible(find.text('儲存'));
       await tester.tap(find.text('儲存'));
       await tester.pumpAndSettle();
-      expect(h.shop.shop.daily[0].price, 2000);
+      expect(h.shop.shop.daily[0].price, 2475);
       expect(h.shop.shop.daily[1].price, 1275);
     });
 
@@ -97,8 +82,8 @@ void main() {
         final h = await withPrices(tester, wishlist: ['p', 'o']);
         await tester.pumpWidget(h.wrap(home: WishlistPage(now: () => now)));
         await tester.pumpAndSettle();
-        expect(find.text('2000'), findsOneWidget);
-        expect(find.text('2 款・未擁有共 2000 VP'), findsOneWidget);
+        expect(find.text('2475'), findsWidgets);
+        expect(find.text('2 款・未擁有共 2475 VP'), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
     }
@@ -139,7 +124,9 @@ void main() {
         await tester.scrollUntilVisible(find.text('稱號一'), 200,
             scrollable: find.byType(Scrollable).last);
         expect(find.text('噴漆一'), findsOneWidget);
-        expect(find.text('未知物品'), findsOneWidget);
+        // 參考資料找不到的表情（可能不是噴漆）不列出。
+        expect(find.text('未知物品'), findsNothing);
+        expect(find.text('噴漆 2'), findsNothing);
         expect(find.text('卡片一'), findsOneWidget);
         expect(tester.takeException(), isNull);
       });

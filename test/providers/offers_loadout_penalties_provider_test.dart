@@ -1,15 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:valorant_shop_tracker/models/skin_info.dart';
 import 'package:valorant_shop_tracker/models/tier.dart';
+import 'package:valorant_shop_tracker/providers/catalog_provider.dart';
 import 'package:valorant_shop_tracker/providers/offer_price_provider.dart';
 import 'package:valorant_shop_tracker/providers/riot_provider.dart';
 import 'package:valorant_shop_tracker/providers/riot_resource.dart';
+import 'package:valorant_shop_tracker/providers/shop_provider.dart';
+import 'package:valorant_shop_tracker/services/catalog_api.dart';
 import 'package:valorant_shop_tracker/services/riot_auth.dart';
 import 'package:valorant_shop_tracker/services/riot_client.dart';
+import 'package:valorant_shop_tracker/storage/catalog_cache.dart';
 import 'package:valorant_shop_tracker/storage/offer_price_storage.dart';
+import 'package:valorant_shop_tracker/storage/shop_storage.dart';
 
+import '../fixtures.dart';
 import '../riot_fixtures.dart';
 
 const _odin = SkinInfo(
@@ -19,22 +26,29 @@ const _odin = SkinInfo(
     tier: Tier.deluxe,
     levelUuid: 'lvl-odin');
 
+Future<ShopProvider> _shop() async =>
+    ShopProvider(ShopStorage(await SharedPreferences.getInstance()));
+
+Future<CatalogProvider> _catalog() async {
+  final c = CatalogProvider(CatalogApi(client: MockClient(fixtureHandler)),
+      CatalogCache(await SharedPreferences.getInstance()));
+  await c.init();
+  return c;
+}
+
 void main() {
-  test('RiotClient：定價、目前裝備、排隊懲罰都只用 GET，路徑正確並帶 pd 標頭', () async {
+  test('RiotClient：目前裝備（v3）、排隊懲罰都只用 GET，路徑正確並帶 pd 標頭', () async {
     final requests = <http.Request>[];
     final c = RiotClient(client: riotClient(requests: requests));
     final s = await c.createSession(
         parseRiotRedirect(fakeRedirect)!, DateTime(2026, 10, 22));
-    final now = DateTime(2026, 10, 22, 12);
-    expect((await c.fetchOffers(s, now)).priceOf('lvl-odin'), 1275);
     expect((await c.fetchLoadout(s)).cardId, 'card-1');
     expect((await c.fetchPenalties(s)).penalties, isEmpty);
     final pd = requests.where((r) => r.url.host == 'pd.ap.a.pvp.net').toList();
     expect([
       for (final r in pd) '${r.method} ${r.url.path}'
     ], [
-      'GET /store/v1/offers/',
-      'GET /personalization/v2/players/puuid-1/playerloadout',
+      'GET /personalization/v3/players/puuid-1/playerloadout',
       'GET /restrictions/v3/penalties',
     ]);
     for (final r in pd) {
@@ -44,72 +58,50 @@ void main() {
 
   group('OfferPriceProvider', () {
     late SharedPreferences prefs;
-    var now = DateTime(2026, 10, 22, 12);
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
-      now = DateTime(2026, 10, 22, 12);
     });
 
-    Future<(OfferPriceProvider, RiotProvider, List<http.Request>)> make(
-        {int status = 200, bool login = true}) async {
+    test('同步商店時記下看到的價格並存進快取；不另外送定價請求', () async {
       final requests = <http.Request>[];
-      final client = RiotClient(
-          client: riotClient(requests: requests, offersStatus: status));
+      final client = RiotClient(client: riotClient(requests: requests));
       final riot = RiotProvider(client);
-      if (login) await riot.login(fakeRedirect);
-      final p = OfferPriceProvider(riot, client, OfferPriceStorage(prefs),
-          now: () => now, delay: (_) async {});
-      return (p, riot, requests);
-    }
+      final prices = OfferPriceProvider(OfferPriceStorage(prefs),
+          now: () => DateTime(2026, 10, 22, 12));
+      riot.onStorefront = prices.record;
+      expect(prices.priceOf(_odin), isNull);
+      await riot.login(fakeRedirect);
+      await riot.sync(shop: await _shop(), catalog: await _catalog());
+      expect(prices.priceOf(_odin), 1275);
+      expect(OfferPriceStorage(prefs).load()!.vp['lvl-noicon'], 2475);
+      expect(requests.where((r) => r.url.path.contains('offers')), isEmpty);
 
-    int offerCalls(List<http.Request> r) =>
-        r.where((e) => e.url.path == '/store/v1/offers/').length;
-
-    test('登入後載入並存進快取；未登入不送請求', () async {
-      final (idle, _, r0) = await make(login: false);
-      await idle.load();
-      expect(offerCalls(r0), 0);
-      expect(idle.priceOf(_odin), isNull);
-
-      final (p, _, r) = await make();
-      await p.load();
-      expect(p.priceOf(_odin), 1275);
-      expect(offerCalls(r), 1);
-      expect(OfferPriceStorage(prefs).load()!.vp['lvl-odin'], 1275);
-    });
-
-    test('24 小時內不重抓；超過或 force 才重抓；登出後仍可讀快取', () async {
-      final (p, riot, r) = await make();
-      await p.load();
-      now = now.add(const Duration(hours: 23));
-      await p.load();
-      expect(offerCalls(r), 1);
-      await p.load(force: true);
-      expect(offerCalls(r), 2);
-      now = now.add(const Duration(hours: 25));
-      await p.load();
-      expect(offerCalls(r), 3);
-
+      // 登出後、重新開頁仍可讀上次記下的價格。
       riot.logout();
-      final (fresh, _, _) = await make(login: false);
-      expect(fresh.priceOf(_odin), 1275);
+      expect(OfferPriceProvider(OfferPriceStorage(prefs)).priceOf(_odin), 1275);
     });
 
-    test('失敗時保留舊價格並顯示錯誤；授權失敗時登出', () async {
-      final (ok, _, _) = await make();
-      await ok.load();
-      now = now.add(const Duration(days: 2));
-      final (bad, _, _) = await make(status: 500);
-      expect(bad.priceOf(_odin), 1275);
-      await bad.load();
-      expect(bad.priceOf(_odin), 1275);
-      expect(bad.error, contains('取得定價'));
-
-      final (auth, riot, _) = await make(status: 401);
-      await auth.load();
-      expect(riot.isLoggedIn, isFalse);
+    test('沒有新價格時不寫入；新價格蓋掉舊的', () async {
+      final prices = OfferPriceProvider(OfferPriceStorage(prefs));
+      await prices.record(const {});
+      expect(prefs.getString(OfferPriceStorage.key), isNull);
+      Map<String, dynamic> daily(int price) => {
+            'SkinsPanelLayout': {
+              'SingleItemStoreOffers': [
+                {
+                  'Cost': {'85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741': price},
+                  'Rewards': [
+                    {'ItemID': 'lvl-odin'}
+                  ],
+                },
+              ],
+            },
+          };
+      await prices.record(daily(1275));
+      await prices.record(daily(1775));
+      expect(prices.priceOf(_odin), 1775);
     });
   });
 
@@ -143,7 +135,7 @@ void main() {
       expect(loadout.value!.guns, hasLength(2));
       expect(penalties.value!.penalties.single.effects, ['排隊延遲']);
       int calls(String p) => r.where((e) => e.url.path == p).length;
-      const lp = '/personalization/v2/players/puuid-1/playerloadout';
+      const lp = '/personalization/v3/players/puuid-1/playerloadout';
       expect(calls(lp), 1);
       await loadout.refresh();
       expect(calls(lp), 2);

@@ -108,8 +108,6 @@ MockClient riotClient({
   int xpStatus = 200,
   int contractsStatus = 200,
   Map<String, dynamic>? contracts,
-  int offersStatus = 200,
-  Map<String, dynamic>? offers,
   int loadoutStatus = 200,
   Map<String, dynamic>? loadout,
   int penaltiesStatus = 200,
@@ -334,11 +332,7 @@ MockClient riotClient({
         if (xpStatus != 200) return json({'errorCode': 'x'}, xpStatus);
         return json(accountXpJson());
       }
-      if (path == '/store/v1/offers/' && req.method == 'GET') {
-        if (offersStatus != 200) return json({'errorCode': 'x'}, offersStatus);
-        return json(offers ?? offersJson());
-      }
-      if (path == '/personalization/v2/players/puuid-1/playerloadout' &&
+      if (path == '/personalization/v3/players/puuid-1/playerloadout' &&
           req.method == 'GET') {
         if (loadoutStatus != 200) {
           return json({'errorCode': 'x'}, loadoutStatus);

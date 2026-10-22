@@ -206,25 +206,26 @@
 
 ## 定價、目前裝備、排隊懲罰（pd，使用者決定 2026-10-22，只能 GET）
 
-三個端點都還沒有用真帳號實測，格式依社群文件；App 解析時缺欄位或型別不符的項目一律略過。
+### `GET /store/v1/offers/`（不使用）
+- 實測 2026-10-22：v1 與 v2 都回 **404** ✅。實際定價改從 storefront 回應累積：
+  `SingleItemStoreOffers[].Cost`、`BonusStoreOffers[].Offer.Cost`（夜市原價），
+  以及 `FeaturedBundle.Bundles[].Items[]{Item{ItemTypeID, ItemID, Amount}, BasePrice, CurrencyID, DiscountedPrice}` 裡造型等級的 `BasePrice` 📄 🧩。
 
-### `GET /store/v1/offers/` 📄 🧩
-- `Offers[]`：`OfferID`、`IsDirectPurchase`、`StartDate`、`Cost{幣別ID: 數量}`、`Rewards[]{ItemTypeID, ItemID, Quantity}`
-  - App 只取 `Cost` 的 VP（`85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741`），以 `Rewards[].ItemID`（造型第一個等級）對應價格。
-- `UpgradeCurrencyOffers[]`（輻能點數兌換，不使用）
-
-### `GET /personalization/v2/players/{puuid}/playerloadout` 📄 🧩
-- `Subject`、`Version`、`Incognito`
-- `Guns[]`：`ID`（武器）、`SkinID`、`SkinLevelID`、`ChromaID`、`CharmInstanceID`、`CharmID`、`CharmLevelID`（吊飾等級，有裝才有）、`Attachments`
-- `Sprays[]`：`EquipSlotID`、`SprayID`、`SprayLevelID`
-- `Identity`：`PlayerCardID`、`PlayerTitleID`、`AccountLevel`、`PreferredLevelBorderID`、`HideAccountLevel`
+### `GET /personalization/v3/players/{puuid}/playerloadout` 🧩
+- v2 實測回 **404**，v3 回 200 ✅ 2026-10-22。
+- 頂層欄位 ✅：`Guns`、`ActiveExpressions`、`DynamicOptions`、`Identity`、`Incognito`（v2 的 `Sprays` 換成 `ActiveExpressions`）。
+- 每一項的內容尚未實測 📄：
+  - `Guns[]`：`ID`（武器）、`SkinID`、`SkinLevelID`、`ChromaID`、`CharmLevelID`（吊飾等級，有裝才有）
+  - `ActiveExpressions[]`：App 推測為 `{TypeID, AssetID}`；`TypeID` 不是噴漆（`d5f120f8-…`）時略過，
+    valorant-api 找不到的 ID 不顯示。
+  - `Identity`：`PlayerCardID`、`PlayerTitleID`、`AccountLevel`、`PreferredLevelBorderID`、`HideAccountLevel`
 - 同一路徑的 `PUT` 會更換裝備，**禁止使用**（AGENTS.md 第 3 節）。
 
-### `GET /restrictions/v3/penalties` 📄 🧩
-- `Subject`、`Penalties[]`、`Version`；社群文件**沒有**寫 `Penalties` 每一項的格式。
-- App 寬鬆讀取：到期時間（`Expiry`／`ExpirationTime`／`EndTime`，ISO 或毫秒）、`GamesRemaining`、
+### `GET /restrictions/v3/penalties` ✅ 2026-10-22 🧩
+- 回 200，**有** CORS 標頭（網頁版可讀）✅。實測帳號沒有懲罰：`Subject`、`Penalties: []`、`Version`。
+- 有懲罰時每一項的格式**仍未知**。App 寬鬆讀取：到期時間（`Expiry`／`ExpirationTime`／`EndTime`，ISO 或毫秒）、`GamesRemaining`、
   名稱含 `Effect` 且不是 null 的 key（例如 `QueueDelayEffect`、`QueueRestrictionEffect`、`RankedRestrictionEffect`、`RMSNotificationEffect`）。
-  實測後要補上實際欄位。
+  遇到真的懲罰時要補上實際欄位。
 
 ## 公開遊戲資料（valorant-api.com）🧩
 

@@ -58,3 +58,14 @@
 - RiotClient：三個端點都是 GET、路徑正確、帶 pd 標頭。
 - Provider：載入、快取、24 小時內不重抓、換帳號清空、授權失敗登出、失敗保留舊價格。
 - 畫面：收藏頁「目前裝備」分頁、通行證頁懲罰卡、選造型預設價用實際定價、願望清單價格；375／1440 不溢出。
+
+## 實測後修正（2026-10-22）
+
+使用者帳號實測（只用 GET）：
+- `store/v1/offers`（以及 v2）回 404，**沒有一次取得全部價格的端點**。改成：每次從 Riot 同步商店時，
+  把 storefront 回應裡的造型價格（每日商店、夜市原價、組合包內造型的 `BasePrice`）記進 `offer_prices_v1`，
+  見過的造型才有實際定價，其餘仍用 `defaultPrice` 推估。不再另外送定價請求，`LoginPrefetcher` 不變。
+  （valorant-api.com 沒有價格資料，無法當作來源。）
+- `playerloadout` v2 回 404、v3 回 200，頂層欄位 `Guns, ActiveExpressions, DynamicOptions, Identity, Incognito`。
+  改用 v3；噴漆從 `ActiveExpressions` 讀（推測 `{TypeID, AssetID}`，非噴漆類型與參考資料找不到的 ID 不顯示），保留 v2 `Sprays` 的解析。
+- `restrictions/v3/penalties` 回 200、網頁版沒有被 CORS 擋，帳號目前沒有懲罰（`Penalties` 為空）。

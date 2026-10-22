@@ -57,39 +57,7 @@ Map<String, dynamic> contractsJson({
 
 const vpId = '85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741';
 
-/// `GET /store/v1/offers/` 的假資料（格式依社群文件）。
-Map<String, dynamic> offersJson() => {
-      'Offers': [
-        {
-          'OfferID': 'lvl-odin',
-          'IsDirectPurchase': true,
-          'StartDate': '2020-06-02T00:00:00Z',
-          'Cost': {vpId: 1275},
-          'Rewards': [
-            {'ItemTypeID': 'skin-level', 'ItemID': 'LVL-ODIN', 'Quantity': 1}
-          ],
-        },
-        {
-          'OfferID': 'lvl-prime',
-          'IsDirectPurchase': true,
-          'Cost': {vpId: 1775},
-          'Rewards': [
-            {'ItemTypeID': 'skin-level', 'ItemID': 'lvl-prime', 'Quantity': 1}
-          ],
-        },
-        {
-          // 輻能點數升級：沒有 VP 價格，要略過。
-          'OfferID': 'upgrade',
-          'Cost': {'e59aa87c-4cbf-517a-5983-6e81511be9b7': 10},
-          'Rewards': [
-            {'ItemTypeID': 'skin-level', 'ItemID': 'lvl-odin-2', 'Quantity': 1}
-          ],
-        },
-      ],
-      'UpgradeCurrencyOffers': const [],
-    };
-
-/// `GET /personalization/v2/players/{puuid}/playerloadout` 的假資料。
+/// `GET /personalization/v3/players/{puuid}/playerloadout` 的假資料（頂層欄位依 2026-10-22 實測）。
 Map<String, dynamic> loadoutJson() => {
       'Subject': 'puuid-1',
       'Version': 3,
@@ -113,10 +81,15 @@ Map<String, dynamic> loadoutJson() => {
         },
         {'SkinID': 'no-weapon-id'},
       ],
-      'Sprays': [
-        {'EquipSlotID': 'slot-1', 'SprayID': 'spray-1', 'SprayLevelID': null},
-        {'EquipSlotID': 'slot-2', 'SprayID': 'spray-x'},
+      'ActiveExpressions': [
+        {
+          'TypeID': 'd5f120f8-ff8c-4aac-92ea-f2b5acbe9475',
+          'AssetID': 'SPRAY-1'
+        },
+        {'TypeID': 'flex-type', 'AssetID': 'flex-1'},
+        {'AssetID': 'spray-x'},
       ],
+      'DynamicOptions': const {},
       'Identity': {
         'PlayerCardID': 'card-1',
         'PlayerTitleID': 'title-1',

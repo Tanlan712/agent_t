@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import '../models/account_progress.dart';
-import '../models/offer_prices.dart';
 import '../models/penalty_status.dart';
 import '../models/player_loadout.dart';
 
@@ -222,15 +221,11 @@ class RiotClient {
           s, '/contracts/v1/contracts/${s.puuid}',
           label: '取得通行證與任務'));
 
-  /// 全物品的實際定價（所有玩家共用）；只能 GET。
-  Future<OfferPrices> fetchOffers(RiotSession s, DateTime now) async =>
-      OfferPrices.fromRiot(
-          await getPd(s, '/store/v1/offers/', label: '取得定價'), now);
-
   /// 自己目前裝備的造型與外觀；只能 GET（PUT 會更換裝備，禁止）。
+  /// 實測（2026-10-22）v2 回 404，v3 回 200。
   Future<PlayerLoadout> fetchLoadout(RiotSession s) async =>
       PlayerLoadout.fromJson(await getPd(
-          s, '/personalization/v2/players/${s.puuid}/playerloadout',
+          s, '/personalization/v3/players/${s.puuid}/playerloadout',
           label: '取得目前裝備'));
 
   /// 自己的排隊懲罰；只能 GET。

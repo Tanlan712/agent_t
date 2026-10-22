@@ -258,7 +258,9 @@ class _LoadoutTab extends StatelessWidget {
     RefItem item(String? id, Map<String, RefItem> map) =>
         id == null ? const RefItem(name: '未裝備') : map[id] ?? unknownItem;
     final extras = [
-      for (final (i, id) in loadout.sprayIds.indexed)
+      // ActiveExpressions 的格式只是推測：參考資料裡找不到的（可能是其他表情）不列出。
+      for (final (i, id)
+          in loadout.sprayIds.where((id) => ref.sprays.containsKey(id)).indexed)
         ('噴漆 ${i + 1}', item(id, ref.sprays)),
       ('玩家卡片', item(loadout.cardId, ref.cards)),
       ('稱號', item(loadout.titleId, ref.titles)),

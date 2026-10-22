@@ -2,85 +2,35 @@ import 'package:flutter/foundation.dart';
 
 import '../models/offer_prices.dart';
 import '../models/skin_info.dart';
-import '../services/riot_client.dart';
 import '../storage/offer_price_storage.dart';
-import 'riot_provider.dart';
-import 'riot_retry.dart';
 
-/// 全物品的實際定價（只讀 GET `/store/v1/offers/`）：存在這個瀏覽器，
-/// 登入後超過 [maxAge] 才重抓；失敗時保留上次的價格。
+/// 造型的實際定價：每次從 Riot 同步商店時，把看到的價格記下來，存在這個瀏覽器
+/// （所有玩家共用的公開價格，不含個人資料）。不另外送 Riot 請求。
 class OfferPriceProvider with ChangeNotifier {
-  static const maxAge = Duration(hours: 24);
-
-  final RiotProvider _riot;
-  final RiotClient _client;
   final OfferPriceStorage _storage;
   final DateTime Function() _now;
-  final Future<void> Function(Duration) _delay;
 
   OfferPrices? _prices;
-  bool _isLoading = false;
-  String? _error;
-  bool _disposed = false;
 
-  OfferPriceProvider(this._riot, this._client, this._storage,
-      {DateTime Function() now = DateTime.now,
-      Future<void> Function(Duration)? delay})
+  OfferPriceProvider(this._storage, {DateTime Function() now = DateTime.now})
       : _now = now,
-        _delay = delay ?? Future<void>.delayed,
         _prices = _storage.load();
 
   OfferPrices? get prices => _prices;
-  bool get isLoading => _isLoading;
-  String? get error => _error;
 
-  /// 造型的 VP 定價（用第一個造型等級查）；沒有定價時回傳 null。
+  /// 造型的 VP 定價（用第一個造型等級查）；還沒在商店看過時回傳 null。
   int? priceOf(SkinInfo? skin) => _prices?.priceOf(skin?.levelUuid);
 
-  bool get _stale {
-    final p = _prices;
-    return p == null || _now().difference(p.fetchedAt) >= maxAge;
-  }
-
-  /// 已登入且快取過期（或 [force]）時重抓。
-  Future<void> load({bool force = false}) async {
-    final s = _riot.session;
-    if (!_riot.isLoggedIn || s == null || _isLoading) return;
-    if (!force && !_stale) return;
-    _isLoading = true;
-    _error = null;
-    _notify();
-    try {
-      final p = await withRiotRetry(() => _client.fetchOffers(s, _now()),
-          delay: _delay);
-      // 回應是空的（格式改變）時不蓋掉舊價格。
-      if (p.vp.isNotEmpty) {
-        _prices = p;
-        await _storage.save(p);
-      } else {
-        _error = '取得定價：回應格式不符';
-      }
-    } on RiotApiException catch (e) {
-      if (e.isAuthError) {
-        _riot.expire();
-      } else {
-        _error = e.message;
-      }
-    } catch (_) {
-      _error = '取得定價：回應格式不符';
-    } finally {
-      _isLoading = false;
-      _notify();
-    }
-  }
-
-  void _notify() {
-    if (!_disposed) notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _disposed = true;
-    super.dispose();
+  /// 記錄一次 storefront 回應裡的價格；沒有新價格時不寫入。
+  Future<void> record(Map<String, dynamic> storefront) async {
+    final seen = OfferPrices.fromStorefront(storefront);
+    if (seen.isEmpty) return;
+    final old = _prices;
+    final merged = old == null
+        ? OfferPrices(vp: seen, fetchedAt: _now())
+        : old.merge(seen, _now());
+    _prices = merged;
+    notifyListeners();
+    await _storage.save(merged);
   }
 }

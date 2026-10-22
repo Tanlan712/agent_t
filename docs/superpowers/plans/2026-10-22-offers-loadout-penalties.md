@@ -3,9 +3,9 @@
 規格：[2026-10-22-offers-loadout-penalties-design.md](../specs/2026-10-22-offers-loadout-penalties-design.md)
 
 1. 模型與解析（先寫測試）：`OfferPrices`、`PlayerLoadout`、`PenaltyStatus`，格式不符時略過。
-2. `RiotClient.fetchOffers／fetchLoadout／fetchPenalties`：全部走 `getPd`（GET、全域限流）。
+2. `RiotClient.fetchLoadout（v3）／fetchPenalties`（offers 實測 404，已移除）：全部走 `getPd`（GET、全域限流）。
 3. Provider：
-   - `OfferPriceProvider`：localStorage 快取 `offer_prices_v1`，超過 24 小時才重抓，由 `LoginPrefetcher` 最後一步觸發。
+   - `OfferPriceProvider`：localStorage 快取 `offer_prices_v1`；（實測後）由 `RiotProvider.onStorefront` 在每次同步商店時記錄看到的價格。
    - `RiotResource<T>` 共用的「登入期間快取、換帳號清空、授權失敗登出」，衍生 `LoadoutProvider`、`PenaltyProvider`。
 4. 畫面：
    - 手動編輯商店的預設價格、選造型頁、願望清單（價格與未擁有總計）。

@@ -68,15 +68,16 @@ Future<void> main() async {
   // 自己的收藏、等級、通行證與任務（只讀 GET，AGENTS.md 第 3 節）。
   final collection = CollectionProvider(riot, riotClient);
   final progress = ProgressProvider(riot, riotClient, ProgressReferenceApi());
-  // 目前裝備、排隊懲罰與全物品定價（只讀 GET，AGENTS.md 第 3 節）。
+  // 目前裝備與排隊懲罰（只讀 GET，AGENTS.md 第 3 節）。
   final loadout = LoadoutProvider(riot, riotClient);
   final penalties = PenaltyProvider(riot, riotClient);
-  final prices = OfferPriceProvider(riot, riotClient, OfferPriceStorage(prefs));
+  // 造型的實際定價：同步商店時順便記下看到的價格（不另外送請求）。
+  final prices = OfferPriceProvider(OfferPriceStorage(prefs));
+  riot.onStorefront = prices.record;
   final shop = ShopProvider(ShopStorage(prefs));
   // 登入後（含重新開頁恢復登入）先在背景讀一次：商店與錢包、收藏、通行證
-  // 與全物品定價（一天最多一次）（依序、同時最多 2 個 Riot 請求）。
-  LoginPrefetcher(riot, collection, progress,
-      shop: shop, catalog: catalog, prices: prices);
+  // （依序、同時最多 2 個 Riot 請求）。
+  LoginPrefetcher(riot, collection, progress, shop: shop, catalog: catalog);
   // 網頁開著時，每日商店到期或夜市結束後自動同步（使用者決定 2026-10-22）。
   ShopAutoRefresher(riot, shop, catalog);
 

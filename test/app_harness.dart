@@ -150,8 +150,9 @@ class Harness {
         delay: (_) async {});
     h.loadout = LoadoutProvider(riot, rc, delay: (_) async {});
     h.penalties = PenaltyProvider(riot, rc, delay: (_) async {});
-    h.prices = OfferPriceProvider(riot, rc, OfferPriceStorage(prefs),
-        now: now ?? DateTime.now, delay: (_) async {});
+    h.prices =
+        OfferPriceProvider(OfferPriceStorage(prefs), now: now ?? DateTime.now);
+    riot.onStorefront = h.prices.record;
     return h;
   }
 
