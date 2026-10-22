@@ -111,7 +111,7 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: app-v${{ github.run_number }}
-          name: '手機 App #${{ github.run_number }}'
+          name: 'Agent T #${{ github.run_number }}'
           body: |
             自己側載安裝用的手機 App（${{ github.sha }}）。
             Android：https://github.com/${{ github.repository }}/releases/latest/download/valorant-shop-tracker.apk

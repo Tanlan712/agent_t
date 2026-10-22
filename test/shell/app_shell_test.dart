@@ -185,7 +185,7 @@ void main() {
   testWidgets('SideNav 展開：分組標題與完整名稱', (tester) async {
     setWidth(tester, 1100);
     await tester.pumpWidget(sideNavHost(extended: true));
-    for (final t in ['主要', '資料庫', '其他', '玩家卡片', 'VALORANT 商店追蹤', '願望清單']) {
+    for (final t in ['主要', '資料庫', '其他', '玩家卡片', 'Agent T', '願望清單']) {
       expect(find.text(t), findsOneWidget, reason: t);
     }
   });

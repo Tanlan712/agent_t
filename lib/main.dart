@@ -126,7 +126,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ThemedApp(
       builder: (theme, builder) => MaterialApp(
-        title: 'VALORANT 商店追蹤',
+        title: 'Agent T',
         debugShowCheckedModeBanner: false,
         theme: theme,
         // 主題立即切換：AppColors（全域）與 Theme.of 不會有一段時間不一致。

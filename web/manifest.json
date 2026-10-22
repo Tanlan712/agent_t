@@ -1,7 +1,7 @@
 {
     "id": "./",
-    "name": "VALORANT 商店追蹤",
-    "short_name": "VAL 商店",
+    "name": "Agent T",
+    "short_name": "Agent T",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#111111",

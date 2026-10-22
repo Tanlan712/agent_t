@@ -22,7 +22,7 @@ import '../widgets/theme/eva/eva_layer.dart';
 import '../widgets/theme/style_background.dart';
 import '../widgets/hud/page_header.dart';
 
-const appName = 'VALORANT 商店追蹤';
+const appName = 'Agent T';
 
 /// 頂層頁面共用的殼層：依寬度切換抽屜／窄導覽列／展開導覽列，
 /// 並把內容置中、限制最大寬度。

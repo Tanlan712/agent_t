@@ -2,7 +2,7 @@
     <!-- 連到 Riot 與 valorant-api.com（AGENTS.md 第 3 節）。 -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="VAL 商店"
+        android:label="Agent T"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
