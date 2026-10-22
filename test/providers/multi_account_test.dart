@@ -190,7 +190,12 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('add-account')));
     await tester.pumpAndSettle();
     expect(find.textContaining('無痕視窗'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('完成登入'), 200);
+    // 頁面裡有不只一個捲動區（輸入框也是），指定頁面本身的清單。
+    await tester.scrollUntilVisible(find.text('完成登入'), 200,
+        scrollable: find
+            .descendant(
+                of: find.byType(ListView), matching: find.byType(Scrollable))
+            .first);
     expect(find.text('完成登入'), findsOneWidget);
   });
 
