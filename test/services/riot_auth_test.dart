@@ -45,4 +45,32 @@ void main() {
         uri.queryParameters['redirect_uri'], 'https://playvalorant.com/opt_in');
     expect(uri.queryParameters['response_type'], 'token id_token');
   });
+
+  group('isRiotRedirect（App 內登入攔截跳轉）', () {
+    test('playvalorant.com/opt_in 帶 token 時攔截', () {
+      expect(isRiotRedirect(full), isTrue);
+    });
+
+    test('playvalorant.com/opt_in 帶錯誤也攔截，交給登入流程回報', () {
+      expect(
+          isRiotRedirect('https://playvalorant.com/opt_in#error=access_denied'),
+          isTrue);
+      expect(isRiotRedirect('https://playvalorant.com/opt_in'), isTrue);
+    });
+
+    test('Riot 登入頁本身不攔截', () {
+      expect(isRiotRedirect(riotLoginUrl), isFalse);
+      expect(isRiotRedirect('https://authenticate.riotgames.com/?client_id=x'),
+          isFalse);
+    });
+
+    test('其他主機或路徑不攔截', () {
+      expect(isRiotRedirect('https://playvalorant.com/zh-tw/'), isFalse);
+      expect(isRiotRedirect('https://evil.example/opt_in#access_token=A'),
+          isFalse);
+      expect(isRiotRedirect('http://playvalorant.com/opt_in#access_token=A'),
+          isFalse);
+      expect(isRiotRedirect('not a url'), isFalse);
+    });
+  });
 }
