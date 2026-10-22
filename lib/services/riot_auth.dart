@@ -40,6 +40,14 @@ RiotTokens? parseRiotRedirect(String url) {
   );
 }
 
+/// 從分享的文字（可能含標題或其他字）找出含 token 的跳轉網址；找不到時回傳 null。
+String? findRiotRedirect(String shared) {
+  for (final part in shared.split(RegExp(r'\s+'))) {
+    if (part.contains('#') && part.contains('access_token=')) return part;
+  }
+  return null;
+}
+
 /// App 內登入頁要攔下的跳轉：Riot 登入完成（或失敗）後導向 playvalorant.com/opt_in。
 /// 攔下後不載入 playvalorant.com，只把網址交給 [parseRiotRedirect]。
 bool isRiotRedirect(String url) {
