@@ -3,12 +3,15 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../logic/database_logic.dart' show groupByWeaponCategory;
+import '../logic/loadout_logic.dart';
 import '../logic/progress_logic.dart';
 import '../models/match_models.dart' show RefItem;
+import '../models/player_loadout.dart';
 import '../models/progress_reference.dart';
 import '../providers/collection_provider.dart';
 import '../providers/progress_provider.dart';
 import '../providers/riot_provider.dart';
+import '../providers/riot_resource.dart';
 import '../services/riot_client.dart';
 import '../shell/app_shell.dart';
 import '../shell/responsive_grid.dart';
@@ -50,7 +53,9 @@ class _CollectionPageState extends State<CollectionPage> {
         // 先下載公開參考資料（不送 Riot 請求），首屏不必等 Riot 端；
         // Riot 請求另有全域限流（同時最多 2 個）。
         progress.ensureReference();
+        final loadout = context.read<LoadoutProvider?>();
         await context.read<CollectionProvider>().load();
+        await loadout?.load();
         await progress.load();
       });
     }
@@ -61,6 +66,7 @@ class _CollectionPageState extends State<CollectionPage> {
     final riot = context.watch<RiotProvider>();
     final col = context.watch<CollectionProvider>();
     final progress = context.watch<ProgressProvider>();
+    final loadout = context.watch<LoadoutProvider?>();
     final ref = progress.ref;
 
     if (!riot.isLoggedIn) {
@@ -150,7 +156,7 @@ class _CollectionPageState extends State<CollectionPage> {
         ),
       ],
       child: DefaultTabController(
-        length: 6,
+        length: 7,
         child: Column(
           children: [
             TabBar(
@@ -163,6 +169,7 @@ class _CollectionPageState extends State<CollectionPage> {
                 Tab(text: '噴漆 ${sprays.length}'),
                 Tab(text: '玩家卡片 ${cards.length}'),
                 Tab(text: '稱號 ${titles.length}'),
+                const Tab(text: '目前裝備'),
               ],
             ),
             const SizedBox(height: 16),
@@ -197,6 +204,12 @@ class _CollectionPageState extends State<CollectionPage> {
                 tab([ItemTypes.spray], sprays.isEmpty, _ItemGrid(sprays)),
                 tab([ItemTypes.playerCard], cards.isEmpty, _ItemGrid(cards)),
                 tab([ItemTypes.title], titles.isEmpty, _TitleList(titles)),
+                _LoadoutTab(
+                    loadout: loadout?.value,
+                    loading: loadout?.isLoading ?? false,
+                    error: loadout?.error,
+                    onRetry: loadout?.refresh,
+                    ref: ref),
               ]),
             ),
           ],
@@ -204,6 +217,111 @@ class _CollectionPageState extends State<CollectionPage> {
       ),
     );
   }
+}
+
+/// 目前裝備：每把槍的造型與吊飾，以及噴漆、玩家卡片、稱號（只讀 GET）。
+class _LoadoutTab extends StatelessWidget {
+  final PlayerLoadout? loadout;
+  final bool loading;
+  final String? error;
+  final VoidCallback? onRetry;
+  final ProgressReference ref;
+
+  const _LoadoutTab({
+    required this.loadout,
+    required this.loading,
+    required this.error,
+    required this.onRetry,
+    required this.ref,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final loadout = this.loadout;
+    if (error != null) {
+      return _TabMessage(
+        child: EmptyState(
+            icon: Icons.error_outline,
+            title: error!,
+            actionLabel: '重試',
+            onAction: onRetry),
+      );
+    }
+    if (loadout == null) {
+      return loading
+          ? const _Skeleton()
+          : const _TabMessage(
+              child: EmptyState(
+                  icon: Icons.backpack_outlined, title: '還沒有讀取目前裝備'));
+    }
+    final weapons = equippedWeapons(loadout, ref);
+    RefItem item(String? id, Map<String, RefItem> map) =>
+        id == null ? const RefItem(name: '未裝備') : map[id] ?? unknownItem;
+    final extras = [
+      for (final (i, id) in loadout.sprayIds.indexed)
+        ('噴漆 ${i + 1}', item(id, ref.sprays)),
+      ('玩家卡片', item(loadout.cardId, ref.cards)),
+      ('稱號', item(loadout.titleId, ref.titles)),
+    ];
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 24),
+      children: [
+        for (final (label, list) in groupByWeaponCategory(weapons,
+            (w) => w.weapon.category, (w) => w.weapon.categoryText)) ...[
+          SectionHeader(title: label),
+          ResponsiveGrid(
+            minTileWidth: 200,
+            childAspectRatio: 1.6,
+            mainAxisExtent: 150,
+            children: [for (final w in list) _gun(w)],
+          ),
+          const SizedBox(height: 24),
+        ],
+        const SectionHeader(title: '其他'),
+        for (final (label, it) in extras)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: PanelCard(
+              key: ValueKey('loadout-$label'),
+              child: Row(children: [
+                SizedBox(
+                    width: 40, height: 40, child: SkinIcon(url: it.iconUrl)),
+                const SizedBox(width: 12),
+                Text(label, style: TextStyle(color: AppColors.muted)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(it.name,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ]),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _gun(EquippedWeaponView w) => PanelCard(
+        key: ValueKey('loadout-${w.weapon.uuid}'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: Center(child: SkinIcon(url: w.iconUrl))),
+            const SizedBox(height: 8),
+            Text(w.skinName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+                w.buddy == null
+                    ? w.weapon.name
+                    : '${w.weapon.name}・${w.buddy!.name}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, color: AppColors.muted)),
+          ],
+        ),
+      );
 }
 
 class _TabMessage extends StatelessWidget {

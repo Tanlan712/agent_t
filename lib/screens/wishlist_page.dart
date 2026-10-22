@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../logic/wishlist_match.dart';
 import '../models/skin_info.dart';
 import '../providers/catalog_provider.dart';
+import '../providers/offer_price_provider.dart';
 import '../providers/riot_provider.dart';
 import '../providers/shop_provider.dart';
 import '../providers/wishlist_provider.dart';
@@ -32,17 +33,29 @@ class WishlistPage extends StatelessWidget {
     final riot = context.watch<RiotProvider>();
     final wishlist = context.watch<WishlistProvider>();
     final shop = context.watch<ShopProvider>().shop;
+    final prices = context.watch<OfferPriceProvider?>();
+    int? priceOf(String uuid) => prices?.priceOf(catalog.skinById(uuid));
     final onSale = wishlistUuidsInShop(shop, wishlist.uuids, now());
     // 上架中的排在最前面，其餘維持加入順序。
     final items = [
       ...wishlist.items.where((e) => onSale.contains(e.skinUuid)),
       ...wishlist.items.where((e) => !onSale.contains(e.skinUuid)),
     ];
+    // 只加總有實際定價的造型；尚未擁有的才算進去。
+    final total = items
+        .where((e) => !riot.isOwned(e.skinUuid))
+        .map((e) => priceOf(e.skinUuid))
+        .whereType<int>()
+        .fold(0, (a, b) => a + b);
 
     return AppShell(
       currentRoute: '/wishlist',
       title: '願望清單',
-      subtitle: items.isEmpty ? null : '${items.length} 款',
+      subtitle: items.isEmpty
+          ? null
+          : total > 0
+              ? '${items.length} 款・未擁有共 $total VP'
+              : '${items.length} 款',
       actions: [
         IconButton(
           icon: const Icon(Icons.add),
@@ -77,6 +90,7 @@ class WishlistPage extends StatelessWidget {
                     onDismissed: (_) => wishlist.remove(item.skinUuid),
                     child: SkinCard(
                       skin: catalog.skinById(item.skinUuid),
+                      price: priceOf(item.skinUuid),
                       highlighted: isOnSale,
                       owned: riot.isOwned(item.skinUuid),
                       trailing: Row(

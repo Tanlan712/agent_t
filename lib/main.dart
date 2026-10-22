@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'providers/collection_provider.dart';
 import 'providers/login_prefetcher.dart';
+import 'providers/offer_price_provider.dart';
 import 'providers/progress_provider.dart';
 import 'providers/catalog_provider.dart';
 import 'providers/match_detail_cache.dart';
@@ -11,6 +12,7 @@ import 'providers/match_history_provider.dart';
 import 'providers/match_reference_provider.dart';
 import 'providers/recent_form_loader.dart';
 import 'providers/riot_provider.dart';
+import 'providers/riot_resource.dart';
 import 'providers/seen_players_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/shop_auto_refresh.dart';
@@ -27,6 +29,7 @@ import 'services/match_reference_api.dart';
 import 'services/riot_client.dart';
 import 'storage/catalog_cache.dart';
 import 'storage/match_reference_cache.dart';
+import 'storage/offer_price_storage.dart';
 import 'storage/seen_players_storage.dart';
 import 'storage/session_storage.dart';
 import 'storage/settings_storage.dart';
@@ -65,10 +68,15 @@ Future<void> main() async {
   // 自己的收藏、等級、通行證與任務（只讀 GET，AGENTS.md 第 3 節）。
   final collection = CollectionProvider(riot, riotClient);
   final progress = ProgressProvider(riot, riotClient, ProgressReferenceApi());
+  // 目前裝備、排隊懲罰與全物品定價（只讀 GET，AGENTS.md 第 3 節）。
+  final loadout = LoadoutProvider(riot, riotClient);
+  final penalties = PenaltyProvider(riot, riotClient);
+  final prices = OfferPriceProvider(riot, riotClient, OfferPriceStorage(prefs));
   final shop = ShopProvider(ShopStorage(prefs));
   // 登入後（含重新開頁恢復登入）先在背景讀一次：商店與錢包、收藏、通行證
-  // （依序、同時最多 2 個 Riot 請求）。
-  LoginPrefetcher(riot, collection, progress, shop: shop, catalog: catalog);
+  // 與全物品定價（一天最多一次）（依序、同時最多 2 個 Riot 請求）。
+  LoginPrefetcher(riot, collection, progress,
+      shop: shop, catalog: catalog, prices: prices);
   // 網頁開著時，每日商店到期或夜市結束後自動同步（使用者決定 2026-10-22）。
   ShopAutoRefresher(riot, shop, catalog);
 
@@ -83,6 +91,9 @@ Future<void> main() async {
         ChangeNotifierProvider.value(value: riot),
         ChangeNotifierProvider.value(value: collection),
         ChangeNotifierProvider.value(value: progress),
+        ChangeNotifierProvider.value(value: loadout),
+        ChangeNotifierProvider.value(value: penalties),
+        ChangeNotifierProvider.value(value: prices),
         Provider.value(value: matchClient),
         Provider.value(value: liveClient),
         Provider.value(value: matchCache),

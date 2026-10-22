@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../logic/progress_logic.dart';
+import '../models/penalty_status.dart';
 import '../models/progress_reference.dart';
 import '../providers/progress_provider.dart';
 import '../providers/riot_provider.dart';
+import '../providers/riot_resource.dart';
 import '../shell/app_shell.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
@@ -52,7 +54,9 @@ class _ProgressPageState extends State<ProgressPage> {
     super.didChangeDependencies();
     if (context.watch<RiotProvider>().isLoggedIn) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) context.read<ProgressProvider>().load();
+        if (!mounted) return;
+        context.read<ProgressProvider>().load();
+        context.read<PenaltyProvider?>()?.load();
       });
     }
   }
@@ -61,6 +65,7 @@ class _ProgressPageState extends State<ProgressPage> {
   Widget build(BuildContext context) {
     final riot = context.watch<RiotProvider>();
     final p = context.watch<ProgressProvider>();
+    final penalties = context.watch<PenaltyProvider?>();
 
     if (!riot.isLoggedIn) {
       return AppShell(
@@ -101,7 +106,12 @@ class _ProgressPageState extends State<ProgressPage> {
       actions: [
         IconButton(
           tooltip: '重新整理',
-          onPressed: p.isLoading ? null : p.refresh,
+          onPressed: p.isLoading
+              ? null
+              : () {
+                  p.refresh();
+                  penalties?.refresh();
+                },
           icon: const Icon(Icons.refresh),
         ),
       ],
@@ -119,6 +129,16 @@ class _ProgressPageState extends State<ProgressPage> {
                   OutlinedButton(onPressed: p.refresh, child: const Text('重試')),
                 ]),
               ),
+            ),
+          if (penalties != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: PenaltyCard(
+                  status: penalties.value,
+                  loading: penalties.isLoading,
+                  error: penalties.error,
+                  onRetry: penalties.refresh,
+                  now: now),
             ),
           if (loading)
             for (var i = 0; i < 3; i++)
@@ -467,4 +487,83 @@ class _MissionCard extends StatelessWidget {
           ],
         ),
       );
+}
+
+/// 排隊懲罰（只讀 GET）。社群文件沒有寫每一項的格式，只顯示讀得到的效果、到期時間與剩餘場數。
+class PenaltyCard extends StatelessWidget {
+  final PenaltyStatus? status;
+  final bool loading;
+  final String? error;
+  final VoidCallback onRetry;
+  final DateTime now;
+
+  const PenaltyCard({
+    super.key,
+    required this.status,
+    required this.loading,
+    required this.error,
+    required this.onRetry,
+    required this.now,
+  });
+
+  static String _remaining(Duration d) {
+    if (d.inDays > 0) return '${d.inDays} 天 ${d.inHours % 24} 小時';
+    if (d.inHours > 0) return '${d.inHours} 小時 ${d.inMinutes % 60} 分';
+    return '${d.inMinutes < 1 ? 1 : d.inMinutes} 分鐘';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final active = status?.activeAt(now) ?? const <Penalty>[];
+    final Widget body;
+    if (error != null) {
+      body = Row(children: [
+        Expanded(
+            child: Text('無法取得排隊懲罰', style: TextStyle(color: AppColors.error))),
+        OutlinedButton(onPressed: onRetry, child: const Text('重試')),
+      ]);
+    } else if (status == null) {
+      body = Text(loading ? '讀取排隊懲罰中…' : '尚未讀取排隊懲罰',
+          style: TextStyle(color: AppColors.muted));
+    } else if (active.isEmpty) {
+      body = Row(children: [
+        Icon(Icons.check_circle_outline, color: AppColors.win),
+        const SizedBox(width: 8),
+        const Expanded(child: Text('目前沒有排隊懲罰')),
+      ]);
+    } else {
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.gpp_maybe_outlined, color: AppColors.loss),
+            const SizedBox(width: 8),
+            Expanded(
+                child: Text('目前有 ${active.length} 項排隊懲罰',
+                    style: const TextStyle(fontWeight: FontWeight.w600))),
+          ]),
+          for (final p in active)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                [
+                  p.effects.isEmpty ? '懲罰' : p.effects.join('、'),
+                  if (p.expiresAt case final e?)
+                    '剩 ${_remaining(e.difference(now))}',
+                  if (p.gamesRemaining case final g?) '還要 $g 場',
+                ].join('・'),
+              ),
+            ),
+          const SizedBox(height: 6),
+          Text('格式依社群文件推測，可能不完整',
+              style: TextStyle(fontSize: 12, color: AppColors.muted)),
+        ],
+      );
+    }
+    return PanelCard(
+      key: const ValueKey('penalty-card'),
+      accent: active.isNotEmpty ? AppColors.loss : null,
+      child: body,
+    );
+  }
 }

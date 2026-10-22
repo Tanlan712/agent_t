@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../logic/skin_search.dart';
 import '../providers/catalog_provider.dart';
+import '../providers/offer_price_provider.dart';
 import '../providers/riot_provider.dart';
 import '../widgets/catalog_gate.dart';
 import '../shell/layout.dart';
@@ -34,6 +35,7 @@ class _SkinPickerPageState extends State<SkinPickerPage> {
   Widget build(BuildContext context) {
     final catalog = context.watch<CatalogProvider>();
     final riot = context.watch<RiotProvider>();
+    final prices = context.watch<OfferPriceProvider?>();
     return Scaffold(
       appBar: AppBar(title: const Text('選擇造型')),
       body: CatalogGate(
@@ -90,6 +92,7 @@ class _SkinPickerPageState extends State<SkinPickerPage> {
                                 itemCount: results.length,
                                 itemBuilder: (context, i) => SkinCard(
                                   skin: results[i],
+                                  price: prices?.priceOf(results[i]),
                                   owned: riot.isOwned(results[i].uuid),
                                   onTap: () =>
                                       Navigator.pop(context, results[i]),

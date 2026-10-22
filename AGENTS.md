@@ -73,6 +73,9 @@ Riot 的第三方 App 說明指出：暴露隱藏資訊、即時分析或帶來�
 | 自己擁有的收藏（使用者決定 2026-10-21）：`store/v1/entitlements/{puuid}/{ItemTypeID}` 的造型、炫彩、特務、吊飾、噴漆、玩家卡片、稱號，只能 GET | `pd.{shard}.a.pvp.net` |
 | 自己的帳號等級與經驗（使用者決定 2026-10-21）：`account-xp/v1/players/{puuid}`，只能 GET | `pd.{shard}.a.pvp.net` |
 | 自己的通行證與任務進度（使用者決定 2026-10-21）：`contracts/v1/contracts/{puuid}`，**只能 GET**；不得啟用合約（POST `contracts/v1/contracts/{puuid}/special/{id}`）或任何寫入 | `pd.{shard}.a.pvp.net` |
+| 全物品實際定價（使用者決定 2026-10-22）：`store/v1/offers/`，只能 GET；所有玩家共用的公開價格，可存進 localStorage | `pd.{shard}.a.pvp.net` |
+| 自己目前的裝備（使用者決定 2026-10-22）：`personalization/v2/players/{puuid}/playerloadout`，**只能 GET**；不得用同一路徑的 PUT 更換裝備 | `pd.{shard}.a.pvp.net` |
+| 自己的排隊懲罰（使用者決定 2026-10-22）：`restrictions/v3/penalties`，只能 GET | `pd.{shard}.a.pvp.net` |
 | 已結束場次的對戰紀錄、詳情、名稱、牌位 | `pd.{shard}.a.pvp.net` |
 | 即時對局（使用者核准，見第 2 節） | `glz-{region}-1.{shard}.a.pvp.net`，只能 GET |
 | 公開遊戲資料 | `valorant-api.com` |

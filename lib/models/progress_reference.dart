@@ -47,7 +47,10 @@ class RefChroma {
   final String skinUuid;
   final String? swatchUrl;
 
-  const RefChroma({required this.skinUuid, this.swatchUrl});
+  /// 這個炫彩的整把槍圖（目前裝備用）。
+  final String? iconUrl;
+
+  const RefChroma({required this.skinUuid, this.swatchUrl, this.iconUrl});
 }
 
 class RefAgent {
