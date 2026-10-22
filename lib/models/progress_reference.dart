@@ -47,7 +47,10 @@ class RefChroma {
   final String skinUuid;
   final String? swatchUrl;
 
-  const RefChroma({required this.skinUuid, this.swatchUrl});
+  /// 在造型 chromas 裡的順序；0 是基本款（人人都有，不在 entitlements 裡）。
+  final int index;
+
+  const RefChroma({required this.skinUuid, this.swatchUrl, this.index = -1});
 }
 
 class RefAgent {

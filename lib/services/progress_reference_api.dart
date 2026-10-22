@@ -59,10 +59,13 @@ class ProgressReferenceApi {
             videoUrl: levels[i]['streamedVideo'] as String?,
           );
         }
-        for (final c in (skin['chromas'] as List<dynamic>? ?? const [])
-            .cast<Map<String, dynamic>>()) {
-          chromas[_id(c['uuid'])] =
-              RefChroma(skinUuid: skinUuid, swatchUrl: c['swatch'] as String?);
+        final skinChromas = (skin['chromas'] as List<dynamic>? ?? const [])
+            .cast<Map<String, dynamic>>();
+        for (var i = 0; i < skinChromas.length; i++) {
+          chromas[_id(skinChromas[i]['uuid'])] = RefChroma(
+              skinUuid: skinUuid,
+              swatchUrl: skinChromas[i]['swatch'] as String?,
+              index: i);
         }
       }
     }

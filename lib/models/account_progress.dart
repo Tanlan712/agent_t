@@ -76,10 +76,14 @@ class ContractsSnapshot {
   final List<MissionProgress> missions;
   final DateTime? weeklyRefill;
 
+  /// 目前啟用的特務合約 ID（小寫）；沒有時為 null。
+  final String? activeSpecialContract;
+
   const ContractsSnapshot({
     required this.contracts,
     required this.missions,
     this.weeklyRefill,
+    this.activeSpecialContract,
   });
 
   factory ContractsSnapshot.fromJson(Map<String, dynamic> json) =>
@@ -94,5 +98,9 @@ class ContractsSnapshot {
         ],
         weeklyRefill: _time((json['MissionMetadata']
             as Map<String, dynamic>?)?['WeeklyRefillTime']),
+        activeSpecialContract: switch (json['ActiveSpecialContract']) {
+          final String id when id.isNotEmpty => id.toLowerCase(),
+          _ => null,
+        },
       );
 }

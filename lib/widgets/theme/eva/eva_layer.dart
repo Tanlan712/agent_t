@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -207,12 +208,25 @@ class _EvaLayerState extends State<EvaLayer> {
     }
     final bottom = m.maxScrollExtent > 0 && m.extentAfter <= 1;
     if (bottom != _atBottom) {
-      setState(() => _atBottom = bottom);
-      if (bottom && _eggsOn) {
-        context.read<SettingsProvider>().updateEva((s) => recordEgg(s, 'E17'));
+      // 版面配置中（例如清單長度改變時的捲動通知）不能 setState，改到這一幀結束後。
+      if (SchedulerBinding.instance.schedulerPhase ==
+          SchedulerPhase.persistentCallbacks) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _setAtBottom(bottom);
+        });
+      } else {
+        _setAtBottom(bottom);
       }
     }
     return false;
+  }
+
+  void _setAtBottom(bool bottom) {
+    if (bottom == _atBottom) return;
+    setState(() => _atBottom = bottom);
+    if (bottom && _eggsOn) {
+      context.read<SettingsProvider>().updateEva((s) => recordEgg(s, 'E17'));
+    }
   }
 
   void _show(Widget overlay, Duration? autoClose, {String? egg}) {

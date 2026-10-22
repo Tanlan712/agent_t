@@ -44,6 +44,9 @@ class MatchReferenceProvider with ChangeNotifier {
   RefItem agent(String uuid) =>
       _reference?.agents[uuid.toLowerCase()] ?? _fallback(uuid);
 
+  /// 所有地圖（mapUrl → 名稱）；自訂對戰選地圖用。
+  Map<String, RefItem> get maps => _reference?.maps ?? const {};
+
   RefItem map(String mapUrl) =>
       _reference?.maps[mapUrl] ?? _fallback(mapUrl.split('/').last);
 

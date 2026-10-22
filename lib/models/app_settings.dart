@@ -30,6 +30,16 @@ class AppSettings {
   final String? evaLastOpenDate;
   final List<String> evaFoundEggs;
 
+  /// 遠端操作（規格 2026-10-22-remote-control-design.md）：使用者在設定頁同意後才為 true，
+  /// 未同意時所有寫入 Riot 的功能都隱藏且不會送出。
+  final bool remoteControl;
+
+  /// 同意遠端操作的時間（ISO 字串）；未同意時為 null。
+  final String? remoteControlSince;
+
+  /// 預選特務（valorant-api 的特務 UUID，小寫）；只在同意遠端操作時使用。
+  final String? preferredAgent;
+
   const AppSettings({
     this.resetHour = 8,
     this.resetMinute = 0,
@@ -50,6 +60,9 @@ class AppSettings {
     this.evaEpisodeDays = 0,
     this.evaLastOpenDate,
     this.evaFoundEggs = const [],
+    this.remoteControl = false,
+    this.remoteControlSince,
+    this.preferredAgent,
   });
 
   AppSettings copyWith({
@@ -93,8 +106,39 @@ class AppSettings {
       evaEpisodeDays: evaEpisodeDays ?? this.evaEpisodeDays,
       evaLastOpenDate: evaLastOpenDate ?? this.evaLastOpenDate,
       evaFoundEggs: evaFoundEggs ?? this.evaFoundEggs,
+      remoteControl: remoteControl,
+      remoteControlSince: remoteControlSince,
+      preferredAgent: preferredAgent,
     );
   }
+
+  /// 遠端操作的三個欄位直接設定（可以清成 null，[copyWith] 做不到）。
+  AppSettings withRemote(
+          {required bool enabled, String? since, String? preferredAgent}) =>
+      AppSettings(
+        resetHour: resetHour,
+        resetMinute: resetMinute,
+        highlightWishlist: highlightWishlist,
+        loginShard: loginShard,
+        navOrder: navOrder,
+        themeStyle: themeStyle,
+        themeAccent: themeAccent,
+        themeBrightness: themeBrightness,
+        backgroundMotion: backgroundMotion,
+        evaEnabled: evaEnabled,
+        evaTitleCards: evaTitleCards,
+        evaSeenUltraDate: evaSeenUltraDate,
+        evaAngelCount: evaAngelCount,
+        evaAngelYear: evaAngelYear,
+        evaBootDate: evaBootDate,
+        evaBerserkUnlocked: evaBerserkUnlocked,
+        evaEpisodeDays: evaEpisodeDays,
+        evaLastOpenDate: evaLastOpenDate,
+        evaFoundEggs: evaFoundEggs,
+        remoteControl: enabled,
+        remoteControlSince: enabled ? since : null,
+        preferredAgent: enabled ? preferredAgent : null,
+      );
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
     // 主題與 EVA 欄位型別不對時退回預設，不丟例外（舊版或被手動修改的 localStorage）。
@@ -134,6 +178,12 @@ class AppSettings {
                 if (e is String) e
             ]
           : const [],
+      // 只有明確的 true 才算同意；舊版或被手動修改的值一律視為未同意。
+      remoteControl: json['remoteControl'] == true,
+      remoteControlSince:
+          json['remoteControl'] == true ? optStr('remoteControlSince') : null,
+      preferredAgent:
+          json['remoteControl'] == true ? optStr('preferredAgent') : null,
     );
   }
 
@@ -157,5 +207,8 @@ class AppSettings {
         'evaEpisodeDays': evaEpisodeDays,
         'evaLastOpenDate': evaLastOpenDate,
         'evaFoundEggs': evaFoundEggs,
+        'remoteControl': remoteControl,
+        'remoteControlSince': remoteControlSince,
+        'preferredAgent': preferredAgent,
       };
 }
