@@ -30,7 +30,14 @@
 - `android/`：applicationId／namespace 改為 `io.github.tanlan712.valorant_shop_tracker`、名稱「VAL 商店」、
   INTERNET 權限、深色啟動畫面、新圖示；Kotlin 外掛升到 2.1.0（webview／shared_preferences 的 Android 外掛使用 Kotlin 2.1）。
   release 有 `key.properties` 時用正式金鑰，否則用 debug 金鑰。
-- `.github/workflows/android.yml`：master 推送時跑測試、建 APK，發布成 GitHub Release（`android-v{run}`，標為 latest）。
+- `.github/workflows/mobile.yml`：PR 只建置；master 推送時跑測試、建 APK 與未簽章 IPA，發布成 GitHub Release（`app-v{run}`，標為 latest）。
+
+### iOS（使用者決定 2026-10-22：原生 iOS，用免費 Apple ID）
+
+- `flutter create --platforms=ios` 產生 `ios/`；bundle id `io.github.tanlan712.valorantShopTracker`、名稱「VAL 商店」、
+  深色啟動畫面、新圖示。`inAppLoginSupported` 加上 iOS，內嵌登入與 Android 共用。
+- CI 在 macOS 上 `flutter build ios --no-codesign`，打包成未簽章 IPA；使用者用 Sideloadly 或 Xcode 以自己的 Apple ID 簽章（`docs/ios.md`）。
+- 測試：`inAppLoginSupported` 在 Android／iOS 為 true，其他平台為 false。
 
 ### 測試
 
@@ -41,4 +48,4 @@
 ### 不做
 
 - token 自動續期（`ssid` cookie 重新授權）、讀取 cookie 或表單、注入 JavaScript。
-- 上架 Google Play、iOS 原生版、Windows 原生版。
+- 上架 Google Play／App Store、TestFlight、Windows 原生版。

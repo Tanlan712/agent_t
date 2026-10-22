@@ -1,7 +1,7 @@
 # AGENTS.md：給 AI 代理與開發者的專案規則
 
 本專案是 VALORANT 商店／對戰紀錄的 **Flutter Web** 工具，主要在使用者的瀏覽器裡執行；
-另外有使用者核准的 Android App 版本（第 3 節「Android App」），用同一份程式碼建置。
+另外有使用者核准的 Android 與 iOS App 版本（第 3 節「手機 App」），用同一份程式碼建置。
 **最高原則是防外掛**（使用者於 2026-10-21 確認）：絕對不做任何會被 Riot Vanguard 或 ToS 視為外掛、作弊或第三方作弊軟體的行為（第 1 節），以免帳號被誤封。
 第 2 節的開發者政策規定屬於另一層帳號風險，**逐項由使用者決定**；決定要記錄在本文件裡。
 需求和第 1 節衝突，或無法判斷屬於哪一類時，**先停下來問使用者，不要自行決定。**
@@ -31,7 +31,7 @@
   讀取 `lockfile`、`ShooterGame.log` 或 `%LocalAppData%\VALORANT` 底下的檔案。
   （Riot 的 FAQ 表示 LCU 類 API 在 Vanguard 下仍可運作，但本專案為了降低風險，一律不使用。）
 - 開發或要求使用者安裝與遊戲同時執行、會接觸遊戲的原生程式、瀏覽器擴充功能或驅動程式。
-  （Android App 只在手機上執行、只連第 3 節的遠端伺服器，不接觸電腦上的遊戲，不屬於這一項；不得做成 Windows 原生版。）
+  （手機 App 只在手機上執行、只連第 3 節的遠端伺服器，不接觸電腦上的遊戲，不屬於這一項；不得做成 Windows 原生版。）
 
 ## 2. 政策風險：開發者政策的公平性與隱私（由使用者逐項決定）
 
@@ -81,12 +81,14 @@ Riot 的第三方 App 說明指出：暴露隱藏資訊、即時分析或帶來�
 - **頻率**：背景請求同時最多 2 個；429 和連線失敗時依 `Retry-After` 或 2s／4s／8s 退避，最多重試 3 次；能快取就快取。
 - 瀏覽器擋下的端點（沒有 CORS 標頭）**不可**用本機代理、修改瀏覽器安全設定或擴充功能繞過。
 
-### Android App（使用者決定 2026-10-22）
+### 手機 App（使用者決定 2026-10-22）
 
 使用者核准把同一份程式碼建置成**自己側載安裝的 Android APK**，並在 App 內嵌 Riot 官方登入頁、自動擷取登入後的 token。
 已向使用者說明：這是第 3 節「只能從瀏覽器」的例外；Riot 可能擋內嵌網頁登入；APK 只能側載，不能上架。
 
-- 只有 Android App（`!kIsWeb` 且平台是 Android）顯示內嵌登入；網頁版維持原本的貼網址登入。
+- **使用者決定（2026-10-22）**：iOS 也做原生 App，用使用者自己的 Mac、Xcode 與免費 Apple ID 簽章安裝（每 7 天要重新安裝），
+  規則與 Android 相同。不上架 App Store、不用 TestFlight。
+- 只有 Android／iOS App（`!kIsWeb` 且平台是 Android 或 iOS）顯示內嵌登入；網頁版維持原本的貼網址登入。
 - 內嵌頁只開 `riotLoginUrl`，使用者自己在 Riot 頁面輸入帳密。App **不得**注入或執行任何 JavaScript、
   不得加 JavaScript channel、不得讀取表單或 cookie 的內容。
 - 偵測到跳轉到 `https://playvalorant.com/opt_in#access_token=…` 時攔下這次導覽（不載入 playvalorant.com），
@@ -94,12 +96,12 @@ Riot 的第三方 App 說明指出：暴露隱藏資訊、即時分析或帶來�
 - **不做** token 自動續期（用 Riot 的 `ssid` cookie 重新授權等於模擬 Riot Client 登入，ToS 風險較高）；
   過期後由使用者再按一次登入。WebView 自己保存的 Riot 登入 cookie 只由 WebView 使用，效果和瀏覽器的「保持登入」相同。
 - 允許的主機、只讀與頻率限制與上表完全相同；原生 App 沒有 CORS 限制，**不可**因此呼叫上表以外的端點。
-- APK 由 GitHub Actions 建置並放在 GitHub Release；`lib/` 仍不可使用 `dart:io`。
+- APK／IPA 由 GitHub Actions 建置並放在 GitHub Release（iOS 是未簽章的 IPA，由使用者自己簽章）；`lib/` 仍不可使用 `dart:io`。
 
 ## 4. 帳號與機密
 
 - 不得詢問、儲存或輸入使用者的 Riot 帳號密碼，也不得替使用者登入。
-  （Android App 的內嵌登入頁由使用者自己在 Riot 頁面輸入，App 不讀取，見第 3 節。）
+  （手機 App 的內嵌登入頁由使用者自己在 Riot 頁面輸入，App 不讀取，見第 3 節。）
 - token 不得寫入 log、錯誤訊息或測試資料（測試只能用假 token）。
   - **使用者決定（2026-10-21）**：為了重新開啟頁面後保持登入，登入成功時把登入資訊（含 token）存進瀏覽器 localStorage；
     按「登出」或 API 回報授權失敗時立即刪除；token 約 1 小時過期，過期後下次開啟頁面讀回時刪除、不使用。

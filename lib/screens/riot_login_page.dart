@@ -11,7 +11,7 @@ import '../widgets/hud/hud.dart';
 import 'riot_web_login_page.dart';
 
 /// Riot 登入：使用者在 Riot 官方頁面登入後，把跳轉網址貼回來。
-/// Android App 另外提供內嵌登入，登入完成後自動帶回跳轉網址。
+/// Android／iOS App 另外提供內嵌登入，登入完成後自動帶回跳轉網址。
 class RiotLoginPage extends StatefulWidget {
   const RiotLoginPage({
     super.key,

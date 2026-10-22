@@ -31,6 +31,7 @@ flutter run -d web-server --web-port 8642 --web-hostname localhost
 - **iPhone／iPad（Safari）**：開啟網站 → 分享按鈕 →「加入主畫面」。
 - **電腦（Chrome／Edge）**：網址列右側的安裝圖示。
 - **Android App（APK）**：另外有可以側載安裝的 App，支援在 App 內直接登入 Riot，見 [docs/android.md](docs/android.md)。
+- **iOS App**：用自己的免費 Apple ID 簽章安裝（每 7 天重裝一次），見 [docs/ios.md](docs/ios.md)。
 
 安裝後仍然是同一個網站，網站更新後重新開啟就會套用。Android 與電腦的資料和瀏覽器共用；iPhone 加入主畫面後的資料與 Safari 分開，需要在 App 裡另外登入一次。
 

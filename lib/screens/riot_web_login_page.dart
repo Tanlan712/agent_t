@@ -4,9 +4,11 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../services/riot_auth.dart';
 
-/// 只有 Android App 有內嵌登入（AGENTS.md 第 3 節「Android App」）；網頁版維持貼網址。
+/// 只有 Android／iOS App 有內嵌登入（AGENTS.md 第 3 節「手機 App」）；網頁版維持貼網址。
 bool get inAppLoginSupported =>
-    !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    !kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS);
 
 /// 開啟內嵌 Riot 登入頁；登入完成時回傳跳轉網址，使用者關掉頁面時回傳 null。
 Future<String?> openRiotWebLogin(BuildContext context) =>

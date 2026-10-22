@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build mobile apps
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
     paths-ignore:
       - '**.md'
       - 'docs/**'
-  # PR 只建置、不發布，用來先確認 APK 建得出來。
+  # PR 只建置、不發布，用來先確認 APK／IPA 建得出來。
   pull_request:
     paths-ignore:
       - '**.md'
@@ -18,7 +18,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: android-${{ github.ref }}
+  group: mobile-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -68,18 +68,55 @@ jobs:
       - run: mv build/app/outputs/flutter-apk/app-release.apk valorant-shop-tracker.apk
 
       - uses: actions/upload-artifact@v4
-        if: github.event_name == 'pull_request'
         with:
           name: valorant-shop-tracker-apk
           path: valorant-shop-tracker.apk
 
-      - uses: softprops/action-gh-release@v2
-        if: github.event_name != 'pull_request'
+  # 未簽章的 IPA：由使用者用自己的免費 Apple ID 簽章安裝（見 docs/ios.md）。
+  ipa:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
         with:
-          tag_name: android-v${{ github.run_number }}
-          name: Android 版 #${{ github.run_number }}
+          flutter-version: 3.24.5
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - run: flutter build ios --release --no-codesign --build-number ${{ github.run_number }}
+
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/ios/iphoneos/Runner.app Payload/
+          zip -qry valorant-shop-tracker-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: valorant-shop-tracker-ipa
+          path: valorant-shop-tracker-unsigned.ipa
+
+  release:
+    if: github.event_name != 'pull_request'
+    needs: [apk, ipa]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: app-v${{ github.run_number }}
+          name: 手機 App #${{ github.run_number }}
           body: |
-            自己側載安裝用的 Android App（${{ github.sha }}）。
-            手機下載最新版：https://github.com/${{ github.repository }}/releases/latest/download/valorant-shop-tracker.apk
-          files: valorant-shop-tracker.apk
+            自己側載安裝用的手機 App（${{ github.sha }}）。
+            Android：https://github.com/${{ github.repository }}/releases/latest/download/valorant-shop-tracker.apk
+            iOS（未簽章，用自己的 Apple ID 簽章安裝，見 docs/ios.md）：https://github.com/${{ github.repository }}/releases/latest/download/valorant-shop-tracker-unsigned.ipa
+          files: |
+            valorant-shop-tracker.apk
+            valorant-shop-tracker-unsigned.ipa
           make_latest: true
