@@ -9,7 +9,7 @@ Apple 不允許直接安裝未簽章的 App，所以需要用**自己的免費 A
 ## 方法一：Windows 或 Mac 用 Sideloadly（不需要 Xcode）
 
 1. 電腦安裝 [Sideloadly](https://sideloadly.io/) 與 iTunes（Windows 要用 Apple 官網版，不要用 Microsoft Store 版）。
-2. 下載 <https://github.com/Tanlan712/valorant_shop_tracker/releases/latest/download/valorant-shop-tracker-unsigned.ipa>。
+2. 下載 <https://github.com/Tanlan712/valorant_shop_tracker/releases/latest/download/Agent-T-unsigned.ipa>。
 3. iPhone 用傳輸線接上電腦並按「信任」，在 Sideloadly 選這個 IPA、輸入自己的 Apple ID，按 Start。
    （Apple ID 密碼是交給 Sideloadly 與 Apple 的，和本 App 無關；可以改用 Apple 的 App 專用密碼。）
 4. iPhone：設定 → 一般 →「VPN 與裝置管理」→ 信任自己的 Apple ID。

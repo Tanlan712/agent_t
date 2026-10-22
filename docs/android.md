@@ -5,7 +5,7 @@
 
 ## 安裝
 
-1. 手機開啟 <https://github.com/Tanlan712/valorant_shop_tracker/releases/latest/download/valorant-shop-tracker.apk> 下載。
+1. 手機開啟 <https://github.com/Tanlan712/valorant_shop_tracker/releases/latest/download/Agent-T.apk> 下載。
 2. 開啟下載的檔案，依提示允許「安裝不明來源的應用程式」。
 3. 之後 master 每次更新（文件除外），GitHub Actions 會自動建出新版，重新下載安裝即可覆蓋。
 

@@ -65,12 +65,12 @@ jobs:
 
       - run: flutter build apk --release --build-number ${{ github.run_number }}
 
-      - run: mv build/app/outputs/flutter-apk/app-release.apk valorant-shop-tracker.apk
+      - run: mv build/app/outputs/flutter-apk/app-release.apk Agent-T.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: valorant-shop-tracker-apk
-          path: valorant-shop-tracker.apk
+          name: agent-t-apk
+          path: Agent-T.apk
 
   # 未簽章的 IPA：由使用者用自己的免費 Apple ID 簽章安裝（見 docs/ios.md）。
   ipa:
@@ -92,12 +92,12 @@ jobs:
         run: |
           mkdir -p Payload
           cp -R build/ios/iphoneos/Runner.app Payload/
-          zip -qry valorant-shop-tracker-unsigned.ipa Payload
+          zip -qry Agent-T-unsigned.ipa Payload
 
       - uses: actions/upload-artifact@v4
         with:
-          name: valorant-shop-tracker-ipa
-          path: valorant-shop-tracker-unsigned.ipa
+          name: agent-t-ipa
+          path: Agent-T-unsigned.ipa
 
   release:
     if: github.event_name != 'pull_request'
@@ -114,11 +114,11 @@ jobs:
           name: 'Agent T #${{ github.run_number }}'
           body: |
             自己側載安裝用的手機 App（${{ github.sha }}）。
-            Android：https://github.com/${{ github.repository }}/releases/latest/download/valorant-shop-tracker.apk
-            iOS（未簽章，用自己的 Apple ID 簽章安裝，見 docs/ios.md）：https://github.com/${{ github.repository }}/releases/latest/download/valorant-shop-tracker-unsigned.ipa
+            Android：https://github.com/${{ github.repository }}/releases/latest/download/Agent-T.apk
+            iOS（未簽章，用自己的 Apple ID 簽章安裝，見 docs/ios.md）：https://github.com/${{ github.repository }}/releases/latest/download/Agent-T-unsigned.ipa
           files: |
-            valorant-shop-tracker.apk
-            valorant-shop-tracker-unsigned.ipa
+            Agent-T.apk
+            Agent-T-unsigned.ipa
           make_latest: true
 
       # 只保留最新一版：刪掉其他 app-v* release，連同它們的 tag。
