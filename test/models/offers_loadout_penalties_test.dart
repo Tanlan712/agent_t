@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/logic/loadout_logic.dart';
+import 'package:valorant_shop_tracker/logic/equipped_view.dart';
 import 'package:valorant_shop_tracker/models/offer_prices.dart';
 import 'package:valorant_shop_tracker/models/penalty_status.dart';
 import 'package:valorant_shop_tracker/models/player_loadout.dart';

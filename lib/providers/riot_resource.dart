@@ -102,8 +102,8 @@ class RiotResource<T> with ChangeNotifier {
 }
 
 /// 目前裝備（收藏頁「目前裝備」分頁）。
-class LoadoutProvider extends RiotResource<PlayerLoadout> {
-  LoadoutProvider(RiotProvider riot, RiotClient client, {super.delay})
+class EquippedLoadoutProvider extends RiotResource<PlayerLoadout> {
+  EquippedLoadoutProvider(RiotProvider riot, RiotClient client, {super.delay})
       : super(riot, client.fetchLoadout, label: '取得目前裝備');
 }
 

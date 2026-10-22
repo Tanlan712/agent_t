@@ -69,7 +69,7 @@ Future<void> main() async {
   final collection = CollectionProvider(riot, riotClient);
   final progress = ProgressProvider(riot, riotClient, ProgressReferenceApi());
   // 目前裝備與排隊懲罰（只讀 GET，AGENTS.md 第 3 節）。
-  final loadout = LoadoutProvider(riot, riotClient);
+  final equipped = EquippedLoadoutProvider(riot, riotClient);
   final penalties = PenaltyProvider(riot, riotClient);
   // 造型的實際定價：同步商店時順便記下看到的價格（不另外送請求）。
   final prices = OfferPriceProvider(OfferPriceStorage(prefs));
@@ -92,7 +92,7 @@ Future<void> main() async {
         ChangeNotifierProvider.value(value: riot),
         ChangeNotifierProvider.value(value: collection),
         ChangeNotifierProvider.value(value: progress),
-        ChangeNotifierProvider.value(value: loadout),
+        ChangeNotifierProvider.value(value: equipped),
         ChangeNotifierProvider.value(value: penalties),
         ChangeNotifierProvider.value(value: prices),
         Provider.value(value: matchClient),

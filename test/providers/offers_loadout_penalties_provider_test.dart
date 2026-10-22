@@ -106,8 +106,13 @@ void main() {
   });
 
   group('RiotResource（目前裝備、排隊懲罰）', () {
-    Future<(LoadoutProvider, PenaltyProvider, RiotProvider, List<http.Request>)>
-        make({int loadoutStatus = 200, int penaltiesStatus = 200}) async {
+    Future<
+        (
+          EquippedLoadoutProvider,
+          PenaltyProvider,
+          RiotProvider,
+          List<http.Request>
+        )> make({int loadoutStatus = 200, int penaltiesStatus = 200}) async {
       final requests = <http.Request>[];
       final client = RiotClient(
           client: riotClient(
@@ -120,7 +125,7 @@ void main() {
       final riot = RiotProvider(client);
       await riot.login(fakeRedirect);
       return (
-        LoadoutProvider(riot, client, delay: (_) async {}),
+        EquippedLoadoutProvider(riot, client, delay: (_) async {}),
         PenaltyProvider(riot, client, delay: (_) async {}),
         riot,
         requests,

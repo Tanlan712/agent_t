@@ -137,7 +137,7 @@ void main() {
       final h = await open(tester, status: 500);
       expect(find.textContaining('取得目前裝備'), findsOneWidget);
       expect(find.text('重試'), findsOneWidget);
-      expect(h.loadout.error, isNotNull);
+      expect(h.equipped.error, isNotNull);
     });
   });
 

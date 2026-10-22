@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../logic/database_logic.dart' show groupByWeaponCategory;
-import '../logic/loadout_logic.dart';
+import '../logic/equipped_view.dart';
 import '../logic/progress_logic.dart';
 import '../models/match_models.dart' show RefItem;
 import '../models/player_loadout.dart';
@@ -53,7 +53,7 @@ class _CollectionPageState extends State<CollectionPage> {
         // 先下載公開參考資料（不送 Riot 請求），首屏不必等 Riot 端；
         // Riot 請求另有全域限流（同時最多 2 個）。
         progress.ensureReference();
-        final loadout = context.read<LoadoutProvider?>();
+        final loadout = context.read<EquippedLoadoutProvider?>();
         await context.read<CollectionProvider>().load();
         await loadout?.load();
         await progress.load();
@@ -66,7 +66,7 @@ class _CollectionPageState extends State<CollectionPage> {
     final riot = context.watch<RiotProvider>();
     final col = context.watch<CollectionProvider>();
     final progress = context.watch<ProgressProvider>();
-    final loadout = context.watch<LoadoutProvider?>();
+    final loadout = context.watch<EquippedLoadoutProvider?>();
     final ref = progress.ref;
 
     if (!riot.isLoggedIn) {

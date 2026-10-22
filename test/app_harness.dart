@@ -79,7 +79,7 @@ class Harness {
   final LiveClient liveClient;
   late final CollectionProvider collection;
   late final ProgressProvider progress;
-  late final LoadoutProvider loadout;
+  late final EquippedLoadoutProvider equipped;
   late final PenaltyProvider penalties;
   late final OfferPriceProvider prices;
   late final RecentFormLoader recentForm =
@@ -148,7 +148,7 @@ class Harness {
     h.progress = ProgressProvider(riot, rc,
         progressApi ?? ProgressReferenceApi(client: riotHttp ?? riotClient()),
         delay: (_) async {});
-    h.loadout = LoadoutProvider(riot, rc, delay: (_) async {});
+    h.equipped = EquippedLoadoutProvider(riot, rc, delay: (_) async {});
     h.penalties = PenaltyProvider(riot, rc, delay: (_) async {});
     h.prices =
         OfferPriceProvider(OfferPriceStorage(prefs), now: now ?? DateTime.now);
@@ -193,7 +193,7 @@ class Harness {
         ChangeNotifierProvider.value(value: riot),
         ChangeNotifierProvider.value(value: collection),
         ChangeNotifierProvider.value(value: progress),
-        ChangeNotifierProvider.value(value: loadout),
+        ChangeNotifierProvider.value(value: equipped),
         ChangeNotifierProvider.value(value: penalties),
         ChangeNotifierProvider.value(value: prices),
         Provider.value(value: matchClient),
