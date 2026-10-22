@@ -11,10 +11,15 @@ class NavItem {
   const NavItem(this.route, this.label, this.icon, this.group);
 }
 
+/// 願望清單暫時關閉（使用者決定 2026-10-22）：隱藏入口、上架卡片與標示，
+/// 程式與已存的清單都保留，改回 true 就恢復。
+const wishlistEnabled = false;
+
 /// 側邊導覽的項目；導覽列與抽屜共用。
 const List<NavItem> navItems = [
   NavItem('/', '我的商店', Icons.storefront, NavGroup.shop),
-  NavItem('/wishlist', '願望清單', Icons.star, NavGroup.shop),
+  if (wishlistEnabled)
+    NavItem('/wishlist', '願望清單', Icons.star, NavGroup.shop),
   NavItem('/matches', '對戰紀錄', Icons.history, NavGroup.shop),
   NavItem('/live', '即時對局', Icons.sensors, NavGroup.shop),
   NavItem('/players', '遇過的玩家', Icons.people_outline, NavGroup.shop),
@@ -38,8 +43,13 @@ const navGroupLabels = {
 /// `/my-shop` 與 `/` 是同一頁。
 String canonicalRoute(String route) => route == '/my-shop' ? '/' : route;
 
-/// 手機底部導覽的 4 個常用頁面（第 5 項是「更多」）。
-const bottomNavRoutes = ['/', '/matches', '/live', '/wishlist'];
+/// 手機底部導覽的 4 個常用頁面（第 5 項是「更多」）；願望清單關閉時換成我的收藏。
+const bottomNavRoutes = [
+  '/',
+  '/matches',
+  '/live',
+  wishlistEnabled ? '/wishlist' : '/collection',
+];
 
 /// 依使用者自訂順序排列導覽項目：只在同一組內調整，組的先後不變；
 /// 沒列在 [order] 的項目照預設順序接在組尾，未知的路由忽略。

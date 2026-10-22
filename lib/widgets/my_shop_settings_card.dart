@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/catalog_provider.dart';
 import '../providers/settings_provider.dart';
+import '../shell/nav_items.dart' show wishlistEnabled;
 
 String _two(int n) => n.toString().padLeft(2, '0');
 
@@ -53,12 +54,13 @@ class MyShopSettingsCard extends StatelessWidget {
                 }
               },
             ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('標示願望清單'),
-              value: settings.highlightWishlist,
-              onChanged: settingsProvider.setHighlightWishlist,
-            ),
+            if (wishlistEnabled)
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('標示願望清單'),
+                value: settings.highlightWishlist,
+                onChanged: settingsProvider.setHighlightWishlist,
+              ),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.download),

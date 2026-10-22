@@ -12,6 +12,7 @@ import '../providers/settings_provider.dart';
 import '../providers/shop_provider.dart';
 import '../providers/wishlist_provider.dart';
 import '../shell/app_shell.dart';
+import '../shell/nav_items.dart' show wishlistEnabled;
 import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
 import '../widgets/bundle_tile.dart';
@@ -34,10 +35,6 @@ String formatRemaining(Duration d) =>
     '剩餘 ${d.inHours} 小時 ${d.inMinutes % 60} 分';
 
 String _compact(Duration d) => '${d.inHours} 小時 ${d.inMinutes % 60} 分';
-
-/// KPI 用的短格式（時:分），窄欄也放得下。
-String _clock(Duration d) =>
-    '${d.inHours}:${(d.inMinutes % 60).toString().padLeft(2, '0')}';
 
 /// 組合包的剩餘時間：一天以上顯示天與小時。
 String bundleRemaining(Duration d) {
@@ -84,26 +81,20 @@ class _DailyRow extends StatelessWidget {
 int _discount(int original, int now) =>
     original <= 0 ? 0 : ((1 - now / original) * 100).round();
 
-/// 頁首 KPI：每日商店倒數；登入且同步後加上錢包與已擁有造型數。
+/// 頁首 KPI：登入且同步後顯示錢包。
+/// （刷新倒數已在每日商店標題；已擁有造型數移到我的收藏，使用者決定 2026-10-22。）
 class _ShopKpi extends StatelessWidget {
-  final String daily;
-  final RiotWallet? wallet;
-  final int? owned;
+  final RiotWallet wallet;
 
-  const _ShopKpi(
-      {required this.daily, required this.wallet, required this.owned});
+  const _ShopKpi({required this.wallet});
 
   @override
   Widget build(BuildContext context) {
     final w = wallet;
     final tiles = [
-      KpiTile(label: '商店刷新', value: daily),
-      if (w != null) ...[
-        KpiTile(label: 'VP', value: '${w.vp}'),
-        KpiTile(label: '輻能點數', value: '${w.radianite}'),
-        KpiTile(label: '王國幣', value: '${w.kingdom}'),
-      ],
-      if (owned != null) KpiTile(label: '已擁有造型', value: '$owned'),
+      KpiTile(label: 'VP', value: '${w.vp}'),
+      KpiTile(label: '輻能點數', value: '${w.radianite}'),
+      KpiTile(label: '王國幣', value: '${w.kingdom}'),
     ];
     // 右欄直向堆疊；6 欄以下由 BentoGrid 換到下一列，仍是直向。
     return Column(
@@ -132,7 +123,7 @@ class MyShopPage extends StatelessWidget {
     final catalog = context.watch<CatalogProvider>();
     final shop = context.watch<ShopProvider>().shop;
     final wishlist = context.watch<WishlistProvider>();
-    final highlight =
+    final highlight = wishlistEnabled &&
         context.watch<SettingsProvider>().settings.highlightWishlist;
     final riot = context.watch<RiotProvider>();
     final t = now();
@@ -300,22 +291,20 @@ class MyShopPage extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 24),
           children: [
             LayoutBuilder(builder: (context, c) {
-              final kpi = _ShopKpi(
-                daily: shop.daily.isEmpty
-                    ? '—'
-                    : dailyActive
-                        ? _clock(shop.dailyExpiresAt!.difference(t))
-                        : '已過期',
-                wallet: riot.wallet,
-                owned: riot.wallet == null ? null : riot.ownedSkinUuids.length,
-              );
-              final hits = _WishlistHits(
-                enabled: highlight,
-                names: [
-                  for (final id in matched)
-                    catalog.skinById(id)?.name ?? '未知造型',
-                ],
-              );
+              final kpi = riot.wallet == null
+                  ? null
+                  : _ShopKpi(wallet: riot.wallet!);
+              // 願望清單暫時關閉時不顯示上架卡片。
+              final hits = wishlistEnabled
+                  ? _WishlistHits(
+                      enabled: highlight,
+                      names: [
+                        for (final id in matched)
+                          catalog.skinById(id)?.name ?? '未知造型',
+                      ],
+                    )
+                  : null;
+              final side = [if (kpi != null) kpi, if (hits != null) hits];
               // 有兩欄時左右各自往下排：右欄 KPI 較高也不會在每日商店下面留白。
               // 單欄（手機）維持 每日商店 → KPI → 夜市 → 願望清單 的順序。
               final twoColumns = bentoColumns(c.maxWidth) > 1;
@@ -337,15 +326,15 @@ class MyShopPage extends StatelessWidget {
                 // 有組合包時放在最上方；還沒有資料時放到最後，不把每日商店推下去。
                 if (bundles.isNotEmpty)
                   BentoTile(span: 12, child: bundleSection),
-                if (twoColumns) ...[
+                if (twoColumns && side.isNotEmpty) ...[
                   BentoTile(
                       span: 8, child: stack([dailySection, nightSection])),
-                  BentoTile(span: 4, child: stack([kpi, hits])),
+                  BentoTile(span: 4, child: stack(side)),
                 ] else ...[
-                  BentoTile(span: 8, child: dailySection),
-                  BentoTile(span: 4, child: kpi),
-                  BentoTile(span: 8, child: nightSection),
-                  BentoTile(span: 4, child: hits),
+                  BentoTile(span: side.isEmpty ? 12 : 8, child: dailySection),
+                  if (kpi != null) BentoTile(span: 4, child: kpi),
+                  BentoTile(span: side.isEmpty ? 12 : 8, child: nightSection),
+                  if (hits != null) BentoTile(span: 4, child: hits),
                 ],
                 if (bundles.isEmpty) BentoTile(span: 12, child: bundleSection),
               ]);

@@ -10,6 +10,7 @@ import '../../../providers/riot_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../providers/shop_provider.dart';
 import '../../../providers/wishlist_provider.dart';
+import '../../../shell/nav_items.dart' show wishlistEnabled;
 import '../../../theme/app_fonts.dart';
 import '../../../theme/app_palette.dart';
 import '../../../theme/eva_names.dart';
@@ -201,7 +202,8 @@ class EvaBanners extends StatelessWidget {
     if (route == '/') {
       final shop = context.watch<ShopProvider>().shop;
       final wish = context.watch<WishlistProvider>().uuids;
-      if (allWishlisted([for (final e in shop.daily) e.skinUuid], wish)) {
+      if (wishlistEnabled &&
+          allWishlisted([for (final e in shop.daily) e.skinUuid], wish)) {
         recordEggOnce(context, 'E14');
         children.add(const _Banner(
             key: ValueKey('banner-complete'),
