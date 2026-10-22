@@ -7,10 +7,10 @@ import '../providers/match_history_provider.dart';
 import '../providers/match_reference_provider.dart';
 import '../providers/recent_form_loader.dart';
 import '../theme/app_theme.dart';
-import '../widgets/hud/hud.dart';
 import '../widgets/recent_form_cell.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
-import 'match_history_page.dart' show formatMatchTime, resultColor, resultLabel;
+import 'match_history_page.dart'
+    show MvpChip, formatMatchTime, resultColor, resultLabel;
 
 /// 單場兩隊計分板；打開後在背景載入每位玩家的最近 5 場。
 class MatchDetailPage extends StatefulWidget {
@@ -299,7 +299,7 @@ class _TeamTable extends StatelessWidget {
                                         color: AppColors.muted, fontSize: 12)),
                                 if (p.mvp != MvpKind.none) ...[
                                   const SizedBox(width: 6),
-                                  _MvpTag(
+                                  MvpChip(
                                       key: ValueKey('mvp-${p.puuid}'),
                                       kind: p.mvp),
                                 ],
@@ -342,18 +342,6 @@ class _TeamTable extends StatelessWidget {
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
-}
-
-class _MvpTag extends StatelessWidget {
-  final MvpKind kind;
-
-  const _MvpTag({super.key, required this.kind});
-
-  @override
-  Widget build(BuildContext context) => kind == MvpKind.match
-      ? StatusChip(
-          label: '全場 MVP', color: AppColors.warn, icon: Icons.emoji_events)
-      : StatusChip(label: '隊伍 MVP', color: AppColors.info);
 }
 
 /// 牌位小圖示：這場有牌位就用這場的，沒有時用背景查到的這季牌位。

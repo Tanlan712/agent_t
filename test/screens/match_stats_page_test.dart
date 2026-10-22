@@ -35,6 +35,8 @@ void main() {
   }
 
   Future<void> open(WidgetTester tester, Harness h) async {
+    // 頁首較高（近期戰績、常用特務）：拉高視窗，卡片與統計表才會建出來。
+    tester.view.physicalSize = Size(tester.view.physicalSize.width, 2400);
     await tester.pumpWidget(h.wrap(home: const MatchHistoryPage()));
     for (var i = 0; i < 5; i++) {
       await tester.pump();

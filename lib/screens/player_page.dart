@@ -10,7 +10,6 @@ import '../providers/seen_players_provider.dart';
 import '../services/match_client.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
-import '../shell/responsive_grid.dart';
 import 'match_history_page.dart' show MatchCard;
 
 /// 其他玩家的對戰紀錄；資料只放在記憶體，離開頁面即釋放。
@@ -93,14 +92,14 @@ class _PlayerPageState extends State<PlayerPage> {
             ),
           ),
         const SizedBox(height: 16),
-        ResponsiveGrid(
-          minTileWidth: 420,
-          childAspectRatio: 3.4,
-          children: [
-            for (final e in h.entries)
-              MatchCard(entry: e, ref: ref, otherPlayer: true),
-          ],
-        ),
+        // 卡片高度依內容（窄螢幕數據分兩段），不用固定比例的格子。
+        for (final e in h.entries)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 76),
+                child: MatchCard(entry: e, ref: ref, otherPlayer: true)),
+          ),
         if (h.hasMore)
           Padding(
             padding: const EdgeInsets.only(top: 16),

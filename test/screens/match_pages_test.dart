@@ -44,11 +44,12 @@ void main() {
 
     testWidgets('列表顯示地圖、模式、勝負、比分、K/D/A、RR 與牌位', (tester) async {
       setWidth(tester, 1400);
+      tester.view.physicalSize = const Size(1400, 2400);
       final h = await loggedIn(tester);
       await tester.pumpWidget(h.wrap(home: const MatchHistoryPage()));
       await settle(tester);
       expect(find.text('亞海懸城'), findsWidgets);
-      expect(find.text('競技'), findsWidgets);
+      expect(find.textContaining('競技'), findsWidgets);
       expect(find.text('勝'), findsWidgets);
       expect(find.text('13 : 9'), findsWidgets);
       expect(find.text('20 / 12 / 4'), findsWidgets);
@@ -61,6 +62,8 @@ void main() {
 
     testWidgets('單場失敗與載入更多', (tester) async {
       setWidth(tester, 1400);
+      // 頁首較高：拉高視窗，第 2 場卡片才會在畫面內建出來。
+      tester.view.physicalSize = const Size(1400, 2000);
       final h = await loggedIn(tester, total: 25, fail: {'m2'});
       await tester.pumpWidget(h.wrap(home: const MatchHistoryPage()));
       await settle(tester);
@@ -455,6 +458,7 @@ void scoreboardTests() {
 
     testWidgets('Bento：768 寬勝率卡至少 150px 寬，對戰列至少 76 高', (tester) async {
       setWidth(tester, 768);
+      tester.view.physicalSize = const Size(768, 2400);
       final h =
           await Harness.create(tester, riotHttp: riotClient(historyTotal: 3));
       await tester.runAsync(() => h.riot.login(fakeRedirect));
