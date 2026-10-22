@@ -219,7 +219,7 @@
   - `ActiveExpressions[]`：App 推測為 `{TypeID, AssetID}`；`TypeID` 不是噴漆（`d5f120f8-…`）時略過，
     valorant-api 找不到的 ID 不顯示。
   - `Identity`：`PlayerCardID`、`PlayerTitleID`、`AccountLevel`、`PreferredLevelBorderID`、`HideAccountLevel`
-- 同一路徑的 `PUT` 會更換裝備，**禁止使用**（AGENTS.md 第 3 節）。
+- 「目前裝備」分頁只用 GET；同一路徑的 `PUT` 只在「遠端操作」同意後由換造型使用（見下方「遠端操作」）。
 
 ### `GET /restrictions/v3/penalties` ✅ 2026-10-22 🧩
 - 回 200，**有** CORS 標頭（網頁版可讀）✅。實測帳號沒有懲罰：`Subject`、`Penalties: []`、`Version`。
@@ -246,3 +246,39 @@
   - `/v1/maps`：`{uuid, displayName, displayIcon（小地圖，27 張中 9 張為 null）, splash, coordinates, tacticalDescription, xMultiplier, yMultiplier, xScalarToAdd, yScalarToAdd, callouts[]{regionName, superRegionName, location{x, y, z}}}`；
     小地圖位置 `u = location.y × xMultiplier + xScalarToAdd`、`v = location.x × yMultiplier + yScalarToAdd`。
   - `/v1/agents`：`{uuid, displayName, description, displayIcon, fullPortrait, background, role{displayName}, abilities[]{slot, displayName, description, displayIcon}, recruitmentData}`；`slot` 為 `Grenade`（C）、`Ability1`（Q）、`Ability2`（E）、`Ultimate`（X）、`Passive`。沒有技能價格欄位。
+
+## 遠端操作（寫入，使用者同意後）⚠️ 未實測
+
+依社群文件（valapidocs、valclient）撰寫，**沒有用真實帳號測試過**；實測後請把 ⚠️ 改成 ✅ 並補上實際欄位。
+規則見 AGENTS.md 第 3 節「遠端操作」。
+
+### `GET`／`PUT pd /personalization/v3/players/{puuid}/playerloadout`（GET ✅ 2026-10-22，PUT ⚠️）
+- **v2 回 404**（2026-10-22 實測），改用 v3。
+- 頂層 ✅：`Guns, ActiveExpressions, DynamicOptions, Identity, Incognito`（v3 用 `ActiveExpressions` 取代 `Sprays`）
+- `Guns[]`：`ID`（武器 UUID）、`SkinID`、`SkinLevelID`、`ChromaID`、`CharmInstanceID`、`CharmID`、`CharmLevelID`、`Attachments`
+  - 🧩 使用中：`ID, SkinID, SkinLevelID, ChromaID`；PUT 時其餘欄位原樣寫回。
+- `ChromaID` 用 valorant-api 造型 `chromas` 的 UUID；`chromas[0]` 是基本款（不在 entitlements 裡）。
+
+### `POST glz /pregame/v1/matches/{matchId}/select/{agentId}`、`…/lock/{agentId}` ⚠️
+- 沒有內容；回應是更新後的選角資料（不使用）。
+
+### `POST glz /parties/v1/parties/{partyId}/…` ⚠️
+- `members/{puuid}/setReady`：`{"ready": bool}`
+- `invitecode`：回應是隊伍資料，代碼在 `InviteCode`
+- `matchmaking/join`、`matchmaking/leave`：沒有內容
+- `queue`：`{"queueID": "competitive"}`；可選的模式來自隊伍的 `EligibleQueues`
+- `accessibility`：`{"accessibility": "OPEN" | "CLOSED"}`
+- `invites/name/{name}/tag/{tag}`：沒有內容
+- `makecustomgame`、`startcustomgame`：沒有內容；`makedefault?queueID=unrated`：沒有內容
+- `customgamesettings`：`{Map, Mode, UseBots, GamePod, GameRules}`（原本的 `CustomGameData.Settings` 只換 `Map`）
+- `customgamemembership/{TeamOne|TeamTwo|TeamSpectate}`：`{"playerToPutOnTeam": puuid}`
+- 隊伍的 `CustomGameData`：`Settings{Map, Mode, UseBots, GamePod, GameRules}`、`Membership{teamOne, teamTwo, teamSpectate, …}[]{Subject}`
+
+### `DELETE glz /parties/v1/players/{puuid}` ⚠️
+- 隊長把成員移出隊伍；沒有內容。
+
+### `POST glz /pregame/v1/matches/{matchId}/quit`、`POST glz /core-game/v1/players/{puuid}/disassociate/{matchId}` ⚠️
+- 逃跑／離開對局，會被懲罰；沒有內容。
+
+### `POST pd /contracts/v1/contracts/{puuid}/special/{contractId}` ⚠️
+- 啟用特務合約；`GET contracts` 的 `ActiveSpecialContract` 是目前啟用的合約。

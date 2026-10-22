@@ -13,6 +13,8 @@ import 'package:valorant_shop_tracker/providers/match_history_provider.dart';
 import 'package:valorant_shop_tracker/providers/match_reference_provider.dart';
 import 'package:valorant_shop_tracker/providers/recent_form_loader.dart';
 import 'package:valorant_shop_tracker/providers/collection_provider.dart';
+import 'package:valorant_shop_tracker/providers/loadout_provider.dart';
+import 'package:valorant_shop_tracker/services/remote_client.dart';
 import 'package:valorant_shop_tracker/providers/progress_provider.dart';
 import 'package:valorant_shop_tracker/providers/offer_price_provider.dart';
 import 'package:valorant_shop_tracker/providers/riot_provider.dart';
@@ -82,6 +84,8 @@ class Harness {
   late final EquippedLoadoutProvider equipped;
   late final PenaltyProvider penalties;
   late final OfferPriceProvider prices;
+  late final RemoteClient remoteClient;
+  late final LoadoutProvider loadout;
   late final RecentFormLoader recentForm =
       RecentFormLoader(matchClient, riot, matchCache);
 
@@ -143,6 +147,9 @@ class Harness {
       seenPlayers,
       LiveClient(rc),
     );
+    h.remoteClient =
+        RemoteClient(rc, allowed: () => h.settings.settings.remoteControl);
+    h.loadout = LoadoutProvider(h.remoteClient, riot);
     // 測試不真的等待退避。
     h.collection = CollectionProvider(riot, rc, delay: (_) async {});
     h.progress = ProgressProvider(riot, rc,
@@ -198,6 +205,8 @@ class Harness {
         ChangeNotifierProvider.value(value: prices),
         Provider.value(value: matchClient),
         Provider.value(value: liveClient),
+        Provider.value(value: remoteClient),
+        ChangeNotifierProvider.value(value: loadout),
         Provider.value(value: matchCache),
         ChangeNotifierProvider.value(value: recentForm),
         ChangeNotifierProvider.value(value: seenPlayers),

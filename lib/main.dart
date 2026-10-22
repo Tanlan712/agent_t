@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'providers/collection_provider.dart';
+import 'providers/loadout_provider.dart';
 import 'providers/login_prefetcher.dart';
 import 'providers/offer_price_provider.dart';
 import 'providers/progress_provider.dart';
@@ -26,6 +27,7 @@ import 'services/catalog_api.dart';
 import 'services/live_client.dart';
 import 'services/match_client.dart';
 import 'services/match_reference_api.dart';
+import 'services/remote_client.dart';
 import 'services/riot_client.dart';
 import 'storage/catalog_cache.dart';
 import 'storage/match_reference_cache.dart';
@@ -75,6 +77,9 @@ Future<void> main() async {
   final prices = OfferPriceProvider(OfferPriceStorage(prefs));
   riot.onStorefront = prices.record;
   final shop = ShopProvider(ShopStorage(prefs));
+  // 遠端操作（寫入）：每次送出前檢查使用者是否在設定頁同意（規格 2026-10-22-remote-control-design.md）。
+  final remoteClient =
+      RemoteClient(riotClient, allowed: () => settings.settings.remoteControl);
   // 登入後（含重新開頁恢復登入）先在背景讀一次：商店與錢包、收藏、通行證
   // （依序、同時最多 2 個 Riot 請求）。
   LoginPrefetcher(riot, collection, progress, shop: shop, catalog: catalog);
@@ -97,6 +102,9 @@ Future<void> main() async {
         ChangeNotifierProvider.value(value: prices),
         Provider.value(value: matchClient),
         Provider.value(value: liveClient),
+        Provider.value(value: remoteClient),
+        ChangeNotifierProvider(
+            create: (_) => LoadoutProvider(remoteClient, riot)),
         Provider.value(value: matchCache),
         ChangeNotifierProvider(
             create: (_) => RecentFormLoader(matchClient, riot, matchCache)),

@@ -1,5 +1,5 @@
 /// 自己目前裝備的造型與外觀（`GET /personalization/v3/players/{puuid}/playerloadout`）。
-/// 只能讀取：同一路徑的 PUT 會更換裝備，AGENTS.md 第 3 節禁止。
+/// 這裡只讀取；換造型（PUT）只在「遠端操作」同意後由 RemoteClient 處理（AGENTS.md 第 3 節）。
 /// 實測（2026-10-22）v3 的頂層欄位是 Guns、ActiveExpressions、DynamicOptions、Identity、Incognito；
 /// 每一項的內容依社群文件推測。所有 ID 轉小寫，缺欄位的項目略過。
 library;

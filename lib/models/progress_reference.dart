@@ -50,7 +50,11 @@ class RefChroma {
   /// 這個炫彩的整把槍圖（目前裝備用）。
   final String? iconUrl;
 
-  const RefChroma({required this.skinUuid, this.swatchUrl, this.iconUrl});
+  /// 在造型 chromas 裡的順序；0 是基本款（人人都有，不在 entitlements 裡）。
+  final int index;
+
+  const RefChroma(
+      {required this.skinUuid, this.swatchUrl, this.iconUrl, this.index = -1});
 }
 
 class RefAgent {
