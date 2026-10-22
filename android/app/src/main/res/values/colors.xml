@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 與網頁版 manifest 的 background_color 相同（預設主題的深色背景）。 -->
+    <color name="launch_background">#111111</color>
+</resources>

@@ -9,17 +9,30 @@ import '../providers/settings_provider.dart';
 import '../services/riot_auth.dart';
 import '../services/shared_login.dart';
 import '../widgets/hud/hud.dart';
+import 'riot_web_login_page.dart';
 
 /// Riot 登入：使用者在 Riot 官方頁面登入後，把跳轉網址貼回來，
 /// 或在 Android 上把跳轉頁「分享」給本 App（[takeShared]）。
+/// Android／iOS App 另外提供內嵌登入，登入完成後自動帶回跳轉網址。
 class RiotLoginPage extends StatefulWidget {
   static const sharedBadMessage =
       '分享的網址找不到登入資訊，請在登入後跳到的 playvalorant.com 頁面按「分享」';
 
+  const RiotLoginPage({
+    super.key,
+    this.inAppLoginAvailable,
+    this.openInAppLogin = openRiotWebLogin,
+    this.takeShared = takeSharedLogin,
+  });
+
+  /// null 時依平台判斷（[inAppLoginSupported]）。
+  final bool? inAppLoginAvailable;
+
+  /// 開啟內嵌登入頁，回傳跳轉網址；使用者取消時回傳 null。
+  final Future<String?> Function(BuildContext context) openInAppLogin;
+
   /// 取出 Android 分享進來的文字（取出後即刪除）；預設讀 service worker 暫存的內容。
   final Future<String?> Function() takeShared;
-
-  const RiotLoginPage({super.key, this.takeShared = takeSharedLogin});
 
   @override
   State<RiotLoginPage> createState() => _RiotLoginPageState();
@@ -76,10 +89,17 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
         .showSnackBar(const SnackBar(content: Text('已複製登入網址')));
   }
 
-  Future<void> _submit() async {
-    final error = await context
-        .read<RiotProvider>()
-        .login(_controller.text, fallbackShard: _shard);
+  Future<void> _submit() => _loginWith(_controller.text);
+
+  Future<void> _openInAppLogin() async {
+    final url = await widget.openInAppLogin(context);
+    if (url == null || !mounted) return;
+    await _loginWith(url);
+  }
+
+  Future<void> _loginWith(String url) async {
+    final error =
+        await context.read<RiotProvider>().login(url, fallbackShard: _shard);
     if (!mounted) return;
     setState(() => _error = error);
     if (error == null) _controller.clear();
@@ -129,6 +149,17 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
                 ),
                 OutlinedButton(onPressed: riot.logout, child: const Text('登出')),
               ] else ...[
+                if (widget.inAppLoginAvailable ?? inAppLoginSupported) ...[
+                  FilledButton.icon(
+                    onPressed: riot.isBusy ? null : _openInAppLogin,
+                    icon: const Icon(Icons.login),
+                    label: const Text('在 App 內登入 Riot'),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('在 Riot 官方頁面登入後會自動回到 App。'
+                      '登入不了時，也可以改用下面的網頁登入方式。'),
+                  const SizedBox(height: 16),
+                ],
                 const Text('1. 開啟 Riot 官方登入頁並登入。'
                     '勾選 Riot 頁面上的「保持登入」，之後就不用再輸入密碼。'),
                 const SizedBox(height: 8),
