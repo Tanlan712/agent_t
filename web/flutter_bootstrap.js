@@ -10,11 +10,17 @@ if ('serviceWorker' in navigator) {
 // PWA 功能給 Dart（lib/services/pwa/web.dart）呼叫。
 // beforeinstallprompt 可能在 Flutter 載入前就觸發，所以在這裡先攔下來。
 let deferredInstall = null;
+const installListeners = [];
+const installChanged = () => installListeners.forEach((callback) => callback());
 window.addEventListener('beforeinstallprompt', (event) => {
   event.preventDefault();
   deferredInstall = event;
+  installChanged();
 });
-window.addEventListener('appinstalled', () => { deferredInstall = null; });
+window.addEventListener('appinstalled', () => {
+  deferredInstall = null;
+  installChanged();
+});
 
 const urlBase64ToBytes = (base64) => {
   const padded = (base64 + '='.repeat((4 - base64.length % 4) % 4))
@@ -31,8 +37,11 @@ window.agentTPwa = {
     deferredInstall = null;
     await event.prompt();
     const choice = await event.userChoice;
+    installChanged();
     return choice.outcome;
   },
+  // 可以安裝的狀態改變時呼叫 callback()。
+  onInstallChange: (callback) => { installListeners.push(callback); },
   isStandalone: () => window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true,
   isIos: () => /iphone|ipad|ipod/i.test(navigator.userAgent) ||
@@ -42,6 +51,17 @@ window.agentTPwa = {
   onOnlineChange: (callback) => {
     window.addEventListener('online', () => callback(true));
     window.addEventListener('offline', () => callback(false));
+  },
+  // 伺服器上最新版本的 build（deploy.yml 寫入 app_build.json）；離線或讀不到時回傳 null。
+  latestBuild: async () => {
+    try {
+      const response = await fetch('app_build.json?t=' + Date.now(), { cache: 'no-store' });
+      if (!response.ok) return null;
+      const data = await response.json();
+      return typeof data.build === 'string' ? data.build : null;
+    } catch (_) {
+      return null;
+    }
   },
   reload: () => window.location.reload(),
   // 推播：'unsupported'、'default'、'granted' 或 'denied'。

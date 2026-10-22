@@ -7,6 +7,7 @@ import 'providers/loadout_provider.dart';
 import 'providers/login_prefetcher.dart';
 import 'providers/offer_price_provider.dart';
 import 'providers/progress_provider.dart';
+import 'providers/pwa_controller.dart';
 import 'providers/catalog_provider.dart';
 import 'providers/match_detail_cache.dart';
 import 'providers/match_history_provider.dart';
@@ -27,6 +28,7 @@ import 'services/catalog_api.dart';
 import 'services/live_client.dart';
 import 'services/match_client.dart';
 import 'services/match_reference_api.dart';
+import 'services/pwa.dart';
 import 'services/remote_client.dart';
 import 'services/riot_client.dart';
 import 'storage/catalog_cache.dart';
@@ -38,6 +40,7 @@ import 'storage/settings_storage.dart';
 import 'storage/shop_storage.dart';
 import 'storage/wishlist_storage.dart';
 import 'theme/themed_app.dart';
+import 'widgets/pwa_banners.dart';
 import 'widgets/riot_auto_renew.dart';
 
 Future<void> main() async {
@@ -85,6 +88,8 @@ Future<void> main() async {
   LoginPrefetcher(riot, collection, progress, shop: shop, catalog: catalog);
   // 網頁開著時，每日商店到期或夜市結束後自動同步（使用者決定 2026-10-22）。
   ShopAutoRefresher(riot, shop, catalog);
+  // 網頁版的離線提示、安裝、新版本提示與商店刷新通知；手機 App 不做任何事。
+  final pwa = PwaController(createPwaPlatform())..start();
 
   runApp(
     MultiProvider(
@@ -113,14 +118,17 @@ Future<void> main() async {
                 cache: matchCache, onDetails: seenPlayers.recordAll)),
         ChangeNotifierProvider.value(value: seenPlayers),
         ChangeNotifierProvider.value(value: matchReference),
+        ChangeNotifierProvider.value(value: pwa),
       ],
-      child: const MyApp(),
+      child: MyApp(pwa: pwa),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.pwa});
+
+  final PwaController pwa;
 
   @override
   Widget build(BuildContext context) {
@@ -132,8 +140,10 @@ class MyApp extends StatelessWidget {
         // 主題立即切換：AppColors（全域）與 Theme.of 不會有一段時間不一致。
         themeAnimationDuration: Duration.zero,
         // 手機 App 在背景續期 Riot 登入（AGENTS.md 第 3 節）；網頁版不做任何事。
-        builder: (context, child) =>
-            RiotAutoRenew(child: builder(context, child)),
+        // 頂端的離線／新版本提示列包在最外層，所有頁面都看得到。
+        builder: (context, child) => PwaBanners(
+            controller: pwa,
+            child: RiotAutoRenew(child: builder(context, child))),
         onGenerateRoute: onGenerateAppRoute,
       ),
     );

@@ -146,6 +146,11 @@ Riot 在伺服器端看得到這些請求，帳號可能被標記或停權；網
     由 `web/share_login_sw.js` 在本機攔截，分享的文字只暫存在 Cache Storage，登入頁取出後立即刪除（超過 10 分鐘丟棄）；
     service worker 不得對外送出任何資料，也不快取網站。已說明風險：service worker 不在時（例如清除網站資料但 App 還在），
     瀏覽器會把含 token 的表單直接 POST 到 GitHub Pages。
+  - **使用者決定（2026-10-22）**：PWA 加強四項全做（離線開啟、安裝按鈕、新版本提示、商店刷新通知），
+    規格 `docs/superpowers/specs/2026-10-22-pwa-offline-push-design.md`。因此 service worker 的規則改為：
+    只能有 `web/share_login_sw.js` 這一支；可以快取本站檔案、`www.gstatic.com`／`fonts.gstatic.com`／`fonts.googleapis.com`
+    與 `media.valorant-api.com` 的 GET 回應；**Riot 的主機一律不攔截、不快取**；fetch 只能轉送頁面自己發出的 GET，
+    不得自己帶資料往外送。推播的 VAPID 私鑰與訂閱只放 GitHub Secrets，不得印到 Actions log 或寫進 repo（repo 是公開的）。
 - core-game 的 `ConnectionDetails`（遊戲伺服器 IP、連接埠、PlayerKey）、`TeamMatchToken` 與語音／聊天 ID，
   一律不讀取內容、不顯示、不記錄、不傳送。
 - 不得讀取或輸出 `.env` 的內容。

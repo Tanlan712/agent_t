@@ -34,7 +34,14 @@ jobs:
       - run: flutter test
 
       # 專案頁的網址是 /<repo 名稱>/，base href 必須一致。
-      - run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
+      # APP_BUILD 給「有新版本」提示比對；VAPID_PUBLIC_KEY 是推播公鑰（repo variable，可以公開，見 docs/push.md）。
+      - run: >-
+          flutter build web --release --base-href "/${{ github.event.repository.name }}/"
+          --dart-define=APP_BUILD=${{ github.sha }}
+          --dart-define=VAPID_PUBLIC_KEY=${{ vars.VAPID_PUBLIC_KEY }}
+
+      # 已開著的頁面會定期讀這個檔，和自己的 APP_BUILD 不同就顯示「有新版本」。
+      - run: echo '{"build":"${{ github.sha }}"}' > build/web/app_build.json
 
       - uses: actions/configure-pages@v5
 
