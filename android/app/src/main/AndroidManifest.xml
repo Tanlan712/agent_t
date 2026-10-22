@@ -22,11 +22,75 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+        </activity>
+        <!-- 可更換的桌面圖示：一次只啟用一個 alias，由 MainActivity 的 app_icon channel 切換。
+             名稱 Icon_<key> 的 key 和 lib/services/app_icon_service.dart 的 AppIconId.key 相同。 -->
+        <activity-alias
+            android:name=".Icon_default"
+            android:targetActivity=".MainActivity"
+            android:icon="@mipmap/ic_launcher"
+            android:enabled="true"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-        </activity>
+        </activity-alias>
+        <activity-alias
+            android:name=".Icon_editorial"
+            android:targetActivity=".MainActivity"
+            android:icon="@mipmap/ic_launcher_editorial"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".Icon_airy"
+            android:targetActivity=".MainActivity"
+            android:icon="@mipmap/ic_launcher_airy"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".Icon_terminal"
+            android:targetActivity=".MainActivity"
+            android:icon="@mipmap/ic_launcher_terminal"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".Icon_eva_alert"
+            android:targetActivity=".MainActivity"
+            android:icon="@mipmap/ic_launcher_eva_alert"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".Icon_eva_monitor"
+            android:targetActivity=".MainActivity"
+            android:icon="@mipmap/ic_launcher_eva_monitor"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

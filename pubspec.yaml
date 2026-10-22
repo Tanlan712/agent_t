@@ -70,6 +70,10 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # 設定頁「App 圖示」的預覽（由 tool/app_icon/generate.mjs 產生）。
+  assets:
+    - assets/app_icons/
+
   # 不打包 .env：網頁版的資產會原樣公開在 build/web/assets/，機密不得放進去。
 
   # An image asset can refer to one or more resolution-specific "variants", see

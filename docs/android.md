@@ -36,6 +36,11 @@ base64 -w0 release.jks   # macOS：base64 -i release.jks
 flutter build apk --release   # 輸出 build/app/outputs/flutter-apk/app-release.apk
 ```
 
+## 更換圖示
+
+設定頁「App 圖示」可以換成預設或 A、C、D、F1、F2 主題的圖示。換完桌面可能要幾秒才更新；
+有些桌面啟動器會把已經放在主畫面的捷徑移除，從 App 清單重新拖出來即可。
+
 ## 已知限制
 
 - Riot 登入頁可能擋內嵌網頁或要求驗證碼；登入不了時改用同一頁下方的網頁登入方式（貼網址）。
