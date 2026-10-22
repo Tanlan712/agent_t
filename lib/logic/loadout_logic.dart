@@ -57,7 +57,7 @@ SkinEquip? equipFor(String skinUuid, Set<String> ownedLevels,
   );
 }
 
-/// 裝備（`personalization/v2/.../playerloadout`）裡某把槍目前的造型 ID（小寫）；沒有時為 null。
+/// 裝備（`personalization/v3/.../playerloadout`）裡某把槍目前的造型 ID（小寫）；沒有時為 null。
 String? equippedSkin(Map<String, dynamic>? loadout, String weaponUuid) {
   for (final g in (loadout?['Guns'] as List<dynamic>? ?? const [])) {
     if (g is! Map<String, dynamic>) continue;

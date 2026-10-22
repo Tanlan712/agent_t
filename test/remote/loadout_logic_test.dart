@@ -61,7 +61,8 @@ void main() {
       expect(v['ChromaID'], 'ch-red');
       expect(v['CharmID'], 'charm');
       expect((after['Guns'] as List)[1], (before['Guns'] as List)[1]);
-      expect(after['Sprays'], before['Sprays']);
+      expect(after['ActiveExpressions'], before['ActiveExpressions']);
+      expect(after['DynamicOptions'], before['DynamicOptions']);
       expect(after['Identity'], before['Identity']);
       expect(after['Version'], 7);
       // 原本的資料不被修改。

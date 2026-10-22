@@ -95,7 +95,7 @@ Riot 在伺服器端看得到這些請求，帳號可能被標記或停權；網
 - **只有使用者親手按下才送出**：不自動、不重複、不定時（第 1 節的自動選角／秒鎖禁止維持不變）。
 - 寫入**不自動重試**（避免重複排隊或鎖定），同時只送一個；仍然經過 `*.a.pvp.net` 同時最多 2 個的限流。
 - 允許的寫入端點（只限這些）：
-  - `pd`：GET／PUT `personalization/v2/players/{自己的 puuid}/playerloadout`（只改使用者選的那把槍的造型、等級、炫彩，其餘原樣寫回）。
+  - `pd`：GET／PUT `personalization/v3/players/{自己的 puuid}/playerloadout`（只改使用者選的那把槍的造型、等級、炫彩，其餘原樣寫回）。
   - `glz`：POST `pregame/v1/matches/{id}/select/{agentId}`、`pregame/v1/matches/{id}/lock/{agentId}`。
   - `glz`：POST `parties/v1/parties/{自己的隊伍}/members/{自己的 puuid}/setReady`、`…/invitecode`、`…/matchmaking/join`、
     `…/matchmaking/leave`、`…/queue`、`…/accessibility`。隊長限定的動作只顯示給隊長。

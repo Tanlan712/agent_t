@@ -99,8 +99,8 @@ void main() {
     expect([
       for (final r in requests) '${r.method} ${r.url.host}${r.url.path}'
     ], [
-      'GET pd.ap.a.pvp.net/personalization/v2/players/puuid-1/playerloadout',
-      'PUT pd.ap.a.pvp.net/personalization/v2/players/puuid-1/playerloadout',
+      'GET pd.ap.a.pvp.net/personalization/v3/players/puuid-1/playerloadout',
+      'PUT pd.ap.a.pvp.net/personalization/v3/players/puuid-1/playerloadout',
     ]);
     requests.forEach(expectHeaders);
   });

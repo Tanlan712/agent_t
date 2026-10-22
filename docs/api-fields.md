@@ -229,8 +229,9 @@
 依社群文件（valapidocs、valclient）撰寫，**沒有用真實帳號測試過**；實測後請把 ⚠️ 改成 ✅ 並補上實際欄位。
 規則見 AGENTS.md 第 3 節「遠端操作」。
 
-### `GET`／`PUT pd /personalization/v2/players/{puuid}/playerloadout` ⚠️
-- `Subject, Version, Guns, Sprays, Identity, Incognito`
+### `GET`／`PUT pd /personalization/v3/players/{puuid}/playerloadout`（GET ✅ 2026-10-22，PUT ⚠️）
+- **v2 回 404**（2026-10-22 實測），改用 v3。
+- 頂層 ✅：`Guns, ActiveExpressions, DynamicOptions, Identity, Incognito`（v3 用 `ActiveExpressions` 取代 `Sprays`）
 - `Guns[]`：`ID`（武器 UUID）、`SkinID`、`SkinLevelID`、`ChromaID`、`CharmInstanceID`、`CharmID`、`CharmLevelID`、`Attachments`
   - 🧩 使用中：`ID, SkinID, SkinLevelID, ChromaID`；PUT 時其餘欄位原樣寫回。
 - `ChromaID` 用 valorant-api 造型 `chromas` 的 UUID；`chromas[0]` 是基本款（不在 entitlements 裡）。

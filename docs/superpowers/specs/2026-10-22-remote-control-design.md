@@ -35,7 +35,7 @@
 
 | 動作 | 方法與路徑 | 內容 |
 |---|---|---|
-| 讀取裝備 | GET `pd /personalization/v2/players/{puuid}/playerloadout` | — |
+| 讀取裝備 | GET `pd /personalization/v3/players/{puuid}/playerloadout` | — |
 | 設定裝備 | PUT 同上 | 讀到的整份 loadout，只改該武器的 `SkinID`、`SkinLevelID`、`ChromaID` |
 | 選擇特務 | POST `glz /pregame/v1/matches/{matchId}/select/{agentId}` | — |
 | 鎖定特務 | POST `glz /pregame/v1/matches/{matchId}/lock/{agentId}` | — |

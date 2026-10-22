@@ -5,7 +5,7 @@ import 'package:http/testing.dart';
 
 import 'riot_fixtures.dart';
 
-/// 依社群文件撰寫的裝備假資料（ID 都是虛構）。
+/// 裝備假資料：頂層欄位依 2026-10-22 實測的 v3（ID 都是虛構）。
 Map<String, dynamic> loadoutJson() => {
       'Subject': 'puuid-1',
       'Version': 7,
@@ -28,9 +28,10 @@ Map<String, dynamic> loadoutJson() => {
           'Attachments': <dynamic>[],
         },
       ],
-      'Sprays': [
-        {'EquipSlotID': 'slot', 'SprayID': 'spray', 'SprayLevelID': null},
+      'ActiveExpressions': [
+        {'TypeID': 'spray-type', 'AssetID': 'spray'},
       ],
+      'DynamicOptions': {'x': 1},
       'Identity': {'PlayerCardID': 'card', 'PlayerTitleID': 'title'},
       'Incognito': false,
     };

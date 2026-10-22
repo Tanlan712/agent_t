@@ -31,7 +31,7 @@ class RemoteClient {
   }
 
   String _loadoutPath(RiotSession s) =>
-      '/personalization/v2/players/${s.puuid}/playerloadout';
+      '/personalization/v3/players/${s.puuid}/playerloadout';
 
   /// 目前的裝備（武器造型、噴漆、名片等）。
   Future<Map<String, dynamic>> fetchLoadout(RiotSession s) async {
