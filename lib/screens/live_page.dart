@@ -262,6 +262,7 @@ class _MemberCard extends StatelessWidget {
     final tier = ref.tier(member.tier);
     return Tooltip(
         key: ValueKey('live-rank-${member.puuid}'),
+        triggerMode: TooltipTriggerMode.tap,
         message: tier.name,
         child: SizedBox(
             width: 28, height: 28, child: SkinIcon(url: tier.iconUrl)));
@@ -497,6 +498,7 @@ class _PlayerRow extends StatelessWidget {
                 children: [
                   Tooltip(
                     key: ValueKey('live-rank-${player.puuid}'),
+                    triggerMode: TooltipTriggerMode.tap,
                     message: tier.name,
                     child: SizedBox(
                         width: 24,
@@ -506,6 +508,7 @@ class _PlayerRow extends StatelessWidget {
                   const SizedBox(width: 8),
                   Tooltip(
                     key: ValueKey('live-agent-${player.puuid}'),
+                    triggerMode: TooltipTriggerMode.tap,
                     message: agent.name,
                     child: SizedBox(
                         width: 32,
@@ -732,6 +735,7 @@ class _PregameRow extends StatelessWidget {
           children: [
             Tooltip(
               key: ValueKey('live-rank-${player.puuid}'),
+              triggerMode: TooltipTriggerMode.tap,
               message: tier.name,
               child: SizedBox(
                   width: 24, height: 24, child: SkinIcon(url: tier.iconUrl)),
@@ -739,6 +743,7 @@ class _PregameRow extends StatelessWidget {
             const SizedBox(width: 8),
             Tooltip(
               key: ValueKey('live-agent-${player.puuid}'),
+              triggerMode: TooltipTriggerMode.tap,
               message: player.agentId.isEmpty ? '尚未選擇' : agent.name,
               child: SizedBox(
                   width: 32,
@@ -813,6 +818,7 @@ class _SkinStripState extends State<_SkinStrip> {
 
   Widget _icon(String weaponId, SkinInfo skin) => Tooltip(
         key: ValueKey('skin-${widget.puuid}-$weaponId'),
+        triggerMode: TooltipTriggerMode.tap,
         message: skin.name,
         child: Container(
           width: 56,
@@ -897,13 +903,29 @@ class _SuspicionTag extends StatelessWidget {
         level: level, seasonWins: seasonWins, recent: form.games, rules: rules);
     if (!s.any) return const SizedBox.shrink();
     final label = [if (s.smurf) '疑似小號', if (s.shift) '表現突變'].join('・');
+    final detail = '${s.reasons.join('\n')}\n（依公開數據推測，可能誤判）';
     return Padding(
       padding: const EdgeInsets.only(left: 6),
+      // 滑鼠移上去看提示；手機點一下開對話框看完整原因。
       child: Tooltip(
         key: ValueKey('sus-$puuid'),
-        message: '${s.reasons.join('\n')}\n（依公開數據推測，可能誤判）',
-        child: StatusChip(
-            label: label, color: AppColors.warn, icon: Icons.warning_amber),
+        message: detail,
+        child: InkWell(
+          key: ValueKey('sus-tap-$puuid'),
+          onTap: () => showDialog<void>(
+            context: context,
+            builder: (c) => AlertDialog(
+              title: Text(label),
+              content: Text(detail),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(c), child: const Text('關閉')),
+              ],
+            ),
+          ),
+          child: StatusChip(
+              label: label, color: AppColors.warn, icon: Icons.warning_amber),
+        ),
       ),
     );
   }
