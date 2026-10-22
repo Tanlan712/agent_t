@@ -247,6 +247,7 @@ MatchDetail mapMatchDetail(Map<String, dynamic> json, String focusPuuid,
       durationMs: _int(info['gameLengthMillis']),
       isRanked: info['isRanked'] == true,
       myTeamId: myTeam,
+      focusPuuid: focusPuuid,
       won: _teamWon(json, myTeam) ??
           (myScore == enemyScore ? null : myScore > enemyScore),
       myScore: myScore,

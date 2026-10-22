@@ -95,6 +95,9 @@ class MatchSummary {
   final bool isRanked;
   final String myTeamId;
 
+  /// 這份摘要的主角（自己，或玩家頁查看的那位）；舊資料為空字串。
+  final String focusPuuid;
+
   /// null 表示平手或無法判斷。
   final bool? won;
   final int myScore;
@@ -115,6 +118,7 @@ class MatchSummary {
     required this.durationMs,
     required this.isRanked,
     required this.myTeamId,
+    this.focusPuuid = '',
     this.won,
     required this.myScore,
     required this.enemyScore,

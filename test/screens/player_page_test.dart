@@ -43,7 +43,11 @@ void main() {
     expect(kpi('227'), findsOneWidget);
     expect(find.textContaining('勝率'), findsNothing);
     expect(find.text('10 / 10 / 5'), findsWidgets);
-    expect(find.text('ACS 227'), findsWidgets);
+    expect(
+        find.descendant(
+            of: find.byKey(const ValueKey('match-card-m1')),
+            matching: find.text('227')),
+        findsOneWidget);
     // 一頁 20 場，頁尾提示要捲到底才會建立。
     await tester.scrollUntilVisible(find.text('名稱資料來自 Riot，請勿公開或分享他人資訊'), 600,
         scrollable: find.byType(Scrollable).first);

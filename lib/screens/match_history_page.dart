@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../logic/match_mapper.dart';
+import '../logic/match_overview.dart';
 import '../logic/match_stats.dart';
 import '../models/match_models.dart';
 import '../providers/match_history_provider.dart';
 import '../providers/match_reference_provider.dart';
 import '../providers/riot_provider.dart';
 import '../shell/app_shell.dart';
+import '../theme/app_style.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
 import '../widgets/line_chart.dart';
@@ -147,15 +149,20 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
                     child: Text('沒有符合的場次',
                         style: TextStyle(color: AppColors.muted))),
               ),
-            // 列表：每場一列，細邊框＋左側勝負色條。
-            for (final e in shown)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                // 至少 76 高；字放大時可以長高。
-                child: ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 76),
-                    child: MatchCard(entry: e, ref: ref)),
-              ),
+            // 列表：依日期分組，每場一張卡片（地圖背景＋左側勝負色條）。
+            for (final (i, g) in groupByDay<MatchEntry>(
+                    shown, (e) => e.ref.startTime, (e) => e.detail?.summary)
+                .indexed) ...[
+              _DayHeader(group: g, index: i),
+              for (final e in g.items)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  // 至少 76 高；字放大時可以長高。
+                  child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 76),
+                      child: MatchCard(entry: e, ref: ref)),
+                ),
+            ],
           ],
           if (history.hasMore)
             Padding(
@@ -185,7 +192,7 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
   }
 }
 
-/// 頁首 KPI：只用已載入的資料計算（近 5 場 RR 合計、勝率、平均 ACS）。
+/// 頁首：牌位、KPI（只用已載入的資料計算）、近期戰績與常用特務。
 class _HistoryKpi extends StatelessWidget {
   final MatchHistoryProvider history;
   final MatchReferenceProvider ref;
@@ -196,12 +203,11 @@ class _HistoryKpi extends StatelessWidget {
   Widget build(BuildContext context) {
     final details = [
       for (final e in history.entries)
-        if (e.detail case final d?) d.summary,
+        if (e.detail case final d?) d,
     ];
+    final o = summarizeHistory(details);
     final rr = history.recentRr;
     final rrSum = rr.fold<int>(0, (a, b) => a + b);
-    final decided = details.where((s) => s.won != null).toList();
-    final wins = decided.where((s) => s.won == true).length;
     return BentoGrid(key: const ValueKey('history-kpi'), children: [
       BentoTile(
           span: 4,
@@ -223,19 +229,125 @@ class _HistoryKpi extends StatelessWidget {
               up: rrUp(rr),
             ),
             KpiTile(
-              label: '勝率（${decided.length} 場）',
-              value: decided.isEmpty
-                  ? '—'
-                  : '${(wins / decided.length * 100).round()}%',
+              label: '勝率（${o.wins + o.losses} 場）',
+              value: o.winRate == null ? '—' : '${(o.winRate! * 100).round()}%',
             ),
             KpiTile(
               label: '平均 ACS',
               value: details.isEmpty
                   ? '—'
-                  : '${(details.fold<int>(0, (a, s) => a + s.acs) / details.length).round()}',
+                  : '${(details.fold<int>(0, (a, d) => a + d.summary.acs) / details.length).round()}',
+            ),
+            KpiTile(
+              key: const ValueKey('kpi-kd'),
+              label: '平均 K/D',
+              value: o.kd?.toStringAsFixed(2) ?? '—',
+            ),
+            KpiTile(
+              key: const ValueKey('kpi-adr'),
+              label: '平均 ADR',
+              value: o.adr == null ? '—' : '${o.adr!.round()}',
+            ),
+            KpiTile(
+              key: const ValueKey('kpi-hs'),
+              label: '爆頭率',
+              value: o.headshot == null ? '—' : '${o.headshot!.round()}%',
             ),
           ])),
+      if (details.isNotEmpty)
+        BentoTile(span: 12, child: _RecentForm(overview: o, ref: ref)),
     ]);
+  }
+}
+
+/// 最近 10 場的勝負方塊與最常用的 3 位特務。
+class _RecentForm extends StatelessWidget {
+  final HistoryOverview overview;
+  final MatchReferenceProvider ref;
+
+  const _RecentForm({required this.overview, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = TextStyle(color: AppColors.muted, fontSize: 12);
+    final form = Column(
+      key: const ValueKey('history-form'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('近期戰績（新 → 舊）', style: label),
+        const SizedBox(height: 8),
+        Wrap(spacing: 4, runSpacing: 4, children: [
+          for (final d in overview.form)
+            Tooltip(
+              key: ValueKey('form-${d.summary.matchId}'),
+              triggerMode: TooltipTriggerMode.tap,
+              message: '${ref.map(d.summary.mapId).name}  '
+                  '${d.summary.myScore} : ${d.summary.enemyScore}',
+              child: Container(
+                width: 26,
+                height: 26,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: resultColor(d.summary.won).withOpacity(0.2),
+                  border: Border.all(color: resultColor(d.summary.won)),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(resultLabel(d.summary.won),
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color.lerp(
+                            resultColor(d.summary.won), AppColors.text, 0.3))),
+              ),
+            ),
+        ]),
+      ],
+    );
+    final agents = Column(
+      key: const ValueKey('history-top-agents'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('常用特務', style: label),
+        const SizedBox(height: 8),
+        Wrap(spacing: 16, runSpacing: 8, children: [
+          for (final a in overview.topAgents)
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: SkinIcon(url: ref.agent(a.key).iconUrl)),
+              const SizedBox(width: 6),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(ref.agent(a.key).name,
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600)),
+                  Text(
+                      '${a.games} 場 · 勝率 ${a.winRate == null ? '—' : '${(a.winRate! * 100).round()}%'}',
+                      style: AppText.tabular(label)),
+                ],
+              ),
+            ]),
+        ]),
+      ],
+    );
+    return PanelCard(
+      child: LayoutBuilder(
+        builder: (context, c) => c.maxWidth < 640
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [form, const SizedBox(height: 16), agents])
+            : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(child: form),
+                const SizedBox(width: 24),
+                Expanded(child: agents),
+              ]),
+      ),
+    );
   }
 }
 
@@ -282,10 +394,61 @@ class _RankHeader extends StatelessWidget {
   }
 }
 
-/// 卡片寬度小於這個值時不顯示地圖縮圖。
-const _mapThumbMinWidth = 400.0;
+/// 一天的組標題：日期與當天勝敗、RR。
+class _DayHeader extends StatelessWidget {
+  final DayGroup<MatchEntry> group;
+  final int index;
 
-/// 一場對戰的卡片；點擊進入單場詳情。[otherPlayer] 用於玩家頁：多顯示 ACS。
+  const _DayHeader({required this.group, required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      key: ValueKey('day-header-$index'),
+      padding: EdgeInsets.only(top: index == 0 ? 0 : 12, bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.only(bottom: 6),
+        decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: AppColors.outline))),
+        child: Row(children: [
+          Text(dayLabel(group.day, DateTime.now()),
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+                dayStatsLabel(
+                    wins: group.wins, losses: group.losses, rr: group.rr),
+                textAlign: TextAlign.right,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppText.tabular(
+                    TextStyle(color: AppColors.muted, fontSize: 12))),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+/// 全場 MVP 或隊伍 MVP 標籤（列表卡片與詳情頁共用）。
+class MvpChip extends StatelessWidget {
+  final MvpKind kind;
+
+  const MvpChip({super.key, required this.kind});
+
+  @override
+  Widget build(BuildContext context) => kind == MvpKind.match
+      ? StatusChip(
+          label: '全場 MVP', color: AppColors.warn, icon: Icons.emoji_events)
+      : StatusChip(label: '隊伍 MVP', color: AppColors.info);
+}
+
+/// 卡片寬度至少這個值時一列排完；較窄時分上下兩段。
+const _wideCardMinWidth = 860.0;
+
+String resultTitle(bool? won) => won == null ? '平手' : (won ? '勝利' : '落敗');
+
+/// 一場對戰的卡片；點擊進入單場詳情。[otherPlayer] 用於玩家頁（數據是那位玩家的）。
 class MatchCard extends StatelessWidget {
   final MatchEntry entry;
   final MatchReferenceProvider ref;
@@ -303,86 +466,238 @@ class MatchCard extends StatelessWidget {
     if (d == null) {
       return PanelCard(
         key: ValueKey('match-card-${entry.ref.matchId}'),
-        child: Center(
-          child: Text(entry.failed ? '無法載入這場' : '載入中…',
-              style: TextStyle(color: AppColors.muted)),
-        ),
+        child: entry.failed
+            ? Center(
+                child: Text('無法載入這場', style: TextStyle(color: AppColors.muted)))
+            : const Row(children: [
+                SkeletonBox(width: 48, height: 48),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SkeletonBox(width: 120),
+                      SizedBox(height: 6),
+                      SkeletonBox(width: 80, height: 12),
+                    ],
+                  ),
+                ),
+              ]),
       );
     }
     final s = d.summary;
+    final line = focusLine(d);
     final map = ref.map(s.mapId);
     final agent = ref.agent(s.myAgentId);
+    final color = resultColor(s.won);
+    final minutes = (s.durationMs / 60000).round();
+    final meta = [
+      queueName(s.queueId),
+      formatMatchTime(entry.ref.startTime),
+      if (minutes > 0) '$minutes 分',
+    ].join(' · ');
+
+    final agentIcon = ClipRRect(
+      key: ValueKey('card-agent-${s.matchId}'),
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        color: color.withOpacity(0.15),
+        child: SkinIcon(url: agent.iconUrl),
+      ),
+    );
+    final title = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(map.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 2),
+        Text(meta,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: AppColors.muted, fontSize: 12)),
+      ],
+    );
+    final result = Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(resultTitle(s.won),
+            style: TextStyle(
+                color: color, fontWeight: FontWeight.bold, fontSize: 13)),
+        Text('${s.myScore} : ${s.enemyScore}',
+            style: AppText.tabular(
+                const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
+      ],
+    );
+    final kd = line?.kd ?? (s.kills / (s.deaths == 0 ? 1 : s.deaths));
+    // 每張卡片的數據格固定同一組、同一順序（沒有資料時顯示「—」），寬版的欄位才會上下對齊。
+    final stats = <_Stat>[
+      _Stat('K / D / A', '${s.kills} / ${s.deaths} / ${s.assists}', wide: true),
+      _Stat('K/D', kd.toStringAsFixed(2),
+          color: kd >= 1 ? AppColors.win : AppColors.loss),
+      _Stat('ACS', '${s.acs}'),
+      _Stat('ADR', line == null ? '—' : '${line.adr}'),
+      _Stat(
+          '爆頭率',
+          line?.headshotPercent == null
+              ? '—'
+              : '${line!.headshotPercent!.round()}%'),
+      _Stat('表現', line?.rating == null ? '—' : '${line!.rating!.round()}'),
+      _Stat('首殺', line == null ? '—' : '${line.firstKills}'),
+      switch (s.rrChange) {
+        final rr? => _Stat('RR', formatRr(rr),
+            color: rr >= 0 ? AppColors.win : AppColors.loss),
+        null => const _Stat('RR', '—'),
+      },
+    ];
+    final mvp = line == null || line.mvp == MvpKind.none
+        ? null
+        : MvpChip(key: ValueKey('card-mvp-${s.matchId}'), kind: line.mvp);
+
     return PanelCard(
       key: ValueKey('match-card-${s.matchId}'),
-      accent: resultColor(s.won),
+      accent: color,
       padding: EdgeInsets.zero,
       // 玩家頁的場次不在自己的紀錄裡，直接把詳情傳給詳情頁。
       onTap: () => Navigator.pushNamed(context, '/matches/detail',
           arguments: otherPlayer ? d : entry.ref.matchId),
-      // 手機寬度放不下地圖縮圖，只留特務圖示（地圖名稱仍在文字裡）。
-      child: LayoutBuilder(
-        builder: (context, c) => Row(
-          children: [
-            if (c.maxWidth >= _mapThumbMinWidth) ...[
-              SizedBox(width: 72, child: SkinIcon(url: map.iconUrl)),
-              const SizedBox(width: 12),
-            ] else
-              const SizedBox(width: 8),
-            SizedBox(
-                width: 40, height: 40, child: SkinIcon(url: agent.iconUrl)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(map.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  Text(queueName(s.queueId),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: AppColors.muted, fontSize: 12)),
-                  Text(formatMatchTime(entry.ref.startTime),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: AppColors.muted, fontSize: 12)),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(resultLabel(s.won),
-                          style: TextStyle(
-                              color: resultColor(s.won),
-                              fontWeight: FontWeight.bold)),
-                      const SizedBox(width: 8),
-                      Text('${s.myScore} : ${s.enemyScore}'),
-                    ],
-                  ),
-                  Text('${s.kills} / ${s.deaths} / ${s.assists}'),
-                  if (otherPlayer)
-                    Text('ACS ${s.acs}',
-                        style: TextStyle(color: AppColors.muted, fontSize: 12)),
-                  if (s.rrChange case final rr?)
-                    Text(formatRr(rr),
-                        style: TextStyle(
-                            color: rr >= 0 ? AppColors.owned : AppColors.error,
-                            fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-          ],
+      child: Stack(children: [
+        Positioned.fill(child: _MapBackdrop(url: map.iconUrl, color: color)),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 14, 10),
+          child: LayoutBuilder(builder: (context, c) {
+            if (c.maxWidth >= _wideCardMinWidth) {
+              return Row(children: [
+                SizedBox(width: 52, height: 52, child: agentIcon),
+                const SizedBox(width: 12),
+                SizedBox(width: 180, child: title),
+                const SizedBox(width: 8),
+                SizedBox(width: 72, child: result),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Row(children: [
+                    for (final st in stats)
+                      Expanded(flex: st.wide ? 2 : 1, child: st),
+                  ]),
+                ),
+                SizedBox(
+                    width: 96,
+                    child: Align(
+                        alignment: Alignment.centerRight,
+                        child: mvp ?? const SizedBox.shrink())),
+              ]);
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(children: [
+                  SizedBox(width: 44, height: 44, child: agentIcon),
+                  const SizedBox(width: 10),
+                  Expanded(child: title),
+                  const SizedBox(width: 8),
+                  result,
+                ]),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    for (final st in stats)
+                      SizedBox(width: st.wide ? 84 : 52, child: st),
+                    if (mvp != null) mvp,
+                  ],
+                ),
+              ],
+            );
+          }),
         ),
-      ),
+      ]),
+    );
+  }
+}
+
+/// 卡片背景：地圖橫幅圖，疊上卡片底色漸層（左淡右實）與左緣的勝負色。
+class _MapBackdrop extends StatelessWidget {
+  final String? url;
+  final Color color;
+
+  const _MapBackdrop({required this.url, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final base = context.appStyle.card == CardVariant.flat
+        ? AppColors.surfaceHigh
+        : AppColors.surface;
+    final url = this.url;
+    return Stack(
+      key: const ValueKey('match-card-bg'),
+      fit: StackFit.expand,
+      children: [
+        if (url != null)
+          Image.network(url,
+              fit: BoxFit.cover,
+              alignment: Alignment.centerLeft,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                base.withOpacity(0.55),
+                base.withOpacity(0.88),
+                base.withOpacity(0.96),
+              ],
+              stops: const [0, 0.4, 1],
+            ),
+          ),
+        ),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [color.withOpacity(0.22), color.withOpacity(0)],
+              stops: const [0, 0.45],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 卡片上的一格數據：數值在上、標籤在下。
+class _Stat extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? color;
+
+  /// K/D/A 這類較長的數值佔比較寬。
+  final bool wide;
+
+  const _Stat(this.label, this.value, {this.color, this.wide = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(value,
+              maxLines: 1,
+              style: AppText.tabular(TextStyle(
+                  fontSize: 15, fontWeight: FontWeight.bold, color: color))),
+        ),
+        Text(label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: AppColors.muted, fontSize: 11)),
+      ],
     );
   }
 }
