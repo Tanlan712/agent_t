@@ -75,7 +75,8 @@ void main() {
     expect(reopened.isLoggedIn, isFalse);
     expect(reopened.needsRelogin, isTrue);
     expect(reopened.canAutoRenew, isTrue);
-    expect(prefs.containsKey(SessionStorage.key), isFalse);
+    // 帳號留在清單裡方便切換，token 已刪除。
+    expect(prefs.getString(SessionStorage.key), isNot(contains(fakeAccessToken)));
   });
 
   test('從沒登入過不提示重新登入', () {
@@ -90,6 +91,6 @@ void main() {
     expect(riot.canAutoRenew, isFalse);
     expect(riot.needsRelogin, isFalse);
     expect(cleared, 1);
-    expect(prefs.containsKey(SessionStorage.autoRenewKey), isFalse);
+    expect(prefs.containsKey(SessionStorage.key), isFalse);
   });
 }

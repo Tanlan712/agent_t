@@ -51,6 +51,9 @@ class _RiotAutoRenewState extends State<RiotAutoRenew> {
   bool _running = false;
   int _failures = 0;
 
+  /// 正在為哪個帳號續期；切換帳號後重新計算失敗次數。
+  String? _renewFor;
+
   bool get _enabled => widget.enabled ?? inAppLoginSupported;
 
   @override
@@ -84,7 +87,14 @@ class _RiotAutoRenewState extends State<RiotAutoRenew> {
 
   void _check() {
     final riot = _riot;
-    if (!mounted || riot == null || _running || _cooldown != null) return;
+    if (!mounted || riot == null) return;
+    if (riot.activePuuid != _renewFor) {
+      _renewFor = riot.activePuuid;
+      _failures = 0;
+      _cooldown?.cancel();
+      _cooldown = null;
+    }
+    if (_running || _cooldown != null) return;
     if (!riot.canAutoRenew || riot.isBusy) return;
     if (riot.isLoggedIn && riot.timeLeft > RiotAutoRenew.renewBefore) {
       // 使用者重新登入後重新計算失敗次數。

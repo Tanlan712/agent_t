@@ -13,6 +13,7 @@ class RiotProvider with ChangeNotifier {
   static const badUrlMessage = '網址中找不到登入資訊，請貼上登入後跳轉的完整網址';
   static const expiredMessage = '登入已過期，請重新登入';
   static const invalidLoginMessage = '登入資訊無效，請重新登入並貼上完整網址';
+  static const otherAccountMessage = '續期失敗：Riot 記住的是另一個帳號';
 
   final RiotClient _client;
   final DateTime Function() _now;
@@ -20,6 +21,7 @@ class RiotProvider with ChangeNotifier {
   final Future<void> Function()? _onLogout;
 
   RiotSession? _session;
+  String? _account;
   bool _expired = false;
   RiotWallet? _wallet;
   Set<String> _owned = {};
@@ -33,7 +35,32 @@ class RiotProvider with ChangeNotifier {
         _storage = storage,
         _onLogout = onLogout {
     _session = storage?.load(now());
+    _account = storage?.activePuuid;
     _expired = storage?.expiredOnLoad ?? false;
+  }
+
+  /// 換成另一個帳號（含登出）時呼叫：from／to 是 puuid，沒有帳號時為 null。
+  /// 用來保存與還原各帳號自己的商店。
+  void Function(String? from, String? to)? onAccountChanged;
+
+  /// 刪除不是目前使用中的帳號時呼叫（puuid）。
+  void Function(String puuid)? onAccountRemoved;
+
+  /// 保存過的帳號（多帳號切換，AGENTS.md 第 4 節）。
+  List<SavedAccount> get accounts => _storage?.accounts ?? const [];
+
+  /// 目前選用的帳號；token 過期時仍然是它，直到切換或登出。
+  String? get activePuuid => _account;
+
+  /// 帳號的 token 還有效，切換後不用重新登入。
+  bool hasValidSession(SavedAccount a) => a.hasValidSession(_now());
+
+  /// 帳號的 token 剩餘時間；過期或沒有時為 Duration.zero。
+  Duration timeLeftOf(SavedAccount a) {
+    final s = a.session;
+    if (s == null) return Duration.zero;
+    final left = s.expiresAt.difference(_now());
+    return left.isNegative ? Duration.zero : left;
   }
 
   /// 每次同步拿到 storefront 回應時呼叫（記錄造型的實際定價）。
@@ -71,15 +98,17 @@ class RiotProvider with ChangeNotifier {
       {String fallbackShard = 'ap', bool autoRenew = false}) async {
     final tokens = parseRiotRedirect(pastedUrl);
     if (tokens == null) return badUrlMessage;
-    // 換帳號時不能留著前一個帳號的錢包與已擁有資料。
+    // 重新登入一律重新同步，不留著之前的錢包與已擁有資料。
     _wallet = null;
     _owned = {};
     return _run(
       () async {
-        _session = await _client.createSession(tokens, _now(),
+        final s = await _client.createSession(tokens, _now(),
             fallbackShard: fallbackShard);
+        _changeAccount(s.puuid);
+        _session = s;
         _expired = false;
-        await _storage?.save(_session!);
+        await _storage?.save(s);
         await _storage?.setAutoRenew(autoRenew);
       },
       failurePrefix: '登入失敗',
@@ -96,11 +125,10 @@ class RiotProvider with ChangeNotifier {
     try {
       final s = await _client.createSession(tokens, _now(),
           fallbackShard: _session?.shard ?? fallbackShard);
-      // Riot 記住的是另一個帳號時，不能留著前一個帳號的資料。
-      if (s.puuid != _session?.puuid) {
-        _wallet = null;
-        _owned = {};
-      }
+      // 背景續期不能偷偷換成別的帳號（多帳號時內嵌頁可能記著另一個帳號）。
+      final account = _account;
+      if (account != null && s.puuid != account) return otherAccountMessage;
+      _changeAccount(s.puuid);
       _session = s;
       _expired = false;
       await _storage?.save(s);
@@ -134,18 +162,53 @@ class RiotProvider with ChangeNotifier {
     });
   }
 
-  /// 使用者按「登出」：同時停止自動續期，並清除 App 內嵌頁的 Riot 登入記錄。
+  /// 切換到保存過的帳號：token 還有效就直接使用，已過期時提示重新登入。
+  Future<void> switchAccount(String puuid) async {
+    final target = _storage?.account(puuid);
+    if (target == null || puuid == _account) return;
+    await _storage?.setActive(puuid);
+    _changeAccount(puuid);
+    _session = target.hasValidSession(_now()) ? target.session : null;
+    _expired = _session == null;
+    notifyListeners();
+  }
+
+  /// App 內新增帳號前：清除內嵌頁的 Riot 登入記錄，Riot 才會顯示登入頁，
+  /// 而不是直接登入目前的帳號。
+  Future<void> prepareNewLogin() async => _onLogout?.call();
+
+  /// 使用者按「登出」：刪除目前帳號（token 與自動續期），並清除 App 內嵌頁的 Riot 登入記錄。
   void logout() {
+    final puuid = _account;
     _expired = false;
-    _storage?.setAutoRenew(false);
+    if (puuid != null) _storage?.remove(puuid);
     _onLogout?.call();
+    _changeAccount(null);
     _drop();
+  }
+
+  /// 刪除保存的帳號；是目前的帳號時等於 [logout]。
+  Future<void> removeAccount(String puuid) async {
+    if (puuid == _account) return logout();
+    await _storage?.remove(puuid);
+    onAccountRemoved?.call(puuid);
+    notifyListeners();
   }
 
   /// token 過期或被 Riot 拒絕（各頁的 401／403）：刪除登入資訊，但保留自動續期，並提示重新登入。
   void expire() {
     _expired = _expired || _session != null;
     _drop();
+  }
+
+  void _changeAccount(String? puuid) {
+    if (puuid == _account) return;
+    final from = _account;
+    _account = puuid;
+    // 換帳號時不能留著前一個帳號的錢包與已擁有資料。
+    _wallet = null;
+    _owned = {};
+    onAccountChanged?.call(from, puuid);
   }
 
   void _drop() {

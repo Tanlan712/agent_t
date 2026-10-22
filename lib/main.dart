@@ -85,6 +85,10 @@ Future<void> main() async {
   final purchaseHistory =
       PurchaseHistoryProvider(PurchaseHistoryStorage(prefs));
   final shop = ShopProvider(ShopStorage(prefs));
+  // 多帳號：每個帳號各自記住最後看到的商店，切換時先顯示，再由背景同步更新。
+  riot
+    ..onAccountChanged = shop.switchAccount
+    ..onAccountRemoved = shop.forgetAccount;
   // 遠端操作（寫入）：每次送出前檢查使用者是否在設定頁同意（規格 2026-10-22-remote-control-design.md）。
   final remoteClient =
       RemoteClient(riotClient, allowed: () => settings.settings.remoteControl);

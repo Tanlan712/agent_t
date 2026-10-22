@@ -35,6 +35,7 @@ import 'package:valorant_shop_tracker/theme/app_theme.dart';
 import 'package:valorant_shop_tracker/theme/theme_ids.dart';
 import 'package:valorant_shop_tracker/theme/themed_app.dart';
 import 'package:valorant_shop_tracker/storage/seen_players_storage.dart';
+import 'package:valorant_shop_tracker/storage/session_storage.dart';
 import 'package:valorant_shop_tracker/storage/settings_storage.dart';
 import 'package:valorant_shop_tracker/storage/shop_storage.dart';
 import 'package:valorant_shop_tracker/storage/purchase_history_storage.dart';
@@ -115,6 +116,8 @@ class Harness {
     int matchPageSize = 10,
     DateTime Function()? now,
     ProgressReferenceApi? progressApi,
+    bool storeSession = false,
+    Future<void> Function()? onLogout,
   }) async {
     final c = catalog ?? await loadedCatalog(tester);
     final prefs = await SharedPreferences.getInstance();
@@ -124,7 +127,10 @@ class Harness {
         WishlistItem(skinUuid: id, addedAt: DateTime(2026, 10, 1)),
     ]);
     final rc = RiotClient(client: riotHttp ?? riotClient());
-    final riot = RiotProvider(rc, now: now ?? DateTime.now);
+    final riot = RiotProvider(rc,
+        now: now ?? DateTime.now,
+        storage: storeSession ? SessionStorage(prefs) : null,
+        onLogout: onLogout);
     final refCache = MatchReferenceCache(prefs);
     await refCache.save(testMatchReference);
     final reference = MatchReferenceProvider(
