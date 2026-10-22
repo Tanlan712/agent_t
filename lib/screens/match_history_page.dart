@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../logic/match_mapper.dart';
+import '../logic/match_stats.dart';
 import '../models/match_models.dart';
 import '../providers/match_history_provider.dart';
 import '../providers/match_reference_provider.dart';
@@ -9,6 +10,7 @@ import '../providers/riot_provider.dart';
 import '../shell/app_shell.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
+import '../widgets/line_chart.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
 
 String _two(int n) => n.toString().padLeft(2, '0');
@@ -38,6 +40,11 @@ class MatchHistoryPage extends StatefulWidget {
 }
 
 class _MatchHistoryPageState extends State<MatchHistoryPage> {
+  MatchFilter _filter = const MatchFilter();
+
+  /// false：對戰列表與走勢圖；true：特務／地圖統計。
+  bool _stats = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -79,6 +86,18 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
     } else if (history.entries.isEmpty && history.isLoading) {
       body = const Center(child: CircularProgressIndicator());
     } else {
+      // 篩選只作用在已有詳細資料的場次；沒有篩選時列出全部（含讀取失敗的）。
+      final summaries = [
+        for (final e in history.entries)
+          if (e.detail case final d?) d.summary,
+      ];
+      final filtered = summaries.where(_filter.accepts).toList();
+      final shown = _filter.isEmpty
+          ? history.entries
+          : [
+              for (final e in history.entries)
+                if (e.detail case final d? when _filter.accepts(d.summary)) e,
+            ];
       body = ListView(
         padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
@@ -101,15 +120,37 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
               ),
             ),
           const SizedBox(height: 16),
-          // 列表：每場一列，細邊框＋左側勝負色條。
-          for (final e in history.entries)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              // 至少 76 高；字放大時可以長高。
-              child: ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: 76),
-                  child: MatchCard(entry: e, ref: ref)),
-            ),
+          _HistoryControls(
+            filter: _filter,
+            stats: _stats,
+            summaries: summaries,
+            ref: ref,
+            onFilter: (f) => setState(() => _filter = f),
+            onStats: (v) => setState(() => _stats = v),
+          ),
+          const SizedBox(height: 16),
+          if (_stats)
+            _StatsView(games: filtered, ref: ref)
+          else ...[
+            _Charts(games: filtered),
+            const SizedBox(height: 16),
+            if (shown.isEmpty && !history.isLoading)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Center(
+                    child: Text('沒有符合的場次',
+                        style: TextStyle(color: AppColors.muted))),
+              ),
+            // 列表：每場一列，細邊框＋左側勝負色條。
+            for (final e in shown)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                // 至少 76 高；字放大時可以長高。
+                child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 76),
+                    child: MatchCard(entry: e, ref: ref)),
+              ),
+          ],
           if (history.hasMore)
             Padding(
               padding: const EdgeInsets.only(top: 16),
@@ -321,5 +362,254 @@ class MatchCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// 對戰／統計切換與篩選列（模式、特務、地圖、勝負）。
+class _HistoryControls extends StatelessWidget {
+  final MatchFilter filter;
+  final bool stats;
+  final List<MatchSummary> summaries;
+  final MatchReferenceProvider ref;
+  final ValueChanged<MatchFilter> onFilter;
+  final ValueChanged<bool> onStats;
+
+  const _HistoryControls({
+    required this.filter,
+    required this.stats,
+    required this.summaries,
+    required this.ref,
+    required this.onFilter,
+    required this.onStats,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final agents = {for (final s in summaries) s.myAgentId}.toList()
+      ..sort((a, b) => ref.agent(a).name.compareTo(ref.agent(b).name));
+    final maps = {for (final s in summaries) s.mapId}.toList()
+      ..sort((a, b) => ref.map(a).name.compareTo(ref.map(b).name));
+    Widget drop<T>(String key, T value, Map<T, String> options,
+            ValueChanged<T> onChanged) =>
+        DropdownButton<T>(
+          key: ValueKey(key),
+          value: value,
+          isDense: true,
+          underline: const SizedBox.shrink(),
+          items: [
+            for (final e in options.entries)
+              DropdownMenuItem(value: e.key, child: Text(e.value)),
+          ],
+          onChanged: (v) {
+            if (v is T) onChanged(v);
+          },
+        );
+    return PanelCard(
+      key: const ValueKey('history-filters'),
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          SegmentedButton<bool>(
+            key: const ValueKey('history-tab'),
+            showSelectedIcon: false,
+            segments: const [
+              ButtonSegment(value: false, label: Text('對戰')),
+              ButtonSegment(value: true, label: Text('統計')),
+            ],
+            selected: {stats},
+            onSelectionChanged: (v) => onStats(v.first),
+          ),
+          drop<ModeFilter>(
+              'filter-mode',
+              filter.mode,
+              const {
+                ModeFilter.all: '全部模式',
+                ModeFilter.competitive: '競技',
+                ModeFilter.unrated: '一般',
+                ModeFilter.other: '其他',
+              },
+              (v) => onFilter(filter.copyWith(mode: v))),
+          drop<String>(
+              'filter-agent',
+              filter.agentId ?? '',
+              {
+                '': '全部特務',
+                for (final a in agents) a: ref.agent(a).name,
+              },
+              (v) => onFilter(
+                  filter.copyWith(agentId: () => v.isEmpty ? null : v))),
+          drop<String>(
+              'filter-map',
+              filter.mapId ?? '',
+              {
+                '': '全部地圖',
+                for (final m in maps) m: ref.map(m).name,
+              },
+              (v) =>
+                  onFilter(filter.copyWith(mapId: () => v.isEmpty ? null : v))),
+          drop<ResultFilter>(
+              'filter-result',
+              filter.result,
+              const {
+                ResultFilter.all: '全部勝負',
+                ResultFilter.win: '勝',
+                ResultFilter.loss: '敗',
+              },
+              (v) => onFilter(filter.copyWith(result: v))),
+          if (!filter.isEmpty)
+            TextButton(
+              onPressed: () => onFilter(const MatchFilter()),
+              child: const Text('清除篩選'),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// RR 與 ACS 走勢（套用篩選，由舊到新）。
+class _Charts extends StatelessWidget {
+  final List<MatchSummary> games;
+
+  const _Charts({required this.games});
+
+  @override
+  Widget build(BuildContext context) {
+    final rr = rrSeries(games);
+    final acs = acsSeries(games);
+    final avgAcs =
+        acs.isEmpty ? null : acs.reduce((a, b) => a + b) / acs.length;
+    const title = TextStyle(fontWeight: FontWeight.w600);
+    Widget note(String t) => SizedBox(
+          height: 140,
+          child: Center(
+              child: Text(t,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.muted, fontSize: 12))),
+        );
+    final rrChart = Column(
+      key: const ValueKey('chart-rr'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(rr.isEmpty ? 'RR 走勢（競技）' : 'RR 走勢（競技）・累計 ${formatRr(rr.last)}',
+            style: title),
+        const SizedBox(height: 8),
+        if (rr.length < 2)
+          note('至少要 2 場有 RR 變化的競技才畫得出走勢')
+        else
+          SimpleLineChart(
+              values: rr,
+              color: AppColors.primary,
+              showZero: true,
+              semanticsLabel: 'RR 累計走勢，最後 ${formatRr(rr.last)}'),
+      ],
+    );
+    final acsChart = Column(
+      key: const ValueKey('chart-acs'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(avgAcs == null ? 'ACS 走勢' : 'ACS 走勢・平均 ACS ${avgAcs.round()}',
+            style: title),
+        const SizedBox(height: 8),
+        if (acs.length < 2)
+          note('至少要 2 場才畫得出走勢')
+        else
+          SimpleLineChart(
+              values: acs,
+              color: AppColors.info,
+              showAverage: true,
+              semanticsLabel: 'ACS 走勢，平均 ${avgAcs?.round()}'),
+      ],
+    );
+    return PanelCard(
+      key: const ValueKey('history-charts'),
+      child: LayoutBuilder(
+        builder: (context, c) => c.maxWidth < 640
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [rrChart, const SizedBox(height: 16), acsChart])
+            : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(child: rrChart),
+                const SizedBox(width: 24),
+                Expanded(child: acsChart),
+              ]),
+      ),
+    );
+  }
+}
+
+/// 特務與地圖的勝率統計（套用篩選，只算已載入的場次）。
+class _StatsView extends StatelessWidget {
+  final List<MatchSummary> games;
+  final MatchReferenceProvider ref;
+
+  const _StatsView({required this.games, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    String pct(double? v) => v == null ? '—' : '${(v * 100).round()}%';
+    Widget table(String key, String title, List<GroupStat> rows,
+            String Function(String) nameOf,
+            {bool kd = true}) =>
+        PanelCard(
+          key: ValueKey(key),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            SectionHeader(title: title),
+            if (rows.isEmpty)
+              Text('沒有符合的場次', style: TextStyle(color: AppColors.muted))
+            else
+              Table(
+                columnWidths: const {0: FlexColumnWidth(2)},
+                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                children: [
+                  TableRow(children: [
+                    for (final h in ['名稱', '場數', '勝率', if (kd) 'K/D', 'ACS'])
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Text(h,
+                            style: TextStyle(
+                                color: AppColors.muted, fontSize: 12)),
+                      ),
+                  ]),
+                  for (final r in rows)
+                    TableRow(
+                      decoration: BoxDecoration(
+                          border: Border(
+                              top: BorderSide(color: AppColors.outline))),
+                      children: [
+                        for (final t in [
+                          nameOf(r.key),
+                          '${r.games}',
+                          pct(r.winRate),
+                          if (kd) r.avgKd.toStringAsFixed(2),
+                          '${r.avgAcs.round()}',
+                        ])
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Text(t,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppText.tabular(
+                                    const TextStyle(fontSize: 13))),
+                          ),
+                      ],
+                    ),
+                ],
+              ),
+          ]),
+        );
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text('依已載入的最近 ${games.length} 場計算（按「載入更多」可加入更早的場次）',
+          style: TextStyle(color: AppColors.muted, fontSize: 12)),
+      const SizedBox(height: 12),
+      table('stats-agents', '特務', statsBy(games, (g) => g.myAgentId),
+          (id) => ref.agent(id).name),
+      const SizedBox(height: 16),
+      table('stats-maps', '地圖', statsBy(games, (g) => g.mapId),
+          (id) => ref.map(id).name,
+          kd: false),
+    ]);
   }
 }

@@ -110,6 +110,8 @@ MockClient riotClient({
   List<String>? skinLevels,
   // 他人紀錄的第 2 場是死鬥、第 3 場是一般（其他是競技）。
   bool mixedQueues = false,
+  // 指定場次的 matchInfo 覆寫（例如 {'m2': {'queueID': 'unrated'}}）。
+  Map<String, Map<String, dynamic>> matchInfoOverrides = const {},
 }) {
   final throttled = <String, int>{};
   final dropped = <String, int>{};
@@ -264,6 +266,10 @@ MockClient riotClient({
         if (failMatchIds.contains(id)) return json({'errorCode': 'x'}, 500);
         final m = matchDetailsJson();
         (m['matchInfo'] as Map<String, dynamic>)['matchId'] = id;
+        final info = m['matchInfo'] as Map<String, dynamic>;
+        for (final e in (matchInfoOverrides[id] ?? const {}).entries) {
+          info[e.key] = e.value;
+        }
         if (unratedTiers) {
           // 實測：一般模式的 match-details 每個人的牌位都是 0。
           for (final p in (m['players'] as List).cast<Map<String, dynamic>>()) {
