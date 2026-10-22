@@ -10,7 +10,10 @@
     "lang": "zh-Hant-TW",
     "dir": "ltr",
     "orientation": "any",
-    "categories": ["games", "utilities"],
+    "categories": [
+        "games",
+        "utilities"
+    ],
     "prefer_related_applications": false,
     "icons": [
         {
@@ -48,5 +51,58 @@
             "text": "text",
             "url": "url"
         }
+    },
+    "shortcuts": [
+        {
+            "name": "我的商店",
+            "short_name": "商店",
+            "url": "./#/",
+            "icons": [
+                {
+                    "src": "icons/Icon-192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "對戰紀錄",
+            "short_name": "對戰",
+            "url": "./#/matches",
+            "icons": [
+                {
+                    "src": "icons/Icon-192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "即時對戰",
+            "short_name": "即時",
+            "url": "./#/live",
+            "icons": [
+                {
+                    "src": "icons/Icon-192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "我的收藏",
+            "short_name": "收藏",
+            "url": "./#/collection",
+            "icons": [
+                {
+                    "src": "icons/Icon-192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }
+            ]
+        }
+    ],
+    "launch_handler": {
+        "client_mode": "focus-existing"
     }
 }
