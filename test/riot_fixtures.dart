@@ -108,6 +108,10 @@ MockClient riotClient({
   int xpStatus = 200,
   int contractsStatus = 200,
   Map<String, dynamic>? contracts,
+  int loadoutStatus = 200,
+  Map<String, dynamic>? loadout,
+  int penaltiesStatus = 200,
+  List<Map<String, dynamic>> penalties = const [],
   void Function(String path)? onEntitlement,
   List<String>? skinLevels,
   // 他人紀錄的第 2 場是死鬥、第 3 場是一般（其他是競技）。
@@ -327,6 +331,20 @@ MockClient riotClient({
       if (path == '/account-xp/v1/players/puuid-1') {
         if (xpStatus != 200) return json({'errorCode': 'x'}, xpStatus);
         return json(accountXpJson());
+      }
+      if (path == '/personalization/v3/players/puuid-1/playerloadout' &&
+          req.method == 'GET') {
+        if (loadoutStatus != 200) {
+          return json({'errorCode': 'x'}, loadoutStatus);
+        }
+        return json(loadout ?? loadoutJson());
+      }
+      if (path == '/restrictions/v3/penalties' && req.method == 'GET') {
+        if (penaltiesStatus != 200) {
+          return json({'errorCode': 'x'}, penaltiesStatus);
+        }
+        return json(
+            {'Subject': 'puuid-1', 'Penalties': penalties, 'Version': 1});
       }
       if (path == '/contracts/v1/contracts/puuid-1' && req.method == 'GET') {
         if (contractsStatus != 200) {

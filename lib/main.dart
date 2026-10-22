@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/collection_provider.dart';
 import 'providers/loadout_provider.dart';
 import 'providers/login_prefetcher.dart';
+import 'providers/offer_price_provider.dart';
 import 'providers/progress_provider.dart';
 import 'providers/catalog_provider.dart';
 import 'providers/match_detail_cache.dart';
@@ -12,6 +13,7 @@ import 'providers/match_history_provider.dart';
 import 'providers/match_reference_provider.dart';
 import 'providers/recent_form_loader.dart';
 import 'providers/riot_provider.dart';
+import 'providers/riot_resource.dart';
 import 'providers/seen_players_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/shop_auto_refresh.dart';
@@ -29,6 +31,7 @@ import 'services/remote_client.dart';
 import 'services/riot_client.dart';
 import 'storage/catalog_cache.dart';
 import 'storage/match_reference_cache.dart';
+import 'storage/offer_price_storage.dart';
 import 'storage/seen_players_storage.dart';
 import 'storage/session_storage.dart';
 import 'storage/settings_storage.dart';
@@ -67,6 +70,12 @@ Future<void> main() async {
   // 自己的收藏、等級、通行證與任務（只讀 GET，AGENTS.md 第 3 節）。
   final collection = CollectionProvider(riot, riotClient);
   final progress = ProgressProvider(riot, riotClient, ProgressReferenceApi());
+  // 目前裝備與排隊懲罰（只讀 GET，AGENTS.md 第 3 節）。
+  final equipped = EquippedLoadoutProvider(riot, riotClient);
+  final penalties = PenaltyProvider(riot, riotClient);
+  // 造型的實際定價：同步商店時順便記下看到的價格（不另外送請求）。
+  final prices = OfferPriceProvider(OfferPriceStorage(prefs));
+  riot.onStorefront = prices.record;
   final shop = ShopProvider(ShopStorage(prefs));
   // 遠端操作（寫入）：每次送出前檢查使用者是否在設定頁同意（規格 2026-10-22-remote-control-design.md）。
   final remoteClient =
@@ -88,6 +97,9 @@ Future<void> main() async {
         ChangeNotifierProvider.value(value: riot),
         ChangeNotifierProvider.value(value: collection),
         ChangeNotifierProvider.value(value: progress),
+        ChangeNotifierProvider.value(value: equipped),
+        ChangeNotifierProvider.value(value: penalties),
+        ChangeNotifierProvider.value(value: prices),
         Provider.value(value: matchClient),
         Provider.value(value: liveClient),
         Provider.value(value: remoteClient),

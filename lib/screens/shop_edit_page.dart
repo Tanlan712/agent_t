@@ -9,6 +9,7 @@ import '../models/bundle_info.dart';
 import '../models/current_shop.dart';
 import '../models/skin_info.dart';
 import '../providers/catalog_provider.dart';
+import '../providers/offer_price_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/shop_provider.dart';
 import '../shell/responsive_grid.dart';
@@ -98,10 +99,12 @@ class _ShopEditPageState extends State<ShopEditPage> {
     }
     final skin =
         await Navigator.pushNamed(context, '/skin-picker') as SkinInfo?;
-    if (skin == null) return;
+    if (skin == null || !mounted) return;
+    // 優先用 Riot 的實際定價，沒有時才用依稀有度推估的價格。
+    final real = context.read<OfferPriceProvider?>()?.priceOf(skin);
     setState(() {
       _slots[i].itemUuid = skin.uuid;
-      final price = '${defaultPrice(skin.tier)}';
+      final price = '${real ?? defaultPrice(skin.tier)}';
       _slots[i].price.text = price;
       _slots[i].originalPrice.text = price;
     });

@@ -54,3 +54,48 @@ Map<String, dynamic> contractsJson({
       'MissionMetadata': {'WeeklyRefillTime': weeklyRefill},
       'BTEMilestone': 0,
     };
+
+const vpId = '85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741';
+
+/// `GET /personalization/v3/players/{puuid}/playerloadout` 的假資料（頂層欄位依 2026-10-22 實測）。
+Map<String, dynamic> loadoutJson() => {
+      'Subject': 'puuid-1',
+      'Version': 3,
+      'Guns': [
+        {
+          'ID': 'W-VANDAL',
+          'SkinID': 'skin-v',
+          'SkinLevelID': 'lv-vandal-2',
+          'ChromaID': 'ch-v-red',
+          'CharmInstanceID': 'inst-1',
+          'CharmID': 'buddy',
+          'CharmLevelID': 'buddy-1',
+          'Attachments': const [],
+        },
+        {
+          'ID': 'w-phantom',
+          'SkinID': 'skin-p',
+          'SkinLevelID': 'lv-phantom-1',
+          'ChromaID': 'ch-unknown',
+          'Attachments': const [],
+        },
+        {'SkinID': 'no-weapon-id'},
+      ],
+      'ActiveExpressions': [
+        {
+          'TypeID': 'd5f120f8-ff8c-4aac-92ea-f2b5acbe9475',
+          'AssetID': 'SPRAY-1'
+        },
+        {'TypeID': 'flex-type', 'AssetID': 'flex-1'},
+        {'AssetID': 'spray-x'},
+      ],
+      'DynamicOptions': const {},
+      'Identity': {
+        'PlayerCardID': 'card-1',
+        'PlayerTitleID': 'title-1',
+        'AccountLevel': 4,
+        'PreferredLevelBorderID': 'border',
+        'HideAccountLevel': false,
+      },
+      'Incognito': false,
+    };

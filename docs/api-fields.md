@@ -204,6 +204,29 @@
 - `Missions[]{ID, Objectives{objectiveUuid: 進度}, Complete, ExpirationTime}`：`ID` 對應 valorant-api `/v1/missions` 的 `uuid`。
 - 不得呼叫 `POST …/special/{id}`（啟用合約）。
 
+## 定價、目前裝備、排隊懲罰（pd，使用者決定 2026-10-22，只能 GET）
+
+### `GET /store/v1/offers/`（不使用）
+- 實測 2026-10-22：v1 與 v2 都回 **404** ✅。實際定價改從 storefront 回應累積：
+  `SingleItemStoreOffers[].Cost`、`BonusStoreOffers[].Offer.Cost`（夜市原價），
+  以及 `FeaturedBundle.Bundles[].Items[]{Item{ItemTypeID, ItemID, Amount}, BasePrice, CurrencyID, DiscountedPrice}` 裡造型等級的 `BasePrice` 📄 🧩。
+
+### `GET /personalization/v3/players/{puuid}/playerloadout` 🧩
+- v2 實測回 **404**，v3 回 200 ✅ 2026-10-22。
+- 頂層欄位 ✅：`Guns`、`ActiveExpressions`、`DynamicOptions`、`Identity`、`Incognito`（v2 的 `Sprays` 換成 `ActiveExpressions`）。
+- 每一項的內容尚未實測 📄：
+  - `Guns[]`：`ID`（武器）、`SkinID`、`SkinLevelID`、`ChromaID`、`CharmLevelID`（吊飾等級，有裝才有）
+  - `ActiveExpressions[]`：App 推測為 `{TypeID, AssetID}`；`TypeID` 不是噴漆（`d5f120f8-…`）時略過，
+    valorant-api 找不到的 ID 不顯示。
+  - `Identity`：`PlayerCardID`、`PlayerTitleID`、`AccountLevel`、`PreferredLevelBorderID`、`HideAccountLevel`
+- 「目前裝備」分頁只用 GET；同一路徑的 `PUT` 只在「遠端操作」同意後由換造型使用（見下方「遠端操作」）。
+
+### `GET /restrictions/v3/penalties` ✅ 2026-10-22 🧩
+- 回 200，**有** CORS 標頭（網頁版可讀）✅。實測帳號沒有懲罰：`Subject`、`Penalties: []`、`Version`。
+- 有懲罰時每一項的格式**仍未知**。App 寬鬆讀取：到期時間（`Expiry`／`ExpirationTime`／`EndTime`，ISO 或毫秒）、`GamesRemaining`、
+  名稱含 `Effect` 且不是 null 的 key（例如 `QueueDelayEffect`、`QueueRestrictionEffect`、`RankedRestrictionEffect`、`RMSNotificationEffect`）。
+  遇到真的懲罰時要補上實際欄位。
+
 ## 公開遊戲資料（valorant-api.com）🧩
 
 - `/v1/weapons/skins`、`/v1/bundles`、`/v1/agents`、`/v1/maps`、`/v1/competitivetiers`、`/v1/playercards`、`/v1/gamemodes` 等；回傳格式都是 `{status, data}`。

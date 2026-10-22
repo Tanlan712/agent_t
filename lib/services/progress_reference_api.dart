@@ -62,9 +62,12 @@ class ProgressReferenceApi {
         final skinChromas = (skin['chromas'] as List<dynamic>? ?? const [])
             .cast<Map<String, dynamic>>();
         for (var i = 0; i < skinChromas.length; i++) {
-          chromas[_id(skinChromas[i]['uuid'])] = RefChroma(
+          final c = skinChromas[i];
+          chromas[_id(c['uuid'])] = RefChroma(
               skinUuid: skinUuid,
-              swatchUrl: skinChromas[i]['swatch'] as String?,
+              swatchUrl: c['swatch'] as String?,
+              iconUrl:
+                  c['fullRender'] as String? ?? c['displayIcon'] as String?,
               index: i);
         }
       }

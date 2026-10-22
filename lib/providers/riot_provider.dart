@@ -36,6 +36,9 @@ class RiotProvider with ChangeNotifier {
     _expired = storage?.expiredOnLoad ?? false;
   }
 
+  /// 每次同步拿到 storefront 回應時呼叫（記錄造型的實際定價）。
+  void Function(Map<String, dynamic> storefront)? onStorefront;
+
   RiotSession? get session => _session;
   bool get isLoggedIn =>
       _session != null && _now().isBefore(_session!.expiresAt);
@@ -122,6 +125,7 @@ class RiotProvider with ChangeNotifier {
     String resolve(String id) => catalog.skinByItemId(id)?.uuid ?? id;
     return _run(() async {
       final storefront = await _client.fetchStorefront(s);
+      onStorefront?.call(storefront);
       final wallet = await _client.fetchWallet(s);
       final owned = await _client.fetchOwnedSkinLevels(s);
       await shop.replaceShop(mapStorefront(storefront, resolve, _now()));

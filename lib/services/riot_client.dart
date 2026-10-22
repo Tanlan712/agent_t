@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import '../models/account_progress.dart';
+import '../models/penalty_status.dart';
+import '../models/player_loadout.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -259,6 +261,18 @@ class RiotClient {
       ContractsSnapshot.fromJson(await getPd(
           s, '/contracts/v1/contracts/${s.puuid}',
           label: '取得通行證與任務'));
+
+  /// 自己目前裝備的造型與外觀（「目前裝備」分頁，只 GET）。
+  /// 實測（2026-10-22）v2 回 404，v3 回 200。
+  Future<PlayerLoadout> fetchLoadout(RiotSession s) async =>
+      PlayerLoadout.fromJson(await getPd(
+          s, '/personalization/v3/players/${s.puuid}/playerloadout',
+          label: '取得目前裝備'));
+
+  /// 自己的排隊懲罰；只能 GET。
+  Future<PenaltyStatus> fetchPenalties(RiotSession s) async =>
+      PenaltyStatus.fromJson(
+          await getPd(s, '/restrictions/v3/penalties', label: '取得排隊懲罰'));
 
   /// 解碼 JWT 的 payload（不驗證簽章，只讀取欄位）；格式不符回傳 null。
   static Map<String, dynamic>? _jwtPayload(String token) {

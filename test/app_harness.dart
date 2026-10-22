@@ -16,7 +16,10 @@ import 'package:valorant_shop_tracker/providers/collection_provider.dart';
 import 'package:valorant_shop_tracker/providers/loadout_provider.dart';
 import 'package:valorant_shop_tracker/services/remote_client.dart';
 import 'package:valorant_shop_tracker/providers/progress_provider.dart';
+import 'package:valorant_shop_tracker/providers/offer_price_provider.dart';
 import 'package:valorant_shop_tracker/providers/riot_provider.dart';
+import 'package:valorant_shop_tracker/providers/riot_resource.dart';
+import 'package:valorant_shop_tracker/storage/offer_price_storage.dart';
 import 'package:valorant_shop_tracker/services/progress_reference_api.dart';
 import 'package:valorant_shop_tracker/providers/seen_players_provider.dart';
 import 'package:valorant_shop_tracker/providers/settings_provider.dart';
@@ -78,6 +81,9 @@ class Harness {
   final LiveClient liveClient;
   late final CollectionProvider collection;
   late final ProgressProvider progress;
+  late final EquippedLoadoutProvider equipped;
+  late final PenaltyProvider penalties;
+  late final OfferPriceProvider prices;
   late final RemoteClient remoteClient;
   late final LoadoutProvider loadout;
   late final RecentFormLoader recentForm =
@@ -149,6 +155,11 @@ class Harness {
     h.progress = ProgressProvider(riot, rc,
         progressApi ?? ProgressReferenceApi(client: riotHttp ?? riotClient()),
         delay: (_) async {});
+    h.equipped = EquippedLoadoutProvider(riot, rc, delay: (_) async {});
+    h.penalties = PenaltyProvider(riot, rc, delay: (_) async {});
+    h.prices =
+        OfferPriceProvider(OfferPriceStorage(prefs), now: now ?? DateTime.now);
+    riot.onStorefront = h.prices.record;
     return h;
   }
 
@@ -189,6 +200,9 @@ class Harness {
         ChangeNotifierProvider.value(value: riot),
         ChangeNotifierProvider.value(value: collection),
         ChangeNotifierProvider.value(value: progress),
+        ChangeNotifierProvider.value(value: equipped),
+        ChangeNotifierProvider.value(value: penalties),
+        ChangeNotifierProvider.value(value: prices),
         Provider.value(value: matchClient),
         Provider.value(value: liveClient),
         Provider.value(value: remoteClient),
