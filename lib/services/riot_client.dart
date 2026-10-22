@@ -152,6 +152,43 @@ class RiotClient {
               Uri.https('glz-${s.shard}-1.${s.shard}.a.pvp.net', path),
               headers: _pdHeaders(s)));
 
+  /// 遠端操作的寫入（使用者同意後，規格 2026-10-22-remote-control-design.md）。
+  /// [host] 是 `pd` 或 `glz`；回應不是 JSON 物件（例如空的）時回傳 null。
+  /// 不自動重試：寫入重送可能重複排隊或重複鎖定。
+  Future<Map<String, dynamic>?> sendRemote(
+    RiotSession s,
+    String method,
+    String host,
+    String path, {
+    Object? body,
+    required String label,
+  }) async {
+    final uri = Uri.https(
+        host == 'glz'
+            ? 'glz-${s.shard}-1.${s.shard}.a.pvp.net'
+            : 'pd.${s.shard}.a.pvp.net',
+        path);
+    final request = http.Request(method, uri)
+      ..headers.addAll({..._pdHeaders(s), 'Content-Type': 'application/json'})
+      ..body = body == null ? '{}' : jsonEncode(body);
+    final http.Response response;
+    try {
+      response = await http.Response.fromStream(await _client.send(request));
+    } catch (_) {
+      throw RiotApiException(null, '$label：連線失敗');
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw RiotApiException(
+          response.statusCode, '$label：伺服器回應 ${response.statusCode}');
+    }
+    try {
+      final json = jsonDecode(utf8.decode(response.bodyBytes));
+      return json is Map<String, dynamic> ? json : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// pd 端點的 PUT，回應為 JSON 陣列（例如 name-service）。
   Future<List<dynamic>> putPdList(
     RiotSession s,

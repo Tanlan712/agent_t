@@ -223,3 +223,24 @@
   - `/v1/maps`：`{uuid, displayName, displayIcon（小地圖，27 張中 9 張為 null）, splash, coordinates, tacticalDescription, xMultiplier, yMultiplier, xScalarToAdd, yScalarToAdd, callouts[]{regionName, superRegionName, location{x, y, z}}}`；
     小地圖位置 `u = location.y × xMultiplier + xScalarToAdd`、`v = location.x × yMultiplier + yScalarToAdd`。
   - `/v1/agents`：`{uuid, displayName, description, displayIcon, fullPortrait, background, role{displayName}, abilities[]{slot, displayName, description, displayIcon}, recruitmentData}`；`slot` 為 `Grenade`（C）、`Ability1`（Q）、`Ability2`（E）、`Ultimate`（X）、`Passive`。沒有技能價格欄位。
+
+## 遠端操作（寫入，使用者同意後）⚠️ 未實測
+
+依社群文件（valapidocs、valclient）撰寫，**沒有用真實帳號測試過**；實測後請把 ⚠️ 改成 ✅ 並補上實際欄位。
+規則見 AGENTS.md 第 3 節「遠端操作」。
+
+### `GET`／`PUT pd /personalization/v2/players/{puuid}/playerloadout` ⚠️
+- `Subject, Version, Guns, Sprays, Identity, Incognito`
+- `Guns[]`：`ID`（武器 UUID）、`SkinID`、`SkinLevelID`、`ChromaID`、`CharmInstanceID`、`CharmID`、`CharmLevelID`、`Attachments`
+  - 🧩 使用中：`ID, SkinID, SkinLevelID, ChromaID`；PUT 時其餘欄位原樣寫回。
+- `ChromaID` 用 valorant-api 造型 `chromas` 的 UUID；`chromas[0]` 是基本款（不在 entitlements 裡）。
+
+### `POST glz /pregame/v1/matches/{matchId}/select/{agentId}`、`…/lock/{agentId}` ⚠️
+- 沒有內容；回應是更新後的選角資料（不使用）。
+
+### `POST glz /parties/v1/parties/{partyId}/…` ⚠️
+- `members/{puuid}/setReady`：`{"ready": bool}`
+- `invitecode`：回應是隊伍資料，代碼在 `InviteCode`
+- `matchmaking/join`、`matchmaking/leave`：沒有內容
+- `queue`：`{"queueID": "competitive"}`；可選的模式來自隊伍的 `EligibleQueues`
+- `accessibility`：`{"accessibility": "OPEN" | "CLOSED"}`

@@ -42,6 +42,10 @@ LiveParty mapParty(Map<String, dynamic> json, String myPuuid) {
     isOpen: json['Accessibility'] == 'OPEN',
     queueEntryTime: entry == null || entry.year < 2000 ? null : entry,
     members: members,
+    eligibleQueues: [
+      for (final q in json['EligibleQueues'] as List<dynamic>? ?? const [])
+        if (q is String && q.isNotEmpty) q,
+    ],
   );
 }
 

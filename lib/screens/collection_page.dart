@@ -3,12 +3,16 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../logic/database_logic.dart' show groupByWeaponCategory;
+import '../logic/loadout_logic.dart';
 import '../logic/progress_logic.dart';
+import '../models/app_settings.dart';
 import '../models/match_models.dart' show RefItem;
 import '../models/progress_reference.dart';
 import '../providers/collection_provider.dart';
+import '../providers/loadout_provider.dart';
 import '../providers/progress_provider.dart';
 import '../providers/riot_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/riot_client.dart';
 import '../shell/app_shell.dart';
 import '../shell/responsive_grid.dart';
@@ -181,6 +185,7 @@ class _CollectionPageState extends State<CollectionPage> {
                     agents.isEmpty,
                     _AgentsTab(
                         agents: agents,
+                        remote: context.watch<SettingsProvider>().settings,
                         levelStatus: progress.contracts != null
                             ? null
                             : progress.isLoading
@@ -304,8 +309,8 @@ class _WeaponGrid extends StatelessWidget {
   }
 }
 
-/// 某把槍擁有的造型。
-class WeaponSkinsPage extends StatelessWidget {
+/// 某把槍擁有的造型；同意遠端操作後可以直接裝備（規格 2026-10-22-remote-control-design.md）。
+class WeaponSkinsPage extends StatefulWidget {
   final String weaponUuid;
   final String weaponName;
   final Future<bool> Function(Uri) launch;
@@ -318,15 +323,38 @@ class WeaponSkinsPage extends StatelessWidget {
   });
 
   @override
+  State<WeaponSkinsPage> createState() => _WeaponSkinsPageState();
+}
+
+class _WeaponSkinsPageState extends State<WeaponSkinsPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // 只有同意遠端操作時才讀取目前的裝備。
+      if (context.read<SettingsProvider>().settings.remoteControl) {
+        context.read<LoadoutProvider>().load();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final weaponUuid = widget.weaponUuid;
+    final launch = widget.launch;
     final col = context.watch<CollectionProvider>();
     final ref = context.watch<ProgressProvider>().ref;
+    final remote = context.watch<SettingsProvider>().settings.remoteControl;
+    final levels = col.owned[ItemTypes.skinLevel] ?? const <String>{};
+    final chromas = col.owned[ItemTypes.skinChroma] ?? const <String>{};
     final skins = ref == null
         ? const <OwnedSkin>[]
-        : skinsForWeapon(col.owned[ItemTypes.skinLevel] ?? const {},
-            col.owned[ItemTypes.skinChroma] ?? const {}, ref, weaponUuid);
+        : skinsForWeapon(levels, chromas, ref, weaponUuid);
+    final loadout = remote ? context.watch<LoadoutProvider>() : null;
+    final equipped = loadout?.equipped(weaponUuid);
     return Scaffold(
-      appBar: AppBar(title: Text('$weaponName・${skins.length} 款')),
+      appBar: AppBar(title: Text('${widget.weaponName}・${skins.length} 款')),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -347,8 +375,13 @@ class WeaponSkinsPage extends StatelessWidget {
                   childAspectRatio: 1.1,
                   padding: const EdgeInsets.all(16),
                   itemCount: skins.length,
-                  itemBuilder: (context, i) =>
-                      _SkinCard(skin: skins[i], launch: launch),
+                  itemBuilder: (context, i) => _SkinCard(
+                      skin: skins[i],
+                      launch: launch,
+                      equip: loadout == null || ref == null
+                          ? null
+                          : equipFor(skins[i].skinUuid, levels, chromas, ref),
+                      equipped: equipped == skins[i].skinUuid),
                 ),
         ),
       ),
@@ -360,7 +393,49 @@ class _SkinCard extends StatelessWidget {
   final OwnedSkin skin;
   final Future<bool> Function(Uri) launch;
 
-  const _SkinCard({required this.skin, required this.launch});
+  /// 遠端裝備用的 ID；未同意遠端操作時為 null（不顯示裝備按鈕）。
+  final SkinEquip? equip;
+  final bool equipped;
+
+  const _SkinCard(
+      {required this.skin,
+      required this.launch,
+      this.equip,
+      this.equipped = false});
+
+  Future<void> _equip(BuildContext context, SkinEquip e) async {
+    final loadout = context.read<LoadoutProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+    var chroma = e.chromas.first.uuid;
+    if (e.chromas.length > 1) {
+      final picked = await showDialog<String>(
+        context: context,
+        builder: (context) => SimpleDialog(
+          title: const Text('選擇炫彩'),
+          children: [
+            for (var i = 0; i < e.chromas.length; i++)
+              SimpleDialogOption(
+                key: ValueKey('chroma-${e.chromas[i].uuid}'),
+                onPressed: () => Navigator.pop(context, e.chromas[i].uuid),
+                child: Row(children: [
+                  SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: SkinIcon(url: e.chromas[i].swatchUrl)),
+                  const SizedBox(width: 12),
+                  Text(i == 0 ? '基本款' : '炫彩 $i'),
+                ]),
+              ),
+          ],
+        ),
+      );
+      if (picked == null) return;
+      chroma = picked;
+    }
+    final ok = await loadout.equip(e, chroma);
+    messenger.showSnackBar(SnackBar(
+        content: Text(ok ? '已裝備 ${skin.name}' : loadout.error ?? '裝備失敗')));
+  }
 
   @override
   Widget build(BuildContext context) => PanelCard(
@@ -400,6 +475,24 @@ class _SkinCard extends StatelessWidget {
                 label: const Text('預覽影片'),
               ),
             ],
+            if (equip case final e?) ...[
+              const SizedBox(height: 6),
+              if (equipped)
+                StatusChip(
+                    key: ValueKey('equipped-${skin.skinUuid}'),
+                    label: '裝備中',
+                    color: AppColors.owned,
+                    icon: Icons.check)
+              else
+                FilledButton.tonalIcon(
+                  key: ValueKey('equip-${skin.skinUuid}'),
+                  onPressed: context.watch<LoadoutProvider>().busy
+                      ? null
+                      : () => _equip(context, e),
+                  icon: const Icon(Icons.settings_remote, size: 18),
+                  label: const Text('裝備'),
+                ),
+            ],
           ],
         ),
       );
@@ -414,8 +507,28 @@ class _AgentsTab extends StatelessWidget {
   /// 合約資料還沒到或讀取失敗時，取代「尚未開始」的說明。
   final String? levelStatus;
 
+  /// 同意遠端操作時顯示「預選」按鈕。
+  final AppSettings remote;
+
   const _AgentsTab(
-      {required this.agents, required this.levels, this.levelStatus});
+      {required this.agents,
+      required this.levels,
+      required this.remote,
+      this.levelStatus});
+
+  Widget _preselect(BuildContext context, RefAgent a) {
+    final chosen = remote.preferredAgent == a.uuid;
+    return IconButton(
+      key: ValueKey('preselect-${a.uuid}'),
+      tooltip: chosen ? '取消預選' : '設為預選特務',
+      visualDensity: VisualDensity.compact,
+      onPressed: () => context
+          .read<SettingsProvider>()
+          .setPreferredAgent(chosen ? null : a.uuid),
+      icon: Icon(chosen ? Icons.push_pin : Icons.push_pin_outlined,
+          color: chosen ? AppColors.primary : AppColors.muted),
+    );
+  }
 
   @override
   Widget build(BuildContext context) => ResponsiveGridView.builder(
@@ -450,6 +563,7 @@ class _AgentsTab extends StatelessWidget {
                         ),
                         if (a.isBase)
                           StatusChip(label: '初始', color: AppColors.info),
+                        if (remote.remoteControl) _preselect(context, a),
                       ]),
                       Text(a.role,
                           style:

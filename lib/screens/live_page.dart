@@ -13,15 +13,19 @@ import '../models/match_models.dart';
 import '../providers/live_party_provider.dart';
 import '../providers/match_reference_provider.dart';
 import '../providers/recent_form_loader.dart';
+import '../providers/remote_actions.dart';
 import '../providers/riot_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/live_client.dart';
 import '../services/match_client.dart';
+import '../services/remote_client.dart';
 import '../shell/app_shell.dart';
 import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
 import '../widgets/combat_stats.dart';
 import '../widgets/recent_form_cell.dart';
+import '../widgets/remote_live_controls.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
 
 /// 即時對局（目前只有隊伍階段）。只有 GET，頁面開著時每 10 秒更新。
@@ -38,6 +42,9 @@ class LivePage extends StatefulWidget {
 class _LivePageState extends State<LivePage> {
   late final LivePartyProvider _live;
   late final RecentFormLoader _forms;
+
+  /// 遠端操作（使用者在設定頁同意後才顯示，規格 2026-10-22-remote-control-design.md）。
+  late final RemoteActions _remote;
   String? _formsFor;
 
   @override
@@ -45,6 +52,8 @@ class _LivePageState extends State<LivePage> {
     super.initState();
     _live = LivePartyProvider(context.read<LiveClient>(),
         context.read<MatchClient>(), context.read<RiotProvider>());
+    _remote = RemoteActions(
+        context.read<RemoteClient>(), context.read<RiotProvider>());
     _forms = context.read<RecentFormLoader>();
     _live.addListener(_requestForms);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -109,6 +118,7 @@ class _LivePageState extends State<LivePage> {
   void dispose() {
     _live.removeListener(_requestForms);
     _forms.cancelPending(owner: this);
+    _remote.dispose();
     _live.dispose();
     super.dispose();
   }
@@ -151,13 +161,25 @@ class _LivePageState extends State<LivePage> {
 
   Widget _body(BuildContext context) {
     final ref = context.watch<MatchReferenceProvider>();
+    final settings = context.watch<SettingsProvider>().settings;
     if (_live.phase == LivePhase.inGame && _live.match != null) {
       return _MatchView(
           match: _live.match!, live: _live, ref: ref, rules: widget.rules);
     }
     if (_live.phase == LivePhase.pregame && _live.pregame != null) {
       return _PregameView(
-          pregame: _live.pregame!, live: _live, ref: ref, rules: widget.rules);
+          pregame: _live.pregame!,
+          live: _live,
+          ref: ref,
+          rules: widget.rules,
+          remote: settings.remoteControl
+              ? RemotePregameControls(
+                  pregame: _live.pregame!,
+                  actions: _remote,
+                  preferredAgent: settings.preferredAgent,
+                  agent: ref.agent,
+                  onDone: _live.refresh)
+              : null);
     }
     final party = _live.party;
     if (party == null) {
@@ -178,6 +200,11 @@ class _LivePageState extends State<LivePage> {
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
         _PartyHeader(party: party),
+        if (settings.remoteControl) ...[
+          const SizedBox(height: 16),
+          RemotePartyControls(
+              party: party, actions: _remote, onDone: _live.refresh),
+        ],
         if (_live.error case final e?)
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -593,11 +620,15 @@ class _PregameView extends StatefulWidget {
   final MatchReferenceProvider ref;
   final SuspicionRules rules;
 
+  /// 遠端選角卡片；未同意遠端操作時為 null。
+  final Widget? remote;
+
   const _PregameView(
       {required this.pregame,
       required this.live,
       required this.ref,
-      required this.rules});
+      required this.rules,
+      this.remote});
 
   @override
   State<_PregameView> createState() => _PregameViewState();
@@ -648,6 +679,10 @@ class _PregameViewState extends State<_PregameView> {
             ),
           ),
         ),
+        if (widget.remote case final r?) ...[
+          const SizedBox(height: 16),
+          r,
+        ],
         const SizedBox(height: 16),
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),

@@ -41,6 +41,9 @@ class LiveParty {
   /// 自己排第一，其餘照隊伍資料的順序。
   final List<PartyMember> members;
 
+  /// 隊伍目前可以選的模式（`EligibleQueues`），遠端變更模式用。
+  final List<String> eligibleQueues;
+
   const LiveParty({
     required this.id,
     required this.state,
@@ -48,7 +51,13 @@ class LiveParty {
     required this.isOpen,
     required this.queueEntryTime,
     required this.members,
+    this.eligibleQueues = const [],
   });
+
+  /// 自己是不是隊長。
+  bool get iAmOwner => members.any((m) => m.isMe && m.isOwner);
+
+  PartyMember? get me => members.where((m) => m.isMe).firstOrNull;
 }
 
 /// 對局中（core-game）的一位玩家。

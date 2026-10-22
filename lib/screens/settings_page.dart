@@ -9,6 +9,7 @@ import 'package:valorant_shop_tracker/widgets/app_icon_picker.dart';
 import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 import 'package:valorant_shop_tracker/widgets/my_shop_settings_card.dart';
 import 'package:valorant_shop_tracker/widgets/nav_order_editor.dart';
+import 'package:valorant_shop_tracker/widgets/remote_control_card.dart';
 import 'package:valorant_shop_tracker/widgets/theme/theme_picker.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -85,6 +86,8 @@ class _SettingsPageState extends State<SettingsPage> {
               _buildAlternativeApiSection(),
               const SizedBox(height: 24),
               const MyShopSettingsCard(),
+              const SizedBox(height: 24),
+              const RemoteControlCard(),
               // 網頁版的圖示由 manifest 固定，無法從頁面更換。
               if (AppIconService.supported) ...[
                 const SizedBox(height: 24),

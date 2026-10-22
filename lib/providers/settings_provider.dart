@@ -40,6 +40,22 @@ class SettingsProvider with ChangeNotifier {
     await _save(next);
   }
 
+  /// 同意（記下時間）或撤回遠端操作；撤回時一併清除預選特務。
+  Future<void> setRemoteControl(bool enabled, {DateTime? now}) =>
+      _save(_settings.withRemote(
+          enabled: enabled,
+          since: (now ?? DateTime.now()).toIso8601String(),
+          preferredAgent: _settings.preferredAgent));
+
+  /// 預選特務；null 代表取消。未同意遠端操作時不會儲存。
+  Future<void> setPreferredAgent(String? agentId) async {
+    if (!_settings.remoteControl) return;
+    await _save(_settings.withRemote(
+        enabled: true,
+        since: _settings.remoteControlSince,
+        preferredAgent: agentId?.toLowerCase()));
+  }
+
   Future<void> resetEva() => _save(clearEva(_settings));
 
   Future<void> _save(AppSettings next) async {

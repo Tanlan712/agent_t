@@ -27,6 +27,8 @@
 - 攔截、模擬或轉送遊戲通訊，包括抓包、MITM 代理和改寫封包（ToS §7.1 第 11 項）。
 - 擷取遊戲畫面、OCR、在遊戲畫面上疊加 overlay。
 - 模擬鍵盤或滑鼠、巨集、bot，或任何自動操作，例如自動選角或秒鎖。
+  - **使用者決定（2026-10-22）**：遠端操作（第 3 節）**不做自動秒鎖**。選角只顯示預選特務的「選擇」「鎖定」按鈕，
+    必須由使用者親手按下才送出；不得在偵測到選角時自動送出，也不得加上自動重複、定時或排程的寫入。
 - 偵測、列舉或監控 VALORANT／Riot Client 的程序或視窗；連線到本機 Riot Client API（`127.0.0.1` 加上 lockfile）；
   讀取 `lockfile`、`ShooterGame.log` 或 `%LocalAppData%\VALORANT` 底下的檔案。
   （Riot 的 FAQ 表示 LCU 類 API 在 Vanguard 下仍可運作，但本專案為了降低風險，一律不使用。）
@@ -76,10 +78,28 @@ Riot 的第三方 App 說明指出：暴露隱藏資訊、即時分析或帶來�
 | 已結束場次的對戰紀錄、詳情、名稱、牌位 | `pd.{shard}.a.pvp.net` |
 | 即時對局（使用者核准，見第 2 節） | `glz-{region}-1.{shard}.a.pvp.net`，只能 GET |
 | 公開遊戲資料 | `valorant-api.com` |
+| 遠端操作（使用者決定 2026-10-22，見下方「遠端操作」）：自己的裝備讀寫、選角的選擇與鎖定、自己隊伍的寫入 | `pd.{shard}.a.pvp.net`、`glz-{region}-1.{shard}.a.pvp.net` |
 
-- **只讀**：不得呼叫會改變遊戲或帳號狀態的端點，例如選角、鎖角、佇列、隊伍、裝備、聊天、啟用合約、購買。（讀取自己的合約進度是 GET，見上表。）
+- **只讀**：不得呼叫會改變遊戲或帳號狀態的端點，例如選角、鎖角、佇列、隊伍、裝備、聊天、啟用合約、購買。（讀取自己的合約進度是 GET，見上表；例外只有下方「遠端操作」列出的端點。）
 - **頻率**：背景請求同時最多 2 個；429 和連線失敗時依 `Retry-After` 或 2s／4s／8s 退避，最多重試 3 次；能快取就快取。
 - 瀏覽器擋下的端點（沒有 CORS 標頭）**不可**用本機代理、修改瀏覽器安全設定或擴充功能繞過。
+
+### 遠端操作（使用者決定 2026-10-22）
+
+使用者要求在設定中同意後才能使用的遠端功能（規格 `docs/superpowers/specs/2026-10-22-remote-control-design.md`）。
+這是上面「只讀」的例外。已向使用者說明風險：寫入未公開的 `pd`／`glz` 端點比只讀更明顯違反 ToS §7.1，
+Riot 在伺服器端看得到這些請求，帳號可能被標記或停權；網頁版的 POST／PUT 可能被 CORS 擋下；端點依社群文件，沒有實測。
+
+- **預設關閉**：`AppSettings.remoteControl` 只有在設定頁「遠端操作」卡片確認風險對話框後才為 true；關閉即撤回並清除預選特務。
+  未同意時所有遠端按鈕都不顯示，`RemoteClient` 每次送出前再檢查一次，未同意就不發請求。
+- **只有使用者親手按下才送出**：不自動、不重複、不定時（第 1 節的自動選角／秒鎖禁止維持不變）。
+- 寫入**不自動重試**（避免重複排隊或鎖定），同時只送一個；仍然經過 `*.a.pvp.net` 同時最多 2 個的限流。
+- 允許的寫入端點（只限這些）：
+  - `pd`：GET／PUT `personalization/v2/players/{自己的 puuid}/playerloadout`（只改使用者選的那把槍的造型、等級、炫彩，其餘原樣寫回）。
+  - `glz`：POST `pregame/v1/matches/{id}/select/{agentId}`、`pregame/v1/matches/{id}/lock/{agentId}`。
+  - `glz`：POST `parties/v1/parties/{自己的隊伍}/members/{自己的 puuid}/setReady`、`…/invitecode`、`…/matchmaking/join`、
+    `…/matchmaking/leave`、`…/queue`、`…/accessibility`。隊長限定的動作只顯示給隊長。
+- 不包含：邀請或踢出他人、聊天、購買、啟用合約、自訂對戰設定、加入他人隊伍；要做必須再問使用者。
 
 ### 手機 App（使用者決定 2026-10-22）
 
@@ -141,6 +161,7 @@ Riot 的第三方 App 說明指出：暴露隱藏資訊、即時分析或帶來�
   - 選角與對局：`pregame`、`core-game` 的 player 與 match。
   - 造型（使用者決定 2026-10-21，先探查）：`pregame`／`core-game` 的 `matches/{id}/loadouts`，只能 GET，只用來顯示玩家攜帶的造型。
   - 隊伍：`parties/v1/players/{puuid}`、`parties/v1/parties/{id}`。
+- 「遠端操作」的寫入端點只限第 3 節「遠端操作」列出的那些，而且只在使用者同意後、由使用者按下按鈕時送出。
 
 ## 7. 已知與政策衝突、待使用者決定的現有功能
 

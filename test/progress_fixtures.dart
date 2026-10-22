@@ -57,7 +57,12 @@ ProgressReference testProgressRef({DateTime? seasonEnd}) => ProgressReference(
             levelIndex: 0),
       },
       chromas: const {
-        'ch-v-red': RefChroma(skinUuid: 'skin-v', swatchUrl: 'red.png'),
+        'ch-v-base':
+            RefChroma(skinUuid: 'skin-v', swatchUrl: 'base.png', index: 0),
+        'ch-v-red':
+            RefChroma(skinUuid: 'skin-v', swatchUrl: 'red.png', index: 1),
+        'ch-p-base':
+            RefChroma(skinUuid: 'skin-p', swatchUrl: 'pbase.png', index: 0),
       },
       agents: const {
         'a-base1':
