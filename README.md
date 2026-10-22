@@ -23,6 +23,16 @@ flutter run -d web-server --web-port 8642 --web-hostname localhost
 
 建置靜態檔：`flutter build web`（輸出到 `build/web`）。
 
+## 安裝成 App
+
+網站支援 PWA，可以像 App 一樣從主畫面開啟（全螢幕、有自己的圖示，直向橫向都能用）：
+
+- **Android（Chrome）**：開啟網站 → 右上角選單 →「安裝應用程式」或「加到主畫面」。
+- **iPhone／iPad（Safari）**：開啟網站 → 分享按鈕 →「加入主畫面」。
+- **電腦（Chrome／Edge）**：網址列右側的安裝圖示。
+
+安裝後仍然是同一個網站，網站更新後重新開啟就會套用。Android 與電腦的資料和瀏覽器共用；iPhone 加入主畫面後的資料與 Safari 分開，需要在 App 裡另外登入一次。
+
 ## Riot 登入方式
 
 1. 進入「設定 → Riot 帳號」，或在「我的商店」點「登入 Riot 以自動同步」。
