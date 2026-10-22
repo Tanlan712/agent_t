@@ -2,9 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/riot_provider.dart';
 import '../providers/settings_provider.dart';
+import '../screens/riot_web_login_page.dart';
+import '../services/riot_auth.dart';
 import '../theme/app_theme.dart';
 import 'layout.dart';
 import 'nav_items.dart';
@@ -377,7 +380,16 @@ class _RiotStatus extends StatelessWidget {
   }
 }
 
-/// Riot 登入快到期（剩 5 分鐘內）時的提醒列；每 30 秒重新檢查一次。
+/// 一鍵重新登入：網頁版直接開 Riot 登入頁（Riot 記得使用者時不用輸入密碼，
+/// 跳轉後分享或貼上即可），同時切到登入頁；App 直接到登入頁用內嵌登入。
+void reloginToRiot(BuildContext context) {
+  if (!inAppLoginSupported) {
+    launchUrl(Uri.parse(riotLoginUrl), webOnlyWindowName: '_blank');
+  }
+  Navigator.pushNamed(context, '/riot-login');
+}
+
+/// Riot 登入快到期（剩 5 分鐘內）或已過期時的提醒列；每 30 秒重新檢查一次。
 class ExpiryBanner extends StatefulWidget {
   const ExpiryBanner({super.key});
 
@@ -404,9 +416,11 @@ class _ExpiryBannerState extends State<ExpiryBanner> {
   @override
   Widget build(BuildContext context) {
     final riot = context.watch<RiotProvider>();
-    if (!riot.expiresSoon) return const SizedBox.shrink();
+    if (!riot.expiresSoon && !riot.needsRelogin) return const SizedBox.shrink();
     final minutes = (riot.timeLeft.inSeconds / 60).ceil();
-    if (context.appStyle.id.isEva) return _EvaEmergency(minutes: minutes);
+    final message =
+        riot.expiresSoon ? 'Riot 登入將在 $minutes 分鐘後過期' : 'Riot 登入已過期';
+    if (context.appStyle.id.isEva) return _EvaEmergency(message: message);
     return Container(
       key: const ValueKey('expiry-banner'),
       color: AppColors.surfaceHigh,
@@ -415,9 +429,9 @@ class _ExpiryBannerState extends State<ExpiryBanner> {
         children: [
           Icon(Icons.timer_outlined, size: 18, color: AppColors.wishlistGold),
           const SizedBox(width: 8),
-          Expanded(child: Text('Riot 登入將在 $minutes 分鐘後過期')),
+          Expanded(child: Text(message)),
           TextButton(
-            onPressed: () => Navigator.pushNamed(context, '/riot-login'),
+            onPressed: () => reloginToRiot(context),
             child: const Text('重新登入'),
           ),
         ],
@@ -428,9 +442,9 @@ class _ExpiryBannerState extends State<ExpiryBanner> {
 
 /// EVA 系列的到期提醒：▲ 列框住的 EMERGENCY。
 class _EvaEmergency extends StatelessWidget {
-  final int minutes;
+  final String message;
 
-  const _EvaEmergency({required this.minutes});
+  const _EvaEmergency({required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -457,12 +471,12 @@ class _EvaEmergency extends StatelessWidget {
                   fontSize: 18, letterSpacing: 2, color: p.onButton))),
           const SizedBox(width: 12),
           Expanded(
-              child: Text('Riot 登入將在 $minutes 分鐘後過期',
+              child: Text(message,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(color: p.onButton))),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: p.onButton),
-            onPressed: () => Navigator.pushNamed(context, '/riot-login'),
+            onPressed: () => reloginToRiot(context),
             child: const Text('重新登入'),
           ),
         ]),

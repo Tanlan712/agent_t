@@ -16,6 +16,59 @@ Future<String?> openRiotWebLogin(BuildContext context) =>
       MaterialPageRoute(builder: (_) => const RiotWebLoginPage()),
     );
 
+/// 載入 Riot 登入頁的內嵌瀏覽器；跳轉到 playvalorant.com 時交給 [capture]，回傳 true 就攔下。
+/// 只開 [riotLoginUrl]，不注入 JavaScript、不讀取表單或 cookie（AGENTS.md 第 3 節）。
+WebViewController riotLoginController(
+  bool Function(String url) capture, {
+  void Function(int progress)? onProgress,
+}) =>
+    WebViewController()
+      // Riot 的登入頁需要 JavaScript；App 本身不執行任何腳本。
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(NavigationDelegate(
+        onNavigationRequest: (request) => capture(request.url)
+            ? NavigationDecision.prevent
+            : NavigationDecision.navigate,
+        onUrlChange: (change) {
+          final url = change.url;
+          if (url != null) capture(url);
+        },
+        onProgress: onProgress,
+      ))
+      ..loadRequest(Uri.parse(riotLoginUrl));
+
+/// 登出時清除內嵌頁保存的 Riot 登入記錄，背景續期也就跟著停止。
+Future<void> clearRiotWebLogin() => WebViewCookieManager().clearCookies();
+
+/// 背景續期用的隱藏登入頁（1×1、不接收點擊）：Riot 還記得使用者時會直接跳轉，
+/// 攔下網址交給 [onRedirect]；需要輸入密碼時就停在登入頁，由呼叫端逾時放棄。
+class SilentRiotLogin extends StatefulWidget {
+  const SilentRiotLogin({super.key, required this.onRedirect});
+
+  final void Function(String url) onRedirect;
+
+  @override
+  State<SilentRiotLogin> createState() => _SilentRiotLoginState();
+}
+
+class _SilentRiotLoginState extends State<SilentRiotLogin> {
+  late final WebViewController _controller = riotLoginController(_capture);
+  bool _done = false;
+
+  bool _capture(String url) {
+    if (!isRiotRedirect(url)) return false;
+    if (!_done) {
+      _done = true;
+      widget.onRedirect(url);
+    }
+    return true;
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      IgnorePointer(child: WebViewWidget(controller: _controller));
+}
+
 /// 內嵌 Riot 官方登入頁。使用者自己在 Riot 頁面輸入帳密；
 /// App 不注入 JavaScript、不讀取表單或 cookie，只在跳轉到 playvalorant.com 時攔下網址。
 class RiotWebLoginPage extends StatefulWidget {
@@ -33,22 +86,9 @@ class _RiotWebLoginPageState extends State<RiotWebLoginPage> {
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController()
-      // Riot 的登入頁需要 JavaScript；App 本身不執行任何腳本。
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(NavigationDelegate(
-        onNavigationRequest: (request) => _capture(request.url)
-            ? NavigationDecision.prevent
-            : NavigationDecision.navigate,
-        onUrlChange: (change) {
-          final url = change.url;
-          if (url != null) _capture(url);
-        },
-        onProgress: (p) {
-          if (mounted) setState(() => _progress = p);
-        },
-      ))
-      ..loadRequest(Uri.parse(riotLoginUrl));
+    _controller = riotLoginController(_capture, onProgress: (p) {
+      if (mounted) setState(() => _progress = p);
+    });
   }
 
   /// 是 Riot 的跳轉網址時關掉頁面並回傳網址；網址含 token，不寫入 log。
@@ -62,7 +102,7 @@ class _RiotWebLoginPageState extends State<RiotWebLoginPage> {
   }
 
   Future<void> _switchAccount() async {
-    await WebViewCookieManager().clearCookies();
+    await clearRiotWebLogin();
     await _controller.loadRequest(Uri.parse(riotLoginUrl));
   }
 

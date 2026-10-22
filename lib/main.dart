@@ -18,6 +18,7 @@ import 'providers/shop_provider.dart';
 import 'providers/wishlist_provider.dart';
 import 'app_routes.dart';
 import 'logic/eva_progress.dart';
+import 'screens/riot_web_login_page.dart';
 import 'services/progress_reference_api.dart';
 import 'services/catalog_api.dart';
 import 'services/live_client.dart';
@@ -32,6 +33,7 @@ import 'storage/settings_storage.dart';
 import 'storage/shop_storage.dart';
 import 'storage/wishlist_storage.dart';
 import 'theme/themed_app.dart';
+import 'widgets/riot_auto_renew.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,7 +48,10 @@ Future<void> main() async {
 
   // 商店同步與對戰紀錄共用同一個 Riot 登入；登入資訊保存到 token 過期為止（AGENTS.md 第 4 節）。
   final riotClient = RiotClient();
-  final riot = RiotProvider(riotClient, storage: SessionStorage(prefs));
+  // 手機 App 按「登出」時一併清除內嵌頁的 Riot 登入記錄，背景續期也跟著停止。
+  final riot = RiotProvider(riotClient,
+      storage: SessionStorage(prefs),
+      onLogout: inAppLoginSupported ? clearRiotWebLogin : null);
   // 自己的紀錄、最近 5 場與玩家頁共用同一份場次快取。
   final matchClient = MatchClient(riotClient);
   // 即時對局（glz）只有 GET，規則見 AGENTS.md。
@@ -106,7 +111,9 @@ class MyApp extends StatelessWidget {
         theme: theme,
         // 主題立即切換：AppColors（全域）與 Theme.of 不會有一段時間不一致。
         themeAnimationDuration: Duration.zero,
-        builder: builder,
+        // 手機 App 在背景續期 Riot 登入（AGENTS.md 第 3 節）；網頁版不做任何事。
+        builder: (context, child) =>
+            RiotAutoRenew(child: builder(context, child)),
         onGenerateRoute: onGenerateAppRoute,
       ),
     );
