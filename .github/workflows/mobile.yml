@@ -111,7 +111,7 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: app-v${{ github.run_number }}
-          name: 手機 App #${{ github.run_number }}
+          name: '手機 App #${{ github.run_number }}'
           body: |
             自己側載安裝用的手機 App（${{ github.sha }}）。
             Android：https://github.com/${{ github.repository }}/releases/latest/download/valorant-shop-tracker.apk
@@ -120,3 +120,17 @@ jobs:
             valorant-shop-tracker.apk
             valorant-shop-tracker-unsigned.ipa
           make_latest: true
+
+      # 只保留最新一版：刪掉其他 app-v* release，連同它們的 tag。
+      - name: Remove older releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          CURRENT: app-v${{ github.run_number }}
+        run: |
+          gh release list --limit 1000 --json tagName --jq '.[].tagName' \
+            | grep '^app-v' | grep -vx "$CURRENT" \
+            | while read -r tag; do
+                echo "刪除 $tag"
+                gh release delete "$tag" --yes --cleanup-tag
+              done
