@@ -6,6 +6,11 @@ on:
     paths-ignore:
       - '**.md'
       - 'docs/**'
+  # PR 只建置、不發布，用來先確認 APK 建得出來。
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   workflow_dispatch:
 
 # 建立 GitHub Release 需要寫入權限。
@@ -13,7 +18,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: android
+  group: android-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -62,7 +67,14 @@ jobs:
 
       - run: mv build/app/outputs/flutter-apk/app-release.apk valorant-shop-tracker.apk
 
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'pull_request'
+        with:
+          name: valorant-shop-tracker-apk
+          path: valorant-shop-tracker.apk
+
       - uses: softprops/action-gh-release@v2
+        if: github.event_name != 'pull_request'
         with:
           tag_name: android-v${{ github.run_number }}
           name: Android 版 #${{ github.run_number }}
