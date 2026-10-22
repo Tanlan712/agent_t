@@ -22,6 +22,7 @@ import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
+import 'details/agent_level_page.dart';
 
 Future<bool> _openInNewTab(Uri uri) =>
     launchUrl(uri, webOnlyWindowName: '_blank');
@@ -702,6 +703,11 @@ class _AgentsTab extends StatelessWidget {
           return PanelCard(
             key: ValueKey('agent-${a.uuid}'),
             padding: const EdgeInsets.all(12),
+            // 點特務看合約等級與每階獎勵。
+            onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                    builder: (_) => AgentLevelPage(agent: a))),
             child: Row(
               children: [
                 SizedBox(

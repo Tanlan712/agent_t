@@ -220,6 +220,73 @@ void main() {
     expect(agent('a-base1', find.text('尚未開始')), findsOneWidget);
   });
 
+  // 使用者決定 2026-10-22：點我的收藏的特務可以看合約等級與每階獎勵。
+  testWidgets('點特務：開啟等級頁，顯示合約階級、下一階進度與獎勵', (tester) async {
+    setWidth(tester, 1440);
+    final h = await Harness.create(tester,
+        riotHttp: riotClient(
+            entitlements: {
+              ItemTypes.agent: ['a-paid'],
+            },
+            contracts: contractsJson(contracts: [
+              {
+                'ContractDefinitionID': 'ac-paid',
+                'ProgressionLevelReached': 2,
+                'ProgressionTowardsNextLevel': 300,
+              },
+            ])),
+        progressApi: FakeProgressApi());
+    await tester.runAsync(() => h.riot.login(fakeRedirect));
+    await tester.pumpWidget(h.wrap(home: const CollectionPage()));
+    await settle(tester);
+    await openTab(tester, '特務');
+    await tester.tap(find.byKey(const ValueKey('agent-a-paid')));
+    await tester.pumpAndSettle();
+    final pass = find.byKey(const ValueKey('agent-pass'));
+    expect(pass, findsOneWidget);
+    expect(
+        find.descendant(of: pass, matching: find.text('芮娜合約')), findsOneWidget);
+    expect(find.descendant(of: pass, matching: find.text('第 2 階 / 3')),
+        findsOneWidget);
+    expect(find.text('下一階 300 / 1000 XP'), findsOneWidget);
+    expect(find.byKey(const ValueKey('tier-3')), findsOneWidget);
+    expect(find.byKey(const ValueKey('tier-next')), findsOneWidget);
+    expect(find.byType(BackButton), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('點尚未開始的特務：等級頁從第 0 階開始', (tester) async {
+    setWidth(tester, 375);
+    final h = await Harness.create(tester,
+        riotHttp: riotClient(entitlements: {
+          ItemTypes.agent: ['a-paid'],
+        }, contracts: contractsJson(contracts: [])),
+        progressApi: FakeProgressApi());
+    await tester.runAsync(() => h.riot.login(fakeRedirect));
+    await tester.pumpWidget(h.wrap(home: const CollectionPage()));
+    await settle(tester);
+    await openTab(tester, '特務');
+    await tester.tap(find.byKey(const ValueKey('agent-a-paid')));
+    await tester.pumpAndSettle();
+    expect(find.text('第 0 階 / 3'), findsOneWidget);
+    expect(find.text('下一階 0 / 1000 XP'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('點沒有合約資料的特務：說明找不到', (tester) async {
+    setWidth(tester, 1440);
+    final h = await Harness.create(tester,
+        riotHttp: riotClient(contracts: contractsJson(contracts: [])),
+        progressApi: FakeProgressApi());
+    await tester.runAsync(() => h.riot.login(fakeRedirect));
+    await tester.pumpWidget(h.wrap(home: const CollectionPage()));
+    await settle(tester);
+    await openTab(tester, '特務');
+    await tester.tap(find.byKey(const ValueKey('agent-a-base1')));
+    await tester.pumpAndSettle();
+    expect(find.text('找不到這個特務的合約資料'), findsOneWidget);
+  });
+
   testWidgets('新帳號：特務分頁列出初始特務並標示', (tester) async {
     setWidth(tester, 1440);
     final h = await loggedIn(tester);

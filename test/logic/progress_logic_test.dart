@@ -238,6 +238,65 @@ void main() {
     });
   });
 
+  group('agentContract', () {
+    const r = ProgressReference(contracts: {
+      'agent-contract': RefContract(
+        name: '芮娜合約',
+        relationType: 'Agent',
+        relationUuid: 'agent-x',
+        tiers: [
+          RefTier(reward: RefReward(type: 'Spray', uuid: 's'), xp: 1000),
+          RefTier(reward: RefReward(type: 'Spray', uuid: 's'), xp: 2000),
+        ],
+      ),
+    });
+
+    test('有進度：回傳合約名稱、階級與下一階經驗', () {
+      final c = agentContract(
+          ContractsSnapshot.fromJson(contractsJson(contracts: [
+            {
+              'ContractDefinitionID': 'agent-contract',
+              'ProgressionLevelReached': 1,
+              'ProgressionTowardsNextLevel': 300,
+            },
+          ])),
+          r,
+          'agent-x')!;
+      expect(c.name, '芮娜合約');
+      expect(c.tiers, hasLength(2));
+      expect(c.reached, 1);
+      expect(c.towardsNext, 300);
+      expect(c.nextTierXp, 2000);
+    });
+
+    test('沒有進度紀錄（尚未開始）：從第 0 階開始', () {
+      final c = agentContract(
+          ContractsSnapshot.fromJson(contractsJson(contracts: [])),
+          r,
+          'agent-x')!;
+      expect(c.reached, 0);
+      expect(c.towardsNext, 0);
+      expect(c.nextTierXp, 1000);
+    });
+
+    test('沒有合約資料或沒有階級時回傳 null', () {
+      final snap = ContractsSnapshot.fromJson(contractsJson());
+      expect(agentContract(snap, r, 'agent-other'), isNull);
+      expect(
+          agentContract(
+              snap,
+              const ProgressReference(contracts: {
+                'c': RefContract(
+                    name: 'x',
+                    relationType: 'Agent',
+                    relationUuid: 'agent-x',
+                    tiers: []),
+              }),
+              'agent-x'),
+          isNull);
+    });
+  });
+
   group('審閱修正', () {
     test('特務合約沒有階級時視為沒有等級資料（不顯示「等級 0 / 0」）', () {
       const r = ProgressReference(contracts: {

@@ -211,6 +211,34 @@ BattlePass? currentBattlePass(
   return null;
 }
 
+/// 特務合約的完整階級與章節（點我的收藏的特務時顯示）；
+/// 沒有進度紀錄時從第 0 階開始，參考資料沒有這個特務的合約或沒有階級時為 null。
+BattlePass? agentContract(
+    ContractsSnapshot snapshot, ProgressReference ref, String agentUuid) {
+  for (final e in ref.contracts.entries) {
+    final c = e.value;
+    if (c.relationType != 'Agent' ||
+        c.relationUuid != agentUuid ||
+        c.tiers.isEmpty) {
+      continue;
+    }
+    ContractProgress? p;
+    for (final x in snapshot.contracts) {
+      if (x.definitionId == e.key) p = x;
+    }
+    final reached = (p?.levelReached ?? 0).clamp(0, c.tiers.length);
+    return BattlePass(
+      name: c.name,
+      tiers: c.tiers,
+      chapters: c.chapters,
+      reached: reached,
+      towardsNext: p?.towardsNext ?? 0,
+      nextTierXp: reached < c.tiers.length ? c.tiers[reached].xp : null,
+    );
+  }
+  return null;
+}
+
 /// 獎勵的顯示名稱；查不到時為「未知獎勵」。
 /// 貨幣只顯示名稱（例如輻能點數）：資料裡的數量無法確認，不顯示以免誤導。
 String rewardLabel(RefReward r, ProgressReference ref) =>
