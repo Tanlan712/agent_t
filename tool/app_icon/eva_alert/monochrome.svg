@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
+<!-- 主題圖示只用透明度：V 要挖空，否則會和六角形連成一塊。 -->
+<g transform="translate(54 54) scale(0.9) translate(-54 -54)">
+  <path fill-rule="evenodd" fill="#fff" d="M80.85 69.5 L54 85 L27.15 69.5 V38.5 L54 23 L80.85 38.5 Z M38 40 H47 L54 61 L61 40 H70 L59 70 H49 Z"/></g>
+</svg>

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:valorant_shop_tracker/theme/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:valorant_shop_tracker/services/app_icon_service.dart';
 import 'package:valorant_shop_tracker/services/riot_api_key_manager.dart';
 import 'package:valorant_shop_tracker/shell/app_shell.dart';
+import 'package:valorant_shop_tracker/widgets/app_icon_picker.dart';
 import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
 import 'package:valorant_shop_tracker/widgets/my_shop_settings_card.dart';
 import 'package:valorant_shop_tracker/widgets/nav_order_editor.dart';
@@ -83,6 +85,11 @@ class _SettingsPageState extends State<SettingsPage> {
               _buildAlternativeApiSection(),
               const SizedBox(height: 24),
               const MyShopSettingsCard(),
+              // 網頁版的圖示由 manifest 固定，無法從頁面更換。
+              if (AppIconService.supported) ...[
+                const SizedBox(height: 24),
+                const AppIconPicker(),
+              ],
             ],
           ),
         ),
