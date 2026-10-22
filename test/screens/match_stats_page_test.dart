@@ -1,10 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:valorant_shop_tracker/screens/match_history_page.dart';
+import 'package:valorant_shop_tracker/widgets/line_chart.dart';
 
 import '../app_harness.dart';
 import '../riot_fixtures.dart';
 import '../shell/app_shell_test.dart' show setWidth;
+
+/// 可以讓對戰紀錄請求暫時失敗的 client。
+class _Gate extends http.BaseClient {
+  final http.Client inner;
+  bool failHistory = false;
+  _Gate(this.inner);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (failHistory && request.url.path.contains('/match-history/')) {
+      return http.StreamedResponse(Stream.value(const []), 500);
+    }
+    return inner.send(request);
+  }
+}
 
 void main() {
   Future<Harness> loggedIn(WidgetTester tester) async {
@@ -65,9 +82,17 @@ void main() {
     setWidth(tester, 1440);
     final h = await loggedIn(tester);
     await open(tester, h);
-    expect(find.byKey(const ValueKey('chart-acs')), findsOneWidget);
-    expect(find.byKey(const ValueKey('chart-rr')), findsOneWidget);
+    Finder drawn(String key) => find.descendant(
+        of: find.byKey(ValueKey(key)), matching: find.byType(SimpleLineChart));
+    // 3 場：ACS 與 RR 都畫得出線。
+    expect(drawn('chart-acs'), findsOneWidget);
+    expect(drawn('chart-rr'), findsOneWidget);
     expect(find.textContaining('平均 ACS'), findsWidgets);
+    // 只看競技時只剩 1 場：不畫線，改顯示說明。
+    await choose(tester, 'filter-mode', '競技');
+    expect(drawn('chart-acs'), findsNothing);
+    expect(drawn('chart-rr'), findsNothing);
+    expect(find.textContaining('至少要 2 場'), findsWidgets);
   });
 
   for (final width in [375.0, 1440.0]) {
@@ -98,4 +123,24 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('選了特務後重新載入失敗（選項裡暫時沒有這位特務）不會崩潰，篩選仍看得到', (tester) async {
+    setWidth(tester, 1440);
+    final gate = _Gate(riotClient(historyTotal: 3));
+    final h = await Harness.create(tester, riotHttp: gate);
+    await tester.runAsync(() => h.riot.login(fakeRedirect));
+    await open(tester, h);
+    await choose(tester, 'filter-agent', '蓋克');
+    gate.failHistory = true;
+    await tester.runAsync(() => h.matchHistory.loadFirstPage());
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    // 下拉選單仍顯示目前的篩選，可以清除。
+    expect(
+        find.descendant(
+            of: find.byKey(const ValueKey('filter-agent')),
+            matching: find.text('蓋克')),
+        findsOneWidget);
+    expect(find.text('清除篩選'), findsOneWidget);
+  });
 }

@@ -41,7 +41,10 @@ class LoginPrefetcher {
     if (shop != null && catalog != null) {
       // 商店的 ItemID 要靠造型目錄換成造型；目錄還在下載時先等它。
       await _catalogSettled(catalog);
-      if (_riot.isLoggedIn) await _riot.sync(shop: shop, catalog: catalog);
+      // 已有同步進行中（例如商店自動刷新）時不重複送出，避免兩組同步重疊。
+      if (_riot.isLoggedIn && !_riot.isBusy) {
+        await _riot.sync(shop: shop, catalog: catalog);
+      }
     }
     await _collection.load();
     await _progress.load();

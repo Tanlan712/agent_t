@@ -11,6 +11,23 @@ import 'package:valorant_shop_tracker/storage/shop_storage.dart';
 import '../catalog_helpers.dart';
 import '../riot_fixtures.dart';
 
+/// 可以讓商店請求暫時失敗的 client（失敗時回 500）。
+class _Gate extends http.BaseClient {
+  final http.Client inner;
+  final List<http.Request> log;
+  bool failStorefront = false;
+  _Gate(this.inner, this.log);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (failStorefront && request.url.path.contains('/storefront/')) {
+      log.add(request as http.Request);
+      return http.StreamedResponse(Stream.value(const []), 500);
+    }
+    return inner.send(request);
+  }
+}
+
 void main() {
   late DateTime clock;
   late List<http.Request> requests;
@@ -24,6 +41,8 @@ void main() {
     Duration dailyLeft = const Duration(seconds: 10),
     Duration? nightLeft,
     int storefrontStatus = 200,
+    int dailyRemaining = 3600,
+    http.Client Function(List<http.Request> requests)? clientFor,
   }) async {
     clock = DateTime(2026, 10, 22, 7, 59, 50);
     requests = [];
@@ -43,10 +62,12 @@ void main() {
         )));
     final riot = RiotProvider(
         RiotClient(
-            client: riotClient(
-                requests: requests,
-                storefrontV3Status: storefrontStatus,
-                storefrontV2Status: storefrontStatus)),
+            client: clientFor?.call(requests) ??
+                riotClient(
+                    requests: requests,
+                    storefrontV3Status: storefrontStatus,
+                    storefrontV2Status: storefrontStatus,
+                    dailyRemaining: dailyRemaining)),
         now: () => clock);
     await tester.runAsync(() => riot.login(fakeRedirect));
     requests.clear();
@@ -87,6 +108,45 @@ void main() {
     }
     // 第一次＋3 次重試（每次同步可能先試 v3 再試 v2，所以用倍數比較）。
     expect(storefrontCalls(), first * 4);
+    current.dispose();
+  });
+
+  testWidgets('Riot 還沒換新商店（剩餘時間 0）時，重試用完就停，30 分鐘內不再同步', (tester) async {
+    await setup(tester, dailyRemaining: 0);
+    await advance(tester, const Duration(seconds: 45));
+    final first = storefrontCalls();
+    expect(first, greaterThan(0));
+    for (var i = 0; i < 10; i++) {
+      await advance(tester, const Duration(minutes: 1));
+    }
+    // 第一次＋最多 3 次重試。
+    expect(storefrontCalls(), lessThanOrEqualTo(first * 4));
+    final afterRetries = storefrontCalls();
+    for (var i = 0; i < 15; i++) {
+      await advance(tester, const Duration(minutes: 1));
+    }
+    expect(storefrontCalls(), afterRetries);
+    current.dispose();
+  });
+
+  testWidgets('重試前商店已經被別的同步更新，就不再同步', (tester) async {
+    late _Gate gate;
+    final (_, shop, _) = await setup(tester,
+        clientFor: (r) => gate = _Gate(riotClient(requests: r), r));
+    gate.failStorefront = true;
+    await advance(tester, const Duration(seconds: 45));
+    final first = storefrontCalls();
+    expect(first, greaterThan(0));
+    // 例如使用者手動同步成功：商店換新。
+    await tester.runAsync(() => shop.replaceShop(CurrentShop(
+          daily: const [ShopEntry(skinUuid: 'o', price: 1275)],
+          dailyExpiresAt: clock.add(const Duration(hours: 23)),
+        )));
+    gate.failStorefront = false;
+    for (var i = 0; i < 5; i++) {
+      await advance(tester, const Duration(minutes: 1));
+    }
+    expect(storefrontCalls(), first);
     current.dispose();
   });
 

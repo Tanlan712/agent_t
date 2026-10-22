@@ -23,7 +23,9 @@ Map<String, dynamic> offer(String itemId, int cost) => {
       ],
     };
 
-Map<String, dynamic> storefrontJson({bool withNightMarket = true}) => {
+Map<String, dynamic> storefrontJson(
+        {bool withNightMarket = true, int dailyRemaining = 3600}) =>
+    {
       'FeaturedBundle': {
         'Bundle': {
           'ID': 'b-offer',
@@ -43,7 +45,7 @@ Map<String, dynamic> storefrontJson({bool withNightMarket = true}) => {
           offer('lvl-a', 875),
           offer('lvl-unknown', 1775),
         ],
-        'SingleItemOffersRemainingDurationInSeconds': 3600,
+        'SingleItemOffersRemainingDurationInSeconds': dailyRemaining,
       },
       if (withNightMarket)
         'BonusStore': {
@@ -112,6 +114,8 @@ MockClient riotClient({
   bool mixedQueues = false,
   // 指定場次的 matchInfo 覆寫（例如 {'m2': {'queueID': 'unrated'}}）。
   Map<String, Map<String, dynamic>> matchInfoOverrides = const {},
+  // 商店剩餘秒數（Riot 還沒換新商店時接近 0）。
+  int dailyRemaining = 3600,
 }) {
   final throttled = <String, int>{};
   final dropped = <String, int>{};
@@ -192,12 +196,12 @@ MockClient riotClient({
     if (host == 'pd.ap.a.pvp.net') {
       if (path == '/store/v3/storefront/puuid-1' && req.method == 'POST') {
         return storefrontV3Status == 200
-            ? json(storefrontJson())
+            ? json(storefrontJson(dailyRemaining: dailyRemaining))
             : json({'errorCode': 'x'}, storefrontV3Status);
       }
       if (path == '/store/v2/storefront/puuid-1' && req.method == 'GET') {
         return storefrontV2Status == 200
-            ? json(storefrontJson())
+            ? json(storefrontJson(dailyRemaining: dailyRemaining))
             : json({'errorCode': 'x'}, storefrontV2Status);
       }
       if (path == '/store/v1/wallet/puuid-1') {

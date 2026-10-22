@@ -41,6 +41,7 @@ class MatchHistoryPage extends StatefulWidget {
 
 class _MatchHistoryPageState extends State<MatchHistoryPage> {
   MatchFilter _filter = const MatchFilter();
+  String? _filterFor;
 
   /// false：對戰列表與走勢圖；true：特務／地圖統計。
   bool _stats = false;
@@ -51,6 +52,11 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
     final riot = context.watch<RiotProvider>();
     final history = context.read<MatchHistoryProvider>();
     final puuid = riot.isLoggedIn ? riot.session?.puuid : null;
+    // 換帳號時清掉篩選（另一個帳號可能沒玩過選的特務或地圖）。
+    if (puuid != null && puuid != _filterFor) {
+      _filterFor = puuid;
+      _filter = const MatchFilter();
+    }
     // 第一次進入或換帳號時重新載入；舊帳號的資料不能留在畫面上。
     if (puuid != null && history.loadedFor != puuid && !history.isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -385,9 +391,16 @@ class _HistoryControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final agents = {for (final s in summaries) s.myAgentId}.toList()
+    // 目前選的特務／地圖一定要在選項裡（重新載入或失敗時已載入的場次可能暫時沒有它）。
+    final agents = {
+      for (final s in summaries) s.myAgentId,
+      if (filter.agentId case final a?) a,
+    }.toList()
       ..sort((a, b) => ref.agent(a).name.compareTo(ref.agent(b).name));
-    final maps = {for (final s in summaries) s.mapId}.toList()
+    final maps = {
+      for (final s in summaries) s.mapId,
+      if (filter.mapId case final m?) m,
+    }.toList()
       ..sort((a, b) => ref.map(a).name.compareTo(ref.map(b).name));
     Widget drop<T>(String key, T value, Map<T, String> options,
             ValueChanged<T> onChanged) =>
