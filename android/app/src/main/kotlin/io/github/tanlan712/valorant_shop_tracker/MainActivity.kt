@@ -1,4 +1,4 @@
-package com.example.valorant_shop_tracker
+package io.github.tanlan712.valorant_shop_tracker
 
 import io.flutter.embedding.android.FlutterActivity
 

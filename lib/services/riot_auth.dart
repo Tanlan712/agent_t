@@ -39,3 +39,13 @@ RiotTokens? parseRiotRedirect(String url) {
     expiresIn: int.tryParse(params['expires_in'] ?? '') ?? 3600,
   );
 }
+
+/// App 內登入頁要攔下的跳轉：Riot 登入完成（或失敗）後導向 playvalorant.com/opt_in。
+/// 攔下後不載入 playvalorant.com，只把網址交給 [parseRiotRedirect]。
+bool isRiotRedirect(String url) {
+  final uri = Uri.tryParse(url.trim());
+  if (uri == null) return false;
+  return uri.scheme == 'https' &&
+      uri.host == 'playvalorant.com' &&
+      uri.path.startsWith('/opt_in');
+}
