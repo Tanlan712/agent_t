@@ -45,4 +45,20 @@ void main() {
         uri.queryParameters['redirect_uri'], 'https://playvalorant.com/opt_in');
     expect(uri.queryParameters['response_type'], 'token id_token');
   });
+
+  group('findRiotRedirect（分享登入）', () {
+    test('只有網址', () {
+      expect(findRiotRedirect(full), full);
+    });
+
+    test('標題加網址、多行文字時取出含 token 的網址', () {
+      expect(findRiotRedirect('VALORANT #1\n$full'), full);
+      expect(findRiotRedirect('看看這個 $full 謝謝'), full);
+    });
+
+    test('沒有 token 或空字串時回傳 null', () {
+      expect(findRiotRedirect('https://playvalorant.com/opt_in'), isNull);
+      expect(findRiotRedirect(''), isNull);
+    });
+  });
 }
