@@ -53,7 +53,7 @@ void main() {
   });
 
   Widget shell() => const AppShell(
-      currentRoute: '/wishlist', title: '願望清單', child: Text('內容'));
+      currentRoute: '/players', title: '遇過的玩家', child: Text('內容'));
 
   testWidgets('各風格的導覽都依設定的順序顯示', (tester) async {
     setWidth(tester, 1400);
@@ -85,14 +85,14 @@ void main() {
     await tester.pumpWidget(editor(h));
     final reset = find.byKey(const ValueKey('order-reset'));
     expect(tester.widget<TextButton>(reset).onPressed, isNull);
-    await tester.tap(find.byKey(const ValueKey('order-up-/matches')));
+    await tester.tap(find.byKey(const ValueKey('order-up-/live')));
     await tester.pumpAndSettle();
     final order = h.settings.settings.navOrder;
-    expect(order.indexOf('/matches'), lessThan(order.indexOf('/wishlist')));
+    expect(order.indexOf('/live'), lessThan(order.indexOf('/matches')));
     expect(
-        tester.getTopLeft(find.byKey(const ValueKey('order-/matches'))).dy,
+        tester.getTopLeft(find.byKey(const ValueKey('order-/live'))).dy,
         lessThan(tester
-            .getTopLeft(find.byKey(const ValueKey('order-/wishlist')))
+            .getTopLeft(find.byKey(const ValueKey('order-/matches')))
             .dy));
     await tester.tap(reset);
     await tester.pumpAndSettle();

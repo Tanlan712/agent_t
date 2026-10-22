@@ -409,7 +409,8 @@ void main() {
       await leave(tester, h);
     });
 
-    testWidgets('收藏特務：同意後可以啟用特務合約', (tester) async {
+    // 使用者決定 2026-10-22：我的收藏的特務分頁移除合約按鈕。
+    testWidgets('收藏特務：同意遠端操作後也沒有啟用合約按鈕', (tester) async {
       setWidth(tester, 1440);
       final h = await harness(tester, consent: true);
       await tester.pumpWidget(h.wrap(home: const CollectionPage()));
@@ -420,10 +421,13 @@ void main() {
       await tester.tap(find.byWidgetPredicate(
           (w) => w is Tab && (w.text ?? '').startsWith('特務')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('activate-a-paid')));
-      await drain(tester);
-      expect(writes.single.url.path,
-          '/contracts/v1/contracts/$myPuuid/special/ac-paid');
+      expect(find.byKey(const ValueKey('activate-a-paid')), findsNothing);
+      expect(
+          find.byWidgetPredicate((w) =>
+              w.key is ValueKey<String> &&
+              (w.key as ValueKey<String>).value.startsWith('activate-')),
+          findsNothing);
+      expect(writes, isEmpty);
     });
   });
 }

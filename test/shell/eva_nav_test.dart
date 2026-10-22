@@ -27,7 +27,7 @@ void main() {
         home: routes
             ? null
             : const AppShell(
-                currentRoute: '/wishlist', title: '願望清單', child: Text('內容'))));
+                currentRoute: '/players', title: '遇過的玩家', child: Text('內容'))));
     await tester.pumpAndSettle();
     return h;
   }
@@ -52,7 +52,7 @@ void main() {
     expect(find.descendant(of: tile, matching: find.text('RECORD')),
         findsOneWidget);
     expect(
-        find.descendant(of: tile, matching: find.text('03')), findsOneWidget);
+        find.descendant(of: tile, matching: find.text('02')), findsOneWidget);
     expect(find.byKey(const ValueKey('eva-brand')), findsOneWidget);
     expect(find.text('EMERGENCY ▼'), findsOneWidget);
   });
@@ -69,7 +69,7 @@ void main() {
     await pump(tester, ThemeStyleId.evaMonitor);
     expect(
         find.descendant(
-            of: find.byKey(const ValueKey('nav-/wishlist')),
+            of: find.byKey(const ValueKey('nav-/players')),
             matching: find.byKey(const ValueKey('eva-nav-stripe'))),
         findsOneWidget);
     await pump(tester, ThemeStyleId.evaAlert);

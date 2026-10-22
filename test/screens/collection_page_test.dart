@@ -117,6 +117,23 @@ void main() {
     expect(find.text('光幻 暴徒'), findsNothing);
   });
 
+  // 使用者決定 2026-10-22：已擁有造型數從我的商店移到這裡。
+  testWidgets('造型分頁最上方顯示已擁有造型數', (tester) async {
+    setWidth(tester, 1440);
+    final h = await withSkins(tester);
+    await tester.pumpWidget(h.wrap(home: const CollectionPage()));
+    await settle(tester);
+    final kpi = find.byKey(const ValueKey('collection-owned-skins'));
+    expect(
+        find.descendant(of: kpi, matching: find.text('已擁有造型')), findsOneWidget);
+    expect(find.descendant(of: kpi, matching: find.text('2')), findsOneWidget);
+    expect(
+        tester.getTopLeft(kpi).dy,
+        lessThan(tester
+            .getTopLeft(find.byKey(const ValueKey('weapon-w-vandal')))
+            .dy));
+  });
+
   testWidgets('造型還在讀取時，槍枝卡片顯示讀取中，不是「擁有 0 款」', (tester) async {
     setWidth(tester, 1440);
     final h = await Harness.create(tester,
@@ -131,6 +148,11 @@ void main() {
         of: find.byKey(ValueKey('weapon-$id')), matching: find.text(text));
     expect(card('w-vandal', '讀取中…'), findsOneWidget);
     expect(find.text('擁有 0 款'), findsNothing);
+    expect(
+        find.descendant(
+            of: find.byKey(const ValueKey('collection-owned-skins')),
+            matching: find.text('—')),
+        findsOneWidget);
   });
 
   testWidgets('造型分頁的槍枝依類型分區（商店順序）', (tester) async {

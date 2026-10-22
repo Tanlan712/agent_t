@@ -32,12 +32,14 @@ void main() {
   Finder kpi(String t) => find.descendant(
       of: find.byKey(const ValueKey('shop-kpi')), matching: find.text(t));
 
-  testWidgets('商店刷新倒數用短格式（時:分），窄欄不會被截斷', (tester) async {
+  testWidgets('商店刷新倒數只在每日商店標題，不另放 KPI 卡', (tester) async {
     setWidth(tester, 1440);
     final h = await Harness.create(tester, shop: shop);
     await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
     await tester.pumpAndSettle();
-    expect(kpi('9:01'), findsOneWidget);
+    expect(kpi('9:01'), findsNothing);
+    expect(find.text('商店刷新'), findsNothing);
+    expect(find.text('剩餘 9 小時 1 分'), findsOneWidget);
   });
 
   testWidgets('點每日商店的造型：看等級與炫彩', (tester) async {

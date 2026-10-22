@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:valorant_shop_tracker/shell/nav_items.dart'
+    show wishlistEnabled;
 
 import '../app_harness.dart';
 import 'app_shell_test.dart' show setWidth;
@@ -34,13 +36,13 @@ void main() {
     await tester.pumpWidget(h.wrap(useAppRoutes: true, observers: [observer]));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('願望清單'));
+    await tester.tap(find.text('遇過的玩家'));
     await tester.pumpAndSettle();
-    expect(find.text('願望清單是空的，按 ＋ 加入造型'), findsOneWidget);
+    expect(find.text('還沒有遇過的玩家'), findsOneWidget);
     expect(find.byType(BackButton), findsNothing);
     expect(observer.replaces, 1);
 
-    await tester.tap(find.text('願望清單').first);
+    await tester.tap(find.text('遇過的玩家').first);
     await tester.pumpAndSettle();
     expect(observer.replaces, 1);
   });
@@ -71,7 +73,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(BackButton), findsOneWidget);
     expect(find.text('選擇造型'), findsOneWidget);
-  });
+    // 造型搜尋器只能從願望清單進入；願望清單暫時關閉時跳過。
+  }, skip: !wishlistEnabled);
 
   testWidgets('手動編輯商店的頁面已關閉：/my-shop/edit 不會打開編輯頁', (tester) async {
     setWidth(tester, 1400);

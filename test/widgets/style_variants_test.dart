@@ -157,7 +157,7 @@ void main() {
     testWidgets('numbered（B）兩位數導覽序號', (tester) async {
       await tester.pumpWidget(host(ThemeStyleId.neon, header()));
       final n = find.byKey(const ValueKey('header-number'));
-      expect(tester.widget<Text>(n).data, '03');
+      expect(tester.widget<Text>(n).data, '02');
     });
 
     testWidgets('centered（C）英文小標與浮水印', (tester) async {
@@ -175,7 +175,7 @@ void main() {
     testWidgets('dreamy（E）大號頁碼', (tester) async {
       await tester.pumpWidget(host(ThemeStyleId.dreamy, header()));
       final n = find.byKey(const ValueKey('header-page-number'));
-      expect(tester.widget<Text>(n).data, '03');
+      expect(tester.widget<Text>(n).data, '02');
     });
 
     testWidgets('沒有 route 時仍可顯示（不在導覽中的頁面）', (tester) async {

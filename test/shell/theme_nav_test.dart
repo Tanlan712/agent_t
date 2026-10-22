@@ -10,8 +10,8 @@ import '../app_harness.dart';
 import 'app_shell_test.dart' show setWidth;
 
 Widget shell() => const AppShell(
-      currentRoute: '/wishlist',
-      title: '願望清單',
+      currentRoute: '/players',
+      title: '遇過的玩家',
       child: Text('內容'),
     );
 
@@ -60,7 +60,7 @@ void main() {
     expect(
         find.ancestor(
             of: underline,
-            matching: find.byKey(const ValueKey('nav-/wishlist'))),
+            matching: find.byKey(const ValueKey('nav-/players'))),
         findsOneWidget);
   });
 
@@ -150,6 +150,7 @@ void main() {
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
-    expect(find.text('願望清單是空的，按 ＋ 加入造型'), findsOneWidget);
+    // 第一項之後是對戰紀錄。
+    expect(find.text('登入 Riot 以查看對戰紀錄'), findsOneWidget);
   });
 }

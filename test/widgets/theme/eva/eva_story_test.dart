@@ -54,10 +54,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.byType(TitleCardOverlay), findsOneWidget);
-    // 即時對局在導覽第 4 項。
-    expect(find.text('第 肆 話'), findsOneWidget);
+    // 即時對局在導覽第 3 項（願望清單暫時關閉）。
+    expect(find.text('第 参 話'), findsOneWidget);
     expect(find.text('迎擊'), findsOneWidget);
-    expect(find.text('EPISODE:04 / INTERCEPT'), findsOneWidget);
+    expect(find.text('EPISODE:03 / INTERCEPT'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
   });
 

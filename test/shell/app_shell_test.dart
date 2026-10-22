@@ -22,8 +22,8 @@ void setWidth(WidgetTester tester, double width) {
 }
 
 Widget shell() => const AppShell(
-      currentRoute: '/wishlist',
-      title: '願望清單',
+      currentRoute: '/players',
+      title: '遇過的玩家',
       child: Text('內容'),
     );
 
@@ -34,7 +34,7 @@ Widget sideNavHost({required bool extended, Widget? footer}) => MaterialApp(
       home: Scaffold(
         body: Row(children: [
           SideNav(
-            currentRoute: '/wishlist',
+            currentRoute: '/players',
             extended: extended,
             brand: appName,
             onSelect: (_) {},
@@ -55,7 +55,7 @@ void main() {
     await tester.pumpWidget(h.wrap(home: shell()));
     final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
     expect(bar.destinations.length, 5);
-    for (final label in ['我的商店', '對戰紀錄', '即時對局', '願望清單', '更多']) {
+    for (final label in ['我的商店', '對戰紀錄', '即時對局', '我的收藏', '更多']) {
       expect(
           find.descendant(
               of: find.byType(NavigationBar), matching: find.text(label)),
@@ -85,14 +85,14 @@ void main() {
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(
         home: const AppShell(
-            currentRoute: '/wishlist',
-            title: '願望清單',
+            currentRoute: '/players',
+            title: '遇過的玩家',
             subtitle: '3 款',
             actions: [Icon(Icons.add, key: ValueKey('page-action'))],
             child: Text('內容'))));
     await tester.pumpAndSettle();
     expect(find.byType(PageHeader), findsOneWidget);
-    expect(headerTitle(tester), '願望清單');
+    expect(headerTitle(tester), '遇過的玩家');
     expect(find.text('3 款'), findsOneWidget);
     expect(
         find.descendant(
@@ -185,7 +185,7 @@ void main() {
   testWidgets('SideNav 展開：分組標題與完整名稱', (tester) async {
     setWidth(tester, 1100);
     await tester.pumpWidget(sideNavHost(extended: true));
-    for (final t in ['主要', '資料庫', '其他', '玩家卡片', 'Agent T', '願望清單']) {
+    for (final t in ['主要', '資料庫', '其他', '玩家卡片', 'Agent T', '遇過的玩家']) {
       expect(find.text(t), findsOneWidget, reason: t);
     }
   });
@@ -195,7 +195,7 @@ void main() {
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(choice: terminal, home: shell()));
     final bar = find.descendant(
-        of: find.byKey(const ValueKey('nav-/wishlist')),
+        of: find.byKey(const ValueKey('nav-/players')),
         matching: find.byKey(const ValueKey('nav-indicator')));
     expect(bar, findsOneWidget);
     expect(tester.widget<Container>(bar).color, AppColors.primary);
@@ -223,7 +223,7 @@ void main() {
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(
         choice: terminal, home: shell(), onGenerateRoute: onGenerateAppRoute));
-    // 依序：我的商店、願望清單（目前頁）、對戰紀錄。
+    // 依序：我的商店、對戰紀錄、即時對局。
     for (var i = 0; i < 3; i++) {
       await tester.sendKeyEvent(LogicalKeyboardKey.tab);
       await tester.pump();
@@ -274,12 +274,12 @@ void main() {
     await tester.pumpWidget(h.wrap(
         choice: const ThemeChoice(style: ThemeStyleId.neon),
         home: const AppShell(
-            currentRoute: '/wishlist',
-            title: '願望清單',
+            currentRoute: '/players',
+            title: '遇過的玩家',
             subtitle: '3 項',
             child: Text('內容'))));
     final title = find.descendant(
-        of: find.byType(PageHeader), matching: find.text('願望清單'));
+        of: find.byType(PageHeader), matching: find.text('遇過的玩家'));
     expect(tester.widget<Text>(title).style?.fontSize, 28);
     expect(find.text('3 項'), findsOneWidget);
   });
@@ -309,8 +309,8 @@ void main() {
   });
 
   Widget longPage() => AppShell(
-        currentRoute: '/wishlist',
-        title: '願望清單',
+        currentRoute: '/players',
+        title: '遇過的玩家',
         child: ListView(
           key: const ValueKey('page-list'),
           children: [for (var i = 0; i < 100; i++) Text('row $i')],
@@ -353,8 +353,8 @@ void main() {
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(
       home: AppShell(
-        currentRoute: '/wishlist',
-        title: '願望清單',
+        currentRoute: '/players',
+        title: '遇過的玩家',
         child: ListView(
           key: const ValueKey('page-list'),
           children: [for (var i = 0; i < 100; i++) Text('row $i')],

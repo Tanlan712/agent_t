@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:valorant_shop_tracker/models/current_shop.dart';
 import 'package:valorant_shop_tracker/models/tier.dart';
 import 'package:valorant_shop_tracker/shell/app_shell.dart';
+import 'package:valorant_shop_tracker/shell/nav_items.dart'
+    show wishlistEnabled;
 import 'package:valorant_shop_tracker/theme/theme_ids.dart';
 import 'package:valorant_shop_tracker/widgets/theme/eva/eva_data_eggs.dart';
 import 'package:valorant_shop_tracker/widgets/theme/eva/eva_header.dart';
@@ -134,7 +136,17 @@ void main() {
         shop: shop, wishlist: const ['o', 'p', 'i', 'r']);
     expect(find.byKey(const ValueKey('banner-complete')), findsOneWidget);
     expect(h.settings.settings.evaFoundEggs, contains('E14'));
-  });
+  }, skip: !wishlistEnabled);
+
+  testWidgets('E14 願望清單暫時關閉時不觸發', (tester) async {
+    final shop = CurrentShop(daily: [
+      for (final id in ['o', 'p', 'i', 'r']) ShopEntry(skinUuid: id, price: 1)
+    ], dailyExpiresAt: DateTime(2099));
+    final h = await pumpShell(tester, '/',
+        shop: shop, wishlist: const ['o', 'p', 'i', 'r']);
+    expect(find.byKey(const ValueKey('banner-complete')), findsNothing);
+    expect(h.settings.settings.evaFoundEggs, isNot(contains('E14')));
+  }, skip: wishlistEnabled);
 
   testWidgets('E15 夜市開放：非常事態橫幅', (tester) async {
     final shop = CurrentShop(nightMarket: const [

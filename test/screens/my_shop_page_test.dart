@@ -5,6 +5,8 @@ import 'package:valorant_shop_tracker/models/current_shop.dart';
 import 'package:valorant_shop_tracker/models/skin_info.dart';
 import 'package:valorant_shop_tracker/models/tier.dart';
 import 'package:valorant_shop_tracker/screens/my_shop_page.dart';
+import 'package:valorant_shop_tracker/shell/nav_items.dart'
+    show wishlistEnabled;
 import 'package:valorant_shop_tracker/widgets/skin_card.dart';
 import 'package:valorant_shop_tracker/widgets/skin_tile.dart';
 
@@ -36,7 +38,17 @@ void main() {
         findsOneWidget);
     expect(find.text('★ 願望清單'), findsOneWidget);
     expect(find.text('剩餘 22 小時 0 分'), findsOneWidget);
-  });
+  }, skip: !wishlistEnabled);
+
+  testWidgets('願望清單暫時關閉：有上架也不顯示卡片與金框', (tester) async {
+    final h = await Harness.create(tester,
+        shop: dailyShop(['o', 'p', 'i', 'r']), wishlist: ['o', 'x']);
+    await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('shop-wishlist-hits')), findsNothing);
+    expect(find.text('★ 願望清單'), findsNothing);
+    expect(find.textContaining('願望清單'), findsNothing);
+  }, skip: wishlistEnabled);
 
   testWidgets('過期的每日商店標示且不計入', (tester) async {
     final h = await Harness.create(tester,
@@ -81,7 +93,8 @@ void main() {
     expect(find.textContaining('手動'), findsNothing);
     expect(find.text('精選組合包'), findsOneWidget);
     expect(find.byType(EmptyState), findsNWidgets(3));
-    expect(find.text('今天沒有願望清單造型'), findsOneWidget);
+    expect(find.text('今天沒有願望清單造型'),
+        wishlistEnabled ? findsOneWidget : findsNothing);
   });
 
   testWidgets('有每日商店資料時也不能編輯', (tester) async {
@@ -104,7 +117,7 @@ void main() {
     // 關閉標示時不能說「今天沒有」，改說明已關閉。
     expect(find.text('今天沒有願望清單造型'), findsNothing);
     expect(find.text('已關閉願望清單標示'), findsOneWidget);
-  });
+  }, skip: !wishlistEnabled);
 
   testWidgets('目錄下載失敗時顯示重試', (tester) async {
     final h =
@@ -128,7 +141,7 @@ void riotTests() {
   });
 
   for (final width in [1440.0, 800.0]) {
-    testWidgets('${width.toInt()} 寬：右欄 KPI 較高時，每日商店與夜市之間沒有空白', (tester) async {
+    testWidgets('${width.toInt()} 寬：右欄有 KPI 時，每日商店與夜市之間沒有空白', (tester) async {
       setWidth(tester, width);
       final h = await Harness.create(tester,
           catalog: await loadedCatalog(tester, skins: const [
@@ -148,9 +161,7 @@ void riotTests() {
       await tester.pumpAndSettle();
       final daily = tester.getRect(find.byKey(const ValueKey('shop-daily')));
       final night = tester.getRect(find.byKey(const ValueKey('shop-night')));
-      final kpi = tester.getRect(find.byKey(const ValueKey('shop-kpi')));
-      // 前提：右欄比每日商店高（錢包同步後 5 格）。
-      expect(kpi.height, greaterThan(daily.height));
+      expect(find.byKey(const ValueKey('shop-kpi')), findsOneWidget);
       expect(night.top - daily.bottom, lessThanOrEqualTo(24));
       expect(tester.takeException(), isNull);
     });
@@ -218,8 +229,9 @@ void riotTests() {
     expect(kpi('1500'), findsOneWidget);
     expect(kpi('120'), findsOneWidget);
     expect(kpi('3000'), findsOneWidget);
-    // 已擁有造型數移到 KPI。
-    expect(kpi('2'), findsOneWidget);
+    // 刷新倒數在每日商店標題、已擁有造型數在我的收藏，KPI 只剩錢包。
+    expect(kpi('商店刷新'), findsNothing);
+    expect(kpi('已擁有造型'), findsNothing);
     expect(find.byKey(const ValueKey('shop-login-hero')), findsNothing);
     expect(find.text('已擁有'), findsWidgets);
     expect(h.shop.shop.daily.first.skinUuid, 'skin-odin');
@@ -270,15 +282,16 @@ void layoutTests() {
           tester.getTopLeft(find.byWidget(e.widget)).dy,
       ];
 
-  testWidgets('1440 寬：每日商店與右欄 KPI 同一列', (tester) async {
+  testWidgets('1440 寬、未登入：沒有右欄，每日商店佔滿整列', (tester) async {
     setWidth(tester, 1440);
     final h = await Harness.create(tester, shop: shop);
     await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
     await tester.pumpAndSettle();
-    final daily = tester.getTopLeft(find.byKey(const ValueKey('shop-daily')));
-    final kpi = tester.getTopLeft(find.byKey(const ValueKey('shop-kpi')));
-    expect(daily.dy, kpi.dy);
-    expect(kpi.dx, greaterThan(daily.dx));
+    expect(find.byKey(const ValueKey('shop-kpi')), findsNothing);
+    final daily = tester.getRect(find.byKey(const ValueKey('shop-daily')));
+    final night = tester.getRect(find.byKey(const ValueKey('shop-night')));
+    expect(daily.width, night.width);
+    expect(daily.width, greaterThan(1000));
   });
 
   testWidgets('帳號列與每日商店標題之間有間距', (tester) async {
@@ -367,7 +380,7 @@ void layoutTests() {
   });
 
   group('戰術 HUD', () {
-    testWidgets('未登入時 KPI 只有每日商店倒數', (tester) async {
+    testWidgets('未登入時沒有 KPI，刷新倒數在每日商店標題', (tester) async {
       final h = await Harness.create(tester,
           shop: CurrentShop(
             daily: const [ShopEntry(skinUuid: 'o', price: 1275)],
@@ -377,9 +390,10 @@ void layoutTests() {
       await tester.pumpAndSettle();
       Finder kpi(String t) => find.descendant(
           of: find.byKey(const ValueKey('shop-kpi')), matching: find.text(t));
-      expect(kpi('商店刷新'), findsOneWidget);
-      expect(kpi('22:00'), findsOneWidget);
+      expect(find.byKey(const ValueKey('shop-kpi')), findsNothing);
       expect(kpi('VP'), findsNothing);
+      expect(find.text('商店刷新'), findsNothing);
+      expect(find.text('剩餘 22 小時 0 分'), findsOneWidget);
     });
 
     testWidgets('夜市有資料時也沒有編輯按鈕', (tester) async {
