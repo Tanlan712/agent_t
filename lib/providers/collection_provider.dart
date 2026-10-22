@@ -82,7 +82,7 @@ class CollectionProvider with ChangeNotifier {
           if (gen != _generation) return;
           if (e.isAuthError) {
             // AGENTS.md 第 4 節：授權失敗時立即登出並刪除保存的登入資訊。
-            _riot.logout();
+            _riot.expire();
             return;
           }
           _errors[type] = e.message;
