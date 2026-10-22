@@ -13,6 +13,7 @@ import 'providers/recent_form_loader.dart';
 import 'providers/riot_provider.dart';
 import 'providers/seen_players_provider.dart';
 import 'providers/settings_provider.dart';
+import 'providers/shop_auto_refresh.dart';
 import 'providers/shop_provider.dart';
 import 'providers/wishlist_provider.dart';
 import 'app_routes.dart';
@@ -63,6 +64,8 @@ Future<void> main() async {
   // 登入後（含重新開頁恢復登入）先在背景讀一次：商店與錢包、收藏、通行證
   // （依序、同時最多 2 個 Riot 請求）。
   LoginPrefetcher(riot, collection, progress, shop: shop, catalog: catalog);
+  // 網頁開著時，每日商店到期或夜市結束後自動同步（使用者決定 2026-10-22）。
+  ShopAutoRefresher(riot, shop, catalog);
 
   runApp(
     MultiProvider(
