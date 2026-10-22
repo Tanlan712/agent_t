@@ -162,7 +162,7 @@ List<EvaDocument> availableDocuments(AppSettings s, EvaDocData d) {
     EvaDocument(
       id: 'report',
       number: 27,
-      title: '商店追蹤計畫　第 $appVersion 次中間報告書',
+      title: 'Agent T 計畫　第 $appVersion 次中間報告書',
       subtitle:
           'Bericht über die Ladenbeobachtung · Zwischenbericht $appVersion',
       lines: [
