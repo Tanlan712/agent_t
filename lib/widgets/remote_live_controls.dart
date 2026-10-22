@@ -8,6 +8,28 @@ import '../providers/remote_actions.dart';
 import '../theme/app_theme.dart';
 import 'skin_tile.dart' show SkinIcon;
 
+/// 會被 Riot 懲罰或無法復原的動作：先跳確認框，按「確定」才送出。
+Future<bool> confirmRemote(
+    BuildContext context, String title, String message) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(title),
+      content: Text(message),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消')),
+        FilledButton(
+            key: const ValueKey('remote-confirm'),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('確定')),
+      ],
+    ),
+  );
+  return ok == true;
+}
+
 /// 遠端操作卡片的外框：標題、送出中的提示與上一個錯誤。
 class _RemoteCard extends StatelessWidget {
   final String title;
@@ -131,74 +153,166 @@ class RemotePregameControls extends StatelessWidget {
               const SizedBox(height: 8),
               Text('不會自動送出：要你親手按「鎖定」才會鎖定。',
                   style: TextStyle(color: AppColors.muted, fontSize: 12)),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                key: const ValueKey('remote-quit-pregame'),
+                onPressed: actions.busy
+                    ? null
+                    : () async {
+                        if (await confirmRemote(
+                            context, '離開選角？', '等同逃跑：Riot 會給排隊限制，競技模式還會扣 RR。')) {
+                          await run(() => actions.quitPregame(pregame.matchId));
+                        }
+                      },
+                style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                icon: const Icon(Icons.exit_to_app),
+                label: const Text('離開選角（逃跑）'),
+              ),
             ],
           );
         },
       );
 }
 
-/// 隊伍的遠端操作：所有人可以切換準備；隊長另外可以取得代碼、排隊、變更模式、開放或鎖定隊伍。
-class RemotePartyControls extends StatelessWidget {
-  final LiveParty party;
+/// 對局中的遠端操作：只有「離開對局」，按下後要再確認。
+class RemoteMatchControls extends StatelessWidget {
+  final LiveMatch match;
   final RemoteActions actions;
   final VoidCallback onDone;
 
-  const RemotePartyControls(
+  const RemoteMatchControls(
       {super.key,
-      required this.party,
+      required this.match,
       required this.actions,
       required this.onDone});
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
         listenable: actions,
+        builder: (context, _) => _RemoteCard(
+          key: const ValueKey('remote-match'),
+          title: '遠端對局',
+          actions: actions,
+          children: [
+            TextButton.icon(
+              key: const ValueKey('remote-leave-match'),
+              onPressed: actions.busy
+                  ? null
+                  : () async {
+                      if (await confirmRemote(context, '離開對局？',
+                          '中途離開會被 Riot 懲罰（排隊限制、競技扣 RR），隊友也會少一人。')) {
+                        if (await actions.leaveCoreGame(match.matchId)) {
+                          onDone();
+                        }
+                      }
+                    },
+              style: TextButton.styleFrom(foregroundColor: AppColors.error),
+              icon: const Icon(Icons.exit_to_app),
+              label: const Text('離開對局'),
+            ),
+          ],
+        ),
+      );
+}
+
+/// 自訂對戰的隊伍名稱。
+const customTeamLabels = {
+  'TeamOne': '攻擊方',
+  'TeamTwo': '防守方',
+  'TeamSpectate': '觀戰',
+};
+
+/// 隊伍的遠端操作：所有人可以切換準備與邀請；隊長另外可以取得代碼、排隊、變更模式、
+/// 開放或鎖定隊伍、踢人與自訂對戰。
+class RemotePartyControls extends StatefulWidget {
+  final LiveParty party;
+  final RemoteActions actions;
+  final VoidCallback onDone;
+
+  /// 成員顯示名稱。
+  final String Function(String puuid) name;
+
+  /// 自訂對戰可選的地圖（mapUrl → 名稱）。
+  final Map<String, RefItem> maps;
+
+  const RemotePartyControls(
+      {super.key,
+      required this.party,
+      required this.actions,
+      required this.onDone,
+      required this.name,
+      this.maps = const {}});
+
+  @override
+  State<RemotePartyControls> createState() => _RemotePartyControlsState();
+}
+
+class _RemotePartyControlsState extends State<RemotePartyControls> {
+  final _invite = TextEditingController();
+
+  @override
+  void dispose() {
+    _invite.dispose();
+    super.dispose();
+  }
+
+  Future<void> _run(Future<bool> Function() send) async {
+    if (await send()) widget.onDone();
+  }
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+        listenable: widget.actions,
         builder: (context, _) {
+          final party = widget.party;
+          final actions = widget.actions;
           final busy = actions.busy;
           final me = party.me;
+          final owner = party.iAmOwner;
+          final custom = party.isCustomGame;
           final queuing = party.state == 'MATCHMAKING';
           final code = actions.inviteCode(party.id);
-          Future<void> run(Future<bool> Function() send) async {
-            if (await send()) onDone();
-          }
-
           final queues = {
             ...party.eligibleQueues,
             if (party.queueId.isNotEmpty) party.queueId,
           }.toList();
+          final others = party.members.where((m) => !m.isMe).toList();
+          final mapId = party.customSettings?['Map'] as String?;
           return _RemoteCard(
             key: const ValueKey('remote-party'),
             title: '遠端隊伍',
             actions: actions,
             children: [
               Wrap(spacing: 8, runSpacing: 8, children: [
-                if (me != null)
+                if (me != null && !custom)
                   OutlinedButton.icon(
                     key: const ValueKey('remote-ready'),
                     onPressed: busy
                         ? null
                         : () =>
-                            run(() => actions.setReady(party.id, !me.isReady)),
+                            _run(() => actions.setReady(party.id, !me.isReady)),
                     icon: Icon(me.isReady
                         ? Icons.pause_circle_outline
                         : Icons.check_circle_outline),
                     label: Text(me.isReady ? '改成未準備' : '設為準備'),
                   ),
-                if (party.iAmOwner) ...[
+                if (owner && !custom)
                   FilledButton.icon(
                     key: const ValueKey('remote-queue'),
                     onPressed: busy
                         ? null
-                        : () => run(() => queuing
+                        : () => _run(() => queuing
                             ? actions.leaveQueue(party.id)
                             : actions.joinQueue(party.id)),
                     icon: Icon(queuing ? Icons.stop : Icons.play_arrow),
                     label: Text(queuing ? '取消排隊' : '開始排隊'),
                   ),
+                if (owner) ...[
                   OutlinedButton.icon(
                     key: const ValueKey('remote-access'),
                     onPressed: busy
                         ? null
-                        : () => run(() =>
+                        : () => _run(() =>
                             actions.setAccessibility(party.id, !party.isOpen)),
                     icon: Icon(party.isOpen ? Icons.lock : Icons.lock_open),
                     label: Text(party.isOpen ? '鎖定隊伍' : '開放隊伍'),
@@ -212,7 +326,7 @@ class RemotePartyControls extends StatelessWidget {
                   ),
                 ],
               ]),
-              if (party.iAmOwner && queues.isNotEmpty) ...[
+              if (owner && !custom && queues.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Row(children: [
                   const Text('模式'),
@@ -229,7 +343,7 @@ class RemotePartyControls extends StatelessWidget {
                         ? null
                         : (q) {
                             if (q != null && q != party.queueId) {
-                              run(() => actions.changeQueue(party.id, q));
+                              _run(() => actions.changeQueue(party.id, q));
                             }
                           },
                   ),
@@ -255,9 +369,161 @@ class RemotePartyControls extends StatelessWidget {
                   ),
                 ]),
               ],
-              if (!party.iAmOwner) ...[
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(
+                  child: TextField(
+                    key: const ValueKey('remote-invite-field'),
+                    controller: _invite,
+                    decoration: const InputDecoration(
+                        isDense: true, hintText: '邀請玩家：名稱#標籤'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton(
+                  key: const ValueKey('remote-invite'),
+                  onPressed: busy
+                      ? null
+                      : () async {
+                          if (await actions.invite(party.id, _invite.text)) {
+                            _invite.clear();
+                            widget.onDone();
+                          }
+                        },
+                  child: const Text('邀請'),
+                ),
+              ]),
+              if (owner && others.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                for (final m in others)
+                  Row(
+                    key: ValueKey('remote-member-${m.puuid}'),
+                    children: [
+                      Expanded(
+                          child: Text(widget.name(m.puuid),
+                              overflow: TextOverflow.ellipsis)),
+                      if (custom)
+                        DropdownButton<String>(
+                          key: ValueKey('remote-team-${m.puuid}'),
+                          value: party.customTeams[m.puuid],
+                          hint: const Text('隊伍'),
+                          items: [
+                            for (final e in customTeamLabels.entries)
+                              DropdownMenuItem(
+                                  value: e.key, child: Text(e.value)),
+                          ],
+                          onChanged: busy
+                              ? null
+                              : (t) {
+                                  if (t != null &&
+                                      t != party.customTeams[m.puuid]) {
+                                    _run(() => actions.setCustomTeam(
+                                        party.id, t, m.puuid));
+                                  }
+                                },
+                        ),
+                      TextButton(
+                        key: ValueKey('remote-kick-${m.puuid}'),
+                        onPressed: busy
+                            ? null
+                            : () async {
+                                if (await confirmRemote(context, '踢出成員？',
+                                    '把 ${widget.name(m.puuid)} 移出隊伍。')) {
+                                  await _run(() => actions.kick(m.puuid));
+                                }
+                              },
+                        style: TextButton.styleFrom(
+                            foregroundColor: AppColors.error),
+                        child: const Text('踢出'),
+                      ),
+                    ],
+                  ),
+              ],
+              if (owner) ...[
+                const SizedBox(height: 12),
+                if (!custom)
+                  OutlinedButton.icon(
+                    key: const ValueKey('remote-make-custom'),
+                    onPressed: busy || queuing
+                        ? null
+                        : () => _run(() => actions.makeCustomGame(party.id)),
+                    icon: const Icon(Icons.tune),
+                    label: const Text('建立自訂對戰'),
+                  )
+                else ...[
+                  Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (me != null)
+                          DropdownButton<String>(
+                            key: const ValueKey('remote-my-team'),
+                            value: party.customTeams[me.puuid],
+                            hint: const Text('我的隊伍'),
+                            items: [
+                              for (final e in customTeamLabels.entries)
+                                DropdownMenuItem(
+                                    value: e.key, child: Text(e.value)),
+                            ],
+                            onChanged: busy
+                                ? null
+                                : (t) {
+                                    if (t != null &&
+                                        t != party.customTeams[me.puuid]) {
+                                      _run(() => actions.setCustomTeam(
+                                          party.id, t, me.puuid));
+                                    }
+                                  },
+                          ),
+                        if (party.customSettings != null &&
+                            widget.maps.isNotEmpty)
+                          DropdownButton<String>(
+                            key: const ValueKey('remote-custom-map'),
+                            value:
+                                widget.maps.containsKey(mapId) ? mapId : null,
+                            hint: const Text('地圖'),
+                            items: [
+                              for (final e in widget.maps.entries)
+                                DropdownMenuItem(
+                                    value: e.key, child: Text(e.value.name)),
+                            ],
+                            onChanged: busy
+                                ? null
+                                : (m) {
+                                    if (m != null && m != mapId) {
+                                      _run(() => actions.setCustomMap(
+                                          party.id, party.customSettings!, m));
+                                    }
+                                  },
+                          ),
+                        FilledButton.icon(
+                          key: const ValueKey('remote-start-custom'),
+                          onPressed: busy
+                              ? null
+                              : () =>
+                                  _run(() => actions.startCustomGame(party.id)),
+                          icon: const Icon(Icons.play_arrow),
+                          label: const Text('開始自訂對戰'),
+                        ),
+                        OutlinedButton(
+                          key: const ValueKey('remote-make-default'),
+                          onPressed: busy
+                              ? null
+                              : () => _run(() => actions.makeDefault(
+                                  party.id,
+                                  party.eligibleQueues.contains('unrated') ||
+                                          party.eligibleQueues.isEmpty
+                                      ? 'unrated'
+                                      : party.eligibleQueues.first)),
+                          child: const Text('回到一般模式'),
+                        ),
+                      ]),
+                ],
+              ],
+              if (!owner) ...[
                 const SizedBox(height: 8),
-                Text('只有隊長可以取得代碼、排隊、變更模式與開放或鎖定隊伍。',
+                Text('只有隊長可以取得代碼、排隊、變更模式、開放或鎖定隊伍、踢人與自訂對戰。',
                     style: TextStyle(color: AppColors.muted, fontSize: 12)),
               ],
             ],

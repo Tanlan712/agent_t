@@ -44,6 +44,13 @@ class LiveParty {
   /// 隊伍目前可以選的模式（`EligibleQueues`），遠端變更模式用。
   final List<String> eligibleQueues;
 
+  /// 自訂對戰設定（`CustomGameData.Settings`：Map、Mode、UseBots、GamePod、GameRules），
+  /// 遠端變更時原樣帶回其他欄位；不是自訂對戰時為 null。
+  final Map<String, dynamic>? customSettings;
+
+  /// 自訂對戰的分隊：puuid → `TeamOne`／`TeamTwo`／`TeamSpectate`。
+  final Map<String, String> customTeams;
+
   const LiveParty({
     required this.id,
     required this.state,
@@ -52,7 +59,11 @@ class LiveParty {
     required this.queueEntryTime,
     required this.members,
     this.eligibleQueues = const [],
+    this.customSettings,
+    this.customTeams = const {},
   });
+
+  bool get isCustomGame => state == 'CUSTOM_GAME_SETUP';
 
   /// 自己是不是隊長。
   bool get iAmOwner => members.any((m) => m.isMe && m.isOwner);

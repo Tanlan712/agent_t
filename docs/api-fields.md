@@ -244,3 +244,17 @@
 - `matchmaking/join`、`matchmaking/leave`：沒有內容
 - `queue`：`{"queueID": "competitive"}`；可選的模式來自隊伍的 `EligibleQueues`
 - `accessibility`：`{"accessibility": "OPEN" | "CLOSED"}`
+- `invites/name/{name}/tag/{tag}`：沒有內容
+- `makecustomgame`、`startcustomgame`：沒有內容；`makedefault?queueID=unrated`：沒有內容
+- `customgamesettings`：`{Map, Mode, UseBots, GamePod, GameRules}`（原本的 `CustomGameData.Settings` 只換 `Map`）
+- `customgamemembership/{TeamOne|TeamTwo|TeamSpectate}`：`{"playerToPutOnTeam": puuid}`
+- 隊伍的 `CustomGameData`：`Settings{Map, Mode, UseBots, GamePod, GameRules}`、`Membership{teamOne, teamTwo, teamSpectate, …}[]{Subject}`
+
+### `DELETE glz /parties/v1/players/{puuid}` ⚠️
+- 隊長把成員移出隊伍；沒有內容。
+
+### `POST glz /pregame/v1/matches/{matchId}/quit`、`POST glz /core-game/v1/players/{puuid}/disassociate/{matchId}` ⚠️
+- 逃跑／離開對局，會被懲罰；沒有內容。
+
+### `POST pd /contracts/v1/contracts/{puuid}/special/{contractId}` ⚠️
+- 啟用特務合約；`GET contracts` 的 `ActiveSpecialContract` 是目前啟用的合約。

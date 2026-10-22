@@ -164,7 +164,14 @@ class _LivePageState extends State<LivePage> {
     final settings = context.watch<SettingsProvider>().settings;
     if (_live.phase == LivePhase.inGame && _live.match != null) {
       return _MatchView(
-          match: _live.match!, live: _live, ref: ref, rules: widget.rules);
+          match: _live.match!,
+          live: _live,
+          ref: ref,
+          rules: widget.rules,
+          remote: settings.remoteControl
+              ? RemoteMatchControls(
+                  match: _live.match!, actions: _remote, onDone: _live.refresh)
+              : null);
     }
     if (_live.phase == LivePhase.pregame && _live.pregame != null) {
       return _PregameView(
@@ -203,7 +210,11 @@ class _LivePageState extends State<LivePage> {
         if (settings.remoteControl) ...[
           const SizedBox(height: 16),
           RemotePartyControls(
-              party: party, actions: _remote, onDone: _live.refresh),
+              party: party,
+              actions: _remote,
+              onDone: _live.refresh,
+              name: (id) => _live.name(id) ?? '玩家',
+              maps: ref.maps),
         ],
         if (_live.error case final e?)
           Padding(
@@ -384,11 +395,15 @@ class _MatchView extends StatelessWidget {
   final MatchReferenceProvider ref;
   final SuspicionRules rules;
 
+  /// 遠端對局卡片；未同意遠端操作時為 null。
+  final Widget? remote;
+
   const _MatchView(
       {required this.match,
       required this.live,
       required this.ref,
-      required this.rules});
+      required this.rules,
+      this.remote});
 
   @override
   Widget build(BuildContext context) {
@@ -409,6 +424,10 @@ class _MatchView extends StatelessWidget {
               label: '狀態',
               value: match.state == 'IN_PROGRESS' ? '進行中' : match.state),
         ]),
+        if (remote case final r?) ...[
+          const SizedBox(height: 16),
+          r,
+        ],
         const SizedBox(height: 16),
         // 12 欄時我方與敵方左右並排（各 6 欄），6 欄以下上下排列。
         LayoutBuilder(builder: (context, c) {

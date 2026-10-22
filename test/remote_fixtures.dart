@@ -48,7 +48,10 @@ MockClient remoteHttp(List<http.Request> requests,
     final remote = path.contains('/personalization/') ||
         (req.method == 'POST' &&
             (path.contains('/pregame/v1/matches/') ||
-                path.startsWith('/parties/v1/parties/')));
+                path.contains('/disassociate/') ||
+                path.contains('/special/') ||
+                path.startsWith('/parties/v1/parties/'))) ||
+        (req.method == 'DELETE' && path.startsWith('/parties/v1/players/'));
     if (!remote) {
       final copy = http.Request(req.method, req.url)
         ..headers.addAll(req.headers)

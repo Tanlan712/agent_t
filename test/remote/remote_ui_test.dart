@@ -22,6 +22,7 @@ void main() {
       {bool consent = false,
       String? preferredAgent,
       int pregameStatus = 404,
+      int coreStatus = 404,
       Map<String, dynamic>? party,
       Map<String, int> status = const {}}) async {
     writes = [];
@@ -30,6 +31,7 @@ void main() {
             status: status,
             inner: riotClient(
                 pregameStatus: pregameStatus,
+                coreStatus: coreStatus,
                 party: party,
                 skinLevels: [
                   'lv-vandal-1',
@@ -38,6 +40,7 @@ void main() {
                 ],
                 entitlements: {
                   ItemTypes.skinChroma: ['ch-v-red'],
+                  ItemTypes.agent: ['a-paid'],
                 })),
         progressApi: FakeProgressApi());
     if (consent) {
@@ -311,6 +314,116 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('preselect-a-base1')));
       await tester.pumpAndSettle();
       expect(h.settings.settings.preferredAgent, isNull);
+    });
+  });
+
+  group('第二批', () {
+    Future<void> confirm(WidgetTester tester) async {
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('remote-confirm')));
+      await drain(tester);
+    }
+
+    testWidgets('選角：逃跑要確認，取消時不送出', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester, consent: true, pregameStatus: 200);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      await tapKey(tester, 'remote-quit-pregame');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('取消'));
+      await drain(tester);
+      expect(writes, isEmpty);
+      await tapKey(tester, 'remote-quit-pregame');
+      await confirm(tester);
+      expect(writes.single.url.path,
+          '/pregame/v1/matches/$testPregameMatchId/quit');
+      await leave(tester, h);
+    });
+
+    testWidgets('對局：同意後才有離開對局，確認後送出', (tester) async {
+      setWidth(tester, 1400);
+      var h = await harness(tester, coreStatus: 200);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      expect(find.byKey(const ValueKey('remote-match')), findsNothing);
+      await leave(tester, h);
+
+      h = await harness(tester, consent: true, coreStatus: 200);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      await tapKey(tester, 'remote-leave-match');
+      await confirm(tester);
+      expect(writes.single.url.path,
+          '/core-game/v1/players/$myPuuid/disassociate/$testCoreMatchId');
+      await leave(tester, h);
+    });
+
+    testWidgets('隊伍：邀請、踢人（確認）、建立自訂對戰', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester, consent: true);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      await tester.enterText(
+          find.byKey(const ValueKey('remote-invite-field')), 'Friend#TW1');
+      await tapKey(tester, 'remote-invite');
+      await tapKey(tester, 'remote-kick-mate');
+      await confirm(tester);
+      await tapKey(tester, 'remote-make-custom');
+      expect([
+        for (final r in writes) '${r.method} ${r.url.path}'
+      ], [
+        'POST /parties/v1/parties/$testPartyId/invites/name/Friend/tag/TW1',
+        'DELETE /parties/v1/players/mate',
+        'POST /parties/v1/parties/$testPartyId/makecustomgame',
+      ]);
+      await leave(tester, h);
+    });
+
+    testWidgets('自訂對戰：開始與回到一般模式；不顯示排隊', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester,
+          consent: true,
+          party: partyJson(state: 'CUSTOM_GAME_SETUP')
+            ..['CustomGameData'] = {
+              'Settings': {'Map': '/Game/Maps/Ascent/Ascent', 'Mode': 'bomb'},
+              'Membership': {
+                'teamOne': [
+                  {'Subject': myPuuid}
+                ],
+              },
+            });
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      expect(find.byKey(const ValueKey('remote-queue')), findsNothing);
+      expect(find.byKey(const ValueKey('remote-custom-map')), findsOneWidget);
+      await tapKey(tester, 'remote-start-custom');
+      await tapKey(tester, 'remote-make-default');
+      expect([
+        for (final r in writes) r.url.path
+      ], [
+        '/parties/v1/parties/$testPartyId/startcustomgame',
+        '/parties/v1/parties/$testPartyId/makedefault',
+      ]);
+      expect(writes.last.url.queryParameters['queueID'], 'unrated');
+      await leave(tester, h);
+    });
+
+    testWidgets('收藏特務：同意後可以啟用特務合約', (tester) async {
+      setWidth(tester, 1440);
+      final h = await harness(tester, consent: true);
+      await tester.pumpWidget(h.wrap(home: const CollectionPage()));
+      await tester.pump();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byWidgetPredicate(
+          (w) => w is Tab && (w.text ?? '').startsWith('特務')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('activate-a-paid')));
+      await drain(tester);
+      expect(writes.single.url.path,
+          '/contracts/v1/contracts/$myPuuid/special/ac-paid');
     });
   });
 }

@@ -31,6 +31,19 @@ LiveParty mapParty(Map<String, dynamic> json, String myPuuid) {
     );
     member.isMe ? members.insert(0, member) : members.add(member);
   }
+  final custom = json['CustomGameData'] as Map<String, dynamic>?;
+  final membership = custom?['Membership'] as Map<String, dynamic>? ?? const {};
+  final teams = <String, String>{};
+  for (final (key, team) in const [
+    ('teamOne', 'TeamOne'),
+    ('teamTwo', 'TeamTwo'),
+    ('teamSpectate', 'TeamSpectate'),
+  ]) {
+    for (final m in membership[key] as List<dynamic>? ?? const []) {
+      final id = (m as Map<String, dynamic>?)?['Subject'];
+      if (id is String) teams[id] = team;
+    }
+  }
   // 沒有在排隊時，Riot 回傳 0001-01-01 這個預設值。
   final entry = DateTime.tryParse(json['QueueEntryTime'] as String? ?? '');
   return LiveParty(
@@ -46,6 +59,8 @@ LiveParty mapParty(Map<String, dynamic> json, String myPuuid) {
       for (final q in json['EligibleQueues'] as List<dynamic>? ?? const [])
         if (q is String && q.isNotEmpty) q,
     ],
+    customSettings: custom?['Settings'] as Map<String, dynamic>?,
+    customTeams: teams,
   );
 }
 

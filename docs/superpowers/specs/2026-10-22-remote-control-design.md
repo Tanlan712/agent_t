@@ -68,3 +68,24 @@
 - `applySkin`：只改指定武器、保留其他欄位與吊飾；武器不在 loadout 時新增。
 - `RemoteActions`／`LoadoutProvider`：未同意不送請求；寫入失敗不重試；401 時 expire。
 - 畫面：未同意時看不到任何遠端按鈕；同意後設定頁可撤回；選角卡片按鈕送出對應請求；隊長才看到隊長功能。
+
+## 第二批（使用者要求 2026-10-22）
+
+使用者附上一張「會改變遊戲狀態的端點」清單並要求「製作這些功能」。同樣需要先同意遠端操作，每次由使用者按下才送出。
+
+| 動作 | 方法與路徑 | 畫面 |
+|---|---|---|
+| 離開選角（逃跑） | POST `glz /pregame/v1/matches/{matchId}/quit` | 遠端選角卡片；**先確認**（懲罰：排隊限制、競技扣 RR） |
+| 離開對局 | POST `glz /core-game/v1/players/{puuid}/disassociate/{matchId}` | 對局畫面新增「遠端對局」卡片；**先確認** |
+| 邀請 | POST `glz /parties/v1/parties/{partyId}/invites/name/{name}/tag/{tag}` | 隊伍卡片輸入「名稱#標籤」 |
+| 踢出成員（隊長） | DELETE `glz /parties/v1/players/{puuid}` | 每位成員旁的「踢出」；**先確認**；不能踢自己 |
+| 建立自訂對戰（隊長） | POST `…/makecustomgame` | 不在自訂對戰時 |
+| 自訂對戰設定（隊長） | POST `…/customgamesettings`，內容是原本的 `CustomGameData.Settings` 只換 `Map` | 地圖下拉選單 |
+| 自訂對戰換隊（隊長） | POST `…/customgamemembership/{TeamOne\|TeamTwo\|TeamSpectate}`，`{"playerToPutOnTeam": puuid}` | 成員旁的隊伍下拉選單 |
+| 開始自訂對戰（隊長） | POST `…/startcustomgame` | |
+| 回到一般模式（隊長） | POST `…/makedefault?queueID=unrated` | |
+| 啟用特務合約 | POST `pd /contracts/v1/contracts/{puuid}/special/{contractId}` | 收藏 → 特務的閃電按鈕；啟用中顯示閃電圖示（`ActiveSpecialContract`） |
+
+**不做：聊天與語音。** MUC／語音 token 是憑證，第 4 節禁止讀取；聊天需要 XMPP 的 TCP 連線（瀏覽器做不到，`lib/` 也不能用 `dart:io`），語音需要 Vivox SDK。
+
+自訂對戰期間不顯示準備、排隊與模式（那些只適用一般隊伍）。

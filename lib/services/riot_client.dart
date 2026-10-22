@@ -161,16 +161,20 @@ class RiotClient {
     String host,
     String path, {
     Object? body,
+    Map<String, String>? query,
     required String label,
   }) async {
     final uri = Uri.https(
         host == 'glz'
             ? 'glz-${s.shard}-1.${s.shard}.a.pvp.net'
             : 'pd.${s.shard}.a.pvp.net',
-        path);
+        path,
+        query);
     final request = http.Request(method, uri)
-      ..headers.addAll({..._pdHeaders(s), 'Content-Type': 'application/json'})
-      ..body = body == null ? '{}' : jsonEncode(body);
+      ..headers.addAll({..._pdHeaders(s), 'Content-Type': 'application/json'});
+    if (method != 'DELETE') {
+      request.body = body == null ? '{}' : jsonEncode(body);
+    }
     final http.Response response;
     try {
       response = await http.Response.fromStream(await _client.send(request));

@@ -99,7 +99,13 @@ Riot 在伺服器端看得到這些請求，帳號可能被標記或停權；網
   - `glz`：POST `pregame/v1/matches/{id}/select/{agentId}`、`pregame/v1/matches/{id}/lock/{agentId}`。
   - `glz`：POST `parties/v1/parties/{自己的隊伍}/members/{自己的 puuid}/setReady`、`…/invitecode`、`…/matchmaking/join`、
     `…/matchmaking/leave`、`…/queue`、`…/accessibility`。隊長限定的動作只顯示給隊長。
-- 不包含：邀請或踢出他人、聊天、購買、啟用合約、自訂對戰設定、加入他人隊伍；要做必須再問使用者。
+  - **使用者決定（2026-10-22，第二批）**：`glz` POST `pregame/v1/matches/{id}/quit`（逃跑）、
+    `core-game/v1/players/{自己的 puuid}/disassociate/{id}`（離開對局）——兩者都會被懲罰，送出前必須跳確認框；
+    `parties/v1/parties/{自己的隊伍}/invites/name/{name}/tag/{tag}`、`…/makecustomgame`、`…/customgamesettings`、
+    `…/customgamemembership/{team}`、`…/startcustomgame`、`…/makedefault`；DELETE `parties/v1/players/{puuid}`（隊長踢人，需確認，不能踢自己）；
+    `pd` POST `contracts/v1/contracts/{自己的 puuid}/special/{id}`（啟用特務合約）。
+- 不包含：聊天、語音、購買、加入他人隊伍；要做必須再問使用者。
+  聊天與語音另有限制：MUC／語音 token 屬於第 4 節的憑證，不得讀取。
 
 ### 手機 App（使用者決定 2026-10-22）
 

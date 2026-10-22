@@ -11,8 +11,10 @@ import '../models/progress_reference.dart';
 import '../providers/collection_provider.dart';
 import '../providers/loadout_provider.dart';
 import '../providers/progress_provider.dart';
+import '../providers/remote_actions.dart';
 import '../providers/riot_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/remote_client.dart';
 import '../services/riot_client.dart';
 import '../shell/app_shell.dart';
 import '../shell/responsive_grid.dart';
@@ -186,6 +188,13 @@ class _CollectionPageState extends State<CollectionPage> {
                     _AgentsTab(
                         agents: agents,
                         remote: context.watch<SettingsProvider>().settings,
+                        contractIds: {
+                          for (final e in ref.contracts.entries)
+                            if (e.value.relationType == 'Agent')
+                              e.value.relationUuid: e.key,
+                        },
+                        activeContract:
+                            progress.contracts?.activeSpecialContract,
                         levelStatus: progress.contracts != null
                             ? null
                             : progress.isLoading
@@ -510,11 +519,49 @@ class _AgentsTab extends StatelessWidget {
   /// 同意遠端操作時顯示「預選」按鈕。
   final AppSettings remote;
 
+  /// 特務 UUID → 特務合約 ID（啟用合約用）。
+  final Map<String, String> contractIds;
+
+  /// 目前啟用的特務合約；不知道時為 null。
+  final String? activeContract;
+
   const _AgentsTab(
       {required this.agents,
       required this.levels,
       required this.remote,
+      this.contractIds = const {},
+      this.activeContract,
       this.levelStatus});
+
+  Widget _contract(BuildContext context, RefAgent a) {
+    final id = contractIds[a.uuid];
+    if (id == null) return const SizedBox.shrink();
+    if (id == activeContract) {
+      return Tooltip(
+        key: ValueKey('contract-active-${a.uuid}'),
+        message: '合約啟用中',
+        child: Icon(Icons.bolt, color: AppColors.owned),
+      );
+    }
+    return IconButton(
+      key: ValueKey('activate-${a.uuid}'),
+      tooltip: '啟用特務合約',
+      visualDensity: VisualDensity.compact,
+      onPressed: () async {
+        final messenger = ScaffoldMessenger.of(context);
+        final progress = context.read<ProgressProvider>();
+        final actions = RemoteActions(
+            context.read<RemoteClient>(), context.read<RiotProvider>());
+        final ok = await actions.activateContract(id);
+        messenger.showSnackBar(SnackBar(
+            content:
+                Text(ok ? '已啟用 ${a.name} 的合約' : actions.error ?? '啟用合約失敗')));
+        actions.dispose();
+        if (ok) await progress.refresh();
+      },
+      icon: Icon(Icons.play_circle_outline, color: AppColors.muted),
+    );
+  }
 
   Widget _preselect(BuildContext context, RefAgent a) {
     final chosen = remote.preferredAgent == a.uuid;
@@ -563,7 +610,10 @@ class _AgentsTab extends StatelessWidget {
                         ),
                         if (a.isBase)
                           StatusChip(label: '初始', color: AppColors.info),
-                        if (remote.remoteControl) _preselect(context, a),
+                        if (remote.remoteControl) ...[
+                          _contract(context, a),
+                          _preselect(context, a),
+                        ],
                       ]),
                       Text(a.role,
                           style:
