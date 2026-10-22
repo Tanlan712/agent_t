@@ -141,13 +141,15 @@ class AppShell extends StatelessWidget {
             : null,
         drawer: top && style.nav == NavLayout.topHamburger
             ? Drawer(
-                child: _NavList(
-                    selectedRoute: canonicalRoute(currentRoute),
-                    items: ordered,
-                    onTap: (item) {
-                      Navigator.pop(context);
-                      go(item);
-                    }))
+                // 頁面變多或螢幕較矮時可捲動，不會 overflow。
+                child: SingleChildScrollView(
+                    child: _NavList(
+                        selectedRoute: canonicalRoute(currentRoute),
+                        items: ordered,
+                        onTap: (item) {
+                          Navigator.pop(context);
+                          go(item);
+                        })))
             : null,
         bottomNavigationBar: bottom
             ? ThemedBottomNav(

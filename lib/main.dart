@@ -19,6 +19,7 @@ import 'providers/seen_players_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/shop_auto_refresh.dart';
 import 'providers/shop_provider.dart';
+import 'providers/wallet_log_provider.dart';
 import 'providers/wishlist_provider.dart';
 import 'app_routes.dart';
 import 'logic/eva_progress.dart';
@@ -38,6 +39,7 @@ import 'storage/seen_players_storage.dart';
 import 'storage/session_storage.dart';
 import 'storage/settings_storage.dart';
 import 'storage/shop_storage.dart';
+import 'storage/wallet_log_storage.dart';
 import 'storage/wishlist_storage.dart';
 import 'theme/themed_app.dart';
 import 'widgets/pwa_banners.dart';
@@ -79,6 +81,9 @@ Future<void> main() async {
   // 造型的實際定價：同步商店時順便記下看到的價格（不另外送請求）。
   final prices = OfferPriceProvider(OfferPriceStorage(prefs));
   riot.onStorefront = prices.record;
+  // VP 儲值紀錄：Riot 沒有這個 API，改為同步錢包時記下餘額變化（只存在這個瀏覽器）。
+  final walletLog = WalletLogProvider(WalletLogStorage(prefs));
+  riot.onWallet = walletLog.record;
   final shop = ShopProvider(ShopStorage(prefs));
   // 遠端操作（寫入）：每次送出前檢查使用者是否在設定頁同意（規格 2026-10-22-remote-control-design.md）。
   final remoteClient =
@@ -105,6 +110,7 @@ Future<void> main() async {
         ChangeNotifierProvider.value(value: equipped),
         ChangeNotifierProvider.value(value: penalties),
         ChangeNotifierProvider.value(value: prices),
+        ChangeNotifierProvider.value(value: walletLog),
         Provider.value(value: matchClient),
         Provider.value(value: liveClient),
         Provider.value(value: remoteClient),

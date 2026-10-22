@@ -8,6 +8,7 @@ const Map<String, String> navLabelsEn = {
   '/live': 'LIVE',
   '/players': 'CONTACTS',
   '/collection': 'ARCHIVE',
+  '/wallet': 'WALLET',
   '/progress': 'PROGRESS',
   '/agents': 'AGENTS',
   '/weapons': 'WEAPONS',
