@@ -71,7 +71,7 @@ Riot 的第三方 App 說明指出：暴露隱藏資訊、即時分析或帶來�
 | 用途 | 主機 |
 |---|---|
 | 登入與授權（使用者在 Riot 官方頁面自行登入） | `auth.riotgames.com`、`entitlements.auth.riotgames.com` |
-| 自己的商店、錢包、已擁有造型（使用者決定 2026-10-22：商店回應裡看到的造型價格可存進 localStorage，當作實際定價；`store/v1/offers` 實測 404，不使用；Riot 沒有儲值紀錄 API，使用者決定 2026-10-22：每次讀錢包時把餘額與新擁有的造型 ItemID 存進 localStorage，比對前後當作 VP 儲值／花費紀錄，不另外送請求；使用者決定 2026-10-23：手機 App 可在 Riot 客服網站的購買紀錄頁由使用者按鈕匯入官方紀錄，見第 3 節「手機 App」） | `pd.{shard}.a.pvp.net` |
+| 自己的商店、錢包、已擁有造型（使用者決定 2026-10-22：商店回應裡看到的造型價格可存進 localStorage，當作實際定價；`store/v1/offers` 實測 404，不使用；Riot 沒有儲值紀錄 API，使用者決定 2026-10-23：錢包紀錄只顯示官方購買紀錄，手機 App 可在 Riot 客服網站的購買紀錄頁由使用者按鈕匯入官方紀錄，見第 3 節「手機 App」） | `pd.{shard}.a.pvp.net` |
 | 自己擁有的收藏（使用者決定 2026-10-21）：`store/v1/entitlements/{puuid}/{ItemTypeID}` 的造型、炫彩、特務、吊飾、噴漆、玩家卡片、稱號，只能 GET | `pd.{shard}.a.pvp.net` |
 | 自己的帳號等級與經驗（使用者決定 2026-10-21）：`account-xp/v1/players/{puuid}`，只能 GET | `pd.{shard}.a.pvp.net` |
 | 自己的通行證與任務進度（使用者決定 2026-10-21）：`contracts/v1/contracts/{puuid}`，**只能 GET**；不得啟用合約（POST `contracts/v1/contracts/{puuid}/special/{id}`）或任何寫入 | `pd.{shard}.a.pvp.net` |

@@ -39,10 +39,6 @@ class RiotProvider with ChangeNotifier {
   /// 每次同步拿到 storefront 回應時呼叫（記錄造型的實際定價）。
   void Function(Map<String, dynamic> storefront)? onStorefront;
 
-  /// 每次同步拿到錢包與已擁有造型（造型等級 ItemID）時呼叫（記錄錢包變化）。
-  void Function(String puuid, RiotWallet wallet, Set<String> ownedItems)?
-      onWallet;
-
   RiotSession? get session => _session;
   bool get isLoggedIn =>
       _session != null && _now().isBefore(_session!.expiresAt);
@@ -132,7 +128,6 @@ class RiotProvider with ChangeNotifier {
       onStorefront?.call(storefront);
       final wallet = await _client.fetchWallet(s);
       final owned = await _client.fetchOwnedSkinLevels(s);
-      onWallet?.call(s.puuid, wallet, owned);
       await shop.replaceShop(mapStorefront(storefront, resolve, _now()));
       _wallet = wallet;
       _owned = owned.map(resolve).toSet();

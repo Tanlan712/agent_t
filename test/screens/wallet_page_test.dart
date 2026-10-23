@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:valorant_shop_tracker/app_routes.dart';
 import 'package:valorant_shop_tracker/logic/purchase_history.dart';
-import 'package:valorant_shop_tracker/models/riot_session.dart';
 import 'package:valorant_shop_tracker/screens/wallet_page.dart';
 import 'package:valorant_shop_tracker/shell/nav_items.dart';
 
@@ -26,7 +25,7 @@ void main() {
     setWidth(tester, 1400);
     final h = await Harness.create(tester);
     await open(tester, h);
-    expect(find.text('登入 Riot 以記錄錢包'), findsOneWidget);
+    expect(find.text('登入 Riot 以匯入購買紀錄'), findsOneWidget);
   });
 
   testWidgets('按鈕打開 Riot 官方購買紀錄', (tester) async {
@@ -41,46 +40,6 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('wallet-official-open')));
     expect(launched, [officialPurchaseHistory]);
     expect(officialPurchaseHistory.host, 'support.riotgames.com');
-  });
-
-  testWidgets('同步商店時記下錢包餘額', (tester) async {
-    setWidth(tester, 1400);
-    final h = await Harness.create(tester);
-    await tester.runAsync(() async {
-      await h.riot.login(fakeRedirect);
-      await h.riot.sync(shop: h.shop, catalog: h.catalog);
-    });
-    final s = h.walletLog.snapshots('puuid-1');
-    expect(s, hasLength(1));
-    expect(s.single.vp, 1500);
-    await open(tester, h);
-    expect(find.text('目前還沒有變化'), findsOneWidget);
-    expect(find.textContaining('開始記錄'), findsOneWidget);
-  });
-
-  testWidgets('列出儲值與花費，並標出新買的造型', (tester) async {
-    for (final width in [390.0, 1440.0]) {
-      setWidth(tester, width);
-      final h = await Harness.create(tester);
-      await tester.runAsync(() async {
-        await h.riot.login(fakeRedirect);
-        const kept = {'lvl-x'};
-        await h.walletLog.record('puuid-1',
-            const RiotWallet(vp: 100, radianite: 0, kingdom: 0), kept);
-        await h.walletLog.record('puuid-1',
-            const RiotWallet(vp: 2100, radianite: 0, kingdom: 0), kept);
-        await h.walletLog.record(
-            'puuid-1',
-            const RiotWallet(vp: 825, radianite: 0, kingdom: 0),
-            {...kept, 'o'});
-      });
-      await open(tester, h);
-      expect(find.text('儲值 +2000 VP'), findsOneWidget);
-      expect(find.text('花費 1275 VP'), findsOneWidget);
-      expect(find.text('新造型：凌空之志 奧丁'), findsOneWidget);
-      expect(find.text('2000'), findsWidgets);
-      expect(tester.takeException(), isNull);
-    }
   });
 
   group('匯入官方購買紀錄', () {
@@ -128,7 +87,7 @@ void main() {
       expect(find.text('+1000 VP\nNT\$ 330'), findsOneWidget);
       expect(find.text('2026-10-01'), findsOneWidget);
       final puuid = h.riot.session!.puuid;
-      expect(h.walletLog.purchases(puuid)!.records, hasLength(2));
+      expect(h.purchaseHistory.purchases(puuid)!.records, hasLength(2));
     });
 
     testWidgets('關掉匯入頁時不改變紀錄', (tester) async {
