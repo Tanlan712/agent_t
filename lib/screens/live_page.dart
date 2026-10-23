@@ -881,75 +881,96 @@ class _PregameRow extends StatelessWidget {
         color: player.isMe ? AppColors.surfaceHigh : null,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(
-            children: [
-              Tooltip(
-                key: ValueKey('live-rank-${player.puuid}'),
-                triggerMode: TooltipTriggerMode.tap,
-                message: tier.name,
-                child: SizedBox(
-                    width: 24, height: 24, child: SkinIcon(url: tier.iconUrl)),
-              ),
-              const SizedBox(width: 8),
-              Tooltip(
-                key: ValueKey('live-agent-${player.puuid}'),
-                triggerMode: TooltipTriggerMode.tap,
-                message: player.agentId.isEmpty ? '尚未選擇' : agent.name,
-                child: SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: player.agentId.isEmpty
-                        ? null
-                        : SkinIcon(url: agent.iconUrl)),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 48,
-                child: Text(_selectionLabels[player.selection]!,
-                    key: ValueKey('pregame-state-${player.puuid}'),
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: locked ? AppColors.owned : AppColors.muted)),
-              ),
-              Expanded(
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: Text(name,
-                          key: ValueKey('live-name-${player.puuid}'),
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              fontWeight: player.isMe
-                                  ? FontWeight.bold
-                                  : FontWeight.normal)),
-                    ),
-                    if (!player.isMe)
-                      EncounterTag(puuid: player.puuid, matchId: matchId),
-                    if (!player.isMe)
-                      _SuspicionTag(
-                          puuid: player.puuid,
-                          level: player.level,
-                          seasonWins: player.seasonWins,
-                          tier: tierId,
-                          queue: queue,
-                          rules: rules),
-                    if (player.level > 0) ...[
-                      const SizedBox(width: 6),
-                      Text('Lv ${player.level}',
-                          key: ValueKey('live-level-${player.puuid}'),
-                          style:
-                              TextStyle(color: AppColors.muted, fontSize: 12)),
-                    ],
-                  ],
+          // 窄螢幕把最近幾場移到下一行，避免選角列 overflow（同對局列）。
+          LayoutBuilder(builder: (context, c) {
+            final narrow = c.maxWidth < 440;
+            final form = RecentFormCell(
+                key: ValueKey('form-${player.puuid}'),
+                puuid: player.puuid,
+                queue: queue,
+                games: liveFormGames);
+            final row = Row(
+              children: [
+                Tooltip(
+                  key: ValueKey('live-rank-${player.puuid}'),
+                  triggerMode: TooltipTriggerMode.tap,
+                  message: tier.name,
+                  child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: SkinIcon(url: tier.iconUrl)),
                 ),
-              ),
-              RecentFormCell(
-                  key: ValueKey('form-${player.puuid}'),
-                  puuid: player.puuid,
-                  queue: queue,
-                  games: liveFormGames),
-            ],
-          ),
+                const SizedBox(width: 8),
+                Tooltip(
+                  key: ValueKey('live-agent-${player.puuid}'),
+                  triggerMode: TooltipTriggerMode.tap,
+                  message: player.agentId.isEmpty ? '尚未選擇' : agent.name,
+                  child: SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: player.agentId.isEmpty
+                          ? null
+                          : SkinIcon(url: agent.iconUrl)),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 48,
+                  child: Text(_selectionLabels[player.selection]!,
+                      key: ValueKey('pregame-state-${player.puuid}'),
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: locked ? AppColors.owned : AppColors.muted)),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(name,
+                            key: ValueKey('live-name-${player.puuid}'),
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontWeight: player.isMe
+                                    ? FontWeight.bold
+                                    : FontWeight.normal)),
+                      ),
+                      if (!player.isMe)
+                        EncounterTag(puuid: player.puuid, matchId: matchId),
+                      if (!player.isMe)
+                        _SuspicionTag(
+                            puuid: player.puuid,
+                            level: player.level,
+                            seasonWins: player.seasonWins,
+                            tier: tierId,
+                            queue: queue,
+                            rules: rules),
+                      if (player.level > 0) ...[
+                        const SizedBox(width: 6),
+                        Text('Lv ${player.level}',
+                            key: ValueKey('live-level-${player.puuid}'),
+                            style: TextStyle(
+                                color: AppColors.muted, fontSize: 12)),
+                      ],
+                    ],
+                  ),
+                ),
+                if (!narrow) form,
+              ],
+            );
+            if (!narrow) return row;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                row,
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: form),
+                ),
+              ],
+            );
+          }),
           // 使用者決定（2026-10-23）：選角時顯示隊友擅長的特務與常用槍。
           PlayerSpecialty(
               puuid: player.puuid, queue: queue, games: liveFormGames),

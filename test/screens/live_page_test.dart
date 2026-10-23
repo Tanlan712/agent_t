@@ -394,6 +394,17 @@ void main() {
       await leave(tester, h);
     });
 
+    testWidgets('375 寬選角列不溢位', (tester) async {
+      setWidth(tester, 375);
+      final h = await harness(tester, pregameStatus: 200);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      await drain(tester);
+      expect(find.byKey(const ValueKey('live-player-mate')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await leave(tester, h);
+    });
+
     testWidgets('點隊友進入玩家頁', (tester) async {
       setWidth(tester, 1400);
       final h = await harness(tester, pregameStatus: 200);
