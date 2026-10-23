@@ -246,14 +246,41 @@ void main() {
       await drain(tester);
       expect(find.byKey(const ValueKey('form-r1-0')), findsOneWidget);
       expect(inKey('form-r1', '平均 227'), findsOneWidget);
-      final histories = requests
+      final all = requests
           .where((r) => r.url.path.startsWith('/match-history/v1/history/'))
           .toList();
+      // 自己另外有一次不限模式的掃描（標示遇過的玩家用）。
+      bool scan(http.Request r) =>
+          r.url.path.endsWith('/$myPuuid') &&
+          !r.url.queryParameters.containsKey('queue');
+      expect(all.where(scan), isNotEmpty);
+      final histories = all.where((r) => !scan(r)).toList();
       expect(
           histories
               .every((r) => r.url.queryParameters['queue'] == 'competitive'),
           isTrue);
       expect(histories.any((r) => r.url.path.endsWith('/coach')), isFalse);
+      await leave(tester, h);
+    });
+
+    testWidgets('之前同場打過的玩家標示「遇過」，點開列出日期、地圖、隊友或對手與勝負', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester, coreStatus: 200);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      await drain(tester);
+      // 假資料的每一場歷史都有 r1（對手）與 mate（隊友），自己贏；每人只留最近 5 場。
+      expect(inKey('met-tap-r1', '遇過 5+'), findsOneWidget);
+      expect(inKey('met-tap-mate', '遇過 5+'), findsOneWidget);
+      expect(find.byKey(const ValueKey('met-$myPuuid')), findsNothing);
+      // 教練不在歷史場次裡。
+      expect(find.byKey(const ValueKey('met-coach')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('met-tap-r1')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('當對手 5 場（5 勝 0 敗）'), findsOneWidget);
+      expect(find.textContaining('亞海懸城・競技・對手・勝'), findsOneWidget);
+      await tester.tap(find.text('關閉'));
+      await tester.pumpAndSettle();
       await leave(tester, h);
     });
 

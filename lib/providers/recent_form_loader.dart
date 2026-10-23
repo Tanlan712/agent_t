@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'package:flutter/foundation.dart';
 
 import '../logic/match_mapper.dart';
+import '../models/match_models.dart';
 import '../models/riot_session.dart';
 import '../services/match_client.dart';
 import '../services/riot_client.dart';
@@ -105,6 +106,9 @@ class RecentFormLoader with ChangeNotifier {
   final int maxRetries;
   final Future<void> Function(Duration) _delay;
 
+  /// 每位玩家的場次讀完後呼叫，例如記錄和自己同場過的玩家。
+  final void Function(Iterable<MatchDetail> details)? onDetails;
+
   final Map<String, FormStatus> _status = {};
   final Map<String, RecentForm> _forms = {};
   final Queue<String> _queue = Queue();
@@ -131,6 +135,7 @@ class RecentFormLoader with ChangeNotifier {
       {this.maxConcurrent = 2,
       this.games = 5,
       this.maxRetries = 3,
+      this.onDetails,
       Future<void> Function(Duration)? delay})
       : _delay = delay ?? Future<void>.delayed;
 
@@ -357,6 +362,7 @@ class RecentFormLoader with ChangeNotifier {
     final (refs, _) = await _retry(() => _client.fetchHistory(s, 0, count,
         puuid: puuid, queue: standard ? null : queue));
     final result = <FormGame>[];
+    final details = <MatchDetail>[];
     for (final ref in refs) {
       if (standard && !_standardQueueIds.contains(ref.queueId)) continue;
       final Map<String, dynamic> json;
@@ -369,6 +375,7 @@ class RecentFormLoader with ChangeNotifier {
         continue;
       }
       final d = mapMatchDetail(json, puuid, selfPuuid: s.puuid);
+      details.add(d);
       final line =
           d.teams.values.expand((t) => t).where((l) => l.puuid == puuid);
       if (line.isEmpty) continue;
@@ -387,6 +394,7 @@ class RecentFormLoader with ChangeNotifier {
         startTime: ref.startTime,
       ));
     }
+    if (details.isNotEmpty) onDetails?.call(details);
     return RecentForm(result);
   }
 
