@@ -8,8 +8,8 @@ import '../models/current_shop.dart';
 
 /// Android 主畫面小工具要顯示的內容：今天的每日商店（名稱、價格）、到期時間、夜市。
 /// 只含商店資料，不含 token 或帳號資訊。沒有每日商店時為 null。
-Map<String, dynamic>? homeWidgetData(CurrentShop shop,
-    String? Function(String skinUuid) nameOf, DateTime now) {
+Map<String, dynamic>? homeWidgetData(
+    CurrentShop shop, String? Function(String skinUuid) nameOf, DateTime now) {
   final expires = shop.dailyExpiresAt;
   if (shop.daily.isEmpty || expires == null) return null;
   return {

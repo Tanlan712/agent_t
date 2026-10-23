@@ -4,13 +4,15 @@ import 'package:http/http.dart' as http;
 
 import '../models/match_models.dart';
 import 'catalog_api.dart';
+import 'valorant_api_client.dart';
 
 /// 從 valorant-api.com 下載特務、地圖、牌位與賽季的顯示資料。
 class MatchReferenceApi {
   static const _host = 'valorant-api.com';
   final http.Client _client;
 
-  MatchReferenceApi({http.Client? client}) : _client = client ?? http.Client();
+  MatchReferenceApi({http.Client? client})
+      : _client = client ?? valorantApiHttp;
 
   Future<MatchReference> fetch() async {
     final agents = await _data('/v1/agents', {'isPlayableCharacter': 'true'});

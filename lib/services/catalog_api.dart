@@ -6,6 +6,7 @@ import '../models/bundle_info.dart';
 import '../models/skin_catalog.dart';
 import '../models/skin_info.dart';
 import '../models/tier.dart';
+import 'valorant_api_client.dart';
 
 class CatalogFetchException implements Exception {
   final String message;
@@ -24,7 +25,7 @@ class CatalogApi {
   final DateTime Function() _now;
 
   CatalogApi({http.Client? client, DateTime Function() now = DateTime.now})
-      : _client = client ?? http.Client(),
+      : _client = client ?? valorantApiHttp,
         _now = now;
 
   Future<SkinCatalog> fetchCatalog() async {

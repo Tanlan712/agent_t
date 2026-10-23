@@ -1,5 +1,8 @@
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+import 'valorant_api_client.dart';
 
 /// Valorant-API.com 服務 (免費，無需 API Key)
 /// 文檔: https://valorant-api.com/
@@ -9,7 +12,8 @@ class ValorantApiService {
 
   final http.Client _client;
 
-  ValorantApiService({http.Client? client}) : _client = client ?? http.Client();
+  ValorantApiService({http.Client? client})
+      : _client = client ?? valorantApiHttp;
 
   /// 取得所有主題（組合包以主題名稱配對造型）
   Future<List<Map<String, dynamic>>> getThemes({

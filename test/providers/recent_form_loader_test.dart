@@ -8,6 +8,8 @@ import 'package:agent_t/providers/recent_form_loader.dart';
 import 'package:agent_t/providers/riot_provider.dart';
 import 'package:agent_t/services/match_client.dart';
 import 'package:agent_t/services/riot_client.dart';
+import 'package:agent_t/storage/form_game_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:agent_t/logic/match_mapper.dart';
 
@@ -54,6 +56,7 @@ void main() {
     Set<String> otherMmrHidden = const {},
     int maxConcurrent = 2,
     bool mixedQueues = false,
+    FormGameStorage? store,
   }) async {
     final waits = <Duration>[];
     final paths = <String>[];
@@ -96,7 +99,9 @@ void main() {
     paths.clear();
     calls.clear();
     final loader = RecentFormLoader(MatchClient(rc), riot, MatchDetailCache(),
-        maxConcurrent: maxConcurrent, delay: (d) async => waits.add(d));
+        maxConcurrent: maxConcurrent,
+        store: store,
+        delay: (d) async => waits.add(d));
     e = _Env(loader, riot, waits, paths, calls, 0);
     return e;
   }
@@ -391,6 +396,64 @@ void main() {
     env.loader.request(['r1', 'mate']);
     await _settle(env.loader, ['r1', 'mate']);
     expect(env.requestsFor('/match-details/v1/matches/m1'), 1);
+  });
+
+  group('已結束場次快取', () {
+    test('自己的場次存成摘要，重開後不再抓 match-details', () async {
+      SharedPreferences.setMockInitialValues({});
+      final store = FormGameStorage(await SharedPreferences.getInstance());
+      env = await setup(store: store);
+      env.loader.request([myPuuid], queue: standardQueues, games: 3);
+      await _settle(env.loader, [myPuuid], queue: standardQueues, games: 3);
+      final first =
+          env.loader.form(myPuuid, queue: standardQueues, games: 3)!.games;
+      expect(first, hasLength(3));
+      expect(env.requestsFor('/match-details/'), 3);
+      env.loader.dispose();
+
+      // 模擬重開網頁：新的載入器與記憶體快取，只剩本機的摘要。
+      env = await setup(store: store);
+      env.loader.request([myPuuid], queue: standardQueues, games: 3);
+      await _settle(env.loader, [myPuuid], queue: standardQueues, games: 3);
+      final again =
+          env.loader.form(myPuuid, queue: standardQueues, games: 3)!.games;
+      expect(env.requestsFor('/match-details/'), 0);
+      expect(env.requestsFor('/match-history/'), 1);
+      expect([for (final g in again) g.matchId],
+          [for (final g in first) g.matchId]);
+      expect(
+          [for (final g in again) (g.acs, g.kills, g.won, '${g.weaponKills}')],
+          [for (final g in first) (g.acs, g.kills, g.won, '${g.weaponKills}')]);
+    });
+
+    test('其他玩家不寫入快取', () async {
+      SharedPreferences.setMockInitialValues({});
+      final store = FormGameStorage(await SharedPreferences.getInstance());
+      env = await setup(store: store);
+      env.loader.request(['r1']);
+      await _settle(env.loader, ['r1']);
+      expect(store.load('r1'), isEmpty);
+    });
+
+    test('每位玩家最多保留 60 場，丟掉最舊的', () async {
+      SharedPreferences.setMockInitialValues({});
+      final store = FormGameStorage(await SharedPreferences.getInstance());
+      env = await setup();
+      await store.save('p', [
+        for (var i = 0; i < 70; i++)
+          FormGame(
+              matchId: 'g$i',
+              won: i.isEven,
+              acs: i,
+              agentId: 'a',
+              startTime: DateTime.utc(2026, 1, 1).add(Duration(hours: i))),
+      ]);
+      final kept = store.load('p');
+      expect(kept, hasLength(FormGameStorage.maxPerPlayer));
+      expect(kept.containsKey('g69'), isTrue);
+      expect(kept.containsKey('g9'), isFalse);
+      expect(kept['g10']!.won, isTrue);
+    });
   });
 
   test('已有結果的玩家再次 request 會略過', () async {
