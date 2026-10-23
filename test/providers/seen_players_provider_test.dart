@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:valorant_shop_tracker/logic/match_mapper.dart';
-import 'package:valorant_shop_tracker/providers/seen_players_provider.dart';
-import 'package:valorant_shop_tracker/storage/seen_players_storage.dart';
+import 'package:agent_t/logic/match_mapper.dart';
+import 'package:agent_t/providers/seen_players_provider.dart';
+import 'package:agent_t/storage/seen_players_storage.dart';
 
 import '../match_fixtures.dart';
 

@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:valorant_shop_tracker/theme/app_palette.dart';
-import 'package:valorant_shop_tracker/widgets/theme/eva/eva_header.dart';
+import 'package:agent_t/theme/app_palette.dart';
+import 'package:agent_t/widgets/theme/eva/eva_header.dart';
 
 /// 測試不連網：google_fonts 不在執行時下載字體（App 在測試裡用系統字體）。
 /// 每個測試開始前把目前配色重設為預設主題，避免測試之間互相影響。

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/app_routes.dart';
-import 'package:valorant_shop_tracker/logic/purchase_history.dart';
-import 'package:valorant_shop_tracker/screens/wallet_page.dart';
-import 'package:valorant_shop_tracker/shell/nav_items.dart';
+import 'package:agent_t/app_routes.dart';
+import 'package:agent_t/logic/purchase_history.dart';
+import 'package:agent_t/screens/wallet_page.dart';
+import 'package:agent_t/shell/nav_items.dart';
 
 import '../app_harness.dart';
 import '../riot_fixtures.dart';

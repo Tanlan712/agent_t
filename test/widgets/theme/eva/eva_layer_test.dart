@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/models/current_shop.dart';
-import 'package:valorant_shop_tracker/shell/app_shell.dart';
-import 'package:valorant_shop_tracker/theme/theme_ids.dart';
-import 'package:valorant_shop_tracker/widgets/theme/eva/eva_layer.dart';
-import 'package:valorant_shop_tracker/widgets/theme/eva/eva_overlays.dart';
+import 'package:agent_t/models/current_shop.dart';
+import 'package:agent_t/shell/app_shell.dart';
+import 'package:agent_t/theme/theme_ids.dart';
+import 'package:agent_t/widgets/theme/eva/eva_layer.dart';
+import 'package:agent_t/widgets/theme/eva/eva_overlays.dart';
 
 import '../../../app_harness.dart';
 

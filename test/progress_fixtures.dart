@@ -1,7 +1,7 @@
 // 收藏／通行證頁面測試用的假參考資料（假 uuid）。
-import 'package:valorant_shop_tracker/models/match_models.dart' show RefItem;
-import 'package:valorant_shop_tracker/models/progress_reference.dart';
-import 'package:valorant_shop_tracker/services/progress_reference_api.dart';
+import 'package:agent_t/models/match_models.dart' show RefItem;
+import 'package:agent_t/models/progress_reference.dart';
+import 'package:agent_t/services/progress_reference_api.dart';
 
 class FakeProgressApi implements ProgressReferenceApi {
   int calls = 0;

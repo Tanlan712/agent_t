@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/app_routes.dart';
-import 'package:valorant_shop_tracker/screens/riot_login_page.dart';
-import 'package:valorant_shop_tracker/screens/settings_page.dart';
-import 'package:valorant_shop_tracker/services/riot_api_key_manager.dart';
-import 'package:valorant_shop_tracker/shell/nav_items.dart';
+import 'package:agent_t/app_routes.dart';
+import 'package:agent_t/screens/riot_login_page.dart';
+import 'package:agent_t/screens/settings_page.dart';
+import 'package:agent_t/services/riot_api_key_manager.dart';
+import 'package:agent_t/shell/nav_items.dart';
 
-import 'package:valorant_shop_tracker/theme/theme_ids.dart';
+import 'package:agent_t/theme/theme_ids.dart';
 
 import '../app_harness.dart';
 

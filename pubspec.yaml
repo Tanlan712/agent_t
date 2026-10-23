@@ -1,4 +1,4 @@
-name: valorant_shop_tracker
+name: agent_t
 description: "Agent T：VALORANT 商店與對戰紀錄追蹤器。"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.

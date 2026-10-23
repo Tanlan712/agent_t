@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/logic/loadout_logic.dart';
-import 'package:valorant_shop_tracker/models/progress_reference.dart';
+import 'package:agent_t/logic/loadout_logic.dart';
+import 'package:agent_t/models/progress_reference.dart';
 
 import '../remote_fixtures.dart';
 

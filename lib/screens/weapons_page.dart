@@ -5,7 +5,7 @@ import '../models/game_data.dart';
 import '../shell/app_shell.dart';
 import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
-import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
+import 'package:agent_t/services/valorant_api_service.dart';
 import '../widgets/hud/hud.dart';
 import 'details/weapon_detail_page.dart';
 

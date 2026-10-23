@@ -3,11 +3,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/theme/app_palette.dart';
-import 'package:valorant_shop_tracker/theme/app_style.dart';
-import 'package:valorant_shop_tracker/theme/app_theme.dart';
-import 'package:valorant_shop_tracker/theme/theme_ids.dart';
-import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
+import 'package:agent_t/theme/app_palette.dart';
+import 'package:agent_t/theme/app_style.dart';
+import 'package:agent_t/theme/app_theme.dart';
+import 'package:agent_t/theme/theme_ids.dart';
+import 'package:agent_t/widgets/hud/hud.dart';
 
 // B 數位霓虹：有邊框、10px 圓角；各風格的形狀另見 style_variants_test.dart。
 Widget host(Widget child, {bool reduceMotion = false}) => MaterialApp(

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/models/skin_info.dart';
-import 'package:valorant_shop_tracker/models/tier.dart';
-import 'package:valorant_shop_tracker/screens/collection_page.dart';
-import 'package:valorant_shop_tracker/screens/progress_page.dart';
-import 'package:valorant_shop_tracker/screens/shop_edit_page.dart';
-import 'package:valorant_shop_tracker/screens/wishlist_page.dart';
+import 'package:agent_t/models/skin_info.dart';
+import 'package:agent_t/models/tier.dart';
+import 'package:agent_t/screens/collection_page.dart';
+import 'package:agent_t/screens/progress_page.dart';
+import 'package:agent_t/screens/shop_edit_page.dart';
+import 'package:agent_t/screens/wishlist_page.dart';
 
 import '../app_harness.dart';
 import '../catalog_helpers.dart';

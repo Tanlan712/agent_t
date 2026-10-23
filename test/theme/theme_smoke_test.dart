@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/theme/theme_ids.dart';
+import 'package:agent_t/theme/theme_ids.dart';
 
 import '../app_harness.dart';
 import '../shell/app_shell_test.dart' show setWidth;

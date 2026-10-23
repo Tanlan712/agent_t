@@ -5,7 +5,7 @@ import '../models/game_data.dart';
 import '../shell/app_shell.dart';
 import 'details/agent_detail_page.dart';
 import '../shell/responsive_grid.dart';
-import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
+import 'package:agent_t/services/valorant_api_service.dart';
 
 class AgentsPage extends StatefulWidget {
   /// 測試時注入。

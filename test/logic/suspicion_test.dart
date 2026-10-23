@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/logic/suspicion.dart';
-import 'package:valorant_shop_tracker/providers/recent_form_loader.dart';
+import 'package:agent_t/logic/suspicion.dart';
+import 'package:agent_t/providers/recent_form_loader.dart';
 
 List<FormGame> games(List<int> acs) => [
       for (var i = 0; i < acs.length; i++)

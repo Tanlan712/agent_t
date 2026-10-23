@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/theme/app_theme.dart';
-import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
-import 'package:valorant_shop_tracker/widgets/skin_card.dart';
+import 'package:agent_t/theme/app_theme.dart';
+import 'package:agent_t/widgets/hud/hud.dart';
+import 'package:agent_t/widgets/skin_card.dart';
 
 import '../catalog_helpers.dart';
-import 'package:valorant_shop_tracker/theme/app_palette.dart';
-import 'package:valorant_shop_tracker/theme/theme_ids.dart';
+import 'package:agent_t/theme/app_palette.dart';
+import 'package:agent_t/theme/theme_ids.dart';
 
 import '../theme/contrast.dart';
 

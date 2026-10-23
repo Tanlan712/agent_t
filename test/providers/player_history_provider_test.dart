@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/models/match_models.dart';
-import 'package:valorant_shop_tracker/providers/match_detail_cache.dart';
-import 'package:valorant_shop_tracker/providers/match_history_provider.dart';
-import 'package:valorant_shop_tracker/providers/player_history_provider.dart';
-import 'package:valorant_shop_tracker/providers/riot_provider.dart';
-import 'package:valorant_shop_tracker/services/match_client.dart';
-import 'package:valorant_shop_tracker/services/riot_client.dart';
+import 'package:agent_t/models/match_models.dart';
+import 'package:agent_t/providers/match_detail_cache.dart';
+import 'package:agent_t/providers/match_history_provider.dart';
+import 'package:agent_t/providers/player_history_provider.dart';
+import 'package:agent_t/providers/riot_provider.dart';
+import 'package:agent_t/services/match_client.dart';
+import 'package:agent_t/services/riot_client.dart';
 
 import '../match_fixtures.dart';
 import '../riot_fixtures.dart';

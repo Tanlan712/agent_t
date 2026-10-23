@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/logic/live_mapper.dart';
-import 'package:valorant_shop_tracker/models/live_models.dart';
+import 'package:agent_t/logic/live_mapper.dart';
+import 'package:agent_t/models/live_models.dart';
 
 import '../live_fixtures.dart';
 import '../match_fixtures.dart';

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:valorant_shop_tracker/models/skin_info.dart';
-import 'package:valorant_shop_tracker/providers/catalog_provider.dart';
-import 'package:valorant_shop_tracker/providers/riot_provider.dart';
-import 'package:valorant_shop_tracker/screens/skin_picker_page.dart';
-import 'package:valorant_shop_tracker/services/riot_client.dart';
-import 'package:valorant_shop_tracker/widgets/skin_card.dart';
-import 'package:valorant_shop_tracker/widgets/skin_tile.dart';
+import 'package:agent_t/models/skin_info.dart';
+import 'package:agent_t/providers/catalog_provider.dart';
+import 'package:agent_t/providers/riot_provider.dart';
+import 'package:agent_t/screens/skin_picker_page.dart';
+import 'package:agent_t/services/riot_client.dart';
+import 'package:agent_t/widgets/skin_card.dart';
+import 'package:agent_t/widgets/skin_tile.dart';
 
 import '../catalog_helpers.dart';
 import '../riot_fixtures.dart';

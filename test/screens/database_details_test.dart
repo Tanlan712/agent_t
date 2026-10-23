@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:valorant_shop_tracker/screens/agents_page.dart';
-import 'package:valorant_shop_tracker/screens/bundles_page.dart';
-import 'package:valorant_shop_tracker/screens/maps_page.dart';
-import 'package:valorant_shop_tracker/screens/weapons_page.dart';
-import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
+import 'package:agent_t/screens/agents_page.dart';
+import 'package:agent_t/screens/bundles_page.dart';
+import 'package:agent_t/screens/maps_page.dart';
+import 'package:agent_t/screens/weapons_page.dart';
+import 'package:agent_t/services/valorant_api_service.dart';
 
 import '../app_harness.dart';
 import '../database_fixtures.dart';

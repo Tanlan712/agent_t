@@ -2,17 +2,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:valorant_shop_tracker/models/current_shop.dart';
-import 'package:valorant_shop_tracker/models/skin_catalog.dart';
-import 'package:valorant_shop_tracker/providers/catalog_provider.dart';
-import 'package:valorant_shop_tracker/providers/settings_provider.dart';
-import 'package:valorant_shop_tracker/providers/shop_provider.dart';
-import 'package:valorant_shop_tracker/providers/wishlist_provider.dart';
-import 'package:valorant_shop_tracker/services/catalog_api.dart';
-import 'package:valorant_shop_tracker/storage/catalog_cache.dart';
-import 'package:valorant_shop_tracker/storage/settings_storage.dart';
-import 'package:valorant_shop_tracker/storage/shop_storage.dart';
-import 'package:valorant_shop_tracker/storage/wishlist_storage.dart';
+import 'package:agent_t/models/current_shop.dart';
+import 'package:agent_t/models/skin_catalog.dart';
+import 'package:agent_t/providers/catalog_provider.dart';
+import 'package:agent_t/providers/settings_provider.dart';
+import 'package:agent_t/providers/shop_provider.dart';
+import 'package:agent_t/providers/wishlist_provider.dart';
+import 'package:agent_t/services/catalog_api.dart';
+import 'package:agent_t/storage/catalog_cache.dart';
+import 'package:agent_t/storage/settings_storage.dart';
+import 'package:agent_t/storage/shop_storage.dart';
+import 'package:agent_t/storage/wishlist_storage.dart';
 
 import '../fixtures.dart';
 

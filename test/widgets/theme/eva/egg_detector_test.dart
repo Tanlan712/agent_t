@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/widgets/theme/eva/egg_detector.dart';
+import 'package:agent_t/widgets/theme/eva/egg_detector.dart';
 
 /// 規格 §4.4：E1、E2、E4、E5、E11、E20 的觸發偵測。
 void main() {

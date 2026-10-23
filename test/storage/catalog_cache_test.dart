@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:valorant_shop_tracker/models/bundle_info.dart';
-import 'package:valorant_shop_tracker/models/skin_catalog.dart';
-import 'package:valorant_shop_tracker/models/skin_info.dart';
-import 'package:valorant_shop_tracker/models/tier.dart';
-import 'package:valorant_shop_tracker/storage/catalog_cache.dart';
+import 'package:agent_t/models/bundle_info.dart';
+import 'package:agent_t/models/skin_catalog.dart';
+import 'package:agent_t/models/skin_info.dart';
+import 'package:agent_t/models/tier.dart';
+import 'package:agent_t/storage/catalog_cache.dart';
 
 Future<CatalogCache> cacheWith(Map<String, Object> values) async {
   SharedPreferences.setMockInitialValues(values);

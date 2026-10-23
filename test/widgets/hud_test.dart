@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/theme/app_theme.dart';
-import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
+import 'package:agent_t/theme/app_theme.dart';
+import 'package:agent_t/widgets/hud/hud.dart';
 
 import '../shell/app_shell_test.dart' show setWidth;
 

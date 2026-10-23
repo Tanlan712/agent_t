@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/services/app_icon_service.dart';
+import 'package:agent_t/services/app_icon_service.dart';
 
 /// 規格 2026-10-22-switchable-app-icons-design.md §3：Dart 與原生之間的 channel。
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  const channel = MethodChannel('valorant_shop_tracker/app_icon');
+  const channel = MethodChannel('agent_t/app_icon');
   final calls = <MethodCall>[];
   Object? reply;
 

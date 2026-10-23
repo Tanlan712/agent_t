@@ -2,10 +2,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/models/app_settings.dart';
-import 'package:valorant_shop_tracker/shell/app_shell.dart';
-import 'package:valorant_shop_tracker/theme/theme_ids.dart';
-import 'package:valorant_shop_tracker/widgets/theme/eva/eva_documents.dart';
+import 'package:agent_t/models/app_settings.dart';
+import 'package:agent_t/shell/app_shell.dart';
+import 'package:agent_t/theme/theme_ids.dart';
+import 'package:agent_t/widgets/theme/eva/eva_documents.dart';
 
 import '../../../app_harness.dart';
 import '../../../match_fixtures.dart';

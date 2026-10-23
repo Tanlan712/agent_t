@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:valorant_shop_tracker/theme/app_theme.dart';
+import 'package:agent_t/theme/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
-import 'package:valorant_shop_tracker/providers/pwa_controller.dart';
-import 'package:valorant_shop_tracker/services/app_icon_service.dart';
-import 'package:valorant_shop_tracker/services/riot_api_key_manager.dart';
-import 'package:valorant_shop_tracker/shell/app_shell.dart';
-import 'package:valorant_shop_tracker/widgets/app_icon_picker.dart';
-import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
-import 'package:valorant_shop_tracker/widgets/my_shop_settings_card.dart';
-import 'package:valorant_shop_tracker/widgets/nav_order_editor.dart';
-import 'package:valorant_shop_tracker/widgets/pwa_cards.dart';
-import 'package:valorant_shop_tracker/widgets/remote_control_card.dart';
-import 'package:valorant_shop_tracker/widgets/theme/theme_picker.dart';
+import 'package:agent_t/providers/pwa_controller.dart';
+import 'package:agent_t/services/app_icon_service.dart';
+import 'package:agent_t/services/riot_api_key_manager.dart';
+import 'package:agent_t/shell/app_shell.dart';
+import 'package:agent_t/widgets/app_icon_picker.dart';
+import 'package:agent_t/widgets/hud/hud.dart';
+import 'package:agent_t/widgets/my_shop_settings_card.dart';
+import 'package:agent_t/widgets/nav_order_editor.dart';
+import 'package:agent_t/widgets/pwa_cards.dart';
+import 'package:agent_t/widgets/remote_control_card.dart';
+import 'package:agent_t/widgets/theme/theme_picker.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});

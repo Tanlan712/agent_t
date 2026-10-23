@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/logic/eva_progress.dart';
-import 'package:valorant_shop_tracker/models/app_settings.dart';
-import 'package:valorant_shop_tracker/shell/app_shell.dart';
-import 'package:valorant_shop_tracker/widgets/theme/eva/eva_overlays.dart';
+import 'package:agent_t/logic/eva_progress.dart';
+import 'package:agent_t/models/app_settings.dart';
+import 'package:agent_t/shell/app_shell.dart';
+import 'package:agent_t/widgets/theme/eva/eva_overlays.dart';
 
 import '../app_harness.dart';
 import '../shell/app_shell_test.dart' show setWidth;

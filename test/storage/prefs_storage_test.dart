@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:valorant_shop_tracker/models/app_settings.dart';
-import 'package:valorant_shop_tracker/models/current_shop.dart';
-import 'package:valorant_shop_tracker/models/wishlist_item.dart';
-import 'package:valorant_shop_tracker/storage/settings_storage.dart';
-import 'package:valorant_shop_tracker/storage/shop_storage.dart';
-import 'package:valorant_shop_tracker/storage/wishlist_storage.dart';
+import 'package:agent_t/models/app_settings.dart';
+import 'package:agent_t/models/current_shop.dart';
+import 'package:agent_t/models/wishlist_item.dart';
+import 'package:agent_t/storage/settings_storage.dart';
+import 'package:agent_t/storage/shop_storage.dart';
+import 'package:agent_t/storage/wishlist_storage.dart';
 
 Future<SharedPreferences> prefsWith(Map<String, Object> values) async {
   SharedPreferences.setMockInitialValues(values);

@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:valorant_shop_tracker/models/riot_session.dart';
-import 'package:valorant_shop_tracker/services/match_client.dart';
-import 'package:valorant_shop_tracker/services/riot_auth.dart';
-import 'package:valorant_shop_tracker/services/riot_client.dart';
+import 'package:agent_t/models/riot_session.dart';
+import 'package:agent_t/services/match_client.dart';
+import 'package:agent_t/services/riot_auth.dart';
+import 'package:agent_t/services/riot_client.dart';
 
 import '../riot_fixtures.dart';
 

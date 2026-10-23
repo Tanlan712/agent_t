@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:valorant_shop_tracker/screens/match_history_page.dart';
-import 'package:valorant_shop_tracker/widgets/line_chart.dart';
+import 'package:agent_t/screens/match_history_page.dart';
+import 'package:agent_t/widgets/line_chart.dart';
 
 import '../app_harness.dart';
 import '../riot_fixtures.dart';

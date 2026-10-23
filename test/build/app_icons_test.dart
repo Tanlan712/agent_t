@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/services/app_icon_service.dart';
+import 'package:agent_t/services/app_icon_service.dart';
 
 /// 規格 2026-10-22-switchable-app-icons-design.md §2：每個 AppIconId 在各平台都有對應的入口與圖檔。
 void main() {
@@ -9,7 +9,7 @@ void main() {
   final manifest =
       File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
   final kotlin = File(
-          'android/app/src/main/kotlin/io/github/tanlan712/valorant_shop_tracker/MainActivity.kt')
+          'android/app/src/main/kotlin/io/github/tanlan712/agent_t/MainActivity.kt')
       .readAsStringSync();
   final swift = File('ios/Runner/AppDelegate.swift').readAsStringSync();
   final pbxproj =
