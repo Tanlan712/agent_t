@@ -69,20 +69,23 @@ void main() {
     await leave(tester, h);
   });
 
-  testWidgets('360 寬：對戰詳情不 overflow，計分板可橫向捲動，牌位點一下顯示名稱', (tester) async {
+  testWidgets('360 寬：對戰詳情不 overflow，計分板改成精簡列表，牌位點一下顯示名稱', (tester) async {
     setWidth(tester, 360);
     final h = await loggedIn(tester);
     await tester.runAsync(h.matchHistory.loadFirstPage);
     await tester.pumpWidget(h.wrap(home: const MatchDetailPage(matchId: 'm1')));
     await drain(tester);
     expect(tester.takeException(), isNull);
-    final table = find.byType(DataTable).first;
-    final scroll = find.ancestor(
-        of: table,
-        matching: find.byWidgetPredicate((w) =>
-            w is SingleChildScrollView &&
-            w.scrollDirection == Axis.horizontal));
-    expect(scroll, findsOneWidget);
+    // 手機寬度不用左右捲動：每位玩家一列，K/D/A 與 ACS 直接看得到。
+    expect(find.byType(DataTable), findsNothing);
+    expect(find.byKey(const ValueKey('team-compact-Blue')), findsOneWidget);
+    expect(find.byKey(const ValueKey('player-row-me')), findsOneWidget);
+    expect(find.text('20 / 12 / 4'), findsOneWidget);
+    expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('compact-stats-puuid-1')))
+            .data,
+        contains('ACS'));
     final rank = find.byKey(const ValueKey('rank-r1'));
     expect(tester.widget<Tooltip>(rank).triggerMode, TooltipTriggerMode.tap);
     await leave(tester, h);

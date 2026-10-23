@@ -89,8 +89,9 @@ class _WeaponsPageState extends State<WeaponsPage> {
                         trailing: Text('${section.weapons.length} 把',
                             style: TextStyle(color: AppColors.muted)),
                       ),
+                      // 手機直式也排 2 欄，卡片不會大到一頁只放一張。
                       ResponsiveGrid(
-                        minTileWidth: 200,
+                        minTileWidth: 150,
                         childAspectRatio: 1.4,
                         children: [
                           for (final w in section.weapons)

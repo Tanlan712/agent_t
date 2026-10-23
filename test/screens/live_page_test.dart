@@ -513,14 +513,14 @@ void main() {
       }
     });
 
-    testWidgets('Bento：地圖、模式、狀態三張 KPI 同一列，隊伍卡用 BentoGrid', (tester) async {
+    testWidgets('地圖、模式、狀態在同一列標題，隊伍卡用 BentoGrid', (tester) async {
       setWidth(tester, 1440);
       final h = await harness(tester, coreStatus: 200);
       await tester.pumpWidget(h.wrap(home: const LivePage()));
       await drain(tester);
       final ys = [
         for (final k in ['live-kpi-map', 'live-kpi-mode', 'live-kpi-state'])
-          tester.getTopLeft(find.byKey(ValueKey(k))).dy,
+          tester.getCenter(find.byKey(ValueKey(k))).dy,
       ];
       expect(ys.toSet().length, 1);
       expect(
@@ -531,14 +531,13 @@ void main() {
       await leave(tester, h);
     });
 
-    testWidgets('375 寬地圖、模式兩張 KPI 同一列', (tester) async {
+    testWidgets('375 寬地圖、模式在同一列', (tester) async {
       setWidth(tester, 375);
       final h = await harness(tester, coreStatus: 200);
       await tester.pumpWidget(h.wrap(home: const LivePage()));
       await drain(tester);
-      final map = tester.getTopLeft(find.byKey(const ValueKey('live-kpi-map')));
-      final mode =
-          tester.getTopLeft(find.byKey(const ValueKey('live-kpi-mode')));
+      final map = tester.getCenter(find.byKey(const ValueKey('live-kpi-map')));
+      final mode = tester.getCenter(find.byKey(const ValueKey('live-kpi-mode')));
       expect(mode.dy, map.dy);
       await leave(tester, h);
     });

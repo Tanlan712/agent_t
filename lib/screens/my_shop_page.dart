@@ -32,15 +32,16 @@ import 'details/bundle_detail_page.dart'
 /// 商店造型卡片的寬高比。
 const _cardAspect = 0.78;
 
-String formatRemaining(Duration d) =>
-    '剩餘 ${d.inHours} 小時 ${d.inMinutes % 60} 分';
+/// 剩餘時間：一天以上顯示天與小時（例如夜市「剩餘 6 天 22 小時」），否則小時與分。
+String formatRemaining(Duration d) => d.inDays > 0
+    ? '剩餘 ${d.inDays} 天 ${d.inHours % 24} 小時'
+    : '剩餘 ${d.inHours} 小時 ${d.inMinutes % 60} 分';
 
 String _compact(Duration d) => '${d.inHours} 小時 ${d.inMinutes % 60} 分';
 
 /// 組合包的剩餘時間：一天以上顯示天與小時。
 String bundleRemaining(Duration d) {
   if (d.isNegative) return '已結束，請更新';
-  if (d.inDays > 0) return '剩餘 ${d.inDays} 天 ${d.inHours % 24} 小時';
   return formatRemaining(d);
 }
 

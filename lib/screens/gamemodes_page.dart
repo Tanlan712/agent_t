@@ -79,6 +79,8 @@ class _GamemodesPageState extends State<GamemodesPage> {
               : ResponsiveGridView.builder(
                   minTileWidth: 260,
                   childAspectRatio: 1.8,
+                  // 固定高度：手機一欄時不會因為等比例拉高而留下大片空白。
+                  mainAxisExtent: 130,
                   itemCount: _gamemodes.length,
                   itemBuilder: (context, index) {
                     final gamemode = _gamemodes[index];

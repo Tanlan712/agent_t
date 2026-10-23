@@ -27,6 +27,7 @@ import '../services/remote_client.dart';
 import '../services/riot_client.dart' show ItemTypes;
 import '../shell/app_shell.dart';
 import '../shell/responsive_grid.dart';
+import '../theme/app_style.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
 import '../widgets/combat_stats.dart';
@@ -263,16 +264,37 @@ class _LivePageState extends State<LivePage> {
             child: Text(e, style: TextStyle(color: AppColors.error)),
           ),
         const SizedBox(height: 16),
-        ResponsiveGrid(
-          minTileWidth: 260,
-          childAspectRatio: 2.6,
-          // 卡片下半是戰鬥數據，固定高度讓窄欄換行時也放得下。
-          mainAxisExtent: 236,
-          children: [
+        // 只放得下一欄（手機）時依內容決定高度，不留大片空白；
+        // 多欄時固定高度，讓同一列的卡片對齊。
+        LayoutBuilder(builder: (context, c) {
+          final style = context.appStyle;
+          final single = columnsFor(c.maxWidth, 260 * style.tileWidthFactor,
+                  spacing: style.gridSpacing) ==
+              1;
+          final cards = [
             for (final m in party.members)
-              _MemberCard(member: m, live: _live, ref: ref),
-          ],
-        ),
+              _MemberCard(
+                  member: m, live: _live, ref: ref, fixedHeight: !single),
+          ];
+          if (single) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final (i, card) in cards.indexed) ...[
+                  if (i > 0) SizedBox(height: style.gridSpacing),
+                  card,
+                ],
+              ],
+            );
+          }
+          return ResponsiveGrid(
+            minTileWidth: 260,
+            childAspectRatio: 2.6,
+            // 卡片下半是戰鬥數據，固定高度讓窄欄換行時也放得下。
+            mainAxisExtent: 236,
+            children: cards,
+          );
+        }),
         const SizedBox(height: 24),
         Center(
           child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊（包含隱藏名稱的成員）。',
@@ -361,8 +383,15 @@ class _MemberCard extends StatelessWidget {
   final LivePartyProvider live;
   final MatchReferenceProvider ref;
 
+  /// 在固定高度的網格裡（多欄）時，戰鬥數據放不下的部分裁掉；
+  /// 單欄時依內容決定高度。
+  final bool fixedHeight;
+
   const _MemberCard(
-      {required this.member, required this.live, required this.ref});
+      {required this.member,
+      required this.live,
+      required this.ref,
+      this.fixedHeight = true});
 
   void _open(BuildContext context) {
     final nav = Navigator.of(context);
@@ -453,13 +482,19 @@ class _MemberCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const NeverScrollableScrollPhysics(),
-                child: CombatStatsView(
-                    puuid: member.puuid, games: memberStatsGames, dense: true),
-              ),
-            ),
+            if (fixedHeight)
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  child: CombatStatsView(
+                      puuid: member.puuid,
+                      games: memberStatsGames,
+                      dense: true),
+                ),
+              )
+            else
+              CombatStatsView(
+                  puuid: member.puuid, games: memberStatsGames, dense: true),
           ]),
         ),
       ),
@@ -489,20 +524,27 @@ class _MatchView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16),
       children: [
-        KpiStrip(tiles: [
-          KpiTile(
-              key: const ValueKey('live-kpi-map'),
-              label: '地圖',
-              value: ref.map(match.mapId).name),
-          KpiTile(
-              key: const ValueKey('live-kpi-mode'),
-              label: '模式',
-              value: match.queueId.isEmpty ? '—' : queueName(match.queueId)),
-          KpiTile(
-              key: const ValueKey('live-kpi-state'),
-              label: '狀態',
-              value: match.state == 'IN_PROGRESS' ? '進行中' : match.state),
-        ]),
+        // 與選角畫面相同的一列標題（手機上不會排成兩列大格子）。
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(ref.map(match.mapId).name,
+                    key: const ValueKey('live-kpi-map'),
+                    style: Theme.of(context).textTheme.titleLarge),
+                Text(match.queueId.isEmpty ? '—' : queueName(match.queueId),
+                    key: const ValueKey('live-kpi-mode')),
+                Text(match.state == 'IN_PROGRESS' ? '進行中' : match.state,
+                    key: const ValueKey('live-kpi-state'),
+                    style: TextStyle(color: AppColors.owned)),
+              ],
+            ),
+          ),
+        ),
         if (remote case final r?) ...[
           const SizedBox(height: 16),
           r,
@@ -645,47 +687,52 @@ class _PlayerRow extends StatelessWidget {
                         child: SkinIcon(url: agent.iconUrl)),
                   ),
                   const SizedBox(width: 12),
+                  // 名稱、標籤與等級放不下時換行，不會和最近幾場重疊。
                   Expanded(
-                    child: Row(
-                      children: [
-                        Flexible(
-                          child: Text(name,
-                              key: ValueKey('live-name-${player.puuid}'),
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  fontWeight: player.isMe
-                                      ? FontWeight.bold
-                                      : FontWeight.normal)),
-                        ),
-                        // 之前同場打過的玩家（使用者決定 2026-10-23）。
-                        if (!player.isMe)
-                          EncounterTag(puuid: player.puuid, matchId: matchId),
-                        // 使用者要求：對局 10 人都判斷（包括自己），教練除外。
-                        if (!player.isCoach)
-                          _SuspicionTag(
-                              puuid: player.puuid,
-                              level: player.level,
-                              seasonWins: player.seasonWins,
-                              tier: tierId,
-                              queue: queue,
-                              rules: rules),
-                        // 實測隱藏等級時 Riot 直接給 0，不顯示以免誤導。
-                        if (player.level > 0) ...[
-                          const SizedBox(width: 6),
-                          Text('Lv ${player.level}',
-                              key: ValueKey('live-level-${player.puuid}'),
-                              style: TextStyle(
-                                  color: AppColors.muted, fontSize: 12)),
+                    child: LayoutBuilder(
+                      builder: (context, nc) => Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          ConstrainedBox(
+                            constraints: BoxConstraints(maxWidth: nc.maxWidth),
+                            child: Text(name,
+                                key: ValueKey('live-name-${player.puuid}'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    fontWeight: player.isMe
+                                        ? FontWeight.bold
+                                        : FontWeight.normal)),
+                          ),
+                          // 之前同場打過的玩家（使用者決定 2026-10-23）。
+                          if (!player.isMe)
+                            EncounterTag(puuid: player.puuid, matchId: matchId),
+                          // 使用者要求：對局 10 人都判斷（包括自己），教練除外。
+                          if (!player.isCoach)
+                            _SuspicionTag(
+                                puuid: player.puuid,
+                                level: player.level,
+                                seasonWins: player.seasonWins,
+                                tier: tierId,
+                                queue: queue,
+                                rules: rules),
+                          // 實測隱藏等級時 Riot 直接給 0，不顯示以免誤導。
+                          if (player.level > 0)
+                            Text('Lv ${player.level}',
+                                key: ValueKey('live-level-${player.puuid}'),
+                                style: TextStyle(
+                                    color: AppColors.muted, fontSize: 12)),
+                          if (player.isCoach)
+                            Text('教練',
+                                style: TextStyle(
+                                    color: AppColors.muted, fontSize: 12)),
                         ],
-                        if (player.isCoach) ...[
-                          const SizedBox(width: 6),
-                          Text('教練',
-                              style: TextStyle(
-                                  color: AppColors.muted, fontSize: 12)),
-                        ],
-                      ],
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   if (!narrow && form != null) form,
                 ],
               );
@@ -921,38 +968,45 @@ class _PregameRow extends StatelessWidget {
                           fontSize: 12,
                           color: locked ? AppColors.owned : AppColors.muted)),
                 ),
+                // 名稱、標籤與等級放不下時換行，不會和最近幾場重疊。
                 Expanded(
-                  child: Row(
-                    children: [
-                      Flexible(
-                        child: Text(name,
-                            key: ValueKey('live-name-${player.puuid}'),
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                fontWeight: player.isMe
-                                    ? FontWeight.bold
-                                    : FontWeight.normal)),
-                      ),
-                      if (!player.isMe)
-                        EncounterTag(puuid: player.puuid, matchId: matchId),
-                      if (!player.isMe)
-                        _SuspicionTag(
-                            puuid: player.puuid,
-                            level: player.level,
-                            seasonWins: player.seasonWins,
-                            tier: tierId,
-                            queue: queue,
-                            rules: rules),
-                      if (player.level > 0) ...[
-                        const SizedBox(width: 6),
-                        Text('Lv ${player.level}',
-                            key: ValueKey('live-level-${player.puuid}'),
-                            style: TextStyle(
-                                color: AppColors.muted, fontSize: 12)),
+                  child: LayoutBuilder(
+                    builder: (context, nc) => Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: nc.maxWidth),
+                          child: Text(name,
+                              key: ValueKey('live-name-${player.puuid}'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontWeight: player.isMe
+                                      ? FontWeight.bold
+                                      : FontWeight.normal)),
+                        ),
+                        if (!player.isMe)
+                          EncounterTag(puuid: player.puuid, matchId: matchId),
+                        if (!player.isMe)
+                          _SuspicionTag(
+                              puuid: player.puuid,
+                              level: player.level,
+                              seasonWins: player.seasonWins,
+                              tier: tierId,
+                              queue: queue,
+                              rules: rules),
+                        if (player.level > 0)
+                          Text('Lv ${player.level}',
+                              key: ValueKey('live-level-${player.puuid}'),
+                              style: TextStyle(
+                                  color: AppColors.muted, fontSize: 12)),
                       ],
-                    ],
+                    ),
                   ),
                 ),
+                if (!narrow) const SizedBox(width: 8),
                 if (!narrow) form,
               ],
             );
@@ -1099,30 +1153,28 @@ class _SuspicionTag extends StatelessWidget {
     if (!s.any) return const SizedBox.shrink();
     final label = s.label;
     final detail = '${s.detail}（依公開數據推測，可能誤判）';
-    return Padding(
-      padding: const EdgeInsets.only(left: 6),
-      // 滑鼠移上去看提示；手機點一下開對話框看完整原因。
-      child: Tooltip(
-        key: ValueKey('sus-$puuid'),
-        message: detail,
-        child: InkWell(
-          key: ValueKey('sus-tap-$puuid'),
-          onTap: () => showDialog<void>(
-            context: context,
-            builder: (c) => AlertDialog(
-              title: Text(label),
-              content: Text(detail),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(c), child: const Text('關閉')),
-              ],
-            ),
+    // 放在名稱旁的 Wrap 裡，間距由 Wrap 決定。
+    // 滑鼠移上去看提示；手機點一下開對話框看完整原因。
+    return Tooltip(
+      key: ValueKey('sus-$puuid'),
+      message: detail,
+      child: InkWell(
+        key: ValueKey('sus-tap-$puuid'),
+        onTap: () => showDialog<void>(
+          context: context,
+          builder: (c) => AlertDialog(
+            title: Text(label),
+            content: Text(detail),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(c), child: const Text('關閉')),
+            ],
           ),
-          child: StatusChip(
-              label: label,
-              color: s.high ? AppColors.loss : AppColors.warn,
-              icon: Icons.warning_amber),
         ),
+        child: StatusChip(
+            label: label,
+            color: s.high ? AppColors.loss : AppColors.warn,
+            icon: Icons.warning_amber),
       ),
     );
   }

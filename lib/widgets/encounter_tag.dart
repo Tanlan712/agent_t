@@ -59,40 +59,35 @@ class EncounterTag extends StatelessWidget {
       '',
       '（依這台裝置看過的對戰紀錄）',
     ].join('\n');
-    // 和名稱、其他標籤共用一列：窄螢幕放不下時等比例縮小，不 overflow。
-    return Flexible(
-        child: Padding(
-      padding: const EdgeInsets.only(left: 6),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.centerLeft,
-        // 滑鼠移上去看提示；手機點一下開對話框。
-        child: Tooltip(
-          key: ValueKey('met-$puuid'),
-          message: detail,
-          child: InkWell(
-            key: ValueKey('met-tap-$puuid'),
-            onTap: () => showDialog<void>(
-              context: context,
-              builder: (c) => AlertDialog(
-                title: Text(label),
-                content: Text(detail),
-                actions: [
-                  TextButton(
-                      onPressed: () => Navigator.pop(c),
-                      child: const Text('關閉')),
-                ],
-              ),
+    // 放在名稱旁的 Wrap 裡：放不下時整個換到下一行，不 overflow。
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      // 滑鼠移上去看提示；手機點一下開對話框。
+      child: Tooltip(
+        key: ValueKey('met-$puuid'),
+        message: detail,
+        child: InkWell(
+          key: ValueKey('met-tap-$puuid'),
+          onTap: () => showDialog<void>(
+            context: context,
+            builder: (c) => AlertDialog(
+              title: Text(label),
+              content: Text(detail),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(c), child: const Text('關閉')),
+              ],
             ),
-            child: StatusChip(
-                label: label,
-                color: s.enemyGames > 0 && s.allyGames == 0
-                    ? AppColors.loss
-                    : AppColors.info,
-                icon: Icons.history),
           ),
+          child: StatusChip(
+              label: label,
+              color: s.enemyGames > 0 && s.allyGames == 0
+                  ? AppColors.loss
+                  : AppColors.info,
+              icon: Icons.history),
         ),
       ),
-    ));
+    );
   }
 }

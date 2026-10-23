@@ -379,23 +379,38 @@ class _RankHeader extends StatelessWidget {
     return PanelCard(
       child: Padding(
         padding: EdgeInsets.zero,
-        child: Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        // 牌位一列、最近 RR 另起一列，窄欄時不會把數字拆到奇怪的位置。
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-                width: 40, height: 40, child: SkinIcon(url: tier?.iconUrl)),
-            Text(tier?.name ?? '未定級',
-                style: Theme.of(context).textTheme.titleLarge),
-            if (rank != null) Text('${rank.rr} RR'),
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: SkinIcon(url: tier?.iconUrl)),
+                Text(tier?.name ?? '未定級',
+                    style: Theme.of(context).textTheme.titleLarge),
+                if (rank != null) Text('${rank.rr} RR'),
+              ],
+            ),
             if (recentRr.isNotEmpty) ...[
-              Text('最近：', style: TextStyle(color: AppColors.muted)),
-              for (final rr in recentRr)
-                Text(formatRr(rr),
-                    style: TextStyle(
-                        color: rr >= 0 ? AppColors.owned : AppColors.error,
-                        fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 10,
+                runSpacing: 4,
+                children: [
+                  Text('最近 RR', style: TextStyle(color: AppColors.muted)),
+                  for (final rr in recentRr)
+                    Text(formatRr(rr),
+                        style: AppText.tabular(TextStyle(
+                            color: rr >= 0 ? AppColors.owned : AppColors.error,
+                            fontWeight: FontWeight.bold))),
+                ],
+              ),
             ],
           ],
         ),

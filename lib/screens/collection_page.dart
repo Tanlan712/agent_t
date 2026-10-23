@@ -305,7 +305,7 @@ class _LoadoutTab extends StatelessWidget {
             (w) => w.weapon.category, (w) => w.weapon.categoryText)) ...[
           SectionHeader(title: label),
           ResponsiveGrid(
-            minTileWidth: 200,
+            minTileWidth: 150,
             childAspectRatio: 1.6,
             mainAxisExtent: 150,
             children: [for (final w in list) _gun(w)],
@@ -423,7 +423,7 @@ class _WeaponGrid extends StatelessWidget {
                   style: TextStyle(color: AppColors.muted)),
             ),
             ResponsiveGrid(
-              minTileWidth: 200,
+              minTileWidth: 150,
               childAspectRatio: 1.6,
               mainAxisExtent: 140,
               children: [for (final w in list) _card(context, w)],

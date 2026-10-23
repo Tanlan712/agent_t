@@ -155,9 +155,10 @@ class _MapsPageState extends State<MapsPage> {
                     if (coordinates != null)
                       Text(
                         coordinates,
+                        // 疊在深色漸層上：和地圖名稱一樣用白色，淺色主題也看得清楚。
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.text,
+                          color: Colors.white.withOpacity(0.75),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

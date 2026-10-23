@@ -26,6 +26,8 @@ void main() {
       expect(find.byKey(const ValueKey('round-detail-0')), findsOneWidget);
       expect(find.textContaining('我方勝・清光'), findsOneWidget);
       expect(find.textContaining('我方裝備 11700（全起）'), findsOneWidget);
+      await tester.ensureVisible(find.byKey(const ValueKey('round-chip-2')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('round-chip-2')));
       await tester.pumpAndSettle();
       expect(find.textContaining('敵方勝・爆炸'), findsOneWidget);

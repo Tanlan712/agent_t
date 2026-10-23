@@ -7,6 +7,7 @@ import '../models/match_models.dart';
 import '../providers/match_history_provider.dart';
 import '../providers/match_reference_provider.dart';
 import '../providers/recent_form_loader.dart';
+import '../shell/layout.dart' show contentMaxWidth;
 import '../theme/app_theme.dart';
 import '../widgets/match_extras.dart';
 import '../widgets/recent_form_cell.dart';
@@ -134,78 +135,88 @@ class _DetailBody extends StatelessWidget {
             won: id == s.myTeamId ? s.won : (s.won == null ? null : !s.won!)),
     ];
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Wrap(
-              spacing: 16,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
+    // 寬螢幕與其他頁面一樣限制內容寬度，置中顯示。
+    return LayoutBuilder(
+        builder: (context, c) => ListView(
+              padding: EdgeInsets.symmetric(
+                  horizontal: c.maxWidth > contentMaxWidth + 32
+                      ? (c.maxWidth - contentMaxWidth) / 2
+                      : 16,
+                  vertical: 16),
               children: [
-                Text(ref.map(s.mapId).name,
-                    style: Theme.of(context).textTheme.titleLarge),
-                Text(queueName(s.queueId)),
-                Text('${resultLabel(s.won)}  ${s.myScore} : ${s.enemyScore}',
-                    style: TextStyle(
-                        color: resultColor(s.won),
-                        fontWeight: FontWeight.bold)),
-                Text('${(s.durationMs / 60000).round()} 分鐘',
-                    style: TextStyle(color: AppColors.muted)),
-                Text(formatMatchTime(s.startTime),
-                    style: TextStyle(color: AppColors.muted)),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        // 每隊 12 欄，並排會被截斷，所以一律上下排列、各自撐滿寬度。
-        for (var i = 0; i < tables.length; i++) ...[
-          if (i > 0) const SizedBox(height: 16),
-          tables[i],
-        ],
-        // 賽後資料（match-details 的 roundResults），不送額外請求。
-        if (detail.rounds.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          MatchHighlightsCard(detail: detail, puuid: focus),
-          const SizedBox(height: 16),
-          RoundTimeline(detail: detail, ref: ref),
-        ],
-        if (heat.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          KillHeatmap(points: heat, minimap: ref.minimap(s.mapId)),
-        ],
-        if (weapons.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('這場的武器',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 12),
-                  WeaponStatsTable(stats: weapons, ref: ref),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Wrap(
+                      spacing: 16,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(ref.map(s.mapId).name,
+                            style: Theme.of(context).textTheme.titleLarge),
+                        Text(queueName(s.queueId)),
+                        Text(
+                            '${resultLabel(s.won)}  ${s.myScore} : ${s.enemyScore}',
+                            style: TextStyle(
+                                color: resultColor(s.won),
+                                fontWeight: FontWeight.bold)),
+                        Text('${(s.durationMs / 60000).round()} 分鐘',
+                            style: TextStyle(color: AppColors.muted)),
+                        Text(formatMatchTime(s.startTime),
+                            style: TextStyle(color: AppColors.muted)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // 每隊 12 欄，並排會被截斷，所以一律上下排列、各自撐滿寬度。
+                for (var i = 0; i < tables.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 16),
+                  tables[i],
                 ],
-              ),
-            ),
-          ),
-        ],
-        const SizedBox(height: 24),
-        Center(
-          child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊',
-              style: TextStyle(color: AppColors.muted, fontSize: 12)),
-        ),
-      ],
-    );
+                // 賽後資料（match-details 的 roundResults），不送額外請求。
+                if (detail.rounds.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  MatchHighlightsCard(detail: detail, puuid: focus),
+                  const SizedBox(height: 16),
+                  RoundTimeline(detail: detail, ref: ref),
+                ],
+                if (heat.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  KillHeatmap(points: heat, minimap: ref.minimap(s.mapId)),
+                ],
+                if (weapons.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text('這場的武器',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 12),
+                          WeaponStatsTable(stats: weapons, ref: ref),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                Center(
+                  child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊',
+                      style: TextStyle(color: AppColors.muted, fontSize: 12)),
+                ),
+              ],
+            ));
   }
 }
+
+/// 計分板改用精簡列表的寬度（手機直式）。
+const compactScoreboardWidth = 600.0;
 
 class _TeamTable extends StatelessWidget {
   final String teamId;
@@ -255,8 +266,30 @@ class _TeamTable extends StatelessWidget {
   }
 
   /// 數字欄：等寬數字，方便對齊。
-  DataCell _cell(String key, String text) =>
-      DataCell(Text(text, key: ValueKey(key), style: AppText.tabular(null)));
+  DataCell _cell(String key, String text) => DataCell(_fixed(_columnOf(key),
+      Text(text, key: ValueKey(key), style: AppText.tabular(null))));
+
+  static String _columnOf(String key) => switch (key.split('-').first) {
+        'rating' => '表現分數',
+        'kd' => 'K/D',
+        _ => 'ACS',
+      };
+
+  /// 固定欄寬，讓我方與敵方兩張表的欄位上下對齊。
+  static const _widths = {
+    'Riot ID': 320.0,
+    '表現分數': 64.0,
+    'K/D/A': 96.0,
+    'K/D': 48.0,
+    'ACS': 48.0,
+    '爆頭率': 52.0,
+  };
+
+  static Widget _fixed(String column, Widget child) =>
+      switch (_widths[column]) {
+        final w? => SizedBox(width: w, child: child),
+        null => child,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -278,100 +311,241 @@ class _TeamTable extends StatelessWidget {
                     color: resultColor(won), fontWeight: FontWeight.bold)),
           ),
           LayoutBuilder(
-            builder: (context, c) => SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minWidth: c.maxWidth),
-                child: DataTable(
-                  columnSpacing: 16,
-                  headingRowHeight: 36,
-                  columns: [
-                    for (final h in _headers)
-                      DataColumn(label: Text(h, style: muted))
-                  ],
-                  rows: [
-                    for (final (i, p) in players.indexed)
-                      DataRow(
-                        // 自己那一列較亮；其餘奇數列用淡斑馬紋。
-                        color: p.isMe
-                            ? WidgetStatePropertyAll(AppColors.surfaceHigh)
-                            : i.isOdd
-                                ? WidgetStatePropertyAll(
-                                    AppColors.surfaceHigh.withOpacity(0.4))
-                                : null,
-                        cells: [
-                          DataCell(Row(
-                            mainAxisSize: MainAxisSize.min,
+            builder: (context, c) => c.maxWidth < compactScoreboardWidth
+                ? _compactList(context)
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minWidth: c.maxWidth),
+                      child: DataTable(
+                        columnSpacing: 16,
+                        headingRowHeight: 36,
+                        columns: [
+                          for (final h in _headers)
+                            DataColumn(label: _fixed(h, Text(h, style: muted)))
+                        ],
+                        rows: [
+                          for (final (i, p) in players.indexed)
+                            DataRow(
+                              // 自己那一列較亮；其餘奇數列用淡斑馬紋。
+                              color: p.isMe
+                                  ? WidgetStatePropertyAll(
+                                      AppColors.surfaceHigh)
+                                  : i.isOdd
+                                      ? WidgetStatePropertyAll(AppColors
+                                          .surfaceHigh
+                                          .withOpacity(0.4))
+                                      : null,
+                              cells: [
+                                DataCell(Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // 牌位與特務只顯示圖示，名稱放在提示裡。
+                                    _RankIcon(
+                                        key: ValueKey('rank-icon-${p.puuid}'),
+                                        player: p,
+                                        seasonId: seasonId,
+                                        ref: ref),
+                                    const SizedBox(width: 6),
+                                    SizedBox(width: 6, child: _partyDot(p)),
+                                    const SizedBox(width: 6),
+                                    Tooltip(
+                                      triggerMode: TooltipTriggerMode.tap,
+                                      message: ref.agent(p.agentId).name,
+                                      child: SizedBox(
+                                          width: 28,
+                                          height: 28,
+                                          child: SkinIcon(
+                                              url: ref
+                                                  .agent(p.agentId)
+                                                  .iconUrl)),
+                                    ),
+                                  ],
+                                )),
+                                DataCell(
+                                  _fixed(
+                                      'Riot ID',
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Flexible(
+                                              child: Text(p.riotId,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  key: p.isMe
+                                                      ? const ValueKey(
+                                                          'player-row-me')
+                                                      : null,
+                                                  style: TextStyle(
+                                                      fontWeight: p.isMe
+                                                          ? FontWeight.bold
+                                                          : FontWeight
+                                                              .normal))),
+                                          const SizedBox(width: 6),
+                                          Text('Lv ${p.accountLevel}',
+                                              key: ValueKey('level-${p.puuid}'),
+                                              style: TextStyle(
+                                                  color: AppColors.muted,
+                                                  fontSize: 12)),
+                                          if (p.mvp != MvpKind.none) ...[
+                                            const SizedBox(width: 6),
+                                            MvpChip(
+                                                key: ValueKey('mvp-${p.puuid}'),
+                                                kind: p.mvp),
+                                          ],
+                                        ],
+                                      )),
+                                  onTap: () => _open(context, p),
+                                ),
+                                _cell(
+                                    'rating-${p.puuid}',
+                                    p.rating == null
+                                        ? '—'
+                                        : '${p.rating!.round()}'),
+                                DataCell(_fixed(
+                                    'K/D/A',
+                                    Text(
+                                        '${p.kills} / ${p.deaths} / ${p.assists}',
+                                        style: AppText.tabular(null)))),
+                                _cell('kd-${p.puuid}', p.kd.toStringAsFixed(2)),
+                                _cell('acs-${p.puuid}', '${p.acs}'),
+                                DataCell(_fixed(
+                                    '爆頭率',
+                                    Text(p.headshotPercent == null
+                                        ? '—'
+                                        : '${p.headshotPercent!.round()}%'))),
+                                DataCell(RecentFormCell(
+                                    key: ValueKey('form-${p.puuid}'),
+                                    puuid: p.puuid,
+                                    queue: queueId)),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 窄螢幕：每位玩家一列（圖示、名稱、K/D/A 與主要數字），不必左右捲動。
+  Widget _compactList(BuildContext context) {
+    final muted = TextStyle(color: AppColors.muted, fontSize: 12);
+    return Column(
+      key: ValueKey('team-compact-$teamId'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final (i, p) in players.indexed)
+          Material(
+            color: p.isMe
+                ? AppColors.surfaceHigh
+                : i.isOdd
+                    ? AppColors.surfaceHigh.withOpacity(0.4)
+                    : Colors.transparent,
+            child: InkWell(
+              onTap: () => _open(context, p),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: Row(
+                  children: [
+                    _RankIcon(
+                        key: ValueKey('rank-icon-${p.puuid}'),
+                        player: p,
+                        seasonId: seasonId,
+                        ref: ref),
+                    const SizedBox(width: 4),
+                    SizedBox(width: 6, child: _partyDot(p)),
+                    const SizedBox(width: 4),
+                    Tooltip(
+                      triggerMode: TooltipTriggerMode.tap,
+                      message: ref.agent(p.agentId).name,
+                      child: SizedBox(
+                          width: 32,
+                          height: 32,
+                          child: SkinIcon(url: ref.agent(p.agentId).iconUrl)),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              // 牌位與特務只顯示圖示，名稱放在提示裡。
-                              _RankIcon(
-                                  key: ValueKey('rank-icon-${p.puuid}'),
-                                  player: p,
-                                  seasonId: seasonId,
-                                  ref: ref),
-                              const SizedBox(width: 6),
-                              SizedBox(width: 6, child: _partyDot(p)),
-                              const SizedBox(width: 6),
-                              Tooltip(
-                                triggerMode: TooltipTriggerMode.tap,
-                                message: ref.agent(p.agentId).name,
-                                child: SizedBox(
-                                    width: 28,
-                                    height: 28,
-                                    child: SkinIcon(
-                                        url: ref.agent(p.agentId).iconUrl)),
-                              ),
-                            ],
-                          )),
-                          DataCell(
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(p.riotId,
+                              Flexible(
+                                child: Text(p.riotId,
                                     key: p.isMe
                                         ? const ValueKey('player-row-me')
                                         : null,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                         fontWeight: p.isMe
                                             ? FontWeight.bold
                                             : FontWeight.normal)),
-                                const SizedBox(width: 6),
-                                Text('Lv ${p.accountLevel}',
-                                    key: ValueKey('level-${p.puuid}'),
-                                    style: TextStyle(
-                                        color: AppColors.muted, fontSize: 12)),
-                                if (p.mvp != MvpKind.none) ...[
-                                  const SizedBox(width: 6),
-                                  MvpChip(
-                                      key: ValueKey('mvp-${p.puuid}'),
-                                      kind: p.mvp),
-                                ],
+                              ),
+                              if (p.mvp != MvpKind.none) ...[
+                                const SizedBox(width: 4),
+                                // 窄螢幕只放獎盃圖示，點一下顯示是全場或隊伍 MVP。
+                                Tooltip(
+                                  key: ValueKey('mvp-${p.puuid}'),
+                                  triggerMode: TooltipTriggerMode.tap,
+                                  message: p.mvp == MvpKind.match
+                                      ? '全場 MVP'
+                                      : '隊伍 MVP',
+                                  child: Icon(Icons.emoji_events,
+                                      size: 16,
+                                      color: p.mvp == MvpKind.match
+                                          ? AppColors.warn
+                                          : AppColors.info),
+                                ),
                               ],
-                            ),
-                            onTap: () => _open(context, p),
+                            ],
                           ),
-                          _cell('rating-${p.puuid}',
-                              p.rating == null ? '—' : '${p.rating!.round()}'),
-                          DataCell(
-                              Text('${p.kills} / ${p.deaths} / ${p.assists}')),
-                          _cell('kd-${p.puuid}', p.kd.toStringAsFixed(2)),
-                          _cell('acs-${p.puuid}', '${p.acs}'),
-                          DataCell(Text(p.headshotPercent == null
-                              ? '—'
-                              : '${p.headshotPercent!.round()}%')),
-                          DataCell(RecentFormCell(
-                              key: ValueKey('form-${p.puuid}'),
-                              puuid: p.puuid,
-                              queue: queueId)),
+                          const SizedBox(height: 2),
+                          Text(
+                            [
+                              'ACS ${p.acs}',
+                              'K/D ${p.kd.toStringAsFixed(2)}',
+                              if (p.headshotPercent != null)
+                                '爆頭 ${p.headshotPercent!.round()}%',
+                              if (p.rating != null) '表現 ${p.rating!.round()}',
+                              // 等級最不重要，放最後：放不下時先被省略。
+                              'Lv ${p.accountLevel}',
+                            ].join(' · '),
+                            key: ValueKey('compact-stats-${p.puuid}'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppText.tabular(muted),
+                          ),
+                          const SizedBox(height: 4),
+                          // 最近 5 場較寬：放不下時等比例縮小，不 overflow。
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: RecentFormCell(
+                                  key: ValueKey('form-${p.puuid}'),
+                                  puuid: p.puuid,
+                                  queue: queueId),
+                            ),
+                          ),
                         ],
                       ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('${p.kills} / ${p.deaths} / ${p.assists}',
+                        style: AppText.tabular(const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w600))),
                   ],
                 ),
               ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 

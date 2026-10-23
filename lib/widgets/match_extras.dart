@@ -252,56 +252,63 @@ class _RoundDetail extends StatelessWidget {
               style: AppText.tabular(muted)),
         ]),
         const SizedBox(height: 8),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            columnSpacing: 16,
-            headingRowHeight: 32,
-            dataRowMinHeight: 36,
-            dataRowMaxHeight: 40,
-            columns: [
-              for (final h in ['玩家', '武器', '裝備價值', '花費', '剩餘', '擊殺', '傷害'])
-                DataColumn(label: Text(h, style: muted)),
-            ],
-            rows: [
-              for (final team in teamIds)
-                for (final p in d.teams[team]!)
-                  if (round.players[p.puuid] case final rp?)
-                    DataRow(
-                      color: p.isMe
-                          ? WidgetStatePropertyAll(AppColors.surfaceHigh)
-                          : null,
-                      cells: [
-                        DataCell(Row(mainAxisSize: MainAxisSize.min, children: [
-                          Container(
-                              width: 4,
-                              height: 20,
-                              color: team == myTeam
-                                  ? AppColors.win
-                                  : AppColors.loss),
-                          const SizedBox(width: 6),
-                          SizedBox(
-                              width: 22,
-                              height: 22,
-                              child:
-                                  SkinIcon(url: ref.agent(p.agentId).iconUrl)),
-                          const SizedBox(width: 6),
-                          Text(_short(p.riotId)),
-                        ])),
-                        DataCell(Text(ref.weapon(rp.weapon)?.name ?? '—')),
-                        DataCell(Text('${rp.loadout}',
-                            style: AppText.tabular(null))),
-                        DataCell(
-                            Text('${rp.spent}', style: AppText.tabular(null))),
-                        DataCell(Text('${rp.remaining}',
-                            style: AppText.tabular(null))),
-                        DataCell(
-                            Text('${rp.kills}', style: AppText.tabular(null))),
-                        DataCell(
-                            Text('${rp.damage}', style: AppText.tabular(null))),
-                      ],
-                    ),
-            ],
+        // 寬螢幕撐滿卡片寬度；窄螢幕放不下時可以左右捲動。
+        LayoutBuilder(
+          builder: (context, c) => SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: c.maxWidth),
+              child: DataTable(
+                columnSpacing: 16,
+                headingRowHeight: 32,
+                dataRowMinHeight: 36,
+                dataRowMaxHeight: 40,
+                columns: [
+                  for (final h in ['玩家', '武器', '裝備價值', '花費', '剩餘', '擊殺', '傷害'])
+                    DataColumn(label: Text(h, style: muted)),
+                ],
+                rows: [
+                  for (final team in teamIds)
+                    for (final p in d.teams[team]!)
+                      if (round.players[p.puuid] case final rp?)
+                        DataRow(
+                          color: p.isMe
+                              ? WidgetStatePropertyAll(AppColors.surfaceHigh)
+                              : null,
+                          cells: [
+                            DataCell(
+                                Row(mainAxisSize: MainAxisSize.min, children: [
+                              Container(
+                                  width: 4,
+                                  height: 20,
+                                  color: team == myTeam
+                                      ? AppColors.win
+                                      : AppColors.loss),
+                              const SizedBox(width: 6),
+                              SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: SkinIcon(
+                                      url: ref.agent(p.agentId).iconUrl)),
+                              const SizedBox(width: 6),
+                              Text(_short(p.riotId)),
+                            ])),
+                            DataCell(Text(ref.weapon(rp.weapon)?.name ?? '—')),
+                            DataCell(Text('${rp.loadout}',
+                                style: AppText.tabular(null))),
+                            DataCell(Text('${rp.spent}',
+                                style: AppText.tabular(null))),
+                            DataCell(Text('${rp.remaining}',
+                                style: AppText.tabular(null))),
+                            DataCell(Text('${rp.kills}',
+                                style: AppText.tabular(null))),
+                            DataCell(Text('${rp.damage}',
+                                style: AppText.tabular(null))),
+                          ],
+                        ),
+                ],
+              ),
+            ),
           ),
         ),
       ],
