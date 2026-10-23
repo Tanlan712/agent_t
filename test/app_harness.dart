@@ -24,6 +24,7 @@ import 'package:valorant_shop_tracker/services/progress_reference_api.dart';
 import 'package:valorant_shop_tracker/providers/seen_players_provider.dart';
 import 'package:valorant_shop_tracker/providers/settings_provider.dart';
 import 'package:valorant_shop_tracker/providers/shop_provider.dart';
+import 'package:valorant_shop_tracker/providers/purchase_history_provider.dart';
 import 'package:valorant_shop_tracker/providers/wishlist_provider.dart';
 import 'package:valorant_shop_tracker/services/live_client.dart';
 import 'package:valorant_shop_tracker/services/match_client.dart';
@@ -36,6 +37,7 @@ import 'package:valorant_shop_tracker/theme/themed_app.dart';
 import 'package:valorant_shop_tracker/storage/seen_players_storage.dart';
 import 'package:valorant_shop_tracker/storage/settings_storage.dart';
 import 'package:valorant_shop_tracker/storage/shop_storage.dart';
+import 'package:valorant_shop_tracker/storage/purchase_history_storage.dart';
 import 'package:valorant_shop_tracker/storage/wishlist_storage.dart';
 
 import 'catalog_helpers.dart';
@@ -84,6 +86,7 @@ class Harness {
   late final EquippedLoadoutProvider equipped;
   late final PenaltyProvider penalties;
   late final OfferPriceProvider prices;
+  late final PurchaseHistoryProvider purchaseHistory;
   late final RemoteClient remoteClient;
   late final LoadoutProvider loadout;
   late final RecentFormLoader recentForm =
@@ -160,6 +163,8 @@ class Harness {
     h.prices =
         OfferPriceProvider(OfferPriceStorage(prefs), now: now ?? DateTime.now);
     riot.onStorefront = h.prices.record;
+    h.purchaseHistory = PurchaseHistoryProvider(PurchaseHistoryStorage(prefs),
+        now: now ?? DateTime.now);
     return h;
   }
 
@@ -203,6 +208,7 @@ class Harness {
         ChangeNotifierProvider.value(value: equipped),
         ChangeNotifierProvider.value(value: penalties),
         ChangeNotifierProvider.value(value: prices),
+        ChangeNotifierProvider.value(value: purchaseHistory),
         Provider.value(value: matchClient),
         Provider.value(value: liveClient),
         Provider.value(value: remoteClient),

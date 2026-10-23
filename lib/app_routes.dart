@@ -17,6 +17,7 @@ import 'screens/riot_login_page.dart';
 import 'screens/seen_players_page.dart';
 import 'screens/settings_page.dart';
 import 'screens/skin_picker_page.dart';
+import 'screens/wallet_page.dart';
 import 'screens/weapons_page.dart';
 import 'screens/wishlist_page.dart';
 
@@ -31,6 +32,7 @@ final Map<String, WidgetBuilder> _topLevel = {
   '/live': (_) => const LivePage(),
   '/players': (_) => const SeenPlayersPage(),
   '/collection': (_) => const CollectionPage(),
+  '/wallet': (_) => const WalletPage(),
   '/progress': (_) => const ProgressPage(),
   '/agents': (_) => const AgentsPage(),
   '/weapons': (_) => const WeaponsPage(),
