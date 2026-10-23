@@ -65,7 +65,74 @@ LiveParty mapParty(Map<String, dynamic> json, String myPuuid) {
       final String c when c.isNotEmpty => c,
       _ => null,
     },
+    pings: _pings(json, myPuuid),
   );
+}
+
+/// 自己的延遲：成員的 Pings（自己那一位）優先，沒有時用隊伍最上層的 Pings。
+List<ServerPing> _pings(Map<String, dynamic> json, String myPuuid) {
+  List<dynamic>? raw;
+  for (final m in (json['Members'] as List<dynamic>? ?? const [])
+      .whereType<Map<String, dynamic>>()) {
+    if (m['Subject'] == myPuuid) raw = m['Pings'] as List<dynamic>?;
+  }
+  raw ??= json['Pings'] as List<dynamic>?;
+  final out = <ServerPing>[
+    for (final p in raw ?? const [])
+      if (p is Map<String, dynamic> &&
+          p['GamePodID'] is String &&
+          p['Ping'] is num &&
+          (p['Ping'] as num) > 0)
+        ServerPing(
+            podId: p['GamePodID'] as String, ping: (p['Ping'] as num).toInt()),
+  ]..sort((a, b) => a.ping.compareTo(b.ping));
+  return out;
+}
+
+const _podNames = {
+  'hongkong': '香港',
+  'tokyo': '東京',
+  'singapore': '新加坡',
+  'sydney': '雪梨',
+  'mumbai': '孟買',
+  'seoul': '首爾',
+  'bahrain': '巴林',
+  'frankfurt': '法蘭克福',
+  'london': '倫敦',
+  'paris': '巴黎',
+  'stockholm': '斯德哥爾摩',
+  'madrid': '馬德里',
+  'warsaw': '華沙',
+  'istanbul': '伊斯坦堡',
+  'tel-aviv': '特拉維夫',
+  'oregon': '奧勒岡',
+  'norcal': '北加州',
+  'california': '加州',
+  'texas': '德州',
+  'illinois': '伊利諾',
+  'georgia': '喬治亞',
+  'virginia': '維吉尼亞',
+  'ohio': '俄亥俄',
+  'saopaulo': '聖保羅',
+  'santiago': '聖地牙哥',
+  'mexicocity': '墨西哥城',
+  'miami': '邁阿密',
+  'jakarta': '雅加達',
+  'taipei': '台北',
+  'manila': '馬尼拉',
+  'bangkok': '曼谷',
+};
+
+/// 伺服器 ID（例如 `aresriot.aws-rclusterprod-ape1-1.ap-gp-hongkong-1`）的顯示名稱。
+String serverName(String podId) {
+  final i = podId.lastIndexOf('-gp-');
+  var slug = i < 0 ? podId.split('.').last : podId.substring(i + 4);
+  // 去掉最後的編號（-1、-2）。
+  final m = RegExp(r'^(.*?)-(\d+)$').firstMatch(slug);
+  final n = m == null ? null : int.tryParse(m.group(2)!);
+  if (m != null) slug = m.group(1)!;
+  final name = _podNames[slug] ?? slug;
+  return n != null && n > 1 ? '$name $n' : name;
 }
 
 /// 玩家卡小圖（valorant-api.com 的公開資料）。

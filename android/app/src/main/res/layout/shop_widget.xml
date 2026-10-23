@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 主畫面小工具：每日商店與刷新倒數（ShopWidgetProvider）。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="@drawable/widget_background">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="每日商店"
+        android:textColor="@color/widget_title"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        android:textColor="@color/widget_muted"
+        android:textSize="12sp" />
+
+    <TextView android:id="@+id/widget_line1" style="@style/WidgetLine" />
+    <TextView android:id="@+id/widget_line2" style="@style/WidgetLine" />
+    <TextView android:id="@+id/widget_line3" style="@style/WidgetLine" />
+    <TextView android:id="@+id/widget_line4" style="@style/WidgetLine" />
+
+    <TextView
+        android:id="@+id/widget_night"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="@color/widget_accent"
+        android:textSize="12sp"
+        android:visibility="gone" />
+</LinearLayout>

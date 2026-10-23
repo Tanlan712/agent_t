@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../logic/match_highlights.dart';
 import '../logic/match_mapper.dart';
 import '../logic/match_overview.dart';
 import '../logic/match_stats.dart';
@@ -13,6 +14,7 @@ import '../theme/app_style.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
 import '../widgets/line_chart.dart';
+import '../widgets/match_extras.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
 
 String _two(int n) => n.toString().padLeft(2, '0');
@@ -138,7 +140,15 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
           ),
           const SizedBox(height: 16),
           if (_stats)
-            _StatsView(games: filtered, ref: ref)
+            _StatsView(
+                games: filtered,
+                details: [
+                  for (final e in history.entries)
+                    if (e.detail case final d? when _filter.accepts(d.summary))
+                      d,
+                ],
+                mapId: _filter.mapId,
+                ref: ref)
           else ...[
             _Charts(games: filtered),
             const SizedBox(height: 16),
@@ -887,9 +897,19 @@ class _Charts extends StatelessWidget {
 /// 特務與地圖的勝率統計（套用篩選，只算已載入的場次）。
 class _StatsView extends StatelessWidget {
   final List<MatchSummary> games;
+
+  /// 與 [games] 同一批場次的完整資料（武器統計、多殺與殘局、熱區圖用）。
+  final List<MatchDetail> details;
+
+  /// 篩選的地圖；沒有時熱區圖用最常玩的地圖。
+  final String? mapId;
   final MatchReferenceProvider ref;
 
-  const _StatsView({required this.games, required this.ref});
+  const _StatsView(
+      {required this.games,
+      this.details = const [],
+      this.mapId,
+      required this.ref});
 
   @override
   Widget build(BuildContext context) {
@@ -954,6 +974,84 @@ class _StatsView extends StatelessWidget {
       table('stats-maps', '地圖', statsBy(games, (g) => g.mapId),
           (id) => ref.map(id).name,
           kd: false),
+      ..._extras(context),
     ]);
+  }
+}
+
+extension on _StatsView {
+  /// 跨場的武器統計、多殺與殘局、某張地圖的擊殺熱區（只用已載入的場次）。
+  List<Widget> _extras(BuildContext context) {
+    if (details.isEmpty) return const [];
+    String focus(MatchDetail d) => d.summary.focusPuuid;
+    final weapons = <WeaponStat>[];
+    {
+      final byFocus = <String, List<MatchDetail>>{};
+      for (final d in details) {
+        (byFocus[focus(d)] ??= []).add(d);
+      }
+      final merged = <String, WeaponStat>{};
+      for (final e in byFocus.entries) {
+        for (final w in weaponStats(e.value, e.key)) {
+          final m = merged[w.weapon];
+          merged[w.weapon] = m == null
+              ? w
+              : WeaponStat(
+                  weapon: w.weapon,
+                  kills: m.kills + w.kills,
+                  headshots: m.headshots + w.headshots,
+                  shots: m.shots + w.shots,
+                  rounds: m.rounds + w.rounds,
+                  roundsWon: m.roundsWon + w.roundsWon);
+        }
+      }
+      weapons.addAll(
+          merged.values.toList()..sort((a, b) => b.kills.compareTo(a.kills)));
+    }
+    final highlights = details.fold<PlayerHighlights>(
+        const PlayerHighlights(), (a, d) => a + matchHighlights(d, focus(d)));
+
+    // 熱區圖：篩選的地圖，沒有篩選時用最常玩的地圖。
+    final counts = <String, int>{};
+    for (final d in details) {
+      counts[d.summary.mapId] = (counts[d.summary.mapId] ?? 0) + 1;
+    }
+    final map = mapId ??
+        (counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value)))
+            .firstOrNull
+            ?.key;
+    final onMap = details.where((d) => d.summary.mapId == map).toList();
+    final heat = [for (final d in onMap) ...heatPoints(d, focus(d))];
+
+    return [
+      const SizedBox(height: 16),
+      PanelCard(
+        key: const ValueKey('stats-highlights'),
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          const SectionHeader(title: '多殺與殘局'),
+          if (highlights.isEmpty)
+            Text('沒有 3 殺以上或殘局勝利', style: TextStyle(color: AppColors.muted))
+          else
+            HighlightChips(highlights),
+        ]),
+      ),
+      const SizedBox(height: 16),
+      PanelCard(
+        key: const ValueKey('stats-weapons'),
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          const SectionHeader(title: '武器統計'),
+          WeaponStatsTable(stats: weapons, ref: ref, limit: 12),
+        ]),
+      ),
+      if (map != null && heat.isNotEmpty) ...[
+        const SizedBox(height: 16),
+        KillHeatmap(
+            points: heat,
+            minimap: ref.minimap(map),
+            title: '擊殺熱區圖・${ref.map(map).name}（${onMap.length} 場）'),
+      ],
+    ];
   }
 }

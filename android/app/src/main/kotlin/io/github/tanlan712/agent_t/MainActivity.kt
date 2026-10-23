@@ -29,6 +29,7 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+        configureHomeWidget(flutterEngine)
         // 多帳號切換：讀出／放回內嵌頁的 Riot 登入 cookie（ssid）。只在 App 與 WebView 之間傳遞，不寫 log
         // （使用者決定 2026-10-23，AGENTS.md 第 3 節）。
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "agent_t/riot_cookies")
@@ -41,6 +42,25 @@ class MainActivity : FlutterActivity() {
                             result.error("bad_cookie", "invalid cookie", null)
                         } else {
                             writeSsid(ssid) { result.success(null) }
+                        }
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    // 主畫面小工具的資料（今天的商店名稱、價格與到期時間；不含 token）。
+    private fun configureHomeWidget(flutterEngine: FlutterEngine) {
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "agent_t/home_widget")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "update" -> {
+                        val json = call.arguments as? String
+                        if (json == null) {
+                            result.error("bad_data", "missing data", null)
+                        } else {
+                            ShopWidgetProvider.save(applicationContext, json)
+                            result.success(null)
                         }
                     }
                     else -> result.notImplemented()

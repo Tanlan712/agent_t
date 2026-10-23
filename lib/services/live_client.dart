@@ -7,6 +7,21 @@ class LiveClient {
 
   LiveClient(this._riot);
 
+  /// 遊戲狀態（使用者決定 2026-10-23）：`MENUS`（大廳）、`PREGAME`、`INGAME`；
+  /// 遊戲沒開（404，或連線狀態不是 CONNECTED）時回傳 null。只 GET。
+  Future<String?> fetchLoopState(RiotSession s) async {
+    try {
+      final json = await _riot.getGlz(s, '/session/v1/sessions/${s.puuid}',
+          label: '取得遊戲狀態');
+      final cxn = json['cxnState'] as String?;
+      if (cxn != null && cxn != 'CONNECTED') return null;
+      return json['loopState'] as String? ?? '';
+    } on RiotApiException catch (e) {
+      if (e.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
   /// 目前隊伍 ID；遊戲沒開或不在大廳（404）時回傳 null。
   Future<String?> fetchPartyId(RiotSession s) async {
     try {

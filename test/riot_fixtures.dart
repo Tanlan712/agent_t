@@ -101,6 +101,8 @@ MockClient riotClient({
   Map<String, dynamic>? party,
   int coreStatus = 404,
   int pregameStatus = 404,
+  int sessionStatus = 200,
+  String? loopState,
   bool unratedTiers = false,
   Map<String, List<String>> entitlements = const {},
   Map<String, int> entitlementStatus = const {},
@@ -160,6 +162,22 @@ MockClient riotClient({
     }
     // 即時對局（glz）：只有 GET。
     if (host == 'glz-ap-1.ap.a.pvp.net' && req.method == 'GET') {
+      // 遊戲狀態：預設依對局／選角的狀態推算（INGAME／PREGAME／MENUS）。
+      if (path == '/session/v1/sessions/puuid-1') {
+        return sessionStatus == 200
+            ? json({
+                'subject': 'puuid-1',
+                'cxnState': 'CONNECTED',
+                'loopState': loopState ??
+                    (coreStatus == 200
+                        ? 'INGAME'
+                        : pregameStatus == 200
+                            ? 'PREGAME'
+                            : 'MENUS'),
+              })
+            : json({'httpStatus': sessionStatus, 'errorCode': 'x'},
+                sessionStatus);
+      }
       // 預設不在選角也不在對局（404），與實測相同。
       if (path == '/core-game/v1/players/puuid-1') {
         return coreStatus == 200

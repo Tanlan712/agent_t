@@ -24,6 +24,14 @@ class MatchReferenceApi {
       seasons = const [];
     }
 
+    // 武器只用來顯示武器統計的名稱：下載失敗時留空。
+    List<dynamic> weapons;
+    try {
+      weapons = await _data('/v1/weapons');
+    } catch (_) {
+      weapons = const [];
+    }
+
     final lastSeason = tierSets.isEmpty
         ? const <dynamic>[]
         : (tierSets.last as Map<String, dynamic>)['tiers'] as List<dynamic>? ??
@@ -50,6 +58,39 @@ class MatchReferenceApi {
               iconUrl: t['smallIcon'] as String?),
       },
       seasons: _seasons(seasons.whereType<Map<String, dynamic>>().toList()),
+      weapons: {
+        for (final w in weapons.whereType<Map<String, dynamic>>())
+          if (w['uuid'] case final String id)
+            id.toLowerCase(): RefItem(
+                name: w['displayName'] as String? ?? '',
+                iconUrl: w['killStreamIcon'] as String? ??
+                    w['displayIcon'] as String?),
+      },
+      minimaps: {
+        for (final m in maps.cast<Map<String, dynamic>>())
+          if ((
+            m['mapUrl'],
+            m['displayIcon'],
+            m['xMultiplier'],
+            m['yMultiplier'],
+            m['xScalarToAdd'],
+            m['yScalarToAdd']
+          )
+              case (
+                final String url,
+                final String icon,
+                final num xm,
+                final num ym,
+                final num xa,
+                final num ya
+              ))
+            url: MinimapRef(
+                imageUrl: icon,
+                xMultiplier: xm.toDouble(),
+                yMultiplier: ym.toDouble(),
+                xScalarToAdd: xa.toDouble(),
+                yScalarToAdd: ya.toDouble()),
+      },
     );
   }
 

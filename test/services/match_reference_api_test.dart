@@ -131,7 +131,7 @@ void main() {
         .save(await MatchReferenceApi(client: referenceClient()).fetch());
     expect(cache.load()!.tiers[18]!.name, '鑽石 2');
     expect(cache.load()!.seasons['act-6']!.name, 'V26 第六幕');
-    SharedPreferences.setMockInitialValues({'match_reference_v2': '{bad'});
+    SharedPreferences.setMockInitialValues({'match_reference_v3': '{bad'});
     expect(MatchReferenceCache(await SharedPreferences.getInstance()).load(),
         isNull);
   });

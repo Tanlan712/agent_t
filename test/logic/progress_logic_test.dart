@@ -179,6 +179,61 @@ void main() {
     });
   });
 
+  group('passPace', () {
+    final snapshot = ContractsSnapshot.fromJson(contractsJson());
+
+    test('賽季剩餘天數、升滿還差、每天要拿的經驗', () {
+      final bp =
+          currentBattlePass(snapshot, ref(), DateTime.utc(2026, 10, 21))!;
+      expect(bp.seasonEnd, DateTime.utc(2026, 11, 1));
+      expect(bp.contractId, 'bp-now');
+      final xp = bp.tiers.map((t) => t.xp).toList();
+      expect(passEarnedXp(bp), xp[0] + xp[1] + 500);
+      final total = xp.fold<int>(0, (a, b) => a + b);
+      // 10/21 12:00 → 11/1 00:00 是 10.5 天，算 11 天。
+      final pace = passPace(bp, DateTime.utc(2026, 10, 21, 12))!;
+      expect(pace.daysLeft, 11);
+      expect(pace.targetXp, total);
+      expect(pace.remainingXp, total - passEarnedXp(bp));
+      expect(pace.perDay, (pace.remainingXp / 11).ceil());
+      expect(pace.perWeek, pace.perDay! * 7);
+    });
+
+    test('賽季結束後沒有每日目標；特務合約沒有節奏', () {
+      final bp =
+          currentBattlePass(snapshot, ref(), DateTime.utc(2026, 10, 21))!;
+      expect(passPace(bp, DateTime.utc(2026, 11, 2))!.perDay, isNull);
+      const agent = BattlePass(
+          name: 'a', tiers: [], reached: 0, towardsNext: 0);
+      expect(passPace(agent, DateTime.utc(2026, 10, 21)), isNull);
+    });
+
+    test('升滿不含尾聲', () {
+      const pass = BattlePass(
+        name: 'bp',
+        tiers: [RefTier(reward: RefReward(type: 'x', uuid: 'a'), xp: 100)],
+        chapters: [
+          RefChapter(
+              tiers: [RefTier(reward: RefReward(type: 'x', uuid: 'a'), xp: 100)]),
+          RefChapter(
+              tiers: [RefTier(reward: RefReward(type: 'x', uuid: 'b'), xp: 900)],
+              isEpilogue: true),
+        ],
+        reached: 1,
+        towardsNext: 0,
+      );
+      expect(passTargetXp(pass), 100);
+    });
+
+    test('每日經驗：與前一筆紀錄相減，新到舊', () {
+      expect(xpDayKey(DateTime(2026, 3, 4, 23)), '2026-03-04');
+      final gains = dailyXpGains(
+          {'2026-10-20': 1000, '2026-10-22': 5000, '2026-10-21': 3000});
+      expect(gains, [('2026-10-22', 2000), ('2026-10-21', 2000)]);
+      expect(dailyXpGains({'2026-10-20': 1000}), isEmpty);
+    });
+  });
+
   group('rewardLabel', () {
     test('各種獎勵類型的名稱', () {
       final r = ref();

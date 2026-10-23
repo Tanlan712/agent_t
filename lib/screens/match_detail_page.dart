@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../logic/match_highlights.dart';
 import '../logic/match_mapper.dart';
 import '../models/match_models.dart';
 import '../providers/match_history_provider.dart';
 import '../providers/match_reference_provider.dart';
 import '../providers/recent_form_loader.dart';
 import '../theme/app_theme.dart';
+import '../widgets/match_extras.dart';
 import '../widgets/recent_form_cell.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
 import 'match_history_page.dart'
@@ -104,6 +106,16 @@ class _DetailBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = detail.summary;
     final parties = _partyColors();
+    final focus = s.focusPuuid.isNotEmpty
+        ? s.focusPuuid
+        : detail.teams.values
+                .expand((t) => t)
+                .where((p) => p.isMe)
+                .firstOrNull
+                ?.puuid ??
+            '';
+    final heat = heatPoints(detail, focus);
+    final weapons = weaponStats([detail], focus);
     // 自己的隊伍排前面。
     final teamIds = detail.teams.keys.toList()
       ..sort((a, b) =>
@@ -153,6 +165,37 @@ class _DetailBody extends StatelessWidget {
         for (var i = 0; i < tables.length; i++) ...[
           if (i > 0) const SizedBox(height: 16),
           tables[i],
+        ],
+        // 賽後資料（match-details 的 roundResults），不送額外請求。
+        if (detail.rounds.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          MatchHighlightsCard(detail: detail, puuid: focus),
+          const SizedBox(height: 16),
+          RoundTimeline(detail: detail, ref: ref),
+        ],
+        if (heat.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          KillHeatmap(points: heat, minimap: ref.minimap(s.mapId)),
+        ],
+        if (weapons.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('這場的武器',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 12),
+                  WeaponStatsTable(stats: weapons, ref: ref),
+                ],
+              ),
+            ),
+          ),
         ],
         const SizedBox(height: 24),
         Center(

@@ -237,6 +237,8 @@ MatchDetail mapMatchDetail(Map<String, dynamic> json, String focusPuuid,
       .fold<int>(0, (m, e) => e.value > m ? e.value : m);
 
   return MatchDetail(
+    rounds: mapRounds(json),
+    kills: mapKills(json),
     summary: MatchSummary(
       matchId: info['matchId'] as String? ?? '',
       startTime:
@@ -282,8 +284,130 @@ MatchDetail applyNames(MatchDetail d, Map<String, String> names) {
 
   return MatchDetail(
     summary: d.summary,
+    rounds: d.rounds,
+    kills: d.kills,
     teams: {
       for (final e in d.teams.entries) e.key: e.value.map(named).toList()
     },
   );
+}
+
+MapPoint? _point(Object? v) {
+  if (v is! Map<String, dynamic>) return null;
+  final x = v['x'], y = v['y'];
+  if (x is! num || y is! num) return null;
+  return MapPoint(x.toDouble(), y.toDouble());
+}
+
+String? _nonEmpty(Object? v) => v is String && v.isNotEmpty ? v : null;
+
+RoundEnd _roundEnd(Map<String, dynamic> r) {
+  final code = (r['roundResultCode'] as String? ?? '').toLowerCase();
+  final text = (r['roundResult'] as String? ?? '').toLowerCase();
+  if (code == 'elimination' || text.startsWith('eliminat')) {
+    return RoundEnd.elimination;
+  }
+  if (code == 'detonate' || text.contains('detonat')) return RoundEnd.detonate;
+  if (code == 'defuse' || text.contains('defus')) return RoundEnd.defuse;
+  if (code == 'surrendered' || text.contains('surrender')) {
+    return RoundEnd.surrender;
+  }
+  if (text.contains('timer') || (code.isEmpty && text.isNotEmpty)) {
+    return RoundEnd.timer;
+  }
+  return RoundEnd.unknown;
+}
+
+/// 每回合的勝方、結束方式、下包／拆包者與各人經濟（依 roundNum 排序）。
+List<RoundInfo> mapRounds(Map<String, dynamic> json) {
+  final out = <RoundInfo>[];
+  for (final r in (json['roundResults'] as List<dynamic>? ?? const [])
+      .whereType<Map<String, dynamic>>()) {
+    final players = <String, RoundPlayer>{};
+    for (final ps in (r['playerStats'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()) {
+      final id = ps['subject'] as String?;
+      if (id == null) continue;
+      final eco = ps['economy'] as Map<String, dynamic>? ?? const {};
+      var h = 0, b = 0, l = 0, dmg = 0;
+      for (final d in (ps['damage'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()) {
+        h += _int(d['headshots']);
+        b += _int(d['bodyshots']);
+        l += _int(d['legshots']);
+        dmg += _int(d['damage']);
+      }
+      players[id] = RoundPlayer(
+        loadout: _int(eco['loadoutValue']),
+        spent: _int(eco['spent']),
+        remaining: _int(eco['remaining']),
+        weapon: (eco['weapon'] as String? ?? '').toLowerCase(),
+        armor: (eco['armor'] as String? ?? '').toLowerCase(),
+        headshots: h,
+        bodyshots: b,
+        legshots: l,
+        damage: dmg,
+        kills: (ps['kills'] as List<dynamic>? ?? const []).length,
+      );
+    }
+    out.add(RoundInfo(
+      number: _int(r['roundNum']),
+      winningTeam: r['winningTeam'] as String? ?? '',
+      end: _roundEnd(r),
+      planter: _nonEmpty(r['bombPlanter']),
+      defuser: _nonEmpty(r['bombDefuser']),
+      plantAt: _point(r['plantLocation']),
+      players: players,
+    ));
+  }
+  out.sort((a, b) => a.number.compareTo(b.number));
+  return out;
+}
+
+/// 所有擊殺：優先用 roundResults[].playerStats[].kills，沒有時用最上層的 kills。
+List<KillEvent> mapKills(Map<String, dynamic> json) {
+  KillEvent? parse(Map<String, dynamic> k, int fallbackRound) {
+    final killer = k['killer'] as String?;
+    final victim = k['victim'] as String?;
+    if (victim == null) return null;
+    final fd = k['finishingDamage'] as Map<String, dynamic>? ?? const {};
+    MapPoint? killerAt;
+    for (final pl in (k['playerLocations'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()) {
+      if (pl['subject'] == killer) killerAt = _point(pl['location']);
+    }
+    return KillEvent(
+      round: k['round'] is num ? _int(k['round']) : fallbackRound,
+      roundTime: _int(k['roundTime']),
+      killer: killer ?? '',
+      victim: victim,
+      damageType: fd['damageType'] as String? ?? '',
+      damageItem: (fd['damageItem'] as String? ?? '').toLowerCase(),
+      victimAt: _point(k['victimLocation']),
+      killerAt: killerAt,
+    );
+  }
+
+  final out = <KillEvent>[];
+  for (final r in (json['roundResults'] as List<dynamic>? ?? const [])
+      .whereType<Map<String, dynamic>>()) {
+    final n = _int(r['roundNum']);
+    for (final ps in (r['playerStats'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()) {
+      for (final k in (ps['kills'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()) {
+        if (parse(k, n) case final e?) out.add(e);
+      }
+    }
+  }
+  if (out.isEmpty) {
+    for (final k in (json['kills'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()) {
+      if (parse(k, 0) case final e?) out.add(e);
+    }
+  }
+  out.sort((a, b) => a.round != b.round
+      ? a.round.compareTo(b.round)
+      : a.roundTime.compareTo(b.roundTime));
+  return out;
 }

@@ -53,6 +53,11 @@ class MatchReferenceProvider with ChangeNotifier {
   RefItem map(String mapUrl) =>
       _reference?.maps[mapUrl] ?? _fallback(mapUrl.split('/').last);
 
+  /// 武器名稱；查不到（例如技能）時為 null。
+  RefItem? weapon(String uuid) => _reference?.weapons[uuid.toLowerCase()];
+
+  MinimapRef? minimap(String mapUrl) => _reference?.minimaps[mapUrl];
+
   RefItem tier(int tier) =>
       _reference?.tiers[tier] ?? const RefItem(name: '未定級');
 }

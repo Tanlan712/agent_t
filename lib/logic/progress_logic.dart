@@ -170,6 +170,12 @@ class BattlePass {
   /// 下一階需要的經驗；已到最後一階時為 null。
   final int? nextTierXp;
 
+  /// 合約定義的 uuid（每日經驗紀錄用）；特務合約沒有。
+  final String? contractId;
+
+  /// 賽季結束時間（通行證節奏用）；特務合約沒有。
+  final DateTime? seasonEnd;
+
   const BattlePass({
     required this.name,
     required this.tiers,
@@ -177,6 +183,8 @@ class BattlePass {
     required this.reached,
     required this.towardsNext,
     this.nextTierXp,
+    this.contractId,
+    this.seasonEnd,
   });
 
   bool get isComplete => nextTierXp == null;
@@ -206,9 +214,76 @@ BattlePass? currentBattlePass(
       reached: reached,
       towardsNext: p?.towardsNext ?? 0,
       nextTierXp: reached < c.tiers.length ? c.tiers[reached].xp : null,
+      contractId: e.key,
+      seasonEnd: season.end,
     );
   }
   return null;
+}
+
+/// 通行證累積的經驗：已達成各階的經驗加上往下一階的進度。
+int passEarnedXp(BattlePass pass) {
+  var sum = pass.towardsNext;
+  for (var i = 0; i < pass.reached && i < pass.tiers.length; i++) {
+    sum += pass.tiers[i].xp;
+  }
+  return sum;
+}
+
+/// 「升滿」需要的總經驗：不含尾聲（尾聲是額外的階級）；沒有章節資訊時算全部。
+int passTargetXp(BattlePass pass) {
+  final main = pass.chapters.where((c) => !c.isEpilogue).toList();
+  final tiers = main.isEmpty ? pass.tiers : [for (final c in main) ...c.tiers];
+  return tiers.fold(0, (a, t) => a + t.xp);
+}
+
+class PassPace {
+  final int earnedXp;
+  final int targetXp;
+
+  /// 賽季剩下的天數（不足一天算一天）；已結束為 0。
+  final int daysLeft;
+
+  const PassPace(
+      {required this.earnedXp, required this.targetXp, required this.daysLeft});
+
+  int get remainingXp => (targetXp - earnedXp).clamp(0, targetXp);
+  bool get isDone => remainingXp == 0;
+
+  /// 每天要拿的經驗（無條件進位）；沒有剩餘天數時為 null。
+  int? get perDay => daysLeft <= 0 ? null : (remainingXp / daysLeft).ceil();
+  int? get perWeek => perDay == null ? null : perDay! * 7;
+}
+
+/// 通行證節奏（VexTrack 的做法）：距賽季結束幾天、每天要拿多少 XP 才能升滿。
+/// 沒有賽季結束時間時為 null。
+PassPace? passPace(BattlePass pass, DateTime now) {
+  final end = pass.seasonEnd;
+  if (end == null) return null;
+  final left = end.difference(now);
+  final days =
+      left.isNegative ? 0 : (left.inSeconds / Duration.secondsPerDay).ceil();
+  return PassPace(
+      earnedXp: passEarnedXp(pass),
+      targetXp: passTargetXp(pass),
+      daysLeft: days);
+}
+
+/// 每日經驗紀錄的日期 key（本地日期 yyyy-MM-dd）。
+String xpDayKey(DateTime t) =>
+    '${t.year}-${t.month.toString().padLeft(2, '0')}-${t.day.toString().padLeft(2, '0')}';
+
+/// 由每天最後一次看到的累積經驗算出每天拿到的經驗（新到舊，最多 [days] 天）。
+/// 第一天沒有前一天可比，不列出。
+List<(String day, int gained)> dailyXpGains(Map<String, int> totals,
+    {int days = 7}) {
+  final keys = totals.keys.toList()..sort();
+  final out = <(String, int)>[];
+  for (var i = keys.length - 1; i > 0 && out.length < days; i--) {
+    final gained = totals[keys[i]]! - totals[keys[i - 1]]!;
+    out.add((keys[i], gained < 0 ? 0 : gained));
+  }
+  return out;
 }
 
 /// 特務合約的完整階級與章節（點我的收藏的特務時顯示）；

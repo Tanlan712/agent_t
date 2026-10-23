@@ -62,6 +62,28 @@ class BundleEntry {
       };
 }
 
+/// 配件商店的一項（吊飾、噴漆、卡片、稱號），用王國幣（獎章）購買。
+class AccessoryEntry {
+  /// Riot 的 ItemTypeID（見 `ItemTypes`）。
+  final String itemTypeId;
+
+  /// 物品 uuid（小寫）；吊飾是吊飾等級的 uuid。
+  final String itemId;
+  final int price;
+
+  const AccessoryEntry(
+      {required this.itemTypeId, required this.itemId, required this.price});
+
+  factory AccessoryEntry.fromJson(Map<String, dynamic> json) => AccessoryEntry(
+        itemTypeId: json['itemTypeId'] as String,
+        itemId: json['itemId'] as String,
+        price: json['price'] as int,
+      );
+
+  Map<String, dynamic> toJson() =>
+      {'itemTypeId': itemTypeId, 'itemId': itemId, 'price': price};
+}
+
 /// 使用者手動輸入的當前商店；只保留一份。
 class CurrentShop {
   final List<ShopEntry> daily;
@@ -76,6 +98,10 @@ class CurrentShop {
   final List<BundleEntry> featuredBundles;
   final DateTime? featuredBundleUpdatedAt;
 
+  /// 配件商店（只能由 Riot 同步取得）。
+  final List<AccessoryEntry> accessories;
+  final DateTime? accessoryEndsAt;
+
   const CurrentShop({
     this.daily = const [],
     this.dailyExpiresAt,
@@ -86,6 +112,8 @@ class CurrentShop {
     this.featuredBundle,
     this.featuredBundles = const [],
     this.featuredBundleUpdatedAt,
+    this.accessories = const [],
+    this.accessoryEndsAt,
   });
 
   /// 要顯示的精選組合包：有 [featuredBundles] 用它，否則用 [featuredBundle]。
@@ -103,6 +131,8 @@ class CurrentShop {
     BundleEntry? featuredBundle,
     List<BundleEntry>? featuredBundles,
     DateTime? featuredBundleUpdatedAt,
+    List<AccessoryEntry>? accessories,
+    DateTime? accessoryEndsAt,
   }) {
     return CurrentShop(
       daily: daily ?? this.daily,
@@ -115,6 +145,8 @@ class CurrentShop {
       featuredBundles: featuredBundles ?? this.featuredBundles,
       featuredBundleUpdatedAt:
           featuredBundleUpdatedAt ?? this.featuredBundleUpdatedAt,
+      accessories: accessories ?? this.accessories,
+      accessoryEndsAt: accessoryEndsAt ?? this.accessoryEndsAt,
     );
   }
 
@@ -125,6 +157,8 @@ class CurrentShop {
         featuredBundle: featuredBundle,
         featuredBundles: featuredBundles,
         featuredBundleUpdatedAt: featuredBundleUpdatedAt,
+        accessories: accessories,
+        accessoryEndsAt: accessoryEndsAt,
       );
 
   CurrentShop clearNightMarket() => CurrentShop(
@@ -134,6 +168,8 @@ class CurrentShop {
         featuredBundle: featuredBundle,
         featuredBundles: featuredBundles,
         featuredBundleUpdatedAt: featuredBundleUpdatedAt,
+        accessories: accessories,
+        accessoryEndsAt: accessoryEndsAt,
       );
 
   CurrentShop clearFeaturedBundle() => CurrentShop(
@@ -143,6 +179,8 @@ class CurrentShop {
         nightMarket: nightMarket,
         nightMarketEndsAt: nightMarketEndsAt,
         nightMarketUpdatedAt: nightMarketUpdatedAt,
+        accessories: accessories,
+        accessoryEndsAt: accessoryEndsAt,
       );
 
   factory CurrentShop.fromJson(Map<String, dynamic> json) {
@@ -169,6 +207,11 @@ class CurrentShop {
           if (b is Map<String, dynamic>) BundleEntry.fromJson(b),
       ],
       featuredBundleUpdatedAt: date('featuredBundleUpdatedAt'),
+      accessories: [
+        for (final a in json['accessories'] as List<dynamic>? ?? const [])
+          if (a is Map<String, dynamic>) AccessoryEntry.fromJson(a),
+      ],
+      accessoryEndsAt: date('accessoryEndsAt'),
     );
   }
 
@@ -182,5 +225,7 @@ class CurrentShop {
         'featuredBundle': featuredBundle?.toJson(),
         'featuredBundles': featuredBundles.map((e) => e.toJson()).toList(),
         'featuredBundleUpdatedAt': featuredBundleUpdatedAt?.toIso8601String(),
+        'accessories': accessories.map((e) => e.toJson()).toList(),
+        'accessoryEndsAt': accessoryEndsAt?.toIso8601String(),
       };
 }

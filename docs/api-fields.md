@@ -41,6 +41,10 @@
   - `Bundles[]`：同時上架的所有精選組合包（欄位同 `Bundle`）；有時優先使用，沒有時用單一的 `Bundle`。
     每個的 `DurationRemainingInSeconds` 是該組合包自己的剩餘秒數，顯示為「剩餘 N 天 H 小時」。
   - `BundleRemainingDurationInSeconds`（組合包沒有自己的秒數時的後備值）
+- `AccessoryStore`（配件商店）📄 2026-10-23 🧩
+  - `AccessoryStoreOffers[]`：`Offer{OfferID, IsDirectPurchase, StartDate, Cost{王國幣ID: 數量}, Rewards[]{ItemTypeID, ItemID, Quantity}}`、`ContractID`
+    - `ItemTypeID` 是吊飾等級、噴漆、玩家卡片、稱號（同 entitlements 的 ItemTypeID）；價格幣別是王國幣 `85ca954a-…`。
+  - `AccessoryStoreRemainingDurationInSeconds`
 
 ### `GET /store/v1/wallet/{puuid}` 🧩
 - `Balances{幣別ID: 數量}`
@@ -102,7 +106,11 @@
   - `firstBloodPlayer`：該回合首殺者的 puuid 🧩
   - `playerStats[]`：`subject, kills[], damage[], score, economy, ability, wasAfk, wasPenalized, stayedInSpawn`
     - `damage[]`：`receiver, damage, headshots, bodyshots, legshots` 🧩
-    - `kills[]`：`killer, victim, roundTime` 等（首殺的備援規則用到 `roundTime`）🧩
+    - `kills[]`：`gameTime, roundTime, killer, victim, victimLocation{x, y}, assistants[], playerLocations[]{subject, viewRadians, location{x, y}}, finishingDamage{damageType, damageItem, isSecondaryFireMode}` 📄 🧩
+      （2026-10-23 起：武器統計用 `finishingDamage`（`damageType == Weapon` 時 `damageItem` 是武器 uuid）、熱區圖用 `victimLocation` 與擊殺者的 `playerLocations`）
+    - `economy`：`loadoutValue, weapon, armor, remaining, spent` 📄 🧩（回合時間軸的經濟、武器統計的每回合主武器）
+  - `roundResult`／`roundResultCode`：結束方式（`Elimination`、`Detonate`、`Defuse`、`Surrendered`；時間到時 code 為空）📄 🧩
+  - `bombPlanter`、`bombDefuser`、`plantLocation{x, y}` 📄 🧩
   - `playerScores[]`：`subject, score`
   - ⚠️ `plantPlayerLocations`、`defusePlayerLocations`、`kills[].playerLocations` 等位置資料：只能用於賽後；**不得**用在即時對局（AGENTS.md 第 2 節）。
 
@@ -121,6 +129,10 @@
 
 ## 即時對局（glz）
 
+### `GET /session/v1/sessions/{puuid}` 📄（使用者決定 2026-10-23）🧩
+- `subject, cxnState, clientID, clientVersion, loopState, loopStateMetadata, version`
+  - 🧩 使用中：`loopState`（`MENUS`／`PREGAME`／`INGAME`）、`cxnState`（不是 `CONNECTED` 視為遊戲沒開）；遊戲沒開時預期 404。
+
 ### `GET /parties/v1/players/{puuid}` ✅ 2026-10-21
 - `Subject, Version, CurrentPartyID, Invites, Requests, PlatformInfo, IsCrossPlayEnabled`
 
@@ -131,6 +143,7 @@
   - `MatchmakingData`：`QueueID, PreferredGamePods, SkillDisparityRRPenalty, MaxPartySize`
   - `CheatData`：只記錄欄位名稱，**不讀取、不使用**。
 - `Members[]`：`Subject, CompetitiveTier, PlayerIdentity, SeasonalBadgeInfo, IsOwner, QueueEligibleRemainingAccountLevels, Pings, IsReady, IsModerator, UseBroadcastHUD, PlatformType, PreferredAgentInfo, PremierPrestige, JoinedAt`
+  - `Pings[]`：`{Ping, GamePodID}`，自己到各伺服器的延遲（毫秒）📄 🧩（大廳卡片顯示，2026-10-23）
   - `PlayerIdentity`：`Subject, PlayerCardID, PlayerTitleID, AccountLevel, PreferredLevelBorderID, Incognito, HideAccountLevel`
     - `Incognito`：成員隱藏名稱。使用者決定照樣查詢並顯示名稱，不加標籤。
     - `HideAccountLevel`：成員隱藏等級。使用者決定照樣顯示（自己的資料上也會出現這個開關）。
@@ -245,6 +258,7 @@
   - `/v1/themes`：`{uuid, displayName, displayIcon, storeFeaturedImage}`。`/v1/bundles` 沒有內含項目；以「組合包 `displayName` = 主題 `displayName`」配對 `skins[].themeUuid`，實測 328 個組合包有 290 個配得到。
   - `/v1/maps`：`{uuid, displayName, displayIcon（小地圖，27 張中 9 張為 null）, splash, coordinates, tacticalDescription, xMultiplier, yMultiplier, xScalarToAdd, yScalarToAdd, callouts[]{regionName, superRegionName, location{x, y, z}}}`；
     小地圖位置 `u = location.y × xMultiplier + xScalarToAdd`、`v = location.x × yMultiplier + yScalarToAdd`。
+    🧩 2026-10-23 起：對戰紀錄的擊殺熱區圖用 `displayIcon` 與這 4 個係數（存在對戰參考資料快取 `match_reference_v3`）；武器統計用 `/v1/weapons` 的 `displayName`、`killStreamIcon`。
   - `/v1/agents`：`{uuid, displayName, description, displayIcon, fullPortrait, background, role{displayName}, abilities[]{slot, displayName, description, displayIcon}, recruitmentData}`；`slot` 為 `Grenade`（C）、`Ability1`（Q）、`Ability2`（E）、`Ultimate`（X）、`Passive`。沒有技能價格欄位。
 
 ## 遠端操作（寫入，使用者同意後）⚠️ 未實測

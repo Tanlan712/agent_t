@@ -29,6 +29,14 @@ class PartyMember {
   });
 }
 
+/// 隊伍到某個伺服器（GamePod）的延遲（party 的 `Pings`）。
+class ServerPing {
+  final String podId;
+  final int ping;
+
+  const ServerPing({required this.podId, required this.ping});
+}
+
 class LiveParty {
   final String id;
   final String state;
@@ -53,6 +61,8 @@ class LiveParty {
 
   /// 目前的隊伍代碼（`InviteCode`）；沒有代碼時為 null。
   final String? inviteCode;
+  /// 自己到各伺服器的延遲，由低到高。
+  final List<ServerPing> pings;
 
   const LiveParty({
     required this.id,
@@ -65,6 +75,7 @@ class LiveParty {
     this.customSettings,
     this.customTeams = const {},
     this.inviteCode,
+    this.pings = const [],
   });
 
   bool get isCustomGame => state == 'CUSTOM_GAME_SETUP';

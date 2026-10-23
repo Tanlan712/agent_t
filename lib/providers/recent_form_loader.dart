@@ -31,6 +31,9 @@ class FormGame {
   final String queueId;
   final DateTime? startTime;
 
+  /// 這場每把槍的擊殺數（武器 uuid 小寫；不含技能與炸彈）。
+  final Map<String, int> weaponKills;
+
   const FormGame({
     required this.matchId,
     required this.won,
@@ -43,7 +46,22 @@ class FormGame {
     this.headshotPercent,
     this.queueId = '',
     this.startTime,
+    this.weaponKills = const {},
   });
+}
+
+/// 一位特務在最近幾場的表現（擅長特務用）。
+class AgentForm {
+  final String agentId;
+  final int games;
+  final int wins;
+  final double avgAcs;
+
+  const AgentForm(
+      {required this.agentId,
+      required this.games,
+      required this.wins,
+      required this.avgAcs});
 }
 
 class RecentForm {
@@ -68,6 +86,38 @@ class RecentForm {
     final k = games.fold<int>(0, (s, g) => s + g.kills);
     final d = games.fold<int>(0, (s, g) => s + g.deaths);
     return k / (d == 0 ? 1 : d);
+  }
+
+  /// 擅長的特務：依場數、再依平均 ACS 由高到低。
+  List<AgentForm> get agentForms {
+    final by = <String, List<FormGame>>{};
+    for (final g in games) {
+      if (g.agentId.isEmpty) continue;
+      (by[g.agentId.toLowerCase()] ??= []).add(g);
+    }
+    return [
+      for (final e in by.entries)
+        AgentForm(
+          agentId: e.key,
+          games: e.value.length,
+          wins: e.value.where((g) => g.won == true).length,
+          avgAcs: e.value.fold<int>(0, (a, g) => a + g.acs) / e.value.length,
+        ),
+    ]..sort((a, b) => a.games != b.games
+        ? b.games.compareTo(a.games)
+        : b.avgAcs.compareTo(a.avgAcs));
+  }
+
+  /// 常用的槍：最近幾場每把槍的擊殺加總，由多到少。
+  List<(String weapon, int kills)> get weaponKills {
+    final total = <String, int>{};
+    for (final g in games) {
+      for (final e in g.weaponKills.entries) {
+        total[e.key] = (total[e.key] ?? 0) + e.value;
+      }
+    }
+    return [for (final e in total.entries) (e.key, e.value)]
+      ..sort((a, b) => b.$2.compareTo(a.$2));
   }
 
   double? get avgHeadshot {
@@ -392,6 +442,7 @@ class RecentFormLoader with ChangeNotifier {
         headshotPercent: l.headshotPercent,
         queueId: ref.queueId,
         startTime: ref.startTime,
+        weaponKills: _weaponKills(d.kills, puuid),
       ));
     }
     if (details.isNotEmpty) onDetails?.call(details);
@@ -430,6 +481,16 @@ class RecentFormLoader with ChangeNotifier {
     _queue.clear();
     _notify();
   }
+}
+
+Map<String, int> _weaponKills(List<KillEvent> kills, String puuid) {
+  final out = <String, int>{};
+  for (final k in kills) {
+    if (k.killer == puuid && k.victim != puuid && k.isWeapon) {
+      out[k.damageItem] = (out[k.damageItem] ?? 0) + 1;
+    }
+  }
+  return out;
 }
 
 class _Cancelled implements Exception {

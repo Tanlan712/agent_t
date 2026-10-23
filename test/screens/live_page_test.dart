@@ -163,7 +163,28 @@ void main() {
     final h = await harness(tester, partyStatus: 404);
     await tester.pumpWidget(h.wrap(home: const LivePage()));
     await drain(tester);
-    expect(find.text('遊戲沒有開啟，或目前不在大廳'), findsOneWidget);
+    expect(find.text('目前不在大廳'), findsOneWidget);
+    await leave(tester, h);
+  });
+
+  testWidgets('遊戲沒開時顯示遊戲沒有開啟（使用者決定 2026-10-23）', (tester) async {
+    setWidth(tester, 1400);
+    final h =
+        await Harness.create(tester, riotHttp: riotClient(sessionStatus: 404));
+    await tester.runAsync(() => h.riot.login(fakeRedirect));
+    await tester.pumpWidget(h.wrap(home: const LivePage()));
+    await drain(tester);
+    expect(find.text('遊戲沒有開啟'), findsOneWidget);
+    await leave(tester, h);
+  });
+
+  testWidgets('隊伍卡片顯示到各伺服器的延遲', (tester) async {
+    setWidth(tester, 1400);
+    final h = await harness(tester);
+    await tester.pumpWidget(h.wrap(home: const LivePage()));
+    await drain(tester);
+    expect(find.byKey(const ValueKey('party-pings')), findsOneWidget);
+    expect(find.text('pod-a 40 ms'), findsOneWidget);
     await leave(tester, h);
   });
 
@@ -245,6 +266,12 @@ void main() {
       await drain(tester);
       expect(find.byKey(const ValueKey('form-r1-0')), findsOneWidget);
       expect(inKey('form-r1', '平均 227'), findsOneWidget);
+      // 使用者決定（2026-10-23）：同一份最近幾場算出擅長的特務。
+      expect(
+          find.descendant(
+              of: find.byKey(const ValueKey('specialty-r1')),
+              matching: find.textContaining('擅長')),
+          findsOneWidget);
       final all = requests
           .where((r) => r.url.path.startsWith('/match-history/v1/history/'))
           .toList();
@@ -363,6 +390,7 @@ void main() {
       expect(tip('live-rank-b4'), '超凡 1');
       expect(find.byKey(const ValueKey('live-level-b5')), findsNothing);
       expect(find.byKey(const ValueKey('form-mate-0')), findsOneWidget);
+      expect(find.byKey(const ValueKey('specialty-mate')), findsOneWidget);
       await leave(tester, h);
     });
 
