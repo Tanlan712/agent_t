@@ -5,11 +5,15 @@ import 'package:provider/provider.dart';
 
 import '../logic/combat_stats.dart' show competitiveGames, peakRank;
 import '../logic/live_mapper.dart';
+import '../logic/progress_logic.dart' show ownedAgents;
 import '../logic/suspicion.dart';
 import '../logic/match_mapper.dart' show queueName;
 import '../models/live_models.dart';
+import '../models/progress_reference.dart';
 import '../models/skin_info.dart';
 import '../providers/catalog_provider.dart';
+import '../providers/collection_provider.dart';
+import '../providers/progress_provider.dart';
 import '../models/match_models.dart';
 import '../providers/live_party_provider.dart';
 import '../providers/match_reference_provider.dart';
@@ -20,6 +24,7 @@ import '../providers/settings_provider.dart';
 import '../services/live_client.dart';
 import '../services/match_client.dart';
 import '../services/remote_client.dart';
+import '../services/riot_client.dart' show ItemTypes;
 import '../shell/app_shell.dart';
 import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
@@ -162,6 +167,22 @@ class _LivePageState extends State<LivePage> {
     );
   }
 
+  /// 遠端選角可選的特務：收藏讀到時只列已擁有的（含初始特務），否則列全部特務。
+  List<String> _agentChoices(BuildContext context, MatchReferenceProvider ref) {
+    Set<String>? owned;
+    ProgressReference? progress;
+    try {
+      owned = context.watch<CollectionProvider>().owned[ItemTypes.agent];
+      progress = context.watch<ProgressProvider>().ref;
+    } on ProviderNotFoundException {
+      // 沒有收藏資料（例如單獨測試即時對局頁）時列全部特務。
+    }
+    if (owned != null && progress != null) {
+      return [for (final a in ownedAgents(owned, progress)) a.uuid];
+    }
+    return ref.agents.keys.toList();
+  }
+
   Widget _body(BuildContext context) {
     final ref = context.watch<MatchReferenceProvider>();
     final settings = context.watch<SettingsProvider>().settings;
@@ -188,6 +209,7 @@ class _LivePageState extends State<LivePage> {
                   actions: _remote,
                   preferredAgent: settings.preferredAgent,
                   agent: ref.agent,
+                  choices: _agentChoices(context, ref),
                   onDone: _live.refresh)
               : null);
     }

@@ -139,7 +139,7 @@ class RiotClient {
   }) =>
       _json(
           label,
-          () => _client.get(Uri.https('pd.${s.shard}.a.pvp.net', path, query),
+          () => _client.get(Uri.https(s.pdHost, path, query),
               headers: _pdHeaders(s)));
 
   /// 即時對局（glz）端點的 GET；依 AGENTS.md 只允許讀取。
@@ -150,9 +150,8 @@ class RiotClient {
   }) =>
       _json(
           label,
-          () => _client.get(
-              Uri.https('glz-${s.shard}-1.${s.shard}.a.pvp.net', path),
-              headers: _pdHeaders(s)));
+          () =>
+              _client.get(Uri.https(s.glzHost, path), headers: _pdHeaders(s)));
 
   /// 遠端操作的寫入（使用者同意後，規格 2026-10-22-remote-control-design.md）。
   /// [host] 是 `pd` 或 `glz`；回應不是 JSON 物件（例如空的）時回傳 null。
@@ -166,12 +165,7 @@ class RiotClient {
     Map<String, String>? query,
     required String label,
   }) async {
-    final uri = Uri.https(
-        host == 'glz'
-            ? 'glz-${s.shard}-1.${s.shard}.a.pvp.net'
-            : 'pd.${s.shard}.a.pvp.net',
-        path,
-        query);
+    final uri = Uri.https(host == 'glz' ? s.glzHost : s.pdHost, path, query);
     final request = http.Request(method, uri)
       ..headers.addAll({..._pdHeaders(s), 'Content-Type': 'application/json'});
     if (method != 'DELETE') {
@@ -204,7 +198,7 @@ class RiotClient {
   }) async {
     final http.Response response;
     try {
-      response = await _client.put(Uri.https('pd.${s.shard}.a.pvp.net', path),
+      response = await _client.put(Uri.https(s.pdHost, path),
           headers: {..._pdHeaders(s), 'Content-Type': 'application/json'},
           body: jsonEncode(body));
     } catch (_) {
@@ -296,8 +290,7 @@ class RiotClient {
     }
   }
 
-  Uri _pd(RiotSession s, String path) =>
-      Uri.https('pd.${s.shard}.a.pvp.net', path);
+  Uri _pd(RiotSession s, String path) => Uri.https(s.pdHost, path);
 
   Map<String, String> _pdHeaders(RiotSession s) => {
         'Authorization': 'Bearer ${s.accessToken}',

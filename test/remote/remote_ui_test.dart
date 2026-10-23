@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -244,6 +246,30 @@ void main() {
       await leave(tester, h);
     });
 
+    testWidgets('預選的特務被隊友鎖定時停用，改選其他特務後才送出', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester,
+          consent: true, preferredAgent: 'agent-mate', pregameStatus: 200);
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      expect(find.byKey(const ValueKey('remote-agent-taken')), findsOneWidget);
+      expect(
+          tester
+              .widget<ButtonStyleButton>(
+                  find.byKey(const ValueKey('remote-lock-agent')))
+              .onPressed,
+          isNull);
+      expect(find.text('目前：蓋克（已選擇）'), findsOneWidget);
+      await tapKey(tester, 'remote-agent-picker');
+      await tester.tap(find.text('蓋克').last);
+      await drain(tester);
+      expect(find.byKey(const ValueKey('remote-agent-taken')), findsNothing);
+      await tapKey(tester, 'remote-lock-agent');
+      expect(writes.single.url.path,
+          '/pregame/v1/matches/$testPregameMatchId/lock/agent-$myPuuid');
+      await leave(tester, h);
+    });
+
     testWidgets('未同意時選角畫面沒有遠端選角', (tester) async {
       setWidth(tester, 1400);
       final h = await harness(tester, pregameStatus: 200);
@@ -406,6 +432,83 @@ void main() {
         '/parties/v1/parties/$testPartyId/makedefault',
       ]);
       expect(writes.last.url.queryParameters['queueID'], 'unrated');
+      await leave(tester, h);
+    });
+
+    testWidgets('自訂對戰設定：模式、伺服器用 Riot 清單，規則開關原樣帶回其他欄位', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester,
+          consent: true,
+          party: partyJson(state: 'CUSTOM_GAME_SETUP')
+            ..['CustomGameData'] = {
+              'Settings': {
+                'Map': '/Game/Maps/Ascent/Ascent',
+                'Mode': '/Game/GameModes/Bomb/BombGameMode.BombGameMode_C',
+                'UseBots': false,
+                'GamePod': 'aresriot.aws-rclusterprod-ape1-1.ap-gp-hongkong-1',
+                'GameRules': {'TournamentMode': 'true'},
+              },
+              'Membership': {
+                'teamOne': [
+                  {'Subject': myPuuid}
+                ],
+              },
+            });
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      expect(writes, isEmpty);
+      // 選項來自 customgameconfigs（GET）。
+      expect(find.text('標準'), findsOneWidget);
+      expect(find.text('香港 1'), findsOneWidget);
+
+      await tapKey(tester, 'remote-custom-mode');
+      await tester.tap(find.text('死鬥').last);
+      await drain(tester);
+      await tapKey(tester, 'remote-rule-PlayOutAllRounds');
+      expect([for (final r in writes) r.url.path], [
+        '/parties/v1/parties/$testPartyId/customgamesettings',
+        '/parties/v1/parties/$testPartyId/customgamesettings',
+      ]);
+      final mode = jsonDecode(writes[0].body) as Map<String, dynamic>;
+      expect(mode['Mode'],
+          '/Game/GameModes/Deathmatch/DeathmatchGameMode.DeathmatchGameMode_C');
+      expect(mode['GamePod'],
+          'aresriot.aws-rclusterprod-ape1-1.ap-gp-hongkong-1');
+      final rule = jsonDecode(writes[1].body) as Map<String, dynamic>;
+      expect(rule['GameRules'],
+          {'TournamentMode': 'true', 'PlayOutAllRounds': 'true'});
+      await leave(tester, h);
+    });
+
+    testWidgets('自訂對戰設定在 375 寬不溢出', (tester) async {
+      setWidth(tester, 375);
+      final h = await harness(tester,
+          consent: true,
+          party: partyJson(state: 'CUSTOM_GAME_SETUP')
+            ..['CustomGameData'] = {
+              'Settings': {
+                'Map': '/Game/Maps/Ascent/Ascent',
+                'Mode': '/Game/GameModes/Bomb/BombGameMode.BombGameMode_C',
+                'GamePod': 'aresriot.aws-rclusterprod-ape1-1.ap-gp-hongkong-1',
+              },
+              'Membership': const {},
+            });
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      expect(find.byKey(const ValueKey('remote-custom-settings')),
+          findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await leave(tester, h);
+    });
+
+    testWidgets('隊伍已有代碼時直接顯示，不用再產生', (tester) async {
+      setWidth(tester, 1400);
+      final h = await harness(tester,
+          consent: true, party: partyJson()..['InviteCode'] = 'ZZ9999');
+      await tester.pumpWidget(h.wrap(home: const LivePage()));
+      await drain(tester);
+      expect(find.text('ZZ9999'), findsOneWidget);
+      expect(writes, isEmpty);
       await leave(tester, h);
     });
 

@@ -36,6 +36,31 @@ Map<String, dynamic> loadoutJson() => {
       'Incognito': false,
     };
 
+/// 自訂對戰選項（欄位依 valorant-api-types 的 Party_FetchCustomGameConfigs，值為虛構）。
+Map<String, dynamic> customGameConfigsJson() => {
+      'Enabled': true,
+      'EnabledMaps': ['/Game/Maps/Ascent/Ascent', '/Game/Maps/Bonsai/Bonsai'],
+      'EnabledModes': [
+        '/Game/GameModes/Bomb/BombGameMode.BombGameMode_C',
+        '/Game/GameModes/Deathmatch/DeathmatchGameMode.DeathmatchGameMode_C',
+      ],
+      'Queues': <dynamic>[],
+      'GamePodPingServiceInfo': {
+        'aresriot.aws-rclusterprod-ape1-1.ap-gp-hongkong-1': {
+          'SecurityHash': 1,
+          'ObfuscatedIP': 1,
+          'PingProxyAddress': 'x',
+          'PingProxyAddresses': <String>[],
+        },
+        'aresriot.aws-rclusterprod-apne1-1.ap-gp-tokyo-1': {
+          'SecurityHash': 1,
+          'ObfuscatedIP': 1,
+          'PingProxyAddress': 'x',
+          'PingProxyAddresses': <String>[],
+        },
+      },
+    };
+
 /// 遠端操作的假伺服器：記錄寫入請求，其餘交給 [inner]（預設 [riotClient]）。
 /// [status] 以路徑片段指定回應碼（例如 `{'/lock/': 409}`）。
 MockClient remoteHttp(List<http.Request> requests,
@@ -46,6 +71,11 @@ MockClient remoteHttp(List<http.Request> requests,
   var loadout = loadoutJson();
   return MockClient((req) async {
     final path = req.url.path;
+    // 讀取（GET）不記錄在 [requests]：只記錄寫入。
+    if (req.method == 'GET' && path == '/parties/v1/parties/customgameconfigs') {
+      return http.Response(jsonEncode(customGameConfigsJson()), 200,
+          headers: {'content-type': 'application/json'});
+    }
     final remote = path.contains('/personalization/') ||
         (req.method == 'POST' &&
             (path.contains('/pregame/v1/matches/') ||

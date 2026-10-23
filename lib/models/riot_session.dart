@@ -6,6 +6,9 @@ class RiotSession {
   final String puuid;
   final String gameName;
   final String tagLine;
+
+  /// riot-geo 的 `affinities.live`，其實是**區域**（ap、na、latam、br、eu、kr）；
+  /// pd 主機要用 [pdShard]，glz 主機是 `glz-{區域}-1.{pdShard}`。
   final String shard;
   final String clientVersion;
   final DateTime expiresAt;
@@ -21,6 +24,15 @@ class RiotSession {
     required this.clientVersion,
     required this.expiresAt,
   });
+
+  /// pd／glz 主機的 shard：拉丁美洲與巴西的區域共用 na shard，其他區域同名。
+  String get pdShard => shard == 'latam' || shard == 'br' ? 'na' : shard;
+
+  /// pd 端點主機。
+  String get pdHost => 'pd.$pdShard.a.pvp.net';
+
+  /// glz（即時對局、隊伍）端點主機。
+  String get glzHost => 'glz-$shard-1.$pdShard.a.pvp.net';
 
   String get displayName => gameName.isEmpty ? '已登入玩家' : '$gameName#$tagLine';
 

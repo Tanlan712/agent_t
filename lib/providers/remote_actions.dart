@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../logic/custom_game.dart';
 import '../models/riot_session.dart';
 import '../services/remote_client.dart';
 import '../services/riot_client.dart';
@@ -86,11 +87,35 @@ class RemoteActions with ChangeNotifier {
   Future<bool> makeCustomGame(String partyId) =>
       _run((s) => _client.makeCustomGame(s, partyId));
 
+  /// 寫回整份自訂對戰設定（地圖、模式、伺服器、規則；見 logic/custom_game.dart）。
+  Future<bool> setCustomSettings(
+          String partyId, Map<String, dynamic> settings) =>
+      _run((s) => _client.setCustomGameSettings(s, partyId, settings));
+
   /// 換自訂對戰的地圖：其他設定原樣帶回。
   Future<bool> setCustomMap(
           String partyId, Map<String, dynamic> settings, String mapId) =>
-      _run((s) => _client
-          .setCustomGameSettings(s, partyId, {...settings, 'Map': mapId}));
+      setCustomSettings(partyId, withCustomSetting(settings, 'Map', mapId));
+
+  /// 自訂對戰可用的選項；還沒讀到或讀取失敗時為 null。
+  CustomGameConfig? get customConfig => _customConfig;
+  CustomGameConfig? _customConfig;
+  bool _configRequested = false;
+
+  /// 頁面開著時只讀一次自訂對戰選項（GET）；失敗也不重送，畫面改用預設清單。
+  Future<void> loadCustomConfig() async {
+    final s = _riot.session;
+    if (_configRequested || s == null) return;
+    _configRequested = true;
+    try {
+      _customConfig = await _client.fetchCustomGameConfigs(s);
+      _notify();
+    } on RemoteDisabledException {
+      // 未同意時不讀。
+    } on RiotApiException catch (e) {
+      if (e.isAuthError) _riot.expire();
+    }
+  }
 
   Future<bool> setCustomTeam(String partyId, String team, String puuid) =>
       _run((s) => _client.setCustomTeam(s, partyId, team, puuid));

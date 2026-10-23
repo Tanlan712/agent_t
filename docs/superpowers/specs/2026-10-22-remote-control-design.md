@@ -43,7 +43,7 @@
 | 產生隊伍代碼 | POST `glz /parties/v1/parties/{partyId}/invitecode` | 回應的隊伍資料 `InviteCode` |
 | 開始排隊 | POST `glz /parties/v1/parties/{partyId}/matchmaking/join` | — |
 | 取消排隊 | POST `glz /parties/v1/parties/{partyId}/matchmaking/leave` | — |
-| 變更模式 | POST `glz /parties/v1/parties/{partyId}/queue` | `{"queueID": id}` |
+| 變更模式 | POST `glz /parties/v1/parties/{partyId}/queue` | `{"queueId": id}`（2026-10-23 依 valorant-api-types 修正，原本寫成 queueID） |
 | 開放／鎖定隊伍 | POST `glz /parties/v1/parties/{partyId}/accessibility` | `{"accessibility": "OPEN" \| "CLOSED"}` |
 
 全部經過既有的 `*.a.pvp.net` 限流（同時最多 2 個）。401／403 時呼叫 `RiotProvider.expire()`。
@@ -80,7 +80,8 @@
 | 邀請 | POST `glz /parties/v1/parties/{partyId}/invites/name/{name}/tag/{tag}` | 隊伍卡片輸入「名稱#標籤」 |
 | 踢出成員（隊長） | DELETE `glz /parties/v1/players/{puuid}` | 每位成員旁的「踢出」；**先確認**；不能踢自己 |
 | 建立自訂對戰（隊長） | POST `…/makecustomgame` | 不在自訂對戰時 |
-| 自訂對戰設定（隊長） | POST `…/customgamesettings`，內容是原本的 `CustomGameData.Settings` 只換 `Map` | 地圖下拉選單 |
+| 自訂對戰設定（隊長） | POST `…/customgamesettings`，內容是原本的 `CustomGameData.Settings`，只換使用者改的那一項 | 地圖、模式、伺服器下拉選單與規則開關（2026-10-23） |
+| 自訂對戰選項（隊長，GET） | GET `…/parties/v1/parties/customgameconfigs` | 下拉選單的清單；讀不到時地圖用 valorant-api.com 的全部地圖 |
 | 自訂對戰換隊（隊長） | POST `…/customgamemembership/{TeamOne\|TeamTwo\|TeamSpectate}`，`{"playerToPutOnTeam": puuid}` | 成員旁的隊伍下拉選單 |
 | 開始自訂對戰（隊長） | POST `…/startcustomgame` | |
 | 回到一般模式（隊長） | POST `…/makedefault?queueID=unrated` | |
@@ -89,3 +90,17 @@
 **不做：聊天與語音。** MUC／語音 token 是憑證，第 4 節禁止讀取；聊天需要 XMPP 的 TCP 連線（瀏覽器做不到，`lib/` 也不能用 `dart:io`），語音需要 Vivox SDK。
 
 自訂對戰期間不顯示準備、排隊與模式（那些只適用一般隊伍）。
+
+## 2026-10-23 補完（使用者：不用實機測試，直接修正並完成）
+
+對照 techchrism 的 `valorant-api-types`（npm 0.10.1，社群文件的型別版）逐一檢查端點：
+
+- **修正**：glz 主機改成 `glz-{區域}-1.{shard}`（之前用區域當 shard，拉丁美洲／巴西會連到不存在的主機；pd 同樣改用 shard）。
+- **修正**：變更模式的內容是 `{"queueId": …}`（之前寫成 `queueID`，Riot 可能忽略）。
+- **選角**：預設是預選特務，也可以在下拉選單改選其他特務（收藏讀到時只列已擁有的，否則列全部）；
+  顯示自己目前的特務與狀態；隊友已鎖定同一位特務時停用按鈕並提示。仍然只有按下才送出。
+- **隊伍代碼**：隊伍資料的 `InviteCode` 有值時直接顯示，不必再產生。
+- **自訂對戰**：地圖、模式、伺服器用 `customgameconfigs` 的清單；規則開關（打完全部回合、延長賽贏兩回合、錦標賽模式、
+  允許作弊選項、不留對戰紀錄）；`GameRules` 的值是字串 `"true"`／`"false"`。隊伍名稱改成「A 隊」「B 隊」。
+- 啟用特務合約維持沒有按鈕（使用者 2026-10-22 決定移除）。
+- `makecustomgame`、`customgamemembership`、`makedefault` 不在 valorant-api-types 裡，維持舊版社群文件的寫法，未驗證。

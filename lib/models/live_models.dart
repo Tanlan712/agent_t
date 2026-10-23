@@ -51,6 +51,9 @@ class LiveParty {
   /// 自訂對戰的分隊：puuid → `TeamOne`／`TeamTwo`／`TeamSpectate`。
   final Map<String, String> customTeams;
 
+  /// 目前的隊伍代碼（`InviteCode`）；沒有代碼時為 null。
+  final String? inviteCode;
+
   const LiveParty({
     required this.id,
     required this.state,
@@ -61,6 +64,7 @@ class LiveParty {
     this.eligibleQueues = const [],
     this.customSettings,
     this.customTeams = const {},
+    this.inviteCode,
   });
 
   bool get isCustomGame => state == 'CUSTOM_GAME_SETUP';
