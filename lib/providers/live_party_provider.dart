@@ -10,7 +10,8 @@ import '../services/match_client.dart';
 import '../services/riot_client.dart';
 import 'riot_provider.dart';
 
-enum LiveStatus { idle, loading, ready, noParty, error, loggedOut }
+/// [offline]：遊戲沒開；[noParty]：遊戲有開但不在大廳（或無法判斷遊戲有沒有開）。
+enum LiveStatus { idle, loading, ready, noParty, offline, error, loggedOut }
 
 /// 目前所在的階段；優先順序：對局 > 選角 > 隊伍。
 enum LivePhase { party, pregame, inGame }
@@ -43,6 +44,9 @@ class LivePartyProvider with ChangeNotifier {
 
   /// name-service 已經查過的玩家（查過仍沒有名稱的顯示為未知玩家）。
   final Set<String> _namesAsked = {};
+
+  /// 遊戲狀態端點讀不到（例如被瀏覽器擋下）時改回逐一試對局、選角、隊伍。
+  bool _sessionUnavailable = false;
 
   Timer? _timer;
   bool _busy = false;
@@ -115,8 +119,31 @@ class LivePartyProvider with ChangeNotifier {
     }
     try {
       _names[s.puuid] = '${s.gameName}#${s.tagLine}';
+      // 先問遊戲狀態：遊戲沒開時只送這一個請求，在大廳時不用再試對局與選角。
+      String? loop = '';
+      if (!_sessionUnavailable) {
+        try {
+          loop = await _live.fetchLoopState(s);
+        } on RiotApiException catch (e) {
+          if (e.statusCode == 401) rethrow;
+          _sessionUnavailable = true;
+          loop = '';
+        }
+        if (_disposed) return;
+      }
+      if (loop == null) {
+        _liveMatch = null;
+        _pregame = null;
+        _party = null;
+        _phase = LivePhase.party;
+        _status = LiveStatus.offline;
+        _error = null;
+        return;
+      }
+      final skipCore = loop == 'MENUS' || loop == 'PREGAME';
+      final skipPregame = loop == 'MENUS';
       // 對局中：顯示即時對戰（使用者決定，AGENTS.md 第 2 節）。
-      final coreId = await _live.fetchCoreMatchId(s);
+      final coreId = skipCore ? null : await _live.fetchCoreMatchId(s);
       if (_disposed) return;
       if (coreId != null) {
         final match =
@@ -135,7 +162,7 @@ class LivePartyProvider with ChangeNotifier {
       }
       _liveMatch = null;
       _pregame = null;
-      final preId = await _live.fetchPregameMatchId(s);
+      final preId = skipPregame ? null : await _live.fetchPregameMatchId(s);
       if (_disposed) return;
       if (preId != null) {
         final pre =

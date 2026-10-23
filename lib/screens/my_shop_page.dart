@@ -15,6 +15,7 @@ import '../shell/app_shell.dart';
 import '../shell/nav_items.dart' show wishlistEnabled;
 import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
+import '../widgets/accessory_store.dart';
 import '../widgets/bundle_tile.dart';
 import '../widgets/catalog_gate.dart';
 import '../widgets/combat_stats.dart';
@@ -343,6 +344,11 @@ class MyShopPage extends StatelessWidget {
                   BentoTile(span: side.isEmpty ? 12 : 8, child: nightSection),
                   if (hits != null) BentoTile(span: 4, child: hits),
                 ],
+                // 配件商店：同步到才顯示（舊資料或手動輸入沒有）。
+                if (shop.accessories.isNotEmpty)
+                  BentoTile(
+                      span: 12,
+                      child: AccessoryStoreSection(shop: shop, now: t)),
                 if (bundles.isEmpty) BentoTile(span: 12, child: bundleSection),
               ]);
             }),

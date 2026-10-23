@@ -3,6 +3,9 @@ import '../models/current_shop.dart';
 /// 特務幣（VP）的貨幣 ID。
 const vpCurrencyId = '85ad13f7-3d1b-5128-9eb2-7cd8ee0b5741';
 
+/// 王國幣（配件商店的獎章）的貨幣 ID。
+const kingdomCurrencyId = '85ca954a-41f2-ce94-9b45-8ca3dd39a00d';
+
 int _vp(Object? cost) =>
     ((cost as Map<String, dynamic>?)?[vpCurrencyId] as num?)?.toInt() ?? 0;
 
@@ -65,6 +68,15 @@ CurrentShop mapStorefront(
       ),
   ];
 
+  // 配件商店（AccessoryStore）：同一個 storefront 回應，用王國幣購買。
+  final accessory = json['AccessoryStore'] as Map<String, dynamic>?;
+  final accessories = [
+    for (final a
+        in (accessory?['AccessoryStoreOffers'] as List<dynamic>? ?? const []))
+      if (a is Map<String, dynamic> && a['Offer'] is Map<String, dynamic>)
+        if (_accessory(a['Offer'] as Map<String, dynamic>) case final e?) e,
+  ];
+
   return CurrentShop(
     daily: daily,
     dailyExpiresAt: daily.isEmpty
@@ -80,5 +92,27 @@ CurrentShop mapStorefront(
     featuredBundle: bundles.firstOrNull,
     featuredBundles: bundles,
     featuredBundleUpdatedAt: bundles.isEmpty ? null : now,
+    accessories: accessories,
+    accessoryEndsAt: accessories.isEmpty
+        ? null
+        : now.add(
+            _seconds(accessory?['AccessoryStoreRemainingDurationInSeconds'])),
+  );
+}
+
+AccessoryEntry? _accessory(Map<String, dynamic> offer) {
+  final rewards = offer['Rewards'] as List<dynamic>? ?? const [];
+  if (rewards.isEmpty || rewards.first is! Map<String, dynamic>) return null;
+  final r = rewards.first as Map<String, dynamic>;
+  final type = r['ItemTypeID'] as String?;
+  final id = r['ItemID'] as String?;
+  if (type == null || id == null) return null;
+  final cost = offer['Cost'] as Map<String, dynamic>? ?? const {};
+  return AccessoryEntry(
+    itemTypeId: type.toLowerCase(),
+    itemId: id.toLowerCase(),
+    price: (cost[kingdomCurrencyId] as num?)?.toInt() ??
+        (cost.values.firstOrNull as num?)?.toInt() ??
+        0,
   );
 }

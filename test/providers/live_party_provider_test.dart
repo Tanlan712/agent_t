@@ -42,6 +42,8 @@ void main() {
     int partyStatus = 200,
     int coreStatus = 404,
     int pregameStatus = 404,
+    int sessionStatus = 200,
+    String? loopState,
     Set<String> otherMmrHidden = const {},
     Map<String, int> otherMmrStatus = const {},
   }) async {
@@ -51,6 +53,8 @@ void main() {
         partyStatus: partyStatus,
         coreStatus: coreStatus,
         pregameStatus: pregameStatus,
+        sessionStatus: sessionStatus,
+        loopState: loopState,
         otherMmrHidden: otherMmrHidden,
         otherMmrStatus: otherMmrStatus);
     final client = MockClient((req) async {
@@ -111,6 +115,43 @@ void main() {
     await p.refresh();
     expect(p.status, LiveStatus.noParty);
     expect(p.party, isNull);
+  });
+
+  group('遊戲狀態（使用者決定 2026-10-23）', () {
+    test('遊戲沒開（404）：只送這一個請求，顯示遊戲沒有開啟', () async {
+      final (p, _) = await setup(sessionStatus: 404);
+      await p.refresh();
+      expect(p.status, LiveStatus.offline);
+      expect(p.party, isNull);
+      expect(requests.map((r) => r.url.path),
+          ['/session/v1/sessions/puuid-1']);
+    });
+
+    test('在大廳（MENUS）：不試對局與選角，直接讀隊伍與延遲', () async {
+      final (p, _) = await setup();
+      await p.refresh();
+      expect(p.status, LiveStatus.ready);
+      expect(where('/core-game/'), isEmpty);
+      expect(where('/pregame/'), isEmpty);
+      expect(p.party!.pings.single.podId, 'pod-a');
+      expect(p.party!.pings.single.ping, 40);
+    });
+
+    test('選角中（PREGAME）：不試對局', () async {
+      final (p, _) = await setup(pregameStatus: 200);
+      await p.refresh();
+      expect(p.phase, LivePhase.pregame);
+      expect(where('/core-game/'), isEmpty);
+    });
+
+    test('遊戲狀態讀不到（非 404）：改回逐一試，之後不再問', () async {
+      final (p, _) = await setup(sessionStatus: 500);
+      await p.refresh();
+      expect(p.status, LiveStatus.ready);
+      expect(where('/core-game/v1/players/'), hasLength(1));
+      await p.refresh();
+      expect(where('/session/'), hasLength(1));
+    });
   });
 
   test('401 登出並停止更新', () async {
@@ -188,8 +229,8 @@ void main() {
       expect(where('/parties/'), isEmpty);
     });
 
-    test('不在選角也不在對局：隊伍階段', () async {
-      final (p, _) = await setup();
+    test('不在選角也不在對局（讀不到遊戲狀態時逐一試）：隊伍階段', () async {
+      final (p, _) = await setup(sessionStatus: 500);
       await p.refresh();
       expect(p.phase, LivePhase.party);
       expect(p.party, isNotNull);

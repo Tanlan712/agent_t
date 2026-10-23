@@ -2,4 +2,10 @@
 <resources>
     <!-- 與網頁版 manifest 的 background_color 相同（預設主題的深色背景）。 -->
     <color name="launch_background">#111111</color>
+    <!-- 主畫面小工具（預設主題的深色配色）。 -->
+    <color name="widget_background">#E6111111</color>
+    <color name="widget_title">#FFFFFF</color>
+    <color name="widget_text">#E8E8E8</color>
+    <color name="widget_muted">#9A9A9A</color>
+    <color name="widget_accent">#FF4655</color>
 </resources>

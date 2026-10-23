@@ -50,6 +50,39 @@ void main() {
     expect(find.textContaining('願望清單'), findsNothing);
   }, skip: wishlistEnabled);
 
+  testWidgets('配件商店：同步到時顯示類別與王國幣價格', (tester) async {
+    setWidth(tester, 1400);
+    final h = await Harness.create(tester,
+        shop: CurrentShop(
+          daily: dailyShop(['o', 'p', 'i', 'r']).daily,
+          dailyExpiresAt: expires,
+          accessories: const [
+            AccessoryEntry(
+                itemTypeId: 'dd3bf334-87f3-40bd-b043-682a57a8dc3a',
+                itemId: 'buddy-1',
+                price: 3000),
+            AccessoryEntry(
+                itemTypeId: 'de7caa6b-adf7-4588-bbd1-143831e786c6',
+                itemId: 'title-1',
+                price: 2000),
+          ],
+          accessoryEndsAt: now.add(const Duration(days: 3, hours: 2)),
+        ));
+    await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('shop-accessories')), findsOneWidget);
+    expect(find.textContaining('吊飾 · 3000 王國幣'), findsOneWidget);
+    expect(find.textContaining('稱號 · 2000 王國幣'), findsOneWidget);
+    expect(find.text('剩餘 3 天 2 小時'), findsOneWidget);
+  });
+
+  testWidgets('沒有配件商店資料時不顯示', (tester) async {
+    final h = await Harness.create(tester, shop: dailyShop(['o', 'p', 'i', 'r']));
+    await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('shop-accessories')), findsNothing);
+  });
+
   testWidgets('過期的每日商店標示且不計入', (tester) async {
     final h = await Harness.create(tester,
         shop: dailyShop(['o', 'p', 'i', 'r']), wishlist: ['o']);

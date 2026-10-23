@@ -4,8 +4,8 @@ import '../models/match_models.dart';
 import 'prefs_json.dart';
 
 class MatchReferenceCache {
-  /// v2 起含賽季；舊的 v1 快取沒有賽季，換鍵讓它重新下載。
-  static const _key = 'match_reference_v2';
+  /// v2 起含賽季、v3 起含武器與小地圖；舊快取缺資料，換鍵讓它重新下載。
+  static const _key = 'match_reference_v3';
 
   final SharedPreferences _prefs;
 

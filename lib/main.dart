@@ -28,6 +28,7 @@ import 'models/match_models.dart';
 import 'screens/riot_web_login_page.dart';
 import 'services/progress_reference_api.dart';
 import 'services/catalog_api.dart';
+import 'services/home_widget.dart';
 import 'services/live_client.dart';
 import 'services/match_client.dart';
 import 'services/match_reference_api.dart';
@@ -39,6 +40,7 @@ import 'storage/catalog_cache.dart';
 import 'storage/encounter_storage.dart';
 import 'storage/match_reference_cache.dart';
 import 'storage/offer_price_storage.dart';
+import 'storage/pass_xp_storage.dart';
 import 'storage/seen_players_storage.dart';
 import 'storage/session_storage.dart';
 import 'storage/settings_storage.dart';
@@ -110,6 +112,13 @@ Future<void> main() async {
   LoginPrefetcher(riot, collection, progress, shop: shop, catalog: catalog);
   // 網頁開著時，每日商店到期或夜市結束後自動同步（使用者決定 2026-10-22）。
   ShopAutoRefresher(riot, shop, catalog);
+  // Android 主畫面小工具：商店或造型目錄變了就更新（小工具自己不連網）。
+  final homeWidget = HomeWidgetSync();
+  void pushWidget() =>
+      homeWidget.push(shop.shop, (id) => catalog.skinById(id)?.name);
+  shop.addListener(pushWidget);
+  catalog.addListener(pushWidget);
+  pushWidget();
   // 網頁版的離線提示、安裝、新版本提示與商店刷新通知；手機 App 不做任何事。
   final pwa = PwaController(createPwaPlatform())..start();
 
@@ -128,6 +137,8 @@ Future<void> main() async {
         ChangeNotifierProvider.value(value: penalties),
         ChangeNotifierProvider.value(value: prices),
         ChangeNotifierProvider.value(value: purchaseHistory),
+        // 通行證每日經驗紀錄（只存在本機）。
+        Provider.value(value: PassXpStorage(prefs)),
         Provider.value(value: matchClient),
         Provider.value(value: liveClient),
         Provider.value(value: remoteClient),

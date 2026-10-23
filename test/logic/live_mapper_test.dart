@@ -173,4 +173,12 @@ void loadoutTests() {
         })['a'],
         isEmpty);
   });
+
+  test('伺服器名稱：取 -gp- 後的城市，第 2 台以上加編號', () {
+    expect(serverName('aresriot.aws-rclusterprod-ape1-1.ap-gp-hongkong-1'),
+        '香港');
+    expect(serverName('aresriot.aws-rclusterprod-apne1-1.ap-gp-tokyo-2'),
+        '東京 2');
+    expect(serverName('aresriot.aws-x.na-gp-unknowncity-1'), 'unknowncity');
+  });
 }

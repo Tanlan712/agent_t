@@ -13,6 +13,7 @@ import '../shell/app_shell.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
 import '../widgets/pass_card.dart';
+import '../widgets/pass_pace_card.dart';
 
 /// KPI 窄欄用的倒數：超過一天只顯示天數，不足一天用 時:分（避免被截斷）。
 String kpiCountdown(Duration d) {
@@ -177,7 +178,17 @@ class _ProgressPageState extends State<ProgressPage> {
                       child: EmptyState(
                           icon: Icons.military_tech, title: '目前沒有進行中的通行證'),
                     )
-                  : PassCard(pass: pass, ref: ref),
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (pass.seasonEnd != null && riot.session != null) ...[
+                          PassPaceCard(
+                              pass: pass, puuid: riot.session!.puuid, now: now),
+                          const SizedBox(height: 16),
+                        ],
+                        PassCard(pass: pass, ref: ref),
+                      ],
+                    ),
             const SizedBox(height: 16),
             if (missions != null)
               LayoutBuilder(builder: (context, c) {

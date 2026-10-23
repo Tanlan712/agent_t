@@ -31,6 +31,7 @@ import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
 import '../widgets/combat_stats.dart';
 import '../widgets/encounter_tag.dart';
+import '../widgets/player_specialty.dart';
 import '../widgets/recent_form_cell.dart';
 import '../widgets/remote_live_controls.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
@@ -223,9 +224,17 @@ class _LivePageState extends State<LivePage> {
     final party = _live.party;
     if (party == null) {
       switch (_live.status) {
+        case LiveStatus.offline:
+          return const EmptyState(
+              key: ValueKey('live-offline'),
+              icon: Icons.power_settings_new,
+              title: '遊戲沒有開啟',
+              message: '開啟 VALORANT 後這頁會自動更新');
         case LiveStatus.noParty:
           return const EmptyState(
-              icon: Icons.sports_esports, title: '遊戲沒有開啟，或目前不在大廳');
+              key: ValueKey('live-no-party'),
+              icon: Icons.sports_esports,
+              title: '目前不在大廳');
         case LiveStatus.error:
         case LiveStatus.loggedOut:
           return Center(
@@ -302,9 +311,47 @@ class _PartyHeader extends StatelessWidget {
               Text(
                   '已排隊 ${waited.inMinutes}:${(waited.inSeconds % 60).toString().padLeft(2, '0')}',
                   style: TextStyle(color: AppColors.muted)),
+            if (party.pings.isNotEmpty) _Pings(pings: party.pings),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// 到各伺服器的延遲（party 的 Pings），由低到高。
+class _Pings extends StatelessWidget {
+  final List<ServerPing> pings;
+
+  const _Pings({required this.pings});
+
+  @override
+  Widget build(BuildContext context) {
+    Color color(int ms) => ms <= 50
+        ? AppColors.win
+        : ms <= 100
+            ? AppColors.warn
+            : AppColors.loss;
+    return Wrap(
+      key: const ValueKey('party-pings'),
+      spacing: 8,
+      runSpacing: 6,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Text('延遲', style: TextStyle(color: AppColors.muted)),
+        for (final p in pings)
+          Container(
+            key: ValueKey('ping-${p.podId}'),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              border: Border.all(color: color(p.ping).withOpacity(0.6)),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text('${serverName(p.podId)} ${p.ping} ms',
+                style: AppText.tabular(
+                    TextStyle(fontSize: 12, color: color(p.ping)))),
+          ),
+      ],
     );
   }
 }
@@ -658,6 +705,10 @@ class _PlayerRow extends StatelessWidget {
                 ],
               );
             }),
+            // 使用者決定（2026-10-23）：顯示擅長的特務與常用槍。
+            if (!player.isCoach)
+              PlayerSpecialty(
+                  puuid: player.puuid, queue: queue, games: liveFormGames),
             if (!player.isCoach) _SkinStrip(puuid: player.puuid, live: live),
           ],
         ),
@@ -829,74 +880,101 @@ class _PregameRow extends StatelessWidget {
       child: Container(
         color: player.isMe ? AppColors.surfaceHigh : null,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: [
-            Tooltip(
-              key: ValueKey('live-rank-${player.puuid}'),
-              triggerMode: TooltipTriggerMode.tap,
-              message: tier.name,
-              child: SizedBox(
-                  width: 24, height: 24, child: SkinIcon(url: tier.iconUrl)),
-            ),
-            const SizedBox(width: 8),
-            Tooltip(
-              key: ValueKey('live-agent-${player.puuid}'),
-              triggerMode: TooltipTriggerMode.tap,
-              message: player.agentId.isEmpty ? '尚未選擇' : agent.name,
-              child: SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: player.agentId.isEmpty
-                      ? null
-                      : SkinIcon(url: agent.iconUrl)),
-            ),
-            const SizedBox(width: 8),
-            SizedBox(
-              width: 48,
-              child: Text(_selectionLabels[player.selection]!,
-                  key: ValueKey('pregame-state-${player.puuid}'),
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: locked ? AppColors.owned : AppColors.muted)),
-            ),
-            Expanded(
-              child: Row(
-                children: [
-                  Flexible(
-                    child: Text(name,
-                        key: ValueKey('live-name-${player.puuid}'),
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontWeight: player.isMe
-                                ? FontWeight.bold
-                                : FontWeight.normal)),
-                  ),
-                  if (!player.isMe)
-                    EncounterTag(puuid: player.puuid, matchId: matchId),
-                  if (!player.isMe)
-                    _SuspicionTag(
-                        puuid: player.puuid,
-                        level: player.level,
-                        seasonWins: player.seasonWins,
-                        tier: tierId,
-                        queue: queue,
-                        rules: rules),
-                  if (player.level > 0) ...[
-                    const SizedBox(width: 6),
-                    Text('Lv ${player.level}',
-                        key: ValueKey('live-level-${player.puuid}'),
-                        style: TextStyle(color: AppColors.muted, fontSize: 12)),
-                  ],
-                ],
-              ),
-            ),
-            RecentFormCell(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // 窄螢幕把最近幾場移到下一行，避免選角列 overflow（同對局列）。
+          LayoutBuilder(builder: (context, c) {
+            final narrow = c.maxWidth < 440;
+            final form = RecentFormCell(
                 key: ValueKey('form-${player.puuid}'),
                 puuid: player.puuid,
                 queue: queue,
-                games: liveFormGames),
-          ],
-        ),
+                games: liveFormGames);
+            final row = Row(
+              children: [
+                Tooltip(
+                  key: ValueKey('live-rank-${player.puuid}'),
+                  triggerMode: TooltipTriggerMode.tap,
+                  message: tier.name,
+                  child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: SkinIcon(url: tier.iconUrl)),
+                ),
+                const SizedBox(width: 8),
+                Tooltip(
+                  key: ValueKey('live-agent-${player.puuid}'),
+                  triggerMode: TooltipTriggerMode.tap,
+                  message: player.agentId.isEmpty ? '尚未選擇' : agent.name,
+                  child: SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: player.agentId.isEmpty
+                          ? null
+                          : SkinIcon(url: agent.iconUrl)),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 48,
+                  child: Text(_selectionLabels[player.selection]!,
+                      key: ValueKey('pregame-state-${player.puuid}'),
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: locked ? AppColors.owned : AppColors.muted)),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(name,
+                            key: ValueKey('live-name-${player.puuid}'),
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontWeight: player.isMe
+                                    ? FontWeight.bold
+                                    : FontWeight.normal)),
+                      ),
+                      if (!player.isMe)
+                        EncounterTag(puuid: player.puuid, matchId: matchId),
+                      if (!player.isMe)
+                        _SuspicionTag(
+                            puuid: player.puuid,
+                            level: player.level,
+                            seasonWins: player.seasonWins,
+                            tier: tierId,
+                            queue: queue,
+                            rules: rules),
+                      if (player.level > 0) ...[
+                        const SizedBox(width: 6),
+                        Text('Lv ${player.level}',
+                            key: ValueKey('live-level-${player.puuid}'),
+                            style: TextStyle(
+                                color: AppColors.muted, fontSize: 12)),
+                      ],
+                    ],
+                  ),
+                ),
+                if (!narrow) form,
+              ],
+            );
+            if (!narrow) return row;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                row,
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: form),
+                ),
+              ],
+            );
+          }),
+          // 使用者決定（2026-10-23）：選角時顯示隊友擅長的特務與常用槍。
+          PlayerSpecialty(
+              puuid: player.puuid, queue: queue, games: liveFormGames),
+        ]),
       ),
     );
   }
