@@ -71,7 +71,7 @@ Riot 的第三方 App 說明指出：暴露隱藏資訊、即時分析或帶來�
 | 用途 | 主機 |
 |---|---|
 | 登入與授權（使用者在 Riot 官方頁面自行登入） | `auth.riotgames.com`、`entitlements.auth.riotgames.com` |
-| 自己的商店、錢包、已擁有造型（使用者決定 2026-10-22：商店回應裡看到的造型價格可存進 localStorage，當作實際定價；`store/v1/offers` 實測 404，不使用；Riot 沒有儲值紀錄 API，使用者決定 2026-10-22：每次讀錢包時把餘額與新擁有的造型 ItemID 存進 localStorage，比對前後當作 VP 儲值／花費紀錄，不另外送請求） | `pd.{shard}.a.pvp.net` |
+| 自己的商店、錢包、已擁有造型（使用者決定 2026-10-22：商店回應裡看到的造型價格可存進 localStorage，當作實際定價；`store/v1/offers` 實測 404，不使用；Riot 沒有儲值紀錄 API，使用者決定 2026-10-22：每次讀錢包時把餘額與新擁有的造型 ItemID 存進 localStorage，比對前後當作 VP 儲值／花費紀錄，不另外送請求；使用者決定 2026-10-23：手機 App 可在 Riot 客服網站的購買紀錄頁由使用者按鈕匯入官方紀錄，見第 3 節「手機 App」） | `pd.{shard}.a.pvp.net` |
 | 自己擁有的收藏（使用者決定 2026-10-21）：`store/v1/entitlements/{puuid}/{ItemTypeID}` 的造型、炫彩、特務、吊飾、噴漆、玩家卡片、稱號，只能 GET | `pd.{shard}.a.pvp.net` |
 | 自己的帳號等級與經驗（使用者決定 2026-10-21）：`account-xp/v1/players/{puuid}`，只能 GET | `pd.{shard}.a.pvp.net` |
 | 自己的通行證與任務進度（使用者決定 2026-10-21）：`contracts/v1/contracts/{puuid}`，**只能 GET**；不得啟用合約（POST `contracts/v1/contracts/{puuid}/special/{id}`）或任何寫入 | `pd.{shard}.a.pvp.net` |
@@ -119,6 +119,13 @@ Riot 在伺服器端看得到這些請求，帳號可能被標記或停權；網
 - 只有 Android／iOS App（`!kIsWeb` 且平台是 Android 或 iOS）顯示內嵌登入；網頁版維持原本的貼網址登入。
 - 內嵌頁只開 `riotLoginUrl`，使用者自己在 Riot 頁面輸入帳密。App **不得**注入或執行任何 JavaScript、
   不得加 JavaScript channel、不得讀取表單或 cookie 的內容。
+  - **唯一例外（使用者決定 2026-10-23）**：錢包紀錄的「匯入官方購買紀錄」內嵌頁（`PurchaseImportPage`）
+    開 Riot 客服網站的購買紀錄頁，只能前往 `*.riotgames.com`；使用者自己登入，**只有使用者按下「匯入這頁的紀錄」時**，
+    且目前頁面是 `support.riotgames.com`，才執行固定的唯讀腳本 `purchaseScrapeScript`，只讀紀錄表格各格的文字。
+    腳本不得讀 cookie／storage／表單、不得送請求、不得點擊或翻頁；不得在背景或自動執行。
+    讀到的紀錄只存在這支手機（`purchase_history_v1`），不寫 log。登入頁（`riotLoginUrl`）仍然完全不注入。
+    已向使用者說明風險：等於爬 Riot 網頁，比只讀遊戲 API 更可能被視為自動化；網站改版就會失效；
+    客服網站可能要求兩步驟驗證或擋內嵌頁。規格 `docs/superpowers/specs/2026-10-23-official-purchase-history-design.md`。
 - 偵測到跳轉到 `https://playvalorant.com/opt_in#access_token=…` 時攔下這次導覽（不載入 playvalorant.com），
   只把網址交給既有的 `RiotProvider.login`；網址與 token 不寫入 log。
 - **使用者決定（2026-10-22）**：App 背景自動續期。上次是在 App 內登入（`SessionStorage.autoRenewKey`）、

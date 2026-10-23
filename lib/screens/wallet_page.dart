@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../logic/purchase_history.dart';
 import '../logic/wallet_history.dart';
 import '../models/wallet_log.dart';
 import '../providers/catalog_provider.dart';
@@ -9,9 +10,12 @@ import '../providers/riot_provider.dart';
 import '../providers/shop_provider.dart';
 import '../providers/wallet_log_provider.dart';
 import '../shell/app_shell.dart';
+import '../storage/wallet_log_storage.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
 import 'match_history_page.dart' show formatMatchTime;
+import 'purchase_import_page.dart';
+import 'riot_web_login_page.dart' show inAppLoginSupported;
 
 String _signed(int n) => n > 0 ? '+$n' : '$n';
 
@@ -27,26 +31,60 @@ class WalletPage extends StatelessWidget {
   /// 開啟官方購買紀錄（測試時注入）。
   final Future<bool> Function(Uri) launch;
 
-  const WalletPage({super.key, this.launch = _openInNewTab});
+  /// 可以在 App 內匯入官方購買紀錄（只有手機 App；null 時依平台判斷）。
+  final bool? canImport;
 
-  Widget _official() => PanelCard(
-        key: const ValueKey('wallet-official'),
-        padding: const EdgeInsets.all(16),
-        child: Wrap(
-          spacing: 16,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            const Text('完整的儲值紀錄在 Riot 客服網站，登入後即可查看。'),
-            OutlinedButton.icon(
-              key: const ValueKey('wallet-official-open'),
-              onPressed: () => launch(officialPurchaseHistory),
-              icon: const Icon(Icons.open_in_new, size: 18),
-              label: const Text('查看官方購買紀錄'),
+  /// 開啟匯入頁，回傳讀到的紀錄（測試時注入）。
+  final Future<List<PurchaseRecord>?> Function(BuildContext, Uri)
+      importOfficial;
+
+  const WalletPage({
+    super.key,
+    this.launch = _openInNewTab,
+    this.canImport,
+    this.importOfficial = openPurchaseImport,
+  });
+
+  Future<void> _import(BuildContext context, String puuid) async {
+    final log = context.read<WalletLogProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+    final records = await importOfficial(context, officialPurchaseHistory);
+    if (records == null) return;
+    await log.importPurchases(puuid, records);
+    messenger
+        .showSnackBar(SnackBar(content: Text('已匯入 ${records.length} 筆官方購買紀錄')));
+  }
+
+  Widget _official(BuildContext context, String? puuid) {
+    final importable = puuid != null && (canImport ?? inAppLoginSupported);
+    return PanelCard(
+      key: const ValueKey('wallet-official'),
+      padding: const EdgeInsets.all(16),
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(importable
+              ? '完整的儲值紀錄在 Riot 客服網站。按「匯入」後在官方頁登入，再按「匯入這頁的紀錄」就會列在下方。'
+              : '完整的儲值紀錄在 Riot 客服網站，登入後即可查看。'),
+          if (importable)
+            FilledButton.icon(
+              key: const ValueKey('wallet-official-import'),
+              onPressed: () => _import(context, puuid),
+              icon: const Icon(Icons.download, size: 18),
+              label: const Text('匯入官方購買紀錄'),
             ),
-          ],
-        ),
-      );
+          OutlinedButton.icon(
+            key: const ValueKey('wallet-official-open'),
+            onPressed: () => launch(officialPurchaseHistory),
+            icon: const Icon(Icons.open_in_new, size: 18),
+            label: const Text('查看官方購買紀錄'),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _sync(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -101,7 +139,7 @@ class WalletPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            _official(),
+            _official(context, null),
           ],
         ),
       );
@@ -123,7 +161,7 @@ class WalletPage extends StatelessWidget {
           icon: const Icon(Icons.sync),
           onPressed: riot.isBusy ? null : () => _sync(context),
         ),
-        if (since != null)
+        if (since != null || log.purchases(puuid) != null)
           TextButton(
               onPressed: () => _clear(context, puuid),
               child: const Text('清除紀錄')),
@@ -148,7 +186,11 @@ class WalletPage extends StatelessWidget {
                 up: totals.spent > 0 ? false : null),
           ]),
           const SizedBox(height: 16),
-          _official(),
+          _official(context, puuid),
+          if (log.purchases(puuid) case final imported?) ...[
+            const SizedBox(height: 16),
+            _PurchaseList(imported: imported),
+          ],
           const SizedBox(height: 16),
           const SectionHeader(title: '變化'),
           const SizedBox(height: 8),
@@ -177,6 +219,57 @@ class WalletPage extends StatelessWidget {
     );
   }
 }
+
+/// 從 Riot 官方購買紀錄匯入的清單。
+class _PurchaseList extends StatelessWidget {
+  final ImportedPurchases imported;
+
+  const _PurchaseList({required this.imported});
+
+  @override
+  Widget build(BuildContext context) {
+    final records = imported.records;
+    final total = purchasedVp(records);
+    return Column(
+      key: const ValueKey('wallet-purchases'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SectionHeader(title: '官方購買紀錄（${records.length} 筆）'),
+        const SizedBox(height: 4),
+        Text(
+          '${formatMatchTime(imported.importedAt)} 匯入'
+          '${total > 0 ? '・合計 $total VP' : ''}',
+          style: TextStyle(color: AppColors.muted, fontSize: 12),
+        ),
+        const SizedBox(height: 8),
+        PanelCard(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            children: [
+              for (final r in records)
+                ListTile(
+                  dense: true,
+                  leading: Icon(Icons.receipt_long, color: AppColors.primary),
+                  title: Text(r.item),
+                  subtitle: r.date == null ? null : Text(_day(r.date!)),
+                  trailing: Text(
+                    [
+                      if (r.vp != null) '+${r.vp} VP',
+                      if (r.price != null) r.price!
+                    ].join('\n'),
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _day(DateTime t) =>
+    '${t.year}-${t.month.toString().padLeft(2, '0')}-${t.day.toString().padLeft(2, '0')}';
 
 class _ChangeCard extends StatelessWidget {
   final WalletChange change;

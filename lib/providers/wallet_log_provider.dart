@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../logic/purchase_history.dart';
 import '../logic/wallet_history.dart';
 import '../models/riot_session.dart';
 import '../models/wallet_log.dart';
@@ -12,11 +13,27 @@ class WalletLogProvider with ChangeNotifier {
   final DateTime Function() _now;
   final int max;
   Map<String, AccountWalletLog> _logs;
+  Map<String, ImportedPurchases> _purchases;
 
   WalletLogProvider(this._storage,
       {DateTime Function() now = DateTime.now, this.max = 1000})
       : _now = now,
-        _logs = _storage.load();
+        _logs = _storage.load(),
+        _purchases = _storage.loadPurchases();
+
+  /// 最後一次從 Riot 官方購買紀錄匯入的資料；沒匯入過時為 null。
+  ImportedPurchases? purchases(String puuid) => _purchases[puuid];
+
+  /// 匯入官方購買紀錄（取代這個帳號之前匯入的）。
+  Future<void> importPurchases(
+      String puuid, List<PurchaseRecord> records) async {
+    _purchases = {
+      ..._purchases,
+      puuid: ImportedPurchases(importedAt: _now(), records: records),
+    };
+    await _storage.savePurchases(_purchases);
+    notifyListeners();
+  }
 
   List<WalletSnapshot> snapshots(String puuid) =>
       _logs[puuid]?.snapshots ?? const [];
@@ -70,7 +87,9 @@ class WalletLogProvider with ChangeNotifier {
   /// 刪除 [puuid] 的所有紀錄。
   Future<void> clear(String puuid) async {
     _logs = {..._logs}..remove(puuid);
+    _purchases = {..._purchases}..remove(puuid);
     await _storage.save(_logs);
+    await _storage.savePurchases(_purchases);
     notifyListeners();
   }
 }
