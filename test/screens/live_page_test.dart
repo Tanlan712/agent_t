@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:agent_t/widgets/hud/hud.dart';
 import 'package:http/http.dart' as http;
 import 'package:agent_t/models/match_models.dart';
-import 'package:agent_t/logic/suspicion.dart';
 import 'package:agent_t/screens/live_page.dart';
 import 'package:agent_t/shell/nav_items.dart';
 
@@ -393,9 +392,8 @@ void main() {
     testWidgets('符合門檻時標示疑似小號，滑鼠提示列出原因與「推測」', (tester) async {
       setWidth(tester, 1400);
       final h = await harness(tester, coreStatus: 200);
-      await tester.pumpWidget(h.wrap(
-          home: const LivePage(
-              rules: SuspicionRules(lowLevel: 60, smurfMinAcs: 200))));
+      await tester
+          .pumpWidget(h.wrap(home: LivePage(rules: levelAcsRules(200))));
       await drain(tester);
       await drain(tester);
       final tip = tester.widget<Tooltip>(find.byKey(const ValueKey('sus-r1')));
@@ -413,9 +411,8 @@ void main() {
     testWidgets('對局 10 人都判斷（包括自己），教練不判斷', (tester) async {
       setWidth(tester, 1400);
       final h = await harness(tester, coreStatus: 200);
-      await tester.pumpWidget(h.wrap(
-          home: const LivePage(
-              rules: SuspicionRules(lowLevel: 60, smurfMinAcs: 150))));
+      await tester
+          .pumpWidget(h.wrap(home: LivePage(rules: levelAcsRules(150))));
       await drain(tester);
       await drain(tester);
       // fixture 的 ACS：自己 191、mate 159、r1 227，其餘低於 150。
@@ -483,9 +480,8 @@ void main() {
     testWidgets('疑似小號標籤是 StatusChip，不用 emoji', (tester) async {
       setWidth(tester, 1400);
       final h = await harness(tester, coreStatus: 200);
-      await tester.pumpWidget(h.wrap(
-          home: const LivePage(
-              rules: SuspicionRules(lowLevel: 60, smurfMinAcs: 200))));
+      await tester
+          .pumpWidget(h.wrap(home: LivePage(rules: levelAcsRules(200))));
       await drain(tester);
       await drain(tester);
       expect(

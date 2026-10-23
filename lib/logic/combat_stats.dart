@@ -96,3 +96,10 @@ PeakRank? peakRank(Map<String, dynamic> mmr, Map<String, SeasonRef> seasons) {
 
 String seasonLabel(Map<String, SeasonRef> seasons, String seasonId) =>
     seasons[seasonId.toLowerCase()]?.name ?? '未知賽季';
+
+/// 所有賽季的競技總場數（SeasonalInfoBySeasonID 的 NumberOfGames 加總）；
+/// MMR 沒有競技資料時為 0。
+int competitiveGames(Map<String, dynamic> mmr) => _seasonal(mmr)
+    .values
+    .whereType<Map<String, dynamic>>()
+    .fold<int>(0, (s, info) => s + _int(info['NumberOfGames']));
