@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:agent_t/app_routes.dart';
-import 'package:agent_t/logic/suspicion.dart';
 import 'package:agent_t/models/match_models.dart';
 import 'package:agent_t/screens/live_page.dart';
 import 'package:agent_t/screens/match_detail_page.dart';
@@ -9,6 +8,7 @@ import 'package:agent_t/screens/match_history_page.dart';
 import 'package:agent_t/screens/player_page.dart';
 
 import '../app_harness.dart';
+import '../live_fixtures.dart' show levelAcsRules;
 import '../riot_fixtures.dart';
 import '../shell/app_shell_test.dart' show setWidth;
 
@@ -38,9 +38,7 @@ void main() {
     tester.view.physicalSize = const Size(360, 2000);
     addTearDown(tester.view.reset);
     final h = await loggedIn(tester, coreStatus: 200);
-    await tester.pumpWidget(h.wrap(
-        home: const LivePage(
-            rules: SuspicionRules(lowLevel: 60, smurfMinAcs: 200))));
+    await tester.pumpWidget(h.wrap(home: LivePage(rules: levelAcsRules(200))));
     await drain(tester);
     expect(tester.takeException(), isNull);
     final tag = find.byKey(const ValueKey('sus-tap-r1'));
