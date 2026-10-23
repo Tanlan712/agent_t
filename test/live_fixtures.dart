@@ -1,4 +1,6 @@
 /// 依 2026-10-21 實測的 glz parties 欄位結構撰寫的假資料（名稱都是虛構）。
+import 'package:agent_t/logic/suspicion.dart';
+
 import 'match_fixtures.dart';
 
 const testPartyId = 'party-1';
@@ -266,3 +268,24 @@ Map<String, dynamic> coreLoadoutsJson() => {
         },
       ],
     };
+
+/// 只看等級（≤ 60）與平均 ACS（≥ [acs]）的小號門檻，關掉其他訊號，
+/// 讓畫面測試不受 fixture 的 K/D、勝率、MMR 影響。
+SuspicionRules levelAcsRules(int acs) => SuspicionRules(
+      newLevel: 0,
+      lowLevel: 60,
+      lowSeasonWins: -1,
+      newCareerGames: -1,
+      lowCareerGames: -1,
+      peakGap: 999,
+      strongAcs: 9999,
+      goodAcs: acs,
+      strongKd: 99,
+      goodKd: 99,
+      strongHeadshot: 999,
+      strongWinRate: 2,
+      steadyShare: 2,
+      smurfMinAccount: 1,
+      smurfMinSkill: 1,
+      shiftMinScore: 99,
+    );

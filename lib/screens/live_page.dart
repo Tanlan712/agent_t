@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../logic/combat_stats.dart' show competitiveGames, peakRank;
 import '../logic/live_mapper.dart';
 import '../logic/suspicion.dart';
 import '../logic/match_mapper.dart' show queueName;
@@ -111,6 +112,8 @@ class _LivePageState extends State<LivePage> {
         queue: queue,
         seasonId: seasonId,
         rankFor: rankFor,
+        // 小號判斷要用歷史最高牌位與競技總場數（AGENTS.md 第 2 節）。
+        profileFor: puuids.toSet(),
         games: liveFormGames);
   }
 
@@ -512,13 +515,14 @@ class _PlayerRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final agent = ref.agent(player.agentId);
-    final tier = ref.tier(player.tier > 0
+    final tierId = player.tier > 0
         ? player.tier
         : (context
                 .watch<RecentFormLoader>()
                 .rank(player.puuid, seasonId)
                 .seasonTier ??
-            0));
+            0);
+    final tier = ref.tier(tierId);
     final name = live.name(player.puuid) ??
         (live.nameMissing(player.puuid) ? '未知玩家' : '…');
     return InkWell(
@@ -580,6 +584,7 @@ class _PlayerRow extends StatelessWidget {
                               puuid: player.puuid,
                               level: player.level,
                               seasonWins: player.seasonWins,
+                              tier: tierId,
                               queue: queue,
                               rules: rules),
                         // 實測隱藏等級時 Riot 直接給 0，不顯示以免誤導。
@@ -769,13 +774,14 @@ class _PregameRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final agent = ref.agent(player.agentId);
-    final tier = ref.tier(player.tier > 0
+    final tierId = player.tier > 0
         ? player.tier
         : (context
                 .watch<RecentFormLoader>()
                 .rank(player.puuid, seasonId)
                 .seasonTier ??
-            0));
+            0);
+    final tier = ref.tier(tierId);
     final name = live.name(player.puuid) ??
         (live.nameMissing(player.puuid) ? '未知玩家' : '…');
     final locked = player.selection == AgentSelection.locked;
@@ -832,6 +838,7 @@ class _PregameRow extends StatelessWidget {
                         puuid: player.puuid,
                         level: player.level,
                         seasonWins: player.seasonWins,
+                        tier: tierId,
                         queue: queue,
                         rules: rules),
                   if (player.level > 0) ...[
@@ -932,11 +939,14 @@ class _SkinStripState extends State<_SkinStrip> {
 /// 即時對局要求的場數：最新 5 場顯示，更早 5 場用來比較表現突變。
 const liveFormGames = 10;
 
-/// 疑似小號／表現突變的標籤；只是推測，滑鼠移上去列出原因（使用者決定，AGENTS.md）。
+/// 疑似小號／代打的標籤；只是推測，滑鼠移上去列出原因與分數（使用者決定，AGENTS.md）。
 class _SuspicionTag extends StatelessWidget {
   final String puuid;
   final int level;
   final int? seasonWins;
+
+  /// 畫面上顯示的本季牌位；0 表示未知。
+  final int tier;
   final String queue;
   final SuspicionRules rules;
 
@@ -944,20 +954,29 @@ class _SuspicionTag extends StatelessWidget {
       {required this.puuid,
       required this.level,
       required this.seasonWins,
+      required this.tier,
       required this.queue,
       required this.rules});
 
   @override
   Widget build(BuildContext context) {
-    final form = context
-        .watch<RecentFormLoader>()
-        .form(puuid, queue: queue, games: liveFormGames);
+    final loader = context.watch<RecentFormLoader>();
+    final form = loader.form(puuid, queue: queue, games: liveFormGames);
     if (form == null) return const SizedBox.shrink();
+    final mmr = loader.mmr(puuid);
+    final seasons =
+        context.watch<MatchReferenceProvider>().reference?.seasons ?? const {};
     final s = assessAccount(
-        level: level, seasonWins: seasonWins, recent: form.games, rules: rules);
+        level: level,
+        seasonWins: seasonWins,
+        recent: form.games,
+        rules: rules,
+        currentTier: tier,
+        peakTier: mmr == null ? null : peakRank(mmr, seasons)?.tier,
+        careerGames: mmr == null ? null : competitiveGames(mmr));
     if (!s.any) return const SizedBox.shrink();
-    final label = [if (s.smurf) '疑似小號', if (s.shift) '表現突變'].join('・');
-    final detail = '${s.reasons.join('\n')}\n（依公開數據推測，可能誤判）';
+    final label = s.label;
+    final detail = '${s.detail}（依公開數據推測，可能誤判）';
     return Padding(
       padding: const EdgeInsets.only(left: 6),
       // 滑鼠移上去看提示；手機點一下開對話框看完整原因。
@@ -978,7 +997,9 @@ class _SuspicionTag extends StatelessWidget {
             ),
           ),
           child: StatusChip(
-              label: label, color: AppColors.warn, icon: Icons.warning_amber),
+              label: label,
+              color: s.high ? AppColors.loss : AppColors.warn,
+              icon: Icons.warning_amber),
         ),
       ),
     );
