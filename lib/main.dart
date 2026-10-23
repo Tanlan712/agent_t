@@ -9,6 +9,7 @@ import 'providers/offer_price_provider.dart';
 import 'providers/progress_provider.dart';
 import 'providers/pwa_controller.dart';
 import 'providers/catalog_provider.dart';
+import 'providers/encounter_provider.dart';
 import 'providers/match_detail_cache.dart';
 import 'providers/match_history_provider.dart';
 import 'providers/match_reference_provider.dart';
@@ -23,6 +24,7 @@ import 'providers/purchase_history_provider.dart';
 import 'providers/wishlist_provider.dart';
 import 'app_routes.dart';
 import 'logic/eva_progress.dart';
+import 'models/match_models.dart';
 import 'screens/riot_web_login_page.dart';
 import 'services/progress_reference_api.dart';
 import 'services/catalog_api.dart';
@@ -34,6 +36,7 @@ import 'services/remote_client.dart';
 import 'services/riot_client.dart';
 import 'services/riot_cookies.dart';
 import 'storage/catalog_cache.dart';
+import 'storage/encounter_storage.dart';
 import 'storage/match_reference_cache.dart';
 import 'storage/offer_price_storage.dart';
 import 'storage/seen_players_storage.dart';
@@ -72,6 +75,13 @@ Future<void> main() async {
   final matchCache = MatchDetailCache();
   // 遇過的玩家只存在這個瀏覽器（localStorage），方便之後查詢他的紀錄。
   final seenPlayers = SeenPlayersProvider(SeenPlayersStorage(prefs));
+  // 和自己同場過的玩家（只記場次與勝負），即時對局用來標示「遇過」（AGENTS.md 第 2 節）。
+  final encounters = EncounterProvider(EncounterStorage(prefs));
+  void recordDetails(Iterable<MatchDetail> details) {
+    seenPlayers.recordAll(details);
+    encounters.recordAll(details);
+  }
+
   final matchReference =
       MatchReferenceProvider(MatchReferenceApi(), MatchReferenceCache(prefs));
   matchReference.init();
@@ -125,11 +135,13 @@ Future<void> main() async {
             create: (_) => LoadoutProvider(remoteClient, riot)),
         Provider.value(value: matchCache),
         ChangeNotifierProvider(
-            create: (_) => RecentFormLoader(matchClient, riot, matchCache)),
+            create: (_) => RecentFormLoader(matchClient, riot, matchCache,
+                onDetails: encounters.recordAll)),
         ChangeNotifierProvider(
             create: (_) => MatchHistoryProvider(matchClient, riot,
-                cache: matchCache, onDetails: seenPlayers.recordAll)),
+                cache: matchCache, onDetails: recordDetails)),
         ChangeNotifierProvider.value(value: seenPlayers),
+        ChangeNotifierProvider.value(value: encounters),
         ChangeNotifierProvider.value(value: matchReference),
         ChangeNotifierProvider.value(value: pwa),
       ],

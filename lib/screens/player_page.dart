@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/match_models.dart';
+import '../providers/encounter_provider.dart';
 import '../providers/match_detail_cache.dart';
 import '../providers/match_reference_provider.dart';
 import '../providers/player_history_provider.dart';
@@ -30,8 +31,11 @@ class _PlayerPageState extends State<PlayerPage> {
     super.initState();
     _history = PlayerHistoryProvider(context.read<MatchClient>(),
         context.read<RiotProvider>(), context.read<MatchDetailCache>(),
-        puuid: widget.player.puuid,
-        onDetails: context.read<SeenPlayersProvider>().recordAll);
+        puuid: widget.player.puuid, onDetails: (details) {
+      context.read<SeenPlayersProvider>().recordAll(details);
+      // 對方的場次裡有自己時，也算遇過（AGENTS.md 第 2 節）。
+      context.read<EncounterProvider>().recordAll(details);
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _history.loadFirstPage();
     });

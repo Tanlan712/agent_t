@@ -8,6 +8,8 @@ import 'package:agent_t/models/current_shop.dart';
 import 'package:agent_t/models/match_models.dart';
 import 'package:agent_t/models/wishlist_item.dart';
 import 'package:agent_t/providers/catalog_provider.dart';
+import 'package:agent_t/providers/encounter_provider.dart';
+import 'package:agent_t/storage/encounter_storage.dart';
 import 'package:agent_t/providers/match_detail_cache.dart';
 import 'package:agent_t/providers/match_history_provider.dart';
 import 'package:agent_t/providers/match_reference_provider.dart';
@@ -90,8 +92,11 @@ class Harness {
   late final PurchaseHistoryProvider purchaseHistory;
   late final RemoteClient remoteClient;
   late final LoadoutProvider loadout;
-  late final RecentFormLoader recentForm =
-      RecentFormLoader(matchClient, riot, matchCache);
+  late final EncounterProvider encounters =
+      EncounterProvider(EncounterStorage(prefs));
+  late final RecentFormLoader recentForm = RecentFormLoader(
+      matchClient, riot, matchCache,
+      onDetails: encounters.recordAll);
 
   Harness(
       this.catalog,
@@ -222,6 +227,7 @@ class Harness {
         Provider.value(value: matchCache),
         ChangeNotifierProvider.value(value: recentForm),
         ChangeNotifierProvider.value(value: seenPlayers),
+        ChangeNotifierProvider.value(value: encounters),
         ChangeNotifierProvider.value(value: matchHistory),
         ChangeNotifierProvider.value(value: matchReference),
       ],

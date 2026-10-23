@@ -25,6 +25,7 @@ import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
 import '../widgets/combat_stats.dart';
+import '../widgets/encounter_tag.dart';
 import '../widgets/recent_form_cell.dart';
 import '../widgets/remote_live_controls.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
@@ -115,6 +116,12 @@ class _LivePageState extends State<LivePage> {
         // 小號判斷要用歷史最高牌位與競技總場數（AGENTS.md 第 2 節）。
         profileFor: puuids.toSet(),
         games: liveFormGames);
+    // 「遇過」的標示：另外排入自己最近的場次（不限模式），讀到的場次會記下同場玩家。
+    // 已讀過的場次走快取，不會重複請求。
+    final me = context.read<RiotProvider>().session?.puuid;
+    if (me != null) {
+      _forms.request([me], owner: this, games: encounterScanGames);
+    }
   }
 
   @override
@@ -462,6 +469,7 @@ class _MatchView extends StatelessWidget {
                           for (final p in match.team(teamId))
                             _PlayerRow(
                                 player: p,
+                                matchId: match.matchId,
                                 live: live,
                                 ref: ref,
                                 queue: match.queueId,
@@ -487,6 +495,7 @@ class _MatchView extends StatelessWidget {
 
 class _PlayerRow extends StatelessWidget {
   final LivePlayer player;
+  final String matchId;
   final LivePartyProvider live;
   final MatchReferenceProvider ref;
   final String queue;
@@ -495,6 +504,7 @@ class _PlayerRow extends StatelessWidget {
 
   const _PlayerRow(
       {required this.player,
+      required this.matchId,
       required this.live,
       required this.ref,
       required this.queue,
@@ -578,6 +588,9 @@ class _PlayerRow extends StatelessWidget {
                                       ? FontWeight.bold
                                       : FontWeight.normal)),
                         ),
+                        // 之前同場打過的玩家（使用者決定 2026-10-23）。
+                        if (!player.isMe)
+                          EncounterTag(puuid: player.puuid, matchId: matchId),
                         // 使用者要求：對局 10 人都判斷（包括自己），教練除外。
                         if (!player.isCoach)
                           _SuspicionTag(
@@ -720,6 +733,7 @@ class _PregameViewState extends State<_PregameView> {
               for (final a in pre.allies)
                 _PregameRow(
                     player: a,
+                    matchId: pre.matchId,
                     live: widget.live,
                     ref: widget.ref,
                     queue: pre.queueId,
@@ -746,6 +760,7 @@ class _PregameViewState extends State<_PregameView> {
 
 class _PregameRow extends StatelessWidget {
   final PregamePlayer player;
+  final String matchId;
   final LivePartyProvider live;
   final MatchReferenceProvider ref;
   final String queue;
@@ -754,6 +769,7 @@ class _PregameRow extends StatelessWidget {
 
   const _PregameRow(
       {required this.player,
+      required this.matchId,
       required this.live,
       required this.ref,
       required this.queue,
@@ -833,6 +849,8 @@ class _PregameRow extends StatelessWidget {
                                 ? FontWeight.bold
                                 : FontWeight.normal)),
                   ),
+                  if (!player.isMe)
+                    EncounterTag(puuid: player.puuid, matchId: matchId),
                   if (!player.isMe)
                     _SuspicionTag(
                         puuid: player.puuid,
@@ -938,6 +956,10 @@ class _SkinStripState extends State<_SkinStrip> {
 
 /// 即時對局要求的場數：最新 5 場顯示，更早 5 場用來比較表現突變。
 const liveFormGames = 10;
+
+/// 進入選角或對局時掃描自己最近幾場（不限模式），用來標示遇過的玩家。
+/// 實測 match-history 一次超過 10 場可能回 400。
+const encounterScanGames = 10;
 
 /// 疑似小號／代打的標籤；只是推測，滑鼠移上去列出原因與分數（使用者決定，AGENTS.md）。
 class _SuspicionTag extends StatelessWidget {
