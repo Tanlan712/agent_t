@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/logic/match_overview.dart';
-import 'package:valorant_shop_tracker/models/match_models.dart';
+import 'package:agent_t/logic/match_overview.dart';
+import 'package:agent_t/models/match_models.dart';
 
 PlayerLine line(String puuid,
         {String team = 'Blue',

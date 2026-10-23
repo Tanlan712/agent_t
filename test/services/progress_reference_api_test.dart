@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:valorant_shop_tracker/models/progress_reference.dart';
-import 'package:valorant_shop_tracker/services/catalog_api.dart';
-import 'package:valorant_shop_tracker/services/progress_reference_api.dart';
+import 'package:agent_t/models/progress_reference.dart';
+import 'package:agent_t/services/catalog_api.dart';
+import 'package:agent_t/services/progress_reference_api.dart';
 
 http.Response data(Object body) => http.Response.bytes(
     utf8.encode(jsonEncode({'status': 200, 'data': body})), 200);

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/shell/nav_items.dart';
-import 'package:valorant_shop_tracker/theme/eva_names.dart';
-import 'package:valorant_shop_tracker/widgets/theme/eva/eva_mincho.dart';
+import 'package:agent_t/shell/nav_items.dart';
+import 'package:agent_t/theme/eva_names.dart';
+import 'package:agent_t/widgets/theme/eva/eva_mincho.dart';
 
 /// 規格 §4.5、§4.6：EVA 明朝體與故事名稱。
 void main() {

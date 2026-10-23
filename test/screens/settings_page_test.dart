@@ -4,10 +4,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:valorant_shop_tracker/screens/settings_page.dart';
-import 'package:valorant_shop_tracker/shell/nav_items.dart'
+import 'package:agent_t/screens/settings_page.dart';
+import 'package:agent_t/shell/nav_items.dart'
     show wishlistEnabled;
-import 'package:valorant_shop_tracker/widgets/my_shop_settings_card.dart';
+import 'package:agent_t/widgets/my_shop_settings_card.dart';
 
 import '../app_harness.dart';
 import '../catalog_helpers.dart';

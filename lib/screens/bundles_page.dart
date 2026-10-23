@@ -5,7 +5,7 @@ import 'details/bundle_detail_page.dart';
 import 'details/detail_scaffold.dart';
 import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
-import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
+import 'package:agent_t/services/valorant_api_service.dart';
 
 class BundlesPage extends StatefulWidget {
   /// 測試時注入。

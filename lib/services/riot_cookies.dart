@@ -13,7 +13,7 @@ abstract class RiotCookieStore {
 }
 
 class NativeRiotCookies implements RiotCookieStore {
-  static const _channel = MethodChannel('valorant_shop_tracker/riot_cookies');
+  static const _channel = MethodChannel('agent_t/riot_cookies');
 
   const NativeRiotCookies();
 

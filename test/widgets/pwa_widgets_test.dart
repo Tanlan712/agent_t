@@ -3,11 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:valorant_shop_tracker/providers/pwa_controller.dart';
-import 'package:valorant_shop_tracker/screens/settings_page.dart';
-import 'package:valorant_shop_tracker/services/pwa.dart';
-import 'package:valorant_shop_tracker/widgets/pwa_banners.dart';
-import 'package:valorant_shop_tracker/widgets/pwa_cards.dart';
+import 'package:agent_t/providers/pwa_controller.dart';
+import 'package:agent_t/screens/settings_page.dart';
+import 'package:agent_t/services/pwa.dart';
+import 'package:agent_t/widgets/pwa_banners.dart';
+import 'package:agent_t/widgets/pwa_cards.dart';
 
 import '../app_harness.dart';
 import '../fake_pwa.dart';

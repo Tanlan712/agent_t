@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/models/current_shop.dart';
-import 'package:valorant_shop_tracker/models/tier.dart';
-import 'package:valorant_shop_tracker/shell/app_shell.dart';
-import 'package:valorant_shop_tracker/shell/nav_items.dart'
+import 'package:agent_t/models/current_shop.dart';
+import 'package:agent_t/models/tier.dart';
+import 'package:agent_t/shell/app_shell.dart';
+import 'package:agent_t/shell/nav_items.dart'
     show wishlistEnabled;
-import 'package:valorant_shop_tracker/theme/theme_ids.dart';
-import 'package:valorant_shop_tracker/widgets/theme/eva/eva_data_eggs.dart';
-import 'package:valorant_shop_tracker/widgets/theme/eva/eva_header.dart';
-import 'package:valorant_shop_tracker/widgets/theme/eva/eva_status.dart';
+import 'package:agent_t/theme/theme_ids.dart';
+import 'package:agent_t/widgets/theme/eva/eva_data_eggs.dart';
+import 'package:agent_t/widgets/theme/eva/eva_header.dart';
+import 'package:agent_t/widgets/theme/eva/eva_status.dart';
 
 import '../../../app_harness.dart';
 

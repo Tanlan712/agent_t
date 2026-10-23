@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/app_routes.dart';
-import 'package:valorant_shop_tracker/models/match_models.dart';
-import 'package:valorant_shop_tracker/screens/match_detail_page.dart';
-import 'package:valorant_shop_tracker/screens/player_page.dart';
+import 'package:agent_t/app_routes.dart';
+import 'package:agent_t/models/match_models.dart';
+import 'package:agent_t/screens/match_detail_page.dart';
+import 'package:agent_t/screens/player_page.dart';
 
 import '../app_harness.dart';
 import '../riot_fixtures.dart';

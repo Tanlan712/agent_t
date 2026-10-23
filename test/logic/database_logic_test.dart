@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/logic/database_logic.dart';
-import 'package:valorant_shop_tracker/models/game_data.dart';
+import 'package:agent_t/logic/database_logic.dart';
+import 'package:agent_t/models/game_data.dart';
 
 import '../database_fixtures.dart';
 

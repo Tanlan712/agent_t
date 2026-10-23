@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
+import 'package:agent_t/widgets/hud/hud.dart';
 import 'package:http/http.dart' as http;
-import 'package:valorant_shop_tracker/models/match_models.dart';
-import 'package:valorant_shop_tracker/logic/suspicion.dart';
-import 'package:valorant_shop_tracker/screens/live_page.dart';
-import 'package:valorant_shop_tracker/shell/nav_items.dart';
+import 'package:agent_t/models/match_models.dart';
+import 'package:agent_t/logic/suspicion.dart';
+import 'package:agent_t/screens/live_page.dart';
+import 'package:agent_t/shell/nav_items.dart';
 
 import '../app_harness.dart';
 import '../live_fixtures.dart';

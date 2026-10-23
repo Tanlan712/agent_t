@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/models/account_progress.dart';
+import 'package:agent_t/models/account_progress.dart';
 
 import '../account_fixtures.dart';
 

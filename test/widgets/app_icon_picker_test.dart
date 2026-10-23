@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/screens/settings_page.dart';
-import 'package:valorant_shop_tracker/services/app_icon_service.dart';
-import 'package:valorant_shop_tracker/widgets/app_icon_picker.dart';
+import 'package:agent_t/screens/settings_page.dart';
+import 'package:agent_t/services/app_icon_service.dart';
+import 'package:agent_t/widgets/app_icon_picker.dart';
 
 import '../app_harness.dart';
 import '../shell/app_shell_test.dart' show setWidth;

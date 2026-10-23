@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:valorant_shop_tracker/logic/purchase_history.dart';
-import 'package:valorant_shop_tracker/providers/purchase_history_provider.dart';
-import 'package:valorant_shop_tracker/storage/purchase_history_storage.dart';
+import 'package:agent_t/logic/purchase_history.dart';
+import 'package:agent_t/providers/purchase_history_provider.dart';
+import 'package:agent_t/storage/purchase_history_storage.dart';
 
 void main() {
   final now = DateTime(2026, 10, 23, 12);

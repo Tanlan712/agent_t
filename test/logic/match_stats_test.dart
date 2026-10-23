@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/logic/match_stats.dart';
-import 'package:valorant_shop_tracker/models/match_models.dart';
+import 'package:agent_t/logic/match_stats.dart';
+import 'package:agent_t/models/match_models.dart';
 
 MatchSummary game(
   String id, {

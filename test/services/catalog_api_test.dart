@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:valorant_shop_tracker/models/tier.dart';
-import 'package:valorant_shop_tracker/services/catalog_api.dart';
+import 'package:agent_t/models/tier.dart';
+import 'package:agent_t/services/catalog_api.dart';
 
 import '../fixtures.dart';
 

@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:valorant_shop_tracker/models/current_shop.dart';
-import 'package:valorant_shop_tracker/providers/riot_provider.dart';
-import 'package:valorant_shop_tracker/providers/shop_auto_refresh.dart';
-import 'package:valorant_shop_tracker/providers/shop_provider.dart';
-import 'package:valorant_shop_tracker/services/riot_client.dart';
-import 'package:valorant_shop_tracker/storage/shop_storage.dart';
+import 'package:agent_t/models/current_shop.dart';
+import 'package:agent_t/providers/riot_provider.dart';
+import 'package:agent_t/providers/shop_auto_refresh.dart';
+import 'package:agent_t/providers/shop_provider.dart';
+import 'package:agent_t/services/riot_client.dart';
+import 'package:agent_t/storage/shop_storage.dart';
 
 import '../catalog_helpers.dart';
 import '../riot_fixtures.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/providers/pwa_controller.dart';
-import 'package:valorant_shop_tracker/services/pwa.dart';
+import 'package:agent_t/providers/pwa_controller.dart';
+import 'package:agent_t/services/pwa.dart';
 
 import '../fake_pwa.dart';
 

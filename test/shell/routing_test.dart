@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/shell/nav_items.dart'
+import 'package:agent_t/shell/nav_items.dart'
     show wishlistEnabled;
 
 import '../app_harness.dart';

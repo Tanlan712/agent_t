@@ -3,14 +3,14 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
-import 'package:valorant_shop_tracker/app_routes.dart';
-import 'package:valorant_shop_tracker/shell/app_shell.dart';
-import 'package:valorant_shop_tracker/widgets/hud/page_header.dart';
-import 'package:valorant_shop_tracker/shell/side_nav.dart';
-import 'package:valorant_shop_tracker/theme/app_theme.dart';
-import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
+import 'package:agent_t/app_routes.dart';
+import 'package:agent_t/shell/app_shell.dart';
+import 'package:agent_t/widgets/hud/page_header.dart';
+import 'package:agent_t/shell/side_nav.dart';
+import 'package:agent_t/theme/app_theme.dart';
+import 'package:agent_t/widgets/hud/hud.dart';
 
-import 'package:valorant_shop_tracker/theme/theme_ids.dart';
+import 'package:agent_t/theme/theme_ids.dart';
 
 import '../app_harness.dart';
 import '../riot_fixtures.dart';

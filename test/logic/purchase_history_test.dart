@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/logic/purchase_history.dart';
+import 'package:agent_t/logic/purchase_history.dart';
 
 /// 官方購買紀錄的解析與內嵌頁規則（假資料，不含真實紀錄）。
 void main() {

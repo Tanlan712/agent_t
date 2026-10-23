@@ -28,7 +28,7 @@ enum AppIconId {
 
 /// 透過原生 channel 讀取與切換桌面圖示；只有 Android／iOS App 支援，網頁版的圖示由 manifest 固定。
 class AppIconService {
-  static const _channel = MethodChannel('valorant_shop_tracker/app_icon');
+  static const _channel = MethodChannel('agent_t/app_icon');
 
   const AppIconService();
 

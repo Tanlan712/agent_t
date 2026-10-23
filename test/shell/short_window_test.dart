@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/shell/app_shell.dart';
+import 'package:agent_t/shell/app_shell.dart';
 
 import '../app_harness.dart';
 

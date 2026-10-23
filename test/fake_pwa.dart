@@ -1,4 +1,4 @@
-import 'package:valorant_shop_tracker/services/pwa.dart';
+import 'package:agent_t/services/pwa.dart';
 
 /// 測試用的瀏覽器 PWA 功能。
 class FakePwa extends PwaPlatform {

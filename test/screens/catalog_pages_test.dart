@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/screens/agents_page.dart';
-import 'package:valorant_shop_tracker/screens/bundles_page.dart';
-import 'package:valorant_shop_tracker/screens/maps_page.dart';
-import 'package:valorant_shop_tracker/screens/weapons_page.dart';
-import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
+import 'package:agent_t/screens/agents_page.dart';
+import 'package:agent_t/screens/bundles_page.dart';
+import 'package:agent_t/screens/maps_page.dart';
+import 'package:agent_t/screens/weapons_page.dart';
+import 'package:agent_t/services/valorant_api_service.dart';
 import 'package:http/testing.dart';
 import 'package:http/http.dart' as http;
-import 'package:valorant_shop_tracker/screens/gamemodes_page.dart';
-import 'package:valorant_shop_tracker/screens/playercards_page.dart';
-import 'package:valorant_shop_tracker/theme/app_theme.dart';
+import 'package:agent_t/screens/gamemodes_page.dart';
+import 'package:agent_t/screens/playercards_page.dart';
+import 'package:agent_t/theme/app_theme.dart';
 
 import '../app_harness.dart';
 import '../shell/app_shell_test.dart' show setWidth;

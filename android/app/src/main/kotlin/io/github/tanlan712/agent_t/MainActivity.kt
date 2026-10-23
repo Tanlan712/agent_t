@@ -1,4 +1,4 @@
-package io.github.tanlan712.valorant_shop_tracker
+package io.github.tanlan712.agent_t
 
 import android.content.ComponentName
 import android.content.pm.PackageManager
@@ -13,7 +13,7 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "valorant_shop_tracker/app_icon")
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "agent_t/app_icon")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "getIcon" -> result.success(currentIcon())
@@ -31,7 +31,7 @@ class MainActivity : FlutterActivity() {
             }
         // 多帳號切換：讀出／放回內嵌頁的 Riot 登入 cookie（ssid）。只在 App 與 WebView 之間傳遞，不寫 log
         // （使用者決定 2026-10-23，AGENTS.md 第 3 節）。
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "valorant_shop_tracker/riot_cookies")
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "agent_t/riot_cookies")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "read" -> result.success(readSsid())

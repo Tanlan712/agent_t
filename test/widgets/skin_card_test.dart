@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/models/skin_info.dart';
-import 'package:valorant_shop_tracker/models/tier.dart';
-import 'package:valorant_shop_tracker/widgets/skin_card.dart';
+import 'package:agent_t/models/skin_info.dart';
+import 'package:agent_t/models/tier.dart';
+import 'package:agent_t/widgets/skin_card.dart';
 
 import '../catalog_helpers.dart';
 import '../shell/app_shell_test.dart' show setWidth;

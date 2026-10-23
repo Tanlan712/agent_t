@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:valorant_shop_tracker/screens/collection_page.dart';
-import 'package:valorant_shop_tracker/screens/live_page.dart';
-import 'package:valorant_shop_tracker/screens/settings_page.dart';
-import 'package:valorant_shop_tracker/services/riot_client.dart';
-import 'package:valorant_shop_tracker/widgets/remote_control_card.dart';
+import 'package:agent_t/screens/collection_page.dart';
+import 'package:agent_t/screens/live_page.dart';
+import 'package:agent_t/screens/settings_page.dart';
+import 'package:agent_t/services/riot_client.dart';
+import 'package:agent_t/widgets/remote_control_card.dart';
 
 import '../app_harness.dart';
 import '../live_fixtures.dart';

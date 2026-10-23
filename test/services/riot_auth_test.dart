@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/services/riot_auth.dart';
+import 'package:agent_t/services/riot_auth.dart';
 
 void main() {
   const full =

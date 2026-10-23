@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
-import 'package:valorant_shop_tracker/app_routes.dart';
-import 'package:valorant_shop_tracker/logic/match_mapper.dart';
-import 'package:valorant_shop_tracker/screens/player_page.dart';
-import 'package:valorant_shop_tracker/screens/seen_players_page.dart';
-import 'package:valorant_shop_tracker/shell/nav_items.dart';
+import 'package:agent_t/widgets/hud/hud.dart';
+import 'package:agent_t/app_routes.dart';
+import 'package:agent_t/logic/match_mapper.dart';
+import 'package:agent_t/screens/player_page.dart';
+import 'package:agent_t/screens/seen_players_page.dart';
+import 'package:agent_t/shell/nav_items.dart';
 
 import '../app_harness.dart';
 import '../match_fixtures.dart';

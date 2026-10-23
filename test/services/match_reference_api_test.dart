@@ -4,10 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:valorant_shop_tracker/models/match_models.dart';
-import 'package:valorant_shop_tracker/providers/match_reference_provider.dart';
-import 'package:valorant_shop_tracker/services/match_reference_api.dart';
-import 'package:valorant_shop_tracker/storage/match_reference_cache.dart';
+import 'package:agent_t/models/match_models.dart';
+import 'package:agent_t/providers/match_reference_provider.dart';
+import 'package:agent_t/services/match_reference_api.dart';
+import 'package:agent_t/storage/match_reference_cache.dart';
 
 /// 依 valorant-api.com 實際欄位精簡的參考資料。
 MockClient referenceClient({void Function()? onRequest, bool fail = false}) =>

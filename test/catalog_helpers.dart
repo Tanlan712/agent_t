@@ -2,13 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:valorant_shop_tracker/models/bundle_info.dart';
-import 'package:valorant_shop_tracker/models/skin_catalog.dart';
-import 'package:valorant_shop_tracker/models/skin_info.dart';
-import 'package:valorant_shop_tracker/models/tier.dart';
-import 'package:valorant_shop_tracker/providers/catalog_provider.dart';
-import 'package:valorant_shop_tracker/services/catalog_api.dart';
-import 'package:valorant_shop_tracker/storage/catalog_cache.dart';
+import 'package:agent_t/models/bundle_info.dart';
+import 'package:agent_t/models/skin_catalog.dart';
+import 'package:agent_t/models/skin_info.dart';
+import 'package:agent_t/models/tier.dart';
+import 'package:agent_t/providers/catalog_provider.dart';
+import 'package:agent_t/services/catalog_api.dart';
+import 'package:agent_t/storage/catalog_cache.dart';
 
 const odin =
     SkinInfo(uuid: 'o', name: '凌空之志 奧丁', weaponName: '奧丁', tier: Tier.deluxe);

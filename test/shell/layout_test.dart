@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/shell/layout.dart';
-import 'package:valorant_shop_tracker/shell/responsive_grid.dart';
+import 'package:agent_t/shell/layout.dart';
+import 'package:agent_t/shell/responsive_grid.dart';
 
 void main() {
   test('navModeFor 斷點', () {

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/logic/storefront_mapper.dart';
+import 'package:agent_t/logic/storefront_mapper.dart';
 
 import '../riot_fixtures.dart';
 

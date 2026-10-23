@@ -13,11 +13,11 @@ import WebKit
   ) -> Bool {
     GeneratedPluginRegistrant.register(with: self)
     if let controller = window?.rootViewController as? FlutterViewController {
-      FlutterMethodChannel(name: "valorant_shop_tracker/app_icon", binaryMessenger: controller.binaryMessenger)
+      FlutterMethodChannel(name: "agent_t/app_icon", binaryMessenger: controller.binaryMessenger)
         .setMethodCallHandler { [weak self] call, result in self?.handleIcon(call, result) }
       // 多帳號切換：讀出／放回內嵌頁的 Riot 登入 cookie（ssid）。只在 App 與 WebView 之間傳遞，不寫 log
       // （使用者決定 2026-10-23，AGENTS.md 第 3 節）。
-      FlutterMethodChannel(name: "valorant_shop_tracker/riot_cookies", binaryMessenger: controller.binaryMessenger)
+      FlutterMethodChannel(name: "agent_t/riot_cookies", binaryMessenger: controller.binaryMessenger)
         .setMethodCallHandler { [weak self] call, result in self?.handleRiotCookies(call, result) }
     }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)

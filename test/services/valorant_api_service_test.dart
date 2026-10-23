@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
+import 'package:agent_t/services/valorant_api_service.dart';
 
 void main() {
   test('使用注入的 client；getThemes 讀 /v1/themes（zh-TW）', () async {

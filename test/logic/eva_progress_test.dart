@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/models/app_settings.dart';
-import 'package:valorant_shop_tracker/logic/eva_progress.dart';
+import 'package:agent_t/models/app_settings.dart';
+import 'package:agent_t/logic/eva_progress.dart';
 
 /// 規格 §4.4、§4.5：劇集、彩蛋發現、使徒次數（只存在這個瀏覽器）。
 void main() {

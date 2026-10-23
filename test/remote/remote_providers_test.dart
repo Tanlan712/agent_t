@@ -1,15 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:valorant_shop_tracker/logic/loadout_logic.dart';
-import 'package:valorant_shop_tracker/models/app_settings.dart';
-import 'package:valorant_shop_tracker/providers/loadout_provider.dart';
-import 'package:valorant_shop_tracker/providers/remote_actions.dart';
-import 'package:valorant_shop_tracker/providers/riot_provider.dart';
-import 'package:valorant_shop_tracker/providers/settings_provider.dart';
-import 'package:valorant_shop_tracker/services/remote_client.dart';
-import 'package:valorant_shop_tracker/services/riot_client.dart';
-import 'package:valorant_shop_tracker/storage/settings_storage.dart';
+import 'package:agent_t/logic/loadout_logic.dart';
+import 'package:agent_t/models/app_settings.dart';
+import 'package:agent_t/providers/loadout_provider.dart';
+import 'package:agent_t/providers/remote_actions.dart';
+import 'package:agent_t/providers/riot_provider.dart';
+import 'package:agent_t/providers/settings_provider.dart';
+import 'package:agent_t/services/remote_client.dart';
+import 'package:agent_t/services/riot_client.dart';
+import 'package:agent_t/storage/settings_storage.dart';
 
 import '../remote_fixtures.dart';
 import '../riot_fixtures.dart';

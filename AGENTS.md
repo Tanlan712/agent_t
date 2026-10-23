@@ -138,7 +138,7 @@ Riot 在伺服器端看得到這些請求，帳號可能被標記或停權；網
   手機被別人拿走時，在 Riot 登入記錄過期前（約數週）對方都能讀取帳號資料。
   拿不到 refresh token：目前的隱含流程不發 refresh token，`/token` 端點要 Riot 核准的 RSO client secret。
 - **使用者決定（2026-10-23，多帳號切換方案 A）**：上面「不得讀取、保存或重送 `ssid`」的例外。
-  App 內登入或背景續期成功後，原生程式（MethodChannel `valorant_shop_tracker/riot_cookies`，
+  App 內登入或背景續期成功後，原生程式（MethodChannel `agent_t/riot_cookies`，
   `MainActivity.kt`／`AppDelegate.swift`）只讀出 `auth.riotgames.com` 的 `ssid`，存進該帳號的保存資料（`riotAccounts`）；
   切換帳號時先清除內嵌頁的 Riot cookie，再放回目標帳號的 `ssid`，由背景續期拿新 token，幾週內切換都不用輸入密碼。
   只讀寫 `ssid` 這一個 cookie；不得寫入 log、錯誤訊息或測試資料（測試只能用假值），不得送到任何伺服器；

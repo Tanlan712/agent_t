@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/theme/app_theme.dart';
-import 'package:valorant_shop_tracker/theme/theme_ids.dart';
-import 'package:valorant_shop_tracker/widgets/hud/hud.dart';
+import 'package:agent_t/theme/app_theme.dart';
+import 'package:agent_t/theme/theme_ids.dart';
+import 'package:agent_t/widgets/hud/hud.dart';
 
 // B 數位霓虹：間距 16、頁首 28px（與 Bento 時期相同的數值）。
 Widget host(double width, Widget child) => MaterialApp(

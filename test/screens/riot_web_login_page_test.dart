@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/screens/riot_web_login_page.dart';
+import 'package:agent_t/screens/riot_web_login_page.dart';
 
 void main() {
   // 測試在 VM 上執行（kIsWeb 為 false），只切換平台。

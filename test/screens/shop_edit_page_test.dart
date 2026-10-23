@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/models/current_shop.dart';
-import 'package:valorant_shop_tracker/models/skin_info.dart';
-import 'package:valorant_shop_tracker/screens/shop_edit_page.dart';
+import 'package:agent_t/models/current_shop.dart';
+import 'package:agent_t/models/skin_info.dart';
+import 'package:agent_t/screens/shop_edit_page.dart';
 
 import '../app_harness.dart';
 import '../catalog_helpers.dart';

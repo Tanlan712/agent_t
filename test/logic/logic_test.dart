@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/logic/default_price.dart';
-import 'package:valorant_shop_tracker/logic/shop_time.dart';
-import 'package:valorant_shop_tracker/logic/skin_search.dart';
-import 'package:valorant_shop_tracker/logic/wishlist_match.dart';
-import 'package:valorant_shop_tracker/models/current_shop.dart';
-import 'package:valorant_shop_tracker/models/skin_info.dart';
-import 'package:valorant_shop_tracker/models/tier.dart';
+import 'package:agent_t/logic/default_price.dart';
+import 'package:agent_t/logic/shop_time.dart';
+import 'package:agent_t/logic/skin_search.dart';
+import 'package:agent_t/logic/wishlist_match.dart';
+import 'package:agent_t/models/current_shop.dart';
+import 'package:agent_t/models/skin_info.dart';
+import 'package:agent_t/models/tier.dart';
 
 void main() {
   test('defaultPrice 依稀有度', () {

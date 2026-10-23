@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/shell/app_shell.dart';
-import 'package:valorant_shop_tracker/shell/nav/top_nav.dart';
-import 'package:valorant_shop_tracker/shell/side_nav.dart';
-import 'package:valorant_shop_tracker/theme/theme_ids.dart';
+import 'package:agent_t/shell/app_shell.dart';
+import 'package:agent_t/shell/nav/top_nav.dart';
+import 'package:agent_t/shell/side_nav.dart';
+import 'package:agent_t/theme/theme_ids.dart';
 
 import '../app_harness.dart';
 import 'app_shell_test.dart' show setWidth;

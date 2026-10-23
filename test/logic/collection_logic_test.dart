@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:valorant_shop_tracker/logic/progress_logic.dart';
-import 'package:valorant_shop_tracker/models/account_progress.dart';
-import 'package:valorant_shop_tracker/models/progress_reference.dart';
+import 'package:agent_t/logic/progress_logic.dart';
+import 'package:agent_t/models/account_progress.dart';
+import 'package:agent_t/models/progress_reference.dart';
 
 import '../account_fixtures.dart';
 

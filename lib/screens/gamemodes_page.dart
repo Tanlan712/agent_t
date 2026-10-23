@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../shell/app_shell.dart';
 import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
-import 'package:valorant_shop_tracker/services/valorant_api_service.dart';
+import 'package:agent_t/services/valorant_api_service.dart';
 
 class GamemodesPage extends StatefulWidget {
   /// 測試時注入。

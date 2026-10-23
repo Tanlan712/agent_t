@@ -2,9 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:valorant_shop_tracker/providers/riot_provider.dart';
-import 'package:valorant_shop_tracker/services/riot_client.dart';
-import 'package:valorant_shop_tracker/storage/session_storage.dart';
+import 'package:agent_t/providers/riot_provider.dart';
+import 'package:agent_t/services/riot_client.dart';
+import 'package:agent_t/storage/session_storage.dart';
 
 import '../riot_fixtures.dart';
 
