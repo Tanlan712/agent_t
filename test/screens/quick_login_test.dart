@@ -78,7 +78,8 @@ void main() {
 
       final reopened = riotWith(prefs, () => start.add(const Duration(hours: 2)));
       expect(reopened.isLoggedIn, isFalse);
-      expect(prefs.containsKey(SessionStorage.key), isFalse);
+      expect(
+          prefs.getString(SessionStorage.key), isNot(contains(fakeAccessToken)));
     });
 
     test('登出時刪除保存的資料', () async {

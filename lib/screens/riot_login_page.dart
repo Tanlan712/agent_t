@@ -8,6 +8,7 @@ import '../providers/riot_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/riot_auth.dart';
 import '../services/shared_login.dart';
+import '../widgets/account_list.dart';
 import '../widgets/hud/hud.dart';
 import 'riot_web_login_page.dart';
 
@@ -41,6 +42,9 @@ class RiotLoginPage extends StatefulWidget {
 class _RiotLoginPageState extends State<RiotLoginPage> {
   final _controller = TextEditingController();
   String? _error;
+
+  /// 已登入時按了「新增其他帳號」：顯示登入方式。
+  bool _adding = false;
   late String _shard = context.read<SettingsProvider>().settings.loginShard;
 
   static const _shards = {
@@ -92,6 +96,10 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
   Future<void> _submit() => _loginWith(_controller.text);
 
   Future<void> _openInAppLogin() async {
+    final riot = context.read<RiotProvider>();
+    // 新增帳號：先清掉內嵌頁記住的帳號，Riot 才會顯示登入頁。
+    if (_adding) await riot.prepareNewLogin();
+    if (!mounted) return;
     final url = await widget.openInAppLogin(context);
     if (url == null || !mounted) return;
     // App 內登入的 Riot 登入記錄留在內嵌頁，之後可以在背景續期（AGENTS.md 第 3 節）。
@@ -103,7 +111,10 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
         .read<RiotProvider>()
         .login(url, fallbackShard: _shard, autoRenew: autoRenew);
     if (!mounted) return;
-    setState(() => _error = error);
+    setState(() {
+      _error = error;
+      if (error == null) _adding = false;
+    });
     if (error == null) _controller.clear();
   }
 
@@ -136,7 +147,8 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
                         '使用 Riot 未公開 API，可能違反服務條款，帳號有受處分的風險，'
                         'API 也可能隨時失效。建議使用非主要帳號。\n'
                         '本 App 不會接觸你的密碼。登入資訊（token）會保存在這個瀏覽器，'
-                        '重新開啟頁面時保持登入；約 1 小時後過期，需要重新登入。'
+                        '重新開啟頁面時保持登入；登入過的帳號都會保存，可以直接切換。'
+                        'token 約 1 小時後過期，需要重新登入。'
                         '能使用這個瀏覽器的人在過期前都能用它讀取你的帳號資料，'
                         '用完請按「登出」刪除。',
                       ),
@@ -145,13 +157,45 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
                 ),
               ),
               const SizedBox(height: 16),
+              if (riot.accounts.length > 1 ||
+                  (riot.accounts.isNotEmpty && !riot.isLoggedIn)) ...[
+                AccountList(inApp: inApp),
+                const SizedBox(height: 16),
+              ],
               if (riot.isLoggedIn && session != null) ...[
                 ListTile(
                   leading: Icon(Icons.verified_user, color: AppColors.owned),
                   title: Text('已登入：${session.displayName}（${session.shard}）'),
                 ),
-                OutlinedButton(onPressed: riot.logout, child: const Text('登出')),
-              ] else ...[
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton(
+                        onPressed: riot.logout, child: const Text('登出')),
+                    if (!_adding)
+                      OutlinedButton.icon(
+                        key: const ValueKey('add-account'),
+                        onPressed: () => setState(() => _adding = true),
+                        icon: const Icon(Icons.person_add_alt),
+                        label: const Text('新增其他帳號'),
+                      ),
+                  ],
+                ),
+              ],
+              if (!riot.isLoggedIn || _adding) ...[
+                if (_adding) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    inApp
+                        ? '新增帳號會先清除內嵌頁記住的 Riot 帳號，請在 Riot 頁面登入另一個帳號。'
+                            '登入成功後兩個帳號都會保存在上方清單。'
+                        : 'Riot 記得目前的帳號時會直接登入它。要登入另一個帳號，'
+                            '請先在 Riot 登入頁登出，或在無痕視窗開啟登入網址。'
+                            '登入成功後兩個帳號都會保存在上方清單。',
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 if (inApp) ...[
                   FilledButton.icon(
                     onPressed: riot.isBusy ? null : _openInAppLogin,

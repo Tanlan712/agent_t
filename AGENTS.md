@@ -137,6 +137,14 @@ Riot 在伺服器端看得到這些請求，帳號可能被標記或停權；網
   已向使用者說明風險：等於社群的 Cookie Reauth，Riot 可能視為自動化登入；
   手機被別人拿走時，在 Riot 登入記錄過期前（約數週）對方都能讀取帳號資料。
   拿不到 refresh token：目前的隱含流程不發 refresh token，`/token` 端點要 Riot 核准的 RSO client secret。
+- **使用者決定（2026-10-23，多帳號切換方案 A）**：上面「不得讀取、保存或重送 `ssid`」的例外。
+  App 內登入或背景續期成功後，原生程式（MethodChannel `valorant_shop_tracker/riot_cookies`，
+  `MainActivity.kt`／`AppDelegate.swift`）只讀出 `auth.riotgames.com` 的 `ssid`，存進該帳號的保存資料（`riotAccounts`）；
+  切換帳號時先清除內嵌頁的 Riot cookie，再放回目標帳號的 `ssid`，由背景續期拿新 token，幾週內切換都不用輸入密碼。
+  只讀寫 `ssid` 這一個 cookie；不得寫入 log、錯誤訊息或測試資料（測試只能用假值），不得送到任何伺服器；
+  登出（刪除帳號）時一併刪除。網頁版讀不到 Riot 的 cookie，維持只保存 token。
+  已向使用者說明風險：`ssid` 等同長期登入憑證，手機被別人拿走或備份外流時，對方在 cookie 過期前（約數週）
+  都能登入這些帳號讀取資料；Riot 可能視為自動化登入。
 - 允許的主機、只讀與頻率限制與上表完全相同；原生 App 沒有 CORS 限制，**不可**因此呼叫上表以外的端點。
 - APK／IPA 由 GitHub Actions 建置並放在 GitHub Release（iOS 是未簽章的 IPA，由使用者自己簽章）；`lib/` 仍不可使用 `dart:io`。
 
@@ -149,6 +157,9 @@ Riot 在伺服器端看得到這些請求，帳號可能被標記或停權；網
     按「登出」或 API 回報授權失敗時立即刪除；token 約 1 小時過期，過期後下次開啟頁面讀回時刪除、不使用。
     已向使用者說明風險：能使用這台電腦這個瀏覽器的人或擴充功能，在 token 過期前都能用它讀取帳號資料。
     同時取消「從剪貼簿貼上並登入」。
+  - **使用者決定（2026-10-22／23）**：多帳號切換。保存多個帳號（`riotAccounts`，目前帳號 `riotActiveAccount`），
+    每個帳號各自的 token 規則同上（過期只刪 token、保留帳號名稱；登出刪除整個帳號），各帳號的商店分開保存。
+    手機 App 另外保存各帳號的 `ssid`，見第 3 節。
   - **使用者決定（2026-10-22）**：Android「分享」登入。manifest 的 `share_target` 以 POST 送到 `share-login`，
     由 `web/share_login_sw.js` 在本機攔截，分享的文字只暫存在 Cache Storage，登入頁取出後立即刪除（超過 10 分鐘丟棄）；
     service worker 不得對外送出任何資料，也不快取網站。已說明風險：service worker 不在時（例如清除網站資料但 App 還在），

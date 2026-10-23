@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import WebKit
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -14,6 +15,10 @@ import UIKit
     if let controller = window?.rootViewController as? FlutterViewController {
       FlutterMethodChannel(name: "valorant_shop_tracker/app_icon", binaryMessenger: controller.binaryMessenger)
         .setMethodCallHandler { [weak self] call, result in self?.handleIcon(call, result) }
+      // 多帳號切換：讀出／放回內嵌頁的 Riot 登入 cookie（ssid）。只在 App 與 WebView 之間傳遞，不寫 log
+      // （使用者決定 2026-10-23，AGENTS.md 第 3 節）。
+      FlutterMethodChannel(name: "valorant_shop_tracker/riot_cookies", binaryMessenger: controller.binaryMessenger)
+        .setMethodCallHandler { [weak self] call, result in self?.handleRiotCookies(call, result) }
     }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
@@ -40,6 +45,39 @@ import UIKit
           result(nil)
         }
       }
+    default:
+      result(FlutterMethodNotImplemented)
+    }
+  }
+
+  private func handleRiotCookies(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+    // webview_flutter 用預設的 WKWebsiteDataStore。
+    let store = WKWebsiteDataStore.default().httpCookieStore
+    switch call.method {
+    case "read":
+      store.getAllCookies { cookies in
+        let ssid = cookies.first { $0.name == "ssid" && $0.domain.hasSuffix("riotgames.com") }
+        result(ssid?.value)
+      }
+    case "write":
+      guard let ssid = call.arguments as? String, !ssid.isEmpty, !ssid.contains(";") else {
+        result(FlutterError(code: "bad_cookie", message: "invalid cookie", details: nil))
+        return
+      }
+      let properties: [HTTPCookiePropertyKey: Any] = [
+        .domain: "auth.riotgames.com",
+        .path: "/",
+        .name: "ssid",
+        .value: ssid,
+        .secure: "TRUE",
+        .expires: Date().addingTimeInterval(30 * 24 * 60 * 60),
+        HTTPCookiePropertyKey("HttpOnly"): "TRUE",
+      ]
+      guard let cookie = HTTPCookie(properties: properties) else {
+        result(FlutterError(code: "bad_cookie", message: "invalid cookie", details: nil))
+        return
+      }
+      store.setCookie(cookie) { result(nil) }
     default:
       result(FlutterMethodNotImplemented)
     }

@@ -50,6 +50,25 @@ class ShopProvider with ChangeNotifier {
   Future<void> clearNightMarket() => _update(_shop.clearNightMarket());
   Future<void> clearFeaturedBundle() => _update(_shop.clearFeaturedBundle());
 
+  /// 換帳號：把目前的商店存到 [from] 名下，換成 [to] 上次的商店（沒有時清空，等同步）。
+  /// 登出（[to] 為 null）時保留畫面上的商店，刪除 [from] 的備份。
+  Future<void> switchAccount(String? from, String? to) async {
+    if (to == null) {
+      if (from != null) await _storage.removeFor(from);
+      return;
+    }
+    if (from != null) await _storage.saveFor(from, _shop);
+    final saved = _storage.loadFor(to);
+    if (saved != null) {
+      await _update(saved);
+    } else if (from != null) {
+      await _update(const CurrentShop());
+    }
+  }
+
+  /// 刪除帳號時一併刪除它的商店備份。
+  Future<void> forgetAccount(String puuid) => _storage.removeFor(puuid);
+
   void _validate(Iterable<String> uuids, int count, String countMessage) {
     final list = uuids.toList();
     if (list.length != count) throw ArgumentError(countMessage);
