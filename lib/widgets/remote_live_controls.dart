@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../logic/custom_game.dart';
 import '../logic/match_mapper.dart' show queueName;
 import '../models/live_models.dart';
 import '../models/match_models.dart';
@@ -77,13 +78,17 @@ class _RemoteCard extends StatelessWidget {
 }
 
 /// 選角時的遠端選角：只在使用者按下按鈕時送出，不會自動選擇或鎖定（AGENTS.md 第 1 節）。
-class RemotePregameControls extends StatelessWidget {
+/// 預設是預選特務，也可以在下拉選單改選其他特務。
+class RemotePregameControls extends StatefulWidget {
   final LivePregame pregame;
   final RemoteActions actions;
 
   /// 預選特務；null 代表還沒設定。
   final String? preferredAgent;
   final RefItem Function(String agentId) agent;
+
+  /// 下拉選單可選的特務（uuid 小寫）；空的時候只能用預選特務。
+  final List<String> choices;
 
   /// 送出成功後重新讀取即時對局。
   final VoidCallback onDone;
@@ -95,41 +100,108 @@ class RemotePregameControls extends StatelessWidget {
     required this.preferredAgent,
     required this.agent,
     required this.onDone,
+    this.choices = const [],
   });
 
   @override
+  State<RemotePregameControls> createState() => _RemotePregameControlsState();
+}
+
+class _RemotePregameControlsState extends State<RemotePregameControls> {
+  /// 使用者在下拉選單改選的特務；null 時用預選特務。
+  String? _picked;
+
+  @override
   Widget build(BuildContext context) => ListenableBuilder(
-        listenable: actions,
+        listenable: widget.actions,
         builder: (context, _) {
+          final pregame = widget.pregame;
+          final actions = widget.actions;
           final me = pregame.allies.where((a) => a.isMe).firstOrNull;
           final locked = me?.selection == AgentSelection.locked;
-          final id = preferredAgent;
-          final disabled = actions.busy || locked || id == null;
+          final id = (_picked ?? widget.preferredAgent)?.toLowerCase();
+          // 隊友已鎖定的特務不能再選。
+          final taken = {
+            for (final a in pregame.allies)
+              if (!a.isMe && a.selection == AgentSelection.locked)
+                a.agentId.toLowerCase(),
+          };
+          final blocked = id != null && taken.contains(id);
+          final disabled = actions.busy || locked || id == null || blocked;
+          final choices = {
+            ...widget.choices.map((c) => c.toLowerCase()),
+            if (id != null) id,
+          }.toList()
+            ..sort(
+                (a, b) => widget.agent(a).name.compareTo(widget.agent(b).name));
           Future<void> run(Future<bool> Function() send) async {
-            if (await send()) onDone();
+            if (await send()) widget.onDone();
           }
 
+          final current = me == null || me.agentId.isEmpty
+              ? null
+              : '目前：${widget.agent(me.agentId.toLowerCase()).name}'
+                  '（${locked ? '已鎖定' : '已選擇'}）';
           return _RemoteCard(
             key: const ValueKey('remote-pregame'),
             title: '遠端選角',
             actions: actions,
             children: [
-              if (id == null)
-                Text('尚未預選特務：到「我的收藏 → 特務」按圖釘設定。',
-                    style: TextStyle(color: AppColors.muted))
-              else
+              if (widget.preferredAgent == null) ...[
+                Text('尚未預選特務：到「我的收藏 → 特務」按圖釘設定，或在下面直接選。',
+                    style: TextStyle(color: AppColors.muted)),
+                const SizedBox(height: 8),
+              ],
+              if (choices.isNotEmpty)
                 Row(children: [
-                  SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: SkinIcon(url: agent(id).iconUrl)),
+                  if (id != null)
+                    SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: SkinIcon(url: widget.agent(id).iconUrl)),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text('預選：${agent(id).name}',
-                        key: const ValueKey('remote-preferred-agent'),
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    child: (choices.length > 1 || id == null) && !locked
+                        ? DropdownButton<String>(
+                            key: const ValueKey('remote-agent-picker'),
+                            isExpanded: true,
+                            value: id,
+                            hint: const Text('選特務'),
+                            items: [
+                              for (final c in choices)
+                                DropdownMenuItem(
+                                    value: c,
+                                    child: Text(
+                                        c ==
+                                                widget.preferredAgent
+                                                    ?.toLowerCase()
+                                            ? '${widget.agent(c).name}（預選）'
+                                            : widget.agent(c).name,
+                                        overflow: TextOverflow.ellipsis)),
+                            ],
+                            onChanged: actions.busy
+                                ? null
+                                : (c) => setState(() => _picked = c),
+                          )
+                        : Text(
+                            id == null ? '選特務' : '預選：${widget.agent(id).name}',
+                            key: const ValueKey('remote-preferred-agent'),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w600)),
                   ),
                 ]),
+              if (current != null) ...[
+                const SizedBox(height: 4),
+                Text(current,
+                    key: const ValueKey('remote-current-agent'),
+                    style: TextStyle(color: AppColors.muted, fontSize: 12)),
+              ],
+              if (blocked) ...[
+                const SizedBox(height: 4),
+                Text('隊友已鎖定這位特務，請改選其他特務。',
+                    key: const ValueKey('remote-agent-taken'),
+                    style: TextStyle(color: AppColors.error, fontSize: 12)),
+              ],
               const SizedBox(height: 12),
               Wrap(spacing: 8, runSpacing: 8, children: [
                 OutlinedButton.icon(
@@ -217,10 +289,101 @@ class RemoteMatchControls extends StatelessWidget {
 
 /// 自訂對戰的隊伍名稱。
 const customTeamLabels = {
-  'TeamOne': '攻擊方',
-  'TeamTwo': '防守方',
+  'TeamOne': 'A 隊',
+  'TeamTwo': 'B 隊',
   'TeamSpectate': '觀戰',
 };
+
+/// 自訂對戰設定：地圖、模式、伺服器用 Riot 的 customgameconfigs 清單，
+/// 讀不到時地圖退回 valorant-api.com 的全部地圖，模式與伺服器只列目前的設定。
+class _CustomSettings extends StatelessWidget {
+  final Map<String, dynamic> settings;
+  final CustomGameConfig? config;
+  final Map<String, RefItem> maps;
+  final bool busy;
+  final ValueChanged<Map<String, dynamic>> onChanged;
+
+  const _CustomSettings({
+    required this.settings,
+    required this.config,
+    required this.maps,
+    required this.busy,
+    required this.onChanged,
+  });
+
+  Widget _dropdown(String label, String key, List<String> options,
+      String Function(String) name) {
+    final current = settings[key] as String?;
+    final values = {
+      ...options,
+      if (current != null && current.isNotEmpty) current,
+    }.toList();
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Text(label),
+      const SizedBox(width: 8),
+      ConstrainedBox(
+        // 窄螢幕不溢出：名稱太長時截斷。
+        constraints: const BoxConstraints(maxWidth: 200),
+        child: DropdownButton<String>(
+          key: ValueKey('remote-custom-${key.toLowerCase()}'),
+          value: current != null && values.contains(current) ? current : null,
+          hint: Text(label),
+          isExpanded: true,
+          items: [
+            for (final v in values)
+              DropdownMenuItem(
+                  value: v,
+                  child: Text(name(v), overflow: TextOverflow.ellipsis)),
+          ],
+          onChanged: busy
+              ? null
+              : (v) {
+                  if (v != null && v != current) {
+                    onChanged(withCustomSetting(settings, key, v));
+                  }
+                },
+        ),
+      ),
+    ]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mapOptions =
+        config?.maps.isNotEmpty == true ? config!.maps : maps.keys.toList();
+    String mapName(String url) =>
+        maps[url]?.name ?? url.split('/').where((p) => p.isNotEmpty).last;
+    return Column(
+      key: const ValueKey('remote-custom-settings'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 16,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _dropdown('地圖', 'Map', mapOptions, mapName),
+            _dropdown('模式', 'Mode', config?.modes ?? const [], customModeName),
+            _dropdown(
+                '伺服器', 'GamePod', config?.pods ?? const [], customPodName),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          for (final e in customGameRules.entries)
+            FilterChip(
+              key: ValueKey('remote-rule-${e.key}'),
+              label: Text(e.value),
+              selected: customRuleOn(settings, e.key),
+              onSelected: busy
+                  ? null
+                  : (on) => onChanged(withCustomRule(settings, e.key, on)),
+            ),
+        ]),
+      ],
+    );
+  }
+}
 
 /// 隊伍的遠端操作：所有人可以切換準備與邀請；隊長另外可以取得代碼、排隊、變更模式、
 /// 開放或鎖定隊伍、踢人與自訂對戰。
@@ -271,13 +434,16 @@ class _RemotePartyControlsState extends State<RemotePartyControls> {
           final owner = party.iAmOwner;
           final custom = party.isCustomGame;
           final queuing = party.state == 'MATCHMAKING';
-          final code = actions.inviteCode(party.id);
+          final code = actions.inviteCode(party.id) ?? party.inviteCode;
           final queues = {
             ...party.eligibleQueues,
             if (party.queueId.isNotEmpty) party.queueId,
           }.toList();
           final others = party.members.where((m) => !m.isMe).toList();
-          final mapId = party.customSettings?['Map'] as String?;
+          if (owner && custom) {
+            WidgetsBinding.instance
+                .addPostFrameCallback((_) => actions.loadCustomConfig());
+          }
           return _RemoteCard(
             key: const ValueKey('remote-party'),
             title: '遠端隊伍',
@@ -476,27 +642,6 @@ class _RemotePartyControlsState extends State<RemotePartyControls> {
                                     }
                                   },
                           ),
-                        if (party.customSettings != null &&
-                            widget.maps.isNotEmpty)
-                          DropdownButton<String>(
-                            key: const ValueKey('remote-custom-map'),
-                            value:
-                                widget.maps.containsKey(mapId) ? mapId : null,
-                            hint: const Text('地圖'),
-                            items: [
-                              for (final e in widget.maps.entries)
-                                DropdownMenuItem(
-                                    value: e.key, child: Text(e.value.name)),
-                            ],
-                            onChanged: busy
-                                ? null
-                                : (m) {
-                                    if (m != null && m != mapId) {
-                                      _run(() => actions.setCustomMap(
-                                          party.id, party.customSettings!, m));
-                                    }
-                                  },
-                          ),
                         FilledButton.icon(
                           key: const ValueKey('remote-start-custom'),
                           onPressed: busy
@@ -519,6 +664,17 @@ class _RemotePartyControlsState extends State<RemotePartyControls> {
                           child: const Text('回到一般模式'),
                         ),
                       ]),
+                  if (party.customSettings case final settings?) ...[
+                    const SizedBox(height: 12),
+                    _CustomSettings(
+                      settings: settings,
+                      config: actions.customConfig,
+                      maps: widget.maps,
+                      busy: busy,
+                      onChanged: (next) =>
+                          _run(() => actions.setCustomSettings(party.id, next)),
+                    ),
+                  ],
                 ],
               ],
               if (!owner) ...[

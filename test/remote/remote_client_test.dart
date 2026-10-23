@@ -73,7 +73,7 @@ void main() {
     expect(
         requests.every((r) => r.method == 'POST' && r.url.host == glz), isTrue);
     expect(jsonDecode(requests[0].body), {'ready': false});
-    expect(jsonDecode(requests[3].body), {'queueID': 'competitive'});
+    expect(jsonDecode(requests[3].body), {'queueId': 'competitive'});
     expect(jsonDecode(requests[4].body), {'accessibility': 'OPEN'});
     expect(jsonDecode(requests[5].body), {'accessibility': 'CLOSED'});
   });

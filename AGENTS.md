@@ -118,6 +118,12 @@ Riot 在伺服器端看得到這些請求，帳號可能被標記或停權；網
     `parties/v1/parties/{自己的隊伍}/invites/name/{name}/tag/{tag}`、`…/makecustomgame`、`…/customgamesettings`、
     `…/customgamemembership/{team}`、`…/startcustomgame`、`…/makedefault`；DELETE `parties/v1/players/{puuid}`（隊長踢人，需確認，不能踢自己）；
     `pd` POST `contracts/v1/contracts/{自己的 puuid}/special/{id}`（啟用特務合約）。
+  - **2026-10-23（新功能批次，使用者選了「自訂對戰的地圖、模式、伺服器改用 Riot 的真實清單」）**：
+    `glz` GET `parties/v1/parties/customgameconfigs`（可用地圖、模式、伺服器），只在同意遠端操作、自己是隊長且在自訂對戰時讀一次；
+    自訂對戰設定仍然只用上面的 `…/customgamesettings`，整份 Settings 原樣帶回、只改使用者按的那一項。
+  - **主機（2026-10-23 修正）**：glz 是 `glz-{區域}-1.{shard}.a.pvp.net`，pd 是 `pd.{shard}.a.pvp.net`；
+    區域 `latam`、`br` 的 shard 是 `na`（`RiotSession.glzHost`／`pdHost`）。端點與欄位依 techchrism 的 `valorant-api-types`
+    （例如變更模式的內容是 `{"queueId": …}`），仍然沒有用真實帳號驗證。
 - 不包含：聊天、語音、購買、加入他人隊伍；要做必須再問使用者。
   聊天與語音另有限制：MUC／語音 token 屬於第 4 節的憑證，不得讀取。
 

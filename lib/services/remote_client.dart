@@ -1,3 +1,4 @@
+import '../logic/custom_game.dart';
 import '../models/riot_session.dart';
 import 'riot_client.dart';
 
@@ -73,7 +74,9 @@ class RemoteClient {
 
   Future<void> changeQueue(RiotSession s, String partyId, String queueId) =>
       _glz(s, '/parties/v1/parties/$partyId/queue',
-          body: {'queueID': queueId}, label: '變更模式');
+          // valorant-api-types 的 Party_ChangeQueue：欄位是 queueId（小寫 d）。
+          body: {'queueId': queueId},
+          label: '變更模式');
 
   Future<void> setAccessibility(RiotSession s, String partyId, bool open) =>
       _glz(s, '/parties/v1/parties/$partyId/accessibility',
@@ -85,13 +88,12 @@ class RemoteClient {
       _glz(s, '/pregame/v1/matches/$matchId/quit', label: '離開選角');
 
   /// 離開進行中的對局（Riot 會給懲罰）。
-  Future<void> leaveCoreGame(RiotSession s, String matchId) => _glz(
-      s, '/core-game/v1/players/${s.puuid}/disassociate/$matchId',
-      label: '離開對局');
+  Future<void> leaveCoreGame(RiotSession s, String matchId) =>
+      _glz(s, '/core-game/v1/players/${s.puuid}/disassociate/$matchId',
+          label: '離開對局');
 
   /// 用 Riot ID 邀請玩家加入自己的隊伍。
-  Future<void> invite(
-          RiotSession s, String partyId, String name, String tag) =>
+  Future<void> invite(RiotSession s, String partyId, String name, String tag) =>
       _glz(
           s,
           // Uri.https 會自動編碼路徑（空白等），這裡不再編碼一次。
@@ -102,9 +104,15 @@ class RemoteClient {
   Future<void> kick(RiotSession s, String puuid) =>
       _glz(s, '/parties/v1/players/$puuid', method: 'DELETE', label: '踢出成員');
 
-  Future<void> makeCustomGame(RiotSession s, String partyId) => _glz(
-      s, '/parties/v1/parties/$partyId/makecustomgame',
-      label: '建立自訂對戰');
+  /// 自訂對戰可用的地圖、模式與伺服器（GET，只在同意遠端操作時讀取）。
+  Future<CustomGameConfig> fetchCustomGameConfigs(RiotSession s) async {
+    _check();
+    return CustomGameConfig.fromJson(await _riot
+        .getGlz(s, '/parties/v1/parties/customgameconfigs', label: '取得自訂對戰選項'));
+  }
+
+  Future<void> makeCustomGame(RiotSession s, String partyId) =>
+      _glz(s, '/parties/v1/parties/$partyId/makecustomgame', label: '建立自訂對戰');
 
   /// 自訂對戰設定：整份 `Settings`（Map、Mode、UseBots、GamePod、GameRules）。
   Future<void> setCustomGameSettings(
@@ -118,9 +126,8 @@ class RemoteClient {
       _glz(s, '/parties/v1/parties/$partyId/customgamemembership/$team',
           body: {'playerToPutOnTeam': puuid}, label: '換隊');
 
-  Future<void> startCustomGame(RiotSession s, String partyId) => _glz(
-      s, '/parties/v1/parties/$partyId/startcustomgame',
-      label: '開始自訂對戰');
+  Future<void> startCustomGame(RiotSession s, String partyId) =>
+      _glz(s, '/parties/v1/parties/$partyId/startcustomgame', label: '開始自訂對戰');
 
   /// 從自訂對戰回到一般隊伍（指定模式）。
   Future<void> makeDefault(RiotSession s, String partyId, String queueId) =>
@@ -130,8 +137,8 @@ class RemoteClient {
   /// 啟用特務合約（自己的合約）。
   Future<void> activateContract(RiotSession s, String contractId) async {
     _check();
-    await _riot.sendRemote(
-        s, 'POST', 'pd', '/contracts/v1/contracts/${s.puuid}/special/$contractId',
+    await _riot.sendRemote(s, 'POST', 'pd',
+        '/contracts/v1/contracts/${s.puuid}/special/$contractId',
         label: '啟用合約');
   }
 }

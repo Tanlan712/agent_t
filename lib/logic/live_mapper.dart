@@ -61,6 +61,10 @@ LiveParty mapParty(Map<String, dynamic> json, String myPuuid) {
     ],
     customSettings: custom?['Settings'] as Map<String, dynamic>?,
     customTeams: teams,
+    inviteCode: switch (json['InviteCode']) {
+      final String c when c.isNotEmpty => c,
+      _ => null,
+    },
   );
 }
 
