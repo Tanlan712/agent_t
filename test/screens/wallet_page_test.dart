@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:valorant_shop_tracker/app_routes.dart';
 import 'package:valorant_shop_tracker/models/riot_session.dart';
@@ -25,6 +26,20 @@ void main() {
     final h = await Harness.create(tester);
     await open(tester, h);
     expect(find.text('登入 Riot 以記錄錢包'), findsOneWidget);
+  });
+
+  testWidgets('按鈕打開 Riot 官方購買紀錄', (tester) async {
+    setWidth(tester, 1400);
+    final h = await Harness.create(tester);
+    final launched = <Uri>[];
+    await tester.pumpWidget(h.wrap(home: WalletPage(launch: (u) async {
+      launched.add(u);
+      return true;
+    })));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('wallet-official-open')));
+    expect(launched, [officialPurchaseHistory]);
+    expect(officialPurchaseHistory.host, 'support.riotgames.com');
   });
 
   testWidgets('同步商店時記下錢包餘額', (tester) async {

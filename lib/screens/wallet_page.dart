@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../logic/wallet_history.dart';
 import '../models/wallet_log.dart';
@@ -14,9 +15,38 @@ import 'match_history_page.dart' show formatMatchTime;
 
 String _signed(int n) => n > 0 ? '+$n' : '$n';
 
+/// Riot 客服網站的官方購買紀錄（要在該網站另外登入；App 不讀取頁面內容）。
+final officialPurchaseHistory = Uri.parse(
+    'https://support.riotgames.com/zh-tw/valorant/billing/checking-your-purchase-history');
+
+Future<bool> _openInNewTab(Uri uri) =>
+    launchUrl(uri, webOnlyWindowName: '_blank');
+
 /// 錢包紀錄：同步錢包時記下的 VP 儲值與花費（Riot 沒有儲值紀錄的 API，只存在這個瀏覽器）。
 class WalletPage extends StatelessWidget {
-  const WalletPage({super.key});
+  /// 開啟官方購買紀錄（測試時注入）。
+  final Future<bool> Function(Uri) launch;
+
+  const WalletPage({super.key, this.launch = _openInNewTab});
+
+  Widget _official() => PanelCard(
+        key: const ValueKey('wallet-official'),
+        padding: const EdgeInsets.all(16),
+        child: Wrap(
+          spacing: 16,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            const Text('完整的儲值紀錄在 Riot 客服網站，登入後即可查看。'),
+            OutlinedButton.icon(
+              key: const ValueKey('wallet-official-open'),
+              onPressed: () => launch(officialPurchaseHistory),
+              icon: const Icon(Icons.open_in_new, size: 18),
+              label: const Text('查看官方購買紀錄'),
+            ),
+          ],
+        ),
+      );
 
   Future<void> _sync(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -70,6 +100,8 @@ class WalletPage extends StatelessWidget {
                 onAction: () => Navigator.pushNamed(context, '/riot-login'),
               ),
             ),
+            const SizedBox(height: 16),
+            _official(),
           ],
         ),
       );
@@ -115,6 +147,8 @@ class WalletPage extends StatelessWidget {
                 value: '${totals.spent}',
                 up: totals.spent > 0 ? false : null),
           ]),
+          const SizedBox(height: 16),
+          _official(),
           const SizedBox(height: 16),
           const SectionHeader(title: '變化'),
           const SizedBox(height: 8),
