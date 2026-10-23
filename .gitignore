@@ -48,3 +48,4 @@ app.*.map.json
 # Local secrets / archived legacy code
 .cookies/
 archive/
+node_modules/
