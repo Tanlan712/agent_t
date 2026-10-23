@@ -32,6 +32,7 @@ import 'services/match_reference_api.dart';
 import 'services/pwa.dart';
 import 'services/remote_client.dart';
 import 'services/riot_client.dart';
+import 'services/riot_cookies.dart';
 import 'storage/catalog_cache.dart';
 import 'storage/match_reference_cache.dart';
 import 'storage/offer_price_storage.dart';
@@ -61,7 +62,9 @@ Future<void> main() async {
   // 手機 App 按「登出」時一併清除內嵌頁的 Riot 登入記錄，背景續期也跟著停止。
   final riot = RiotProvider(riotClient,
       storage: SessionStorage(prefs),
-      onLogout: inAppLoginSupported ? clearRiotWebLogin : null);
+      onLogout: inAppLoginSupported ? clearRiotWebLogin : null,
+      // 手機 App 保存各帳號的 Riot 登入 cookie，切換帳號不用再輸入密碼（AGENTS.md 第 3 節）。
+      cookies: NativeRiotCookies.supported ? const NativeRiotCookies() : null);
   // 自己的紀錄、最近 5 場與玩家頁共用同一份場次快取。
   final matchClient = MatchClient(riotClient);
   // 即時對局（glz）只有 GET，規則見 AGENTS.md。

@@ -4,6 +4,7 @@ import '../logic/storefront_mapper.dart';
 import '../models/riot_session.dart';
 import '../services/riot_auth.dart';
 import '../services/riot_client.dart';
+import '../services/riot_cookies.dart';
 import '../storage/session_storage.dart';
 import 'catalog_provider.dart';
 import 'shop_provider.dart';
@@ -19,6 +20,7 @@ class RiotProvider with ChangeNotifier {
   final DateTime Function() _now;
   final SessionStorage? _storage;
   final Future<void> Function()? _onLogout;
+  final RiotCookieStore? _cookies;
 
   RiotSession? _session;
   String? _account;
@@ -30,10 +32,12 @@ class RiotProvider with ChangeNotifier {
   RiotProvider(this._client,
       {DateTime Function() now = DateTime.now,
       SessionStorage? storage,
-      Future<void> Function()? onLogout})
+      Future<void> Function()? onLogout,
+      RiotCookieStore? cookies})
       : _now = now,
         _storage = storage,
-        _onLogout = onLogout {
+        _onLogout = onLogout,
+        _cookies = cookies {
     _session = storage?.load(now());
     _account = storage?.activePuuid;
     _expired = storage?.expiredOnLoad ?? false;
@@ -110,6 +114,7 @@ class RiotProvider with ChangeNotifier {
         _expired = false;
         await _storage?.save(s);
         await _storage?.setAutoRenew(autoRenew);
+        if (autoRenew) await _keepCookie(s.puuid);
       },
       failurePrefix: '登入失敗',
       authErrorMessage: invalidLoginMessage,
@@ -132,6 +137,8 @@ class RiotProvider with ChangeNotifier {
       _session = s;
       _expired = false;
       await _storage?.save(s);
+      // Riot 可能換發新的 ssid，續期後重新保存。
+      await _keepCookie(s.puuid);
       notifyListeners();
       return null;
     } on RiotApiException catch (e) {
@@ -167,6 +174,7 @@ class RiotProvider with ChangeNotifier {
     final target = _storage?.account(puuid);
     if (target == null || puuid == _account) return;
     await _storage?.setActive(puuid);
+    await _swapCookie(target);
     _changeAccount(puuid);
     _session = target.hasValidSession(_now()) ? target.session : null;
     _expired = _session == null;
@@ -199,6 +207,25 @@ class RiotProvider with ChangeNotifier {
   void expire() {
     _expired = _expired || _session != null;
     _drop();
+  }
+
+  /// 保存內嵌頁目前的 ssid 給 [puuid]（多帳號切換，AGENTS.md 第 3 節）。
+  Future<void> _keepCookie(String puuid) async {
+    final cookies = _cookies;
+    if (cookies == null) return;
+    final ssid = await cookies.read();
+    if (ssid != null && ssid.isNotEmpty)
+      await _storage?.setCookies(puuid, ssid);
+  }
+
+  /// 切換帳號：清除內嵌頁的 Riot 登入記錄，放回 [target] 保存的 ssid，
+  /// 背景續期就會拿到 [target] 的新 token。沒有保存的 ssid 時只清除。
+  Future<void> _swapCookie(SavedAccount target) async {
+    final cookies = _cookies;
+    if (cookies == null) return;
+    await _onLogout?.call();
+    final ssid = target.cookies;
+    if (ssid != null) await cookies.write(ssid);
   }
 
   void _changeAccount(String? puuid) {

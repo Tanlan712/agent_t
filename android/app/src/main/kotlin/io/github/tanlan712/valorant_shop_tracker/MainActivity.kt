@@ -2,6 +2,7 @@ package io.github.tanlan712.valorant_shop_tracker
 
 import android.content.ComponentName
 import android.content.pm.PackageManager
+import android.webkit.CookieManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -28,6 +29,40 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+        // 多帳號切換：讀出／放回內嵌頁的 Riot 登入 cookie（ssid）。只在 App 與 WebView 之間傳遞，不寫 log
+        // （使用者決定 2026-10-23，AGENTS.md 第 3 節）。
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "valorant_shop_tracker/riot_cookies")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "read" -> result.success(readSsid())
+                    "write" -> {
+                        val ssid = call.arguments as? String
+                        if (ssid.isNullOrEmpty() || ssid.contains(';')) {
+                            result.error("bad_cookie", "invalid cookie", null)
+                        } else {
+                            writeSsid(ssid) { result.success(null) }
+                        }
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+    }
+
+    private val riotAuthUrl = "https://auth.riotgames.com"
+
+    private fun readSsid(): String? = CookieManager.getInstance().getCookie(riotAuthUrl)
+        ?.split(';')
+        ?.map { it.trim() }
+        ?.firstOrNull { it.startsWith("ssid=") }
+        ?.removePrefix("ssid=")
+        ?.takeIf { it.isNotEmpty() }
+
+    private fun writeSsid(ssid: String, done: () -> Unit) {
+        val manager = CookieManager.getInstance()
+        manager.setCookie(riotAuthUrl, "ssid=$ssid; Path=/; Secure; HttpOnly") {
+            manager.flush()
+            done()
+        }
     }
 
     private fun alias(key: String) = ComponentName(packageName, "${MainActivity::class.java.name.substringBeforeLast('.')}.Icon_$key")

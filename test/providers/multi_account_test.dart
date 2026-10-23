@@ -8,6 +8,7 @@ import 'package:valorant_shop_tracker/providers/riot_provider.dart';
 import 'package:valorant_shop_tracker/providers/shop_provider.dart';
 import 'package:valorant_shop_tracker/screens/riot_login_page.dart';
 import 'package:valorant_shop_tracker/services/riot_client.dart';
+import 'package:valorant_shop_tracker/services/riot_cookies.dart';
 import 'package:valorant_shop_tracker/storage/session_storage.dart';
 import 'package:valorant_shop_tracker/storage/shop_storage.dart';
 
@@ -18,9 +19,24 @@ import '../riot_fixtures.dart';
 final otherRedirect = 'https://playvalorant.com/opt_in'
     '#access_token=${fakeJwt({'sub': 'puuid-2'})}'
     '&id_token=${fakeJwt({
-          'sub': 'puuid-2',
-          'acct': {'game_name': 'Other', 'tag_line': 'TW2'},
-        })}&expires_in=3600';
+      'sub': 'puuid-2',
+      'acct': {'game_name': 'Other', 'tag_line': 'TW2'},
+    })}&expires_in=3600';
+
+/// 假的內嵌頁 cookie：模擬 WebView 目前記著哪個帳號的 ssid。
+class FakeCookies implements RiotCookieStore {
+  String? current;
+  final written = <String>[];
+
+  @override
+  Future<String?> read() async => current;
+
+  @override
+  Future<void> write(String ssid) async {
+    written.add(ssid);
+    current = ssid;
+  }
+}
 
 void main() {
   final start = DateTime(2026, 10, 22, 12);
@@ -40,7 +56,8 @@ void main() {
     final riot = riotWith(() => start);
     await riot.login(fakeRedirect);
     await riot.login(otherRedirect);
-    expect(riot.accounts.map((a) => a.displayName), ['Tester#TW1', 'Other#TW2']);
+    expect(
+        riot.accounts.map((a) => a.displayName), ['Tester#TW1', 'Other#TW2']);
     expect(riot.session!.puuid, 'puuid-2');
     expect(riot.activePuuid, 'puuid-2');
   });
@@ -130,7 +147,8 @@ void main() {
       'tagLine': 'TW1',
       'shard': 'ap',
       'clientVersion': 'v',
-      'expiresAt': start.add(const Duration(minutes: 30)).toUtc().toIso8601String(),
+      'expiresAt':
+          start.add(const Duration(minutes: 30)).toUtc().toIso8601String(),
     };
     SharedPreferences.setMockInitialValues({
       SessionStorage.legacyKey: jsonEncode(session),
@@ -220,5 +238,82 @@ void main() {
     expect(cleared, 1);
     expect(riot.session!.puuid, 'puuid-2');
     expect(riot.accounts, hasLength(2));
+  });
+
+  group('保存各帳號的 Riot cookie（方案 A）', () {
+    late FakeCookies cookies;
+    var cleared = 0;
+
+    RiotProvider riotA(DateTime Function() now) =>
+        RiotProvider(RiotClient(client: riotClient()),
+            now: now, storage: SessionStorage(prefs), onLogout: () async {
+          cleared++;
+          cookies.current = null;
+        }, cookies: cookies);
+
+    setUp(() {
+      cookies = FakeCookies();
+      cleared = 0;
+    });
+
+    test('App 內登入後保存該帳號的 ssid；貼網址登入不保存', () async {
+      final riot = riotA(() => start);
+      cookies.current = 'ssid-1';
+      await riot.login(fakeRedirect, autoRenew: true);
+      cookies.current = 'ssid-2';
+      await riot.login(otherRedirect);
+      final saved = {for (final a in riot.accounts) a.puuid: a.cookies};
+      expect(saved, {'puuid-1': 'ssid-1', 'puuid-2': null});
+    });
+
+    test('切換帳號：清除內嵌頁再放回目標帳號的 ssid，之後可背景續期', () async {
+      var now = start;
+      final riot = riotA(() => now);
+      cookies.current = 'ssid-1';
+      await riot.login(fakeRedirect, autoRenew: true);
+      await riot.prepareNewLogin();
+      cookies.current = 'ssid-2';
+      await riot.login(otherRedirect, autoRenew: true);
+      now = start.add(const Duration(hours: 2));
+      cleared = 0;
+      await riot.switchAccount('puuid-1');
+      expect(cleared, 1);
+      expect(cookies.current, 'ssid-1');
+      expect(riot.needsRelogin, isTrue);
+      expect(riot.canAutoRenew, isTrue);
+      // 續期拿到的是 puuid-1：接受，並保存（可能換發的）新 ssid。
+      cookies.current = 'ssid-1b';
+      expect(await riot.renew(fakeRedirect), isNull);
+      expect(riot.isLoggedIn, isTrue);
+      expect(riot.accounts.firstWhere((a) => a.puuid == 'puuid-1').cookies,
+          'ssid-1b');
+    });
+
+    test('沒有保存 ssid 的帳號：切換時只清除，不放回別人的', () async {
+      final riot = riotA(() => start);
+      await riot.login(fakeRedirect);
+      cookies.current = 'ssid-2';
+      await riot.login(otherRedirect, autoRenew: true);
+      await riot.switchAccount('puuid-1');
+      expect(cookies.current, isNull);
+      expect(cookies.written, isEmpty);
+    });
+
+    test('登出刪除該帳號保存的 ssid', () async {
+      final riot = riotA(() => start);
+      cookies.current = 'ssid-1';
+      await riot.login(fakeRedirect, autoRenew: true);
+      await riot.removeAccount('puuid-1');
+      final reopened = riotA(() => start);
+      expect(reopened.accounts, isEmpty);
+      expect(prefs.getString(SessionStorage.key), isNull);
+    });
+
+    test('ssid 不出現在 log 或錯誤訊息裡（只在儲存中）', () async {
+      final riot = riotA(() => start);
+      cookies.current = 'secret-ssid';
+      await riot.login(fakeRedirect, autoRenew: true);
+      expect(riot.accounts.single.toString(), isNot(contains('secret-ssid')));
+    });
   });
 }
