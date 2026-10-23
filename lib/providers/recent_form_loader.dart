@@ -7,6 +7,7 @@ import '../models/match_models.dart';
 import '../models/riot_session.dart';
 import '../services/match_client.dart';
 import '../services/riot_client.dart';
+import '../storage/form_game_storage.dart';
 import 'match_detail_cache.dart';
 import 'riot_provider.dart';
 
@@ -159,6 +160,9 @@ class RecentFormLoader with ChangeNotifier {
   /// 每位玩家的場次讀完後呼叫，例如記錄和自己同場過的玩家。
   final void Function(Iterable<MatchDetail> details)? onDetails;
 
+  /// 自己已結束場次的摘要快取：有存的場次不再抓 match-details。
+  final FormGameStorage? store;
+
   final Map<String, FormStatus> _status = {};
   final Map<String, RecentForm> _forms = {};
   final Queue<String> _queue = Queue();
@@ -186,6 +190,7 @@ class RecentFormLoader with ChangeNotifier {
       this.games = 5,
       this.maxRetries = 3,
       this.onDetails,
+      this.store,
       Future<void> Function(Duration)? delay})
       : _delay = delay ?? Future<void>.delayed;
 
@@ -413,8 +418,15 @@ class RecentFormLoader with ChangeNotifier {
         puuid: puuid, queue: standard ? null : queue));
     final result = <FormGame>[];
     final details = <MatchDetail>[];
+    final store = puuid == s.puuid ? this.store : null;
+    final saved = store?.load(puuid) ?? const <String, FormGame>{};
+    final fresh = <FormGame>[];
     for (final ref in refs) {
       if (standard && !_standardQueueIds.contains(ref.queueId)) continue;
+      if (saved[ref.matchId] case final g?) {
+        result.add(g);
+        continue;
+      }
       final Map<String, dynamic> json;
       try {
         json = await _retry(() => _cache.json(s, ref.matchId, _client));
@@ -430,7 +442,7 @@ class RecentFormLoader with ChangeNotifier {
           d.teams.values.expand((t) => t).where((l) => l.puuid == puuid);
       if (line.isEmpty) continue;
       final l = line.first;
-      result.add(FormGame(
+      final game = FormGame(
         matchId: ref.matchId,
         won: d.summary.won,
         acs: l.acs,
@@ -443,9 +455,12 @@ class RecentFormLoader with ChangeNotifier {
         queueId: ref.queueId,
         startTime: ref.startTime,
         weaponKills: _weaponKills(d.kills, puuid),
-      ));
+      );
+      result.add(game);
+      fresh.add(game);
     }
     if (details.isNotEmpty) onDetails?.call(details);
+    if (fresh.isNotEmpty) await store?.save(puuid, fresh);
     return RecentForm(result);
   }
 

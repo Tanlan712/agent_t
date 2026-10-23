@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../models/match_models.dart' show RefItem;
 import '../models/progress_reference.dart';
 import 'catalog_api.dart';
+import 'valorant_api_client.dart';
 
 /// 從 valorant-api.com 下載收藏、通行證、任務的顯示資料（公開資料，依序請求）。
 class ProgressReferenceApi {
@@ -12,7 +13,7 @@ class ProgressReferenceApi {
   final http.Client _client;
 
   ProgressReferenceApi({http.Client? client})
-      : _client = client ?? http.Client();
+      : _client = client ?? valorantApiHttp;
 
   Future<ProgressReference> fetch() async {
     final weapons = await _data('/v1/weapons');

@@ -38,6 +38,7 @@ import 'services/riot_client.dart';
 import 'services/riot_cookies.dart';
 import 'storage/catalog_cache.dart';
 import 'storage/encounter_storage.dart';
+import 'storage/form_game_storage.dart';
 import 'storage/match_reference_cache.dart';
 import 'storage/offer_price_storage.dart';
 import 'storage/pass_xp_storage.dart';
@@ -147,7 +148,8 @@ Future<void> main() async {
         Provider.value(value: matchCache),
         ChangeNotifierProvider(
             create: (_) => RecentFormLoader(matchClient, riot, matchCache,
-                onDetails: encounters.recordAll)),
+                onDetails: encounters.recordAll,
+                store: FormGameStorage(prefs))),
         ChangeNotifierProvider(
             create: (_) => MatchHistoryProvider(matchClient, riot,
                 cache: matchCache, onDetails: recordDetails)),
