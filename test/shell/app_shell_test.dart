@@ -122,6 +122,40 @@ void main() {
     expect(find.byType(BackButton), findsNothing);
   });
 
+  testWidgets('系統返回鍵：頂層頁面回到首頁，首頁才離開 App', (tester) async {
+    setWidth(tester, 400);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(useAppRoutes: true));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('更多'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('角色'));
+    await tester.pumpAndSettle();
+    expect(headerTitle(tester), '角色');
+    // handlePopRoute 回傳 true 表示 App 自己處理了返回，沒有關閉。
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(headerTitle(tester), '我的商店');
+    expect(await tester.binding.handlePopRoute(), isFalse);
+  });
+
+  testWidgets('系統返回鍵：疊在上面的頁面照常回上一頁', (tester) async {
+    setWidth(tester, 400);
+    final h = await Harness.create(tester);
+    await tester.pumpWidget(h.wrap(
+        home: Builder(
+            builder: (context) => TextButton(
+                onPressed: () => Navigator.push(
+                    context, MaterialPageRoute<void>(builder: (_) => shell())),
+                child: const Text('go')))));
+    await tester.tap(find.text('go'));
+    await tester.pumpAndSettle();
+    expect(find.text('內容'), findsOneWidget);
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(find.text('go'), findsOneWidget);
+  });
+
   testWidgets('400 寬：上方列的 Riot 狀態圖示與返回鍵垂直置中對齊', (tester) async {
     setWidth(tester, 400);
     final h = await Harness.create(tester);
