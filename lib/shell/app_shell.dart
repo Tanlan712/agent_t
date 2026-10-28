@@ -229,8 +229,24 @@ class AppShell extends StatelessWidget {
         ),
       );
       // EvaLayer 一律存在（只在 EVA 風格啟用），切換風格時頁面狀態保留。
-      return EvaLayer(
+      final layered = EvaLayer(
           currentRoute: currentRoute, enabled: style.id.isEva, child: scaffold);
+      // 系統返回鍵：換頁用 pushReplacement，頂層頁面底下沒有路由，
+      // 直接返回會關掉 App；改成和左上返回鍵一樣回到首頁，只有首頁才離開。
+      final isHome = canonicalRoute(currentRoute) == '/';
+      return PopScope(
+        canPop: isHome,
+        onPopInvokedWithResult: (didPop, _) {
+          if (didPop) return;
+          final navigator = Navigator.of(context);
+          if (navigator.canPop()) {
+            navigator.pop();
+          } else {
+            _goHome(context);
+          }
+        },
+        child: layered,
+      );
     });
   }
 }
