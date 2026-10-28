@@ -169,6 +169,11 @@ Riot 在伺服器端看得到這些請求，帳號可能被標記或停權；網
 - 允許的主機、只讀與頻率限制與上表完全相同；原生 App 沒有 CORS 限制，**不可**因此呼叫上表以外的端點。
 - **使用者決定（2026-10-23）**：Android 主畫面小工具（`ShopWidgetProvider`）只顯示 App 同步後傳進來的每日商店名稱、價格與到期時間
   （channel `agent_t/home_widget`，不含 token 或帳號資料）；小工具自己不連網、不登入、不在背景同步。
+- **使用者決定（2026-10-28）**：Android App 內更新。開啟 App 時（設定頁可關閉）只 GET 公開的
+  `api.github.com/repos/Tanlan712/agent_t/releases/latest`，有比 versionCode 新的 `app-v*` 就提示；
+  使用者按「更新」才由原生程式（channel `agent_t/app_update`，`AppUpdater.kt`）從 `github.com` 的 Release 網址
+  下載 `Agent-T.apk` 到 App 快取、核對 SHA-256 與簽章，再開啟系統安裝畫面（使用者自己按「安裝」，不得靜默安裝）。
+  不帶 token、不送任何帳號資料；簽章不同時不安裝、只說明（需要 docs/android.md 的固定簽章）。iOS 不做。
 - APK／IPA 由 GitHub Actions 建置並放在 GitHub Release（iOS 是未簽章的 IPA，由使用者自己簽章）；`lib/` 仍不可使用 `dart:io`。
 
 ## 4. 帳號與機密

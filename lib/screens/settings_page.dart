@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:agent_t/providers/app_update_controller.dart';
 import 'package:agent_t/providers/pwa_controller.dart';
 import 'package:agent_t/services/app_icon_service.dart';
 import 'package:agent_t/shell/app_shell.dart';
 import 'package:agent_t/widgets/app_icon_picker.dart';
+import 'package:agent_t/widgets/app_update_widgets.dart';
 import 'package:agent_t/widgets/my_shop_settings_card.dart';
 import 'package:agent_t/widgets/nav_order_editor.dart';
 import 'package:agent_t/widgets/pwa_cards.dart';
@@ -24,6 +26,8 @@ class _SettingsPageState extends State<SettingsPage> {
     final pwa = context.watch<PwaController?>();
     final showPwa =
         pwa != null && pwa.installState != PwaInstallState.unsupported;
+    // App 內更新只有 Android App 有。
+    final updater = context.read<AppUpdateController?>();
     return AppShell(
       currentRoute: '/settings',
       title: '設定',
@@ -48,6 +52,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 const PwaInstallCard(),
                 const SizedBox(height: 24),
                 const PushNotificationCard(),
+              ],
+              if (updater != null && updater.supported) ...[
+                const SizedBox(height: 24),
+                AppUpdateCard(controller: updater),
               ],
               // 網頁版的圖示由 manifest 固定，無法從頁面更換。
               if (AppIconService.supported) ...[
