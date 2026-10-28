@@ -98,6 +98,9 @@ ThemeData buildAppTheme({
   final style = AppStyle.of(choice.style);
   if (setCurrent) AppPalette.current = palette;
   AppFonts.enabled = useGoogleFonts;
+  if (choice.style == ThemeStyleId.material) {
+    return _materialTheme(choice, palette, style);
+  }
   final dark = choice.brightness == Brightness.dark;
   final scheme = (dark ? ColorScheme.dark : ColorScheme.light)(
     primary: palette.primary,
@@ -209,6 +212,57 @@ ThemeData buildAppTheme({
     snackBarTheme: SnackBarThemeData(
       backgroundColor: palette.surfaceHigh,
       contentTextStyle: TextStyle(color: palette.text),
+    ),
+  );
+}
+
+/// G Material 3：完整的 MD3 ColorScheme，元件形狀、字體、狀態色都用 Flutter 的 MD3 預設
+/// （膠囊按鈕、12px 卡片、8px 晶片、填色輸入框、NavigationBar 指示器）。
+/// 只補上鍵盤焦點外框（MASTER.md 第 6 節）與共用的資料表、提示樣式。
+ThemeData _materialTheme(
+    ThemeChoice choice, AppPalette palette, AppStyle style) {
+  final scheme = materialScheme(choice);
+  final base = ThemeData(
+      useMaterial3: true, colorScheme: scheme, brightness: choice.brightness);
+  return base.copyWith(
+    extensions: [palette, style],
+    // MD3 字級（Flutter 預設的 Roboto 與 type scale），不換成 Chakra Petch。
+    focusColor: palette.info.withOpacity(0.2),
+    dataTableTheme: DataTableThemeData(
+      headingRowHeight: 36,
+      dataRowMinHeight: 36,
+      headingTextStyle:
+          TextStyle(color: palette.muted, fontSize: 12, letterSpacing: 0.4),
+      dividerThickness: 0.5,
+    ),
+    tooltipTheme:
+        const TooltipThemeData(waitDuration: Duration(milliseconds: 300)),
+    appBarTheme: AppBarTheme(
+      backgroundColor: scheme.surface,
+      foregroundColor: scheme.onSurface,
+      scrolledUnderElevation: 3,
+    ),
+    cardTheme: CardTheme(
+      color: scheme.surfaceContainer,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12))),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: ButtonStyle(side: _focusSide(palette.info)),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: ButtonStyle(
+          side: _focusSide(palette.info, BorderSide(color: scheme.outline))),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: ButtonStyle(side: _focusSide(palette.info)),
+    ),
+    inputDecorationTheme: const InputDecorationTheme(filled: true),
+    navigationRailTheme: NavigationRailThemeData(
+      backgroundColor: scheme.surfaceContainerLow,
     ),
   );
 }

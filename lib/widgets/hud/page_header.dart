@@ -179,6 +179,9 @@ class PageHeader extends StatelessWidget {
                 if (sub != null) sub,
               ],
             ));
+      case HeaderVariant.material:
+        // MD3 headline large：32px 一般字重，不加裝飾。
+        return row(const [], titleBlock());
       case HeaderVariant.evaAlert:
       case HeaderVariant.evaMonitor:
       case HeaderVariant.evaFusion:

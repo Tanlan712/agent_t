@@ -38,6 +38,7 @@ class _PanelCardState extends State<PanelCard> {
         ? BorderRadius.all(r)
         : BorderRadius.horizontal(right: r);
     final flat = style.card == CardVariant.flat;
+    final material = style.card == CardVariant.material;
     Widget content = Padding(padding: widget.padding, child: widget.child);
     final overlays = <Widget>[
       if (widget.accent != null)
@@ -120,12 +121,18 @@ class _PanelCardState extends State<PanelCard> {
     // 一律提供透明 Material：子元件（ListTile 等）的焦點與水波才畫在卡片底色之上。
     content = Material(type: MaterialType.transparency, child: content);
     // flat：沒有邊框，靠底色區分；hover 只加深底色，不改尺寸。
+    // material：MD3 填色卡片，hover 疊 8% 的 onSurface 狀態層。
     final color = flat
         ? (hot
             ? Color.alphaBlend(
                 palette.text.withOpacity(0.06), palette.surfaceHigh)
             : palette.surfaceHigh)
-        : (hot ? palette.surfaceHigh : palette.surface);
+        : material
+            ? (hot
+                ? Color.alphaBlend(
+                    palette.text.withOpacity(0.08), palette.surface)
+                : palette.surface)
+            : (hot ? palette.surfaceHigh : palette.surface);
     return AnimatedContainer(
       duration: still ? Duration.zero : const Duration(milliseconds: 150),
       curve: Curves.easeOut,
@@ -133,7 +140,7 @@ class _PanelCardState extends State<PanelCard> {
       decoration: BoxDecoration(
         color: color,
         borderRadius: radius,
-        border: flat
+        border: flat || material
             ? null
             : Border.all(
                 color: hot

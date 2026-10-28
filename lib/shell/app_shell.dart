@@ -191,7 +191,9 @@ class AppShell extends StatelessWidget {
                   footer: _RiotStatus(
                       compact: !extended || style.nav == NavLayout.sideRail),
                 ),
-              if (side && style.nav != NavLayout.evaColumn)
+              if (side &&
+                  style.nav != NavLayout.evaColumn &&
+                  style.nav != NavLayout.materialDrawer)
                 const VerticalDivider(width: 1),
               Expanded(
                 child: Column(

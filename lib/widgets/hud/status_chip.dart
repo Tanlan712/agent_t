@@ -42,6 +42,7 @@ class StatusChip extends StatelessWidget {
           ThemeStyleId.evaMonitor ||
           ThemeStyleId.evaFusion =>
             0,
+          ThemeStyleId.material => 8,
           _ => 2,
         }),
       ),

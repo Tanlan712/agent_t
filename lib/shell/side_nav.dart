@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_style.dart';
 import '../theme/app_theme.dart';
 import 'nav_items.dart';
 
@@ -98,6 +99,9 @@ class _NavTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (context.appStyle.nav == NavLayout.materialDrawer) {
+      return _materialTile(context);
+    }
     final color = selected ? AppColors.text : AppColors.muted;
     final still = MediaQuery.disableAnimationsOf(context);
     Widget tile = Material(
@@ -148,6 +152,52 @@ class _NavTile extends StatelessWidget {
     if (!extended) tile = Tooltip(message: item.label, child: tile);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: Semantics(button: true, selected: selected, child: tile),
+    );
+  }
+
+  /// G Material 3：導覽抽屜的膠囊項目（56 高、選中填 secondaryContainer）。
+  Widget _materialTile(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final still = MediaQuery.disableAnimationsOf(context);
+    final fg = selected ? scheme.onSecondaryContainer : scheme.onSurfaceVariant;
+    Widget tile = Material(
+      key: selected ? const ValueKey('nav-indicator') : null,
+      color: selected ? scheme.secondaryContainer : Colors.transparent,
+      shape: const StadiumBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        hoverDuration: still ? Duration.zero : null,
+        splashFactory: still ? NoSplash.splashFactory : null,
+        child: SizedBox(
+          height: extended ? 56 : 40,
+          child: Row(
+            mainAxisAlignment:
+                extended ? MainAxisAlignment.start : MainAxisAlignment.center,
+            children: [
+              if (extended) const SizedBox(width: 16),
+              Icon(item.icon, size: 24, color: fg),
+              if (extended) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(item.label,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: fg,
+                          fontWeight:
+                              selected ? FontWeight.w600 : FontWeight.w500)),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!extended) tile = Tooltip(message: item.label, child: tile);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Semantics(button: true, selected: selected, child: tile),
     );
   }
