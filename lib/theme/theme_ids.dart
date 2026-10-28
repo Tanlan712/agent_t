@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/app_settings.dart';
 
-/// 8 種整體風格（規格 2026-10-21-ui-themes-design.md §2、§4）。
+/// 9 種整體風格（G Material 3 於 2026-10-28 加入）（規格 2026-10-21-ui-themes-design.md §2、§4）。
 enum ThemeStyleId {
   editorial,
   neon,
@@ -11,13 +11,16 @@ enum ThemeStyleId {
   dreamy,
   evaAlert,
   evaMonitor,
-  evaFusion;
+  evaFusion,
+
+  /// G：Google Material Design 3（色彩由主色當種子色產生，元件用 MD3 預設外觀）。
+  material;
 
   bool get isEva => this == evaAlert || this == evaMonitor || this == evaFusion;
 
   /// 明暗選「跟隨風格」時用的明暗。
   Brightness get defaultBrightness => switch (this) {
-        editorial || airy || dreamy => Brightness.light,
+        editorial || airy || dreamy || material => Brightness.light,
         _ => Brightness.dark,
       };
 }

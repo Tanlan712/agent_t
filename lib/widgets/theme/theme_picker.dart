@@ -20,6 +20,7 @@ const themeStyleNames = {
   ThemeStyleId.evaAlert: 'F1 警戒',
   ThemeStyleId.evaMonitor: 'F2 監控',
   ThemeStyleId.evaFusion: 'F3 綜合',
+  ThemeStyleId.material: 'G Material 3',
 };
 
 /// 主色名稱；EVA 系列用 EVA 對應色的名稱（規格 §3.2）。

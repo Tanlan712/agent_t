@@ -26,6 +26,8 @@ class ThemedBottomNav extends StatelessWidget {
         ),
       );
     }
+    // MD3 NavigationBar 靠 surfaceContainer 底色區分，不加分隔線。
+    if (id == ThemeStyleId.material) return bar;
     final topLine = id.isEva
         ? BorderSide(color: p.frame ?? p.primary, width: 2)
         : BorderSide(color: p.outline);

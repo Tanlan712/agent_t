@@ -10,6 +10,9 @@ enum NavLayout {
   sideRail,
   topHamburger,
   evaColumn,
+
+  /// G：MD3 導覽抽屜（膠囊形選中指示）。
+  materialDrawer,
 }
 
 enum HeaderVariant {
@@ -21,9 +24,19 @@ enum HeaderVariant {
   evaAlert,
   evaMonitor,
   evaFusion,
+  material,
 }
 
-enum CardVariant { flat, glowTop, cornerMarks, soft, evaTab, evaBracket }
+/// [material]：MD3 填色卡片（無邊框、12px 圓角、hover 疊一層狀態色）。
+enum CardVariant {
+  flat,
+  glowTop,
+  cornerMarks,
+  soft,
+  evaTab,
+  evaBracket,
+  material
+}
 
 enum KpiVariant { tiles, terminalLines, evaNumerals, evaBracket }
 
@@ -187,5 +200,18 @@ const _styles = <ThemeStyleId, AppStyle>{
     tileWidthFactor: 1,
     headerTitleSize: 38,
     headerWeight: FontWeight.w900,
+  ),
+  ThemeStyleId.material: AppStyle(
+    id: ThemeStyleId.material,
+    nav: NavLayout.materialDrawer,
+    header: HeaderVariant.material,
+    card: CardVariant.material,
+    kpi: KpiVariant.tiles,
+    cardRadius: 12,
+    bentoGap: 16,
+    gridSpacing: 16,
+    tileWidthFactor: 1,
+    headerTitleSize: 32,
+    headerWeight: FontWeight.w400,
   ),
 };

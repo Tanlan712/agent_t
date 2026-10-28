@@ -59,6 +59,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
 
   static AppPalette resolve(ThemeChoice c) {
     final dark = c.brightness == Brightness.dark;
+    if (c.style == ThemeStyleId.material) return _material(c);
     final n = (dark ? _neutralDark : _neutralLight)[c.style]!;
     // 暴走只在 EVA 系列有效，其他風格當成紅。
     final accent = !c.style.isEva && c.accent == AccentId.berserk
@@ -97,6 +98,30 @@ class AppPalette extends ThemeExtension<AppPalette> {
     );
   }
 
+  /// G：中性色與主色都取自 MD3 色彩系統（[materialScheme]），語意色沿用共用值。
+  static AppPalette _material(ThemeChoice c) {
+    final dark = c.brightness == Brightness.dark;
+    final s = materialScheme(c);
+    return AppPalette(
+      brightness: c.brightness,
+      background: s.surface,
+      surface: s.surfaceContainer,
+      surfaceHigh: s.surfaceContainerHigh,
+      outline: s.outlineVariant,
+      text: s.onSurface,
+      muted: s.onSurfaceVariant,
+      primary: s.primary,
+      buttonFill: s.primary,
+      onButton: s.onPrimary,
+      win: dark ? const Color(0xFF4ADE80) : const Color(0xFF166534),
+      loss: s.error,
+      warn: dark ? const Color(0xFFFFC107) : const Color(0xFF8A5A00),
+      info: dark ? const Color(0xFF38BDF8) : const Color(0xFF0369A1),
+      tier: dark ? _tierDark : _tierLight,
+      party: dark ? _partyDark : _partyLight,
+    );
+  }
+
   @override
   AppPalette copyWith() => this;
 
@@ -109,6 +134,20 @@ extension AppPaletteContext on BuildContext {
   AppPalette get palette =>
       Theme.of(this).extension<AppPalette>() ?? AppPalette.current;
 }
+
+/// G Material 3 的完整 ColorScheme：以主色為種子色、tonal spot 變體產生
+/// （與 Android 12+ 動態色相同的演算法）。暴走不適用，當成紅。
+ColorScheme materialScheme(ThemeChoice c) => ColorScheme.fromSeed(
+      seedColor: _materialSeeds[c.accent] ?? _materialSeeds[AccentId.red]!,
+      brightness: c.brightness,
+    );
+
+const _materialSeeds = <AccentId, Color>{
+  AccentId.red: Color(0xFFFF4655),
+  AccentId.blue: Color(0xFF0B6FB8),
+  AccentId.green: Color(0xFF0E7A5A),
+  AccentId.violet: Color(0xFF7C3AED),
+};
 
 // 中性色：bg、surface、surfaceHigh、outline、text、muted（規格 §3.1）。
 List<Color> _n(List<int> v) => [for (final x in v) Color(x)];
