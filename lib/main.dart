@@ -8,6 +8,7 @@ import 'providers/login_prefetcher.dart';
 import 'providers/offer_price_provider.dart';
 import 'providers/progress_provider.dart';
 import 'providers/pwa_controller.dart';
+import 'providers/app_update_controller.dart';
 import 'providers/catalog_provider.dart';
 import 'providers/encounter_provider.dart';
 import 'providers/match_detail_cache.dart';
@@ -27,6 +28,7 @@ import 'logic/eva_progress.dart';
 import 'models/match_models.dart';
 import 'screens/riot_web_login_page.dart';
 import 'services/progress_reference_api.dart';
+import 'services/app_update.dart';
 import 'services/catalog_api.dart';
 import 'services/home_widget.dart';
 import 'services/live_client.dart';
@@ -49,6 +51,7 @@ import 'storage/shop_storage.dart';
 import 'storage/purchase_history_storage.dart';
 import 'storage/wishlist_storage.dart';
 import 'theme/themed_app.dart';
+import 'widgets/app_update_widgets.dart';
 import 'widgets/pwa_banners.dart';
 import 'widgets/riot_auto_renew.dart';
 
@@ -122,6 +125,10 @@ Future<void> main() async {
   pushWidget();
   // 網頁版的離線提示、安裝、新版本提示與商店刷新通知；手機 App 不做任何事。
   final pwa = PwaController(createPwaPlatform())..start();
+  // Android App 內更新：開啟時檢查 GitHub 最新 Release（AGENTS.md 第 3 節「手機 App」）；網頁版與 iOS 不做任何事。
+  final updater =
+      AppUpdateController(NativeAppUpdate(), AppReleaseApi(), prefs);
+  updater.start();
 
   runApp(
     MultiProvider(
@@ -157,16 +164,18 @@ Future<void> main() async {
         ChangeNotifierProvider.value(value: encounters),
         ChangeNotifierProvider.value(value: matchReference),
         ChangeNotifierProvider.value(value: pwa),
+        ChangeNotifierProvider.value(value: updater),
       ],
-      child: MyApp(pwa: pwa),
+      child: MyApp(pwa: pwa, updater: updater),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, required this.pwa});
+  const MyApp({super.key, required this.pwa, this.updater});
 
   final PwaController pwa;
+  final AppUpdateController? updater;
 
   @override
   Widget build(BuildContext context) {
@@ -179,9 +188,16 @@ class MyApp extends StatelessWidget {
         themeAnimationDuration: Duration.zero,
         // 手機 App 在背景續期 Riot 登入（AGENTS.md 第 3 節）；網頁版不做任何事。
         // 頂端的離線／新版本提示列包在最外層，所有頁面都看得到。
-        builder: (context, child) => PwaBanners(
-            controller: pwa,
-            child: RiotAutoRenew(child: builder(context, child))),
+        builder: (context, child) {
+          Widget app = PwaBanners(
+              controller: pwa,
+              child: RiotAutoRenew(child: builder(context, child)));
+          // Android App 的「有新版」提示列（網頁版的提示列由 PwaBanners 負責，兩者不會同時出現）。
+          if (updater case final u?) {
+            app = AppUpdateBanner(controller: u, child: app);
+          }
+          return app;
+        },
         onGenerateRoute: onGenerateAppRoute,
       ),
     );

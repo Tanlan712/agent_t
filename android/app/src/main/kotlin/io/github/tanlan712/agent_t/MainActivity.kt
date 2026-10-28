@@ -30,6 +30,10 @@ class MainActivity : FlutterActivity() {
                 }
             }
         configureHomeWidget(flutterEngine)
+        // App 內更新：下載 GitHub Release 的新版 APK 並交給系統安裝（AppUpdater.kt）。
+        val updateChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "agent_t/app_update")
+        val updater = AppUpdater(this, updateChannel)
+        updateChannel.setMethodCallHandler(updater::handle)
         // 多帳號切換：讀出／放回內嵌頁的 Riot 登入 cookie（ssid）。只在 App 與 WebView 之間傳遞，不寫 log
         // （使用者決定 2026-10-23，AGENTS.md 第 3 節）。
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "agent_t/riot_cookies")

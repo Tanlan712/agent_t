@@ -17,14 +17,14 @@ class PwaBanners extends StatelessWidget {
       builder: (context, _) {
         final bars = [
           if (!controller.online)
-            _Bar(
+            TopNoticeBar(
               key: const ValueKey('pwa-offline-bar'),
               icon: Icons.cloud_off,
               color: AppColors.warn,
               text: '離線中：顯示上次儲存的資料，恢復連線後再同步。',
             ),
           if (controller.showUpdate)
-            _Bar(
+            TopNoticeBar(
               key: const ValueKey('pwa-update-bar'),
               icon: Icons.system_update,
               color: AppColors.info,
@@ -65,8 +65,9 @@ class PwaBanners extends StatelessWidget {
   }
 }
 
-class _Bar extends StatelessWidget {
-  const _Bar({
+/// 頂端提示列（網頁版的離線／新版本、Android App 的更新共用）。
+class TopNoticeBar extends StatelessWidget {
+  const TopNoticeBar({
     super.key,
     required this.icon,
     required this.color,

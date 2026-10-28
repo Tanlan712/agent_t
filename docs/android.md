@@ -7,16 +7,35 @@
 
 1. 手機開啟 <https://github.com/Tanlan712/agent_t/releases/latest/download/Agent-T.apk> 下載。
 2. 開啟下載的檔案，依提示允許「安裝不明來源的應用程式」。
-3. 之後 master 每次更新（文件除外），GitHub Actions 會自動建出新版，重新下載安裝即可覆蓋。
+3. 之後 master 每次更新（文件除外），GitHub Actions 會自動建出新版。
+
+## App 內更新
+
+開啟 App 時會查 GitHub 最新的 Release（`app-v{建置編號}`），比 App 的版本新就在頂端顯示「有新版」。
+按「更新」會在 App 內下載 `Agent-T.apk`（核對 GitHub 提供的 SHA-256），再開啟 Android 的安裝畫面，按「更新」即可，
+登入與本機資料會保留。設定 →「App 更新」可以手動檢查、或關掉開啟時的自動檢查。
+
+- 第一次更新時 Android 會要求允許 Agent T「安裝不明應用程式」，允許後回到 App 會接著安裝。
+- **需要固定簽章**（下一節）。新版和手機上的版本簽章不同時，Android 不允許覆蓋，
+  App 會顯示「新版簽章不同」，這時只能移除舊版、用瀏覽器重新下載安裝。
+- 只連 `api.github.com`（查版本）與 `github.com` 的 Release 下載網址，不帶任何帳號資料或 token。
+- iOS 的未簽章 IPA 要用自己的 Apple ID 重新簽章，無法在 App 內更新。
 
 ## 固定簽章（建議設定一次）
 
-沒有設定時，CI 用每次都不同的 debug 金鑰簽章，安裝新版前可能要先移除舊版（登入狀態與本機資料會一起清掉）。
-在自己的電腦產生一把金鑰，存進 GitHub secrets，之後的版本就能直接覆蓋安裝：
+沒有設定時，CI 用每次都不同的 debug 金鑰簽章，安裝新版前要先移除舊版（登入狀態與本機資料會一起清掉），
+App 內更新也無法使用。在自己的電腦產生一把金鑰，存進 GitHub secrets，之後的版本就能直接覆蓋安裝：
 
 ```bash
 keytool -genkey -v -keystore release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias valshop
 base64 -w0 release.jks   # macOS：base64 -i release.jks
+```
+
+Windows（PowerShell；`keytool` 在 JDK 或 Android Studio 的 `jbr\bin` 裡），base64 直接複製到剪貼簿：
+
+```powershell
+keytool -genkey -v -keystore release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias valshop
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("release.jks")) | Set-Clipboard
 ```
 
 到 repo 的 Settings → Secrets and variables → Actions 新增：
@@ -29,6 +48,10 @@ base64 -w0 release.jks   # macOS：base64 -i release.jks
 | `ANDROID_KEY_PASSWORD` | 金鑰密碼 |
 
 `release.jks` 自己保管好，不要放進 repo（`android/.gitignore` 已排除 `*.jks` 與 `key.properties`）。
+弄丟金鑰就無法再發出能覆蓋安裝的新版。
+
+設定好之後的**第一個**新版，簽章和手機上用 debug 金鑰的舊版不同，還是要移除舊版、用瀏覽器下載安裝一次；
+從那一版開始，之後的更新都能在 App 內完成。
 
 ## 本機建置
 

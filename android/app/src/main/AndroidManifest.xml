@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- 連到 Riot 與 valorant-api.com（AGENTS.md 第 3 節）。 -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- App 內更新：把下載好的新版 APK 交給系統安裝程式（使用者仍要按「安裝」）。 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
     <application
         android:label="Agent T"
         android:name="${applicationName}"
@@ -102,6 +104,16 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/shop_widget_info" />
         </receiver>
+        <!-- App 內更新：只分享快取資料夾 updates/ 裡下載的 APK 給系統安裝程式。 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/update_paths" />
+        </provider>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
