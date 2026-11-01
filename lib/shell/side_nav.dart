@@ -60,13 +60,15 @@ class SideNav extends StatelessWidget {
       children: [
         Padding(
           padding: EdgeInsets.fromLTRB(extended ? 20 : 0, 20, 12, 4),
-          child: extended
-              ? Text(brand,
-                  style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold))
-              : Icon(Icons.local_fire_department, color: AppColors.primary),
+          child: glass
+              ? _GlassBrand(brand: brand, extended: extended)
+              : extended
+                  ? Text(brand,
+                      style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold))
+                  : Icon(Icons.local_fire_department, color: AppColors.primary),
         ),
         Expanded(
           child: ListView(
@@ -288,5 +290,50 @@ class _NavTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
       child: Semantics(button: true, selected: selected, child: tile),
     );
+  }
+}
+
+/// H 玻璃黏土的品牌列：主色漸層圓角方塊＋深色粗體名稱（收合時只有方塊）。
+class _GlassBrand extends StatelessWidget {
+  final String brand;
+  final bool extended;
+
+  const _GlassBrand({required this.brand, required this.extended});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final gradient = p.accentGradient ?? [p.buttonFill, p.buttonFill];
+    final badge = Container(
+      key: const ValueKey('glass-brand-badge'),
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.all(Radius.circular(11)),
+        gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: gradient),
+        boxShadow: [
+          BoxShadow(
+              color: gradient.first.withOpacity(0.4),
+              blurRadius: 14,
+              spreadRadius: -4,
+              offset: const Offset(0, 6)),
+        ],
+      ),
+      child: Icon(Icons.local_fire_department, size: 18, color: p.onButton),
+    );
+    if (!extended) return Center(child: badge);
+    return Row(children: [
+      badge,
+      const SizedBox(width: 10),
+      Expanded(
+        child: Text(brand,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+                color: p.text, fontSize: 19, fontWeight: FontWeight.w800)),
+      ),
+    ]);
   }
 }
