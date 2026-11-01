@@ -5,6 +5,7 @@ import '../logic/match_highlights.dart';
 import '../logic/match_mapper.dart';
 import '../logic/match_overview.dart';
 import '../logic/match_stats.dart';
+import '../logic/today_summary.dart';
 import '../models/match_models.dart';
 import '../providers/match_history_provider.dart';
 import '../providers/match_reference_provider.dart';
@@ -15,6 +16,7 @@ import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
 import '../widgets/line_chart.dart';
 import '../widgets/match_extras.dart';
+import '../widgets/today_summary_card.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
 
 String _two(int n) => n.toString().padLeft(2, '0');
@@ -37,7 +39,9 @@ Color resultColor(bool? won) =>
 
 /// 自己的對戰紀錄列表；登入 Riot 後才有資料。
 class MatchHistoryPage extends StatefulWidget {
-  const MatchHistoryPage({super.key});
+  final DateTime Function() now;
+
+  const MatchHistoryPage({super.key, this.now = DateTime.now});
 
   @override
   State<MatchHistoryPage> createState() => _MatchHistoryPageState();
@@ -112,6 +116,17 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
         padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
           _HistoryKpi(history: history, ref: ref),
+          if (todaySummary(summaries, widget.now(), hasMore: history.hasMore)
+              case final today?) ...[
+            const SizedBox(height: 16),
+            TodaySummaryCard(
+              summary: today,
+              ref: ref,
+              playerName: riot.session?.displayName ?? '',
+              rank: history.rank,
+              now: widget.now(),
+            ),
+          ],
           if (history.error case final e?)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -389,9 +404,7 @@ class _RankHeader extends StatelessWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: SkinIcon(url: tier?.iconUrl)),
+                    width: 40, height: 40, child: SkinIcon(url: tier?.iconUrl)),
                 Text(tier?.name ?? '未定級',
                     style: Theme.of(context).textTheme.titleLarge),
                 if (rank != null) Text('${rank.rr} RR'),

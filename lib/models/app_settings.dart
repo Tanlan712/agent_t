@@ -18,6 +18,12 @@ class AppSettings {
   /// EVA 系列的互動背景與掃描線。
   final bool backgroundMotion;
 
+  /// 主題排程（規格 2026-11-01-five-features-design.md §5）：開啟時白天用淺色、晚上用深色，
+  /// 覆蓋 [themeBrightness]。時間是一天中的分鐘數（本地時間）。
+  final bool themeSchedule;
+  final int themeDayStart;
+  final int themeNightStart;
+
   /// EVA 系列的彩蛋與故事層（規格 §4.4、§4.5）；只存在這個瀏覽器，不含他人資料。
   final bool evaEnabled;
   final bool evaTitleCards;
@@ -50,6 +56,9 @@ class AppSettings {
     this.themeAccent = 'red',
     this.themeBrightness = 'auto',
     this.backgroundMotion = true,
+    this.themeSchedule = false,
+    this.themeDayStart = 7 * 60,
+    this.themeNightStart = 19 * 60,
     this.evaEnabled = true,
     this.evaTitleCards = true,
     this.evaSeenUltraDate,
@@ -75,6 +84,9 @@ class AppSettings {
     String? themeAccent,
     String? themeBrightness,
     bool? backgroundMotion,
+    bool? themeSchedule,
+    int? themeDayStart,
+    int? themeNightStart,
     bool? evaEnabled,
     bool? evaTitleCards,
     String? evaSeenUltraDate,
@@ -96,6 +108,9 @@ class AppSettings {
       themeAccent: themeAccent ?? this.themeAccent,
       themeBrightness: themeBrightness ?? this.themeBrightness,
       backgroundMotion: backgroundMotion ?? this.backgroundMotion,
+      themeSchedule: themeSchedule ?? this.themeSchedule,
+      themeDayStart: themeDayStart ?? this.themeDayStart,
+      themeNightStart: themeNightStart ?? this.themeNightStart,
       evaEnabled: evaEnabled ?? this.evaEnabled,
       evaTitleCards: evaTitleCards ?? this.evaTitleCards,
       evaSeenUltraDate: evaSeenUltraDate ?? this.evaSeenUltraDate,
@@ -125,6 +140,9 @@ class AppSettings {
         themeAccent: themeAccent,
         themeBrightness: themeBrightness,
         backgroundMotion: backgroundMotion,
+        themeSchedule: themeSchedule,
+        themeDayStart: themeDayStart,
+        themeNightStart: themeNightStart,
         evaEnabled: evaEnabled,
         evaTitleCards: evaTitleCards,
         evaSeenUltraDate: evaSeenUltraDate,
@@ -149,6 +167,10 @@ class AppSettings {
     bool flag(String key, bool fallback) =>
         json[key] is bool ? json[key] as bool : fallback;
     int number(String key) => json[key] is int ? json[key] as int : 0;
+    int minuteOfDay(String key, int fallback) =>
+        json[key] is int && (json[key] as int) >= 0 && (json[key] as int) < 1440
+            ? json[key] as int
+            : fallback;
     final eggs = json['evaFoundEggs'];
     return AppSettings(
       resetHour: json['resetHour'] as int? ?? 8,
@@ -163,6 +185,9 @@ class AppSettings {
       themeAccent: str('themeAccent', 'red'),
       themeBrightness: str('themeBrightness', 'auto'),
       backgroundMotion: flag('backgroundMotion', true),
+      themeSchedule: flag('themeSchedule', false),
+      themeDayStart: minuteOfDay('themeDayStart', 7 * 60),
+      themeNightStart: minuteOfDay('themeNightStart', 19 * 60),
       evaEnabled: flag('evaEnabled', true),
       evaTitleCards: flag('evaTitleCards', true),
       evaSeenUltraDate: optStr('evaSeenUltraDate'),
@@ -197,6 +222,9 @@ class AppSettings {
         'themeAccent': themeAccent,
         'themeBrightness': themeBrightness,
         'backgroundMotion': backgroundMotion,
+        'themeSchedule': themeSchedule,
+        'themeDayStart': themeDayStart,
+        'themeNightStart': themeNightStart,
         'evaEnabled': evaEnabled,
         'evaTitleCards': evaTitleCards,
         'evaSeenUltraDate': evaSeenUltraDate,

@@ -6,11 +6,13 @@ import 'package:agent_t/services/app_icon_service.dart';
 import 'package:agent_t/shell/app_shell.dart';
 import 'package:agent_t/widgets/app_icon_picker.dart';
 import 'package:agent_t/widgets/app_update_widgets.dart';
+import 'package:agent_t/widgets/backup_card.dart';
 import 'package:agent_t/widgets/my_shop_settings_card.dart';
 import 'package:agent_t/widgets/nav_order_editor.dart';
 import 'package:agent_t/widgets/pwa_cards.dart';
 import 'package:agent_t/widgets/remote_control_card.dart';
 import 'package:agent_t/widgets/theme/theme_picker.dart';
+import 'package:agent_t/widgets/theme_schedule_card.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -44,6 +46,8 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(height: 24),
               const NavOrderEditor(),
               const SizedBox(height: 24),
+              const ThemeScheduleCard(),
+              const SizedBox(height: 24),
               const MyShopSettingsCard(),
               const SizedBox(height: 24),
               const RemoteControlCard(),
@@ -53,6 +57,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 24),
                 const PushNotificationCard(),
               ],
+              const SizedBox(height: 24),
+              const BackupCard(),
               if (updater != null && updater.supported) ...[
                 const SizedBox(height: 24),
                 AppUpdateCard(controller: updater),

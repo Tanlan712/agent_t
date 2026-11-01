@@ -174,6 +174,15 @@ Riot 在伺服器端看得到這些請求，帳號可能被標記或停權；網
   使用者按「更新」才由原生程式（channel `agent_t/app_update`，`AppUpdater.kt`）從 `github.com` 的 Release 網址
   下載 `Agent-T.apk` 到 App 快取、核對 SHA-256 與簽章，再開啟系統安裝畫面（使用者自己按「安裝」，不得靜默安裝）。
   不帶 token、不送任何帳號資料；簽章不同時不安裝、只說明（需要 docs/android.md 的固定簽章）。iOS 不做。
+- **使用者決定（2026-11-01，五項功能）**：商店歷史、重置倒數卡、今日小結、本機資料備份、主題排程
+  （規格 `docs/superpowers/specs/2026-11-01-five-features-design.md`）。全部只用已同步／已讀到的資料，**不新增任何端點或請求**。
+  - 檔案的分享、儲存與開啟走 channel `agent_t/files`（Android `FileBridge.kt`：系統分享、建立文件、開啟文件；
+    iOS `AppDelegate.swift`：只有系統分享）與網頁版 `window.agentTFiles`（下載、Web Share、選檔）。
+    只在使用者按下按鈕時處理 App 交給它的資料，不連網、不讀其他檔案。
+  - 本機資料備份只能匯出 `lib/logic/local_backup.dart` 白名單裡的 key；**不得**包含 token、`ssid`、
+    `riotAccounts` 等登入資訊與快取，還原時也只寫回白名單、並清除遠端操作的同意（要重新同意）。
+    備份含其他玩家的 puuid 與同場紀錄（第 7 節「遇過的玩家」），畫面上提示使用者自行保存、不要分享。
+  - 今日小結的分享圖片只含自己的數據（不含其他玩家名稱或戰績）。
 - APK／IPA 由 GitHub Actions 建置並放在 GitHub Release（iOS 是未簽章的 IPA，由使用者自己簽章）；`lib/` 仍不可使用 `dart:io`。
 
 ## 4. 帳號與機密

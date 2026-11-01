@@ -1,6 +1,7 @@
 package io.github.tanlan712.agent_t
 
 import android.content.ComponentName
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.webkit.CookieManager
 import io.flutter.embedding.android.FlutterActivity
@@ -8,6 +9,15 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+    // 今日小結圖片與本機資料備份的儲存／分享／開啟（FileBridge.kt）。
+    private val files = FileBridge(this)
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (!files.onActivityResult(requestCode, resultCode, data)) {
+            super.onActivityResult(requestCode, resultCode, data)
+        }
+    }
+
     // 和 AndroidManifest.xml 的 activity-alias（Icon_<key>）及 AppIconId.key 一致。
     private val iconKeys = listOf("default", "editorial", "airy", "terminal", "eva_alert", "eva_monitor")
 
@@ -30,6 +40,8 @@ class MainActivity : FlutterActivity() {
                 }
             }
         configureHomeWidget(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "agent_t/files")
+            .setMethodCallHandler(files::handle)
         // App 內更新：下載 GitHub Release 的新版 APK 並交給系統安裝（AppUpdater.kt）。
         val updateChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "agent_t/app_update")
         val updater = AppUpdater(this, updateChannel)

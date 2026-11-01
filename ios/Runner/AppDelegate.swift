@@ -19,6 +19,9 @@ import WebKit
       // （使用者決定 2026-10-23，AGENTS.md 第 3 節）。
       FlutterMethodChannel(name: "agent_t/riot_cookies", binaryMessenger: controller.binaryMessenger)
         .setMethodCallHandler { [weak self] call, result in self?.handleRiotCookies(call, result) }
+      // 今日小結圖片與本機資料備份：用系統分享選單（可存到「檔案」或相簿）。
+      FlutterMethodChannel(name: "agent_t/files", binaryMessenger: controller.binaryMessenger)
+        .setMethodCallHandler { [weak self] call, result in self?.handleFiles(call, result) }
     }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
@@ -81,5 +84,34 @@ import WebKit
     default:
       result(FlutterMethodNotImplemented)
     }
+  }
+
+  private func handleFiles(_ call: FlutterMethodCall, _ result: @escaping FlutterResult) {
+    guard call.method == "share" else {
+      result(FlutterMethodNotImplemented)
+      return
+    }
+    guard let args = call.arguments as? [String: Any],
+          let rawName = args["name"] as? String,
+          let data = args["bytes"] as? FlutterStandardTypedData,
+          let controller = window?.rootViewController else {
+      result(FlutterError(code: "bad_args", message: "missing file", details: nil))
+      return
+    }
+    let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-")
+    let name = String(rawName.unicodeScalars.map { allowed.contains($0) ? Character($0) : "_" })
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent(name)
+    do {
+      try data.data.write(to: url, options: .atomic)
+    } catch {
+      result(FlutterError(code: "share_failed", message: "write failed", details: nil))
+      return
+    }
+    let sheet = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+    sheet.popoverPresentationController?.sourceView = controller.view
+    sheet.popoverPresentationController?.sourceRect = CGRect(
+      x: controller.view.bounds.midX, y: controller.view.bounds.midY, width: 0, height: 0)
+    controller.present(sheet, animated: true)
+    result(true)
   }
 }

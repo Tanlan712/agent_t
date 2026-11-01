@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../logic/storefront_mapper.dart';
+import '../models/current_shop.dart';
 import '../models/riot_session.dart';
 import '../services/riot_auth.dart';
 import '../services/riot_client.dart';
@@ -69,6 +70,9 @@ class RiotProvider with ChangeNotifier {
 
   /// 每次同步拿到 storefront 回應時呼叫（記錄造型的實際定價）。
   void Function(Map<String, dynamic> storefront)? onStorefront;
+
+  /// 同步完成、商店已更新時呼叫（商店歷史用）：puuid 是這次同步的帳號。
+  void Function(String puuid, CurrentShop shop)? onShopSynced;
 
   RiotSession? get session => _session;
   bool get isLoggedIn =>
@@ -163,7 +167,9 @@ class RiotProvider with ChangeNotifier {
       onStorefront?.call(storefront);
       final wallet = await _client.fetchWallet(s);
       final owned = await _client.fetchOwnedSkinLevels(s);
-      await shop.replaceShop(mapStorefront(storefront, resolve, _now()));
+      final synced = mapStorefront(storefront, resolve, _now());
+      await shop.replaceShop(synced);
+      onShopSynced?.call(s.puuid, synced);
       _wallet = wallet;
       _owned = owned.map(resolve).toSet();
     });

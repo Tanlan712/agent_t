@@ -16,6 +16,7 @@ import 'screens/playercards_page.dart';
 import 'screens/riot_login_page.dart';
 import 'screens/seen_players_page.dart';
 import 'screens/settings_page.dart';
+import 'screens/shop_history_page.dart';
 import 'screens/skin_picker_page.dart';
 import 'screens/wallet_page.dart';
 import 'screens/weapons_page.dart';
@@ -54,6 +55,11 @@ Route<dynamic>? onGenerateAppRoute(RouteSettings settings) {
     );
   }
   switch (settings.name) {
+    case '/shop-history':
+      return MaterialPageRoute<void>(
+        settings: settings,
+        builder: (_) => const ShopHistoryPage(),
+      );
     case '/skin-picker':
       return MaterialPageRoute(
         settings: settings,

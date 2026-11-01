@@ -29,6 +29,14 @@ class SettingsProvider with ChangeNotifier {
       _save(_settings.copyWith(
           themeStyle: style, themeAccent: accent, themeBrightness: brightness));
 
+  /// 主題排程：[dayStart]／[nightStart] 是一天中的分鐘數。
+  Future<void> setThemeSchedule(
+          {bool? enabled, int? dayStart, int? nightStart}) =>
+      _save(_settings.copyWith(
+          themeSchedule: enabled,
+          themeDayStart: dayStart,
+          themeNightStart: nightStart));
+
   Future<void> setBackgroundMotion(bool value) =>
       _save(_settings.copyWith(backgroundMotion: value));
 

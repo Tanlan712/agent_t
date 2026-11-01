@@ -116,4 +116,68 @@ window.valorantTakeSharedLogin = async () => {
   return await response.text();
 };
 
+// 今日小結圖片與本機資料備份（lib/services/files/web.dart）：只在使用者按下按鈕時處理頁面交來的資料，不對外送出。
+const agentTBytes = (base64) => Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+window.agentTFiles = {
+  canShare: (name, mime) => {
+    try {
+      return !!(navigator.canShare && navigator.canShare({ files: [new File([''], name, { type: mime })] }));
+    } catch (_) {
+      return false;
+    }
+  },
+  // 回傳 'ok'、'cancel' 或 'error'。
+  share: async (name, mime, base64, text) => {
+    try {
+      const file = new File([agentTBytes(base64)], name, { type: mime });
+      await navigator.share(text ? { files: [file], text } : { files: [file] });
+      return 'ok';
+    } catch (e) {
+      return e && e.name === 'AbortError' ? 'cancel' : 'error';
+    }
+  },
+  download: (name, mime, base64) => {
+    const url = URL.createObjectURL(new Blob([agentTBytes(base64)], { type: mime }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  },
+  // 讓使用者選一個檔案，回傳 base64；取消時回傳 null。
+  pick: (accept) => new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = accept;
+    input.style.display = 'none';
+    let done = false;
+    const finish = (value) => {
+      if (done) return;
+      done = true;
+      input.remove();
+      resolve(value);
+    };
+    input.addEventListener('cancel', () => finish(null));
+    input.addEventListener('change', () => {
+      const file = input.files && input.files[0];
+      if (!file || file.size > 20 * 1024 * 1024) return finish(null);
+      const reader = new FileReader();
+      reader.onload = () => {
+        const bytes = new Uint8Array(reader.result);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += 0x8000) {
+          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+        }
+        finish(btoa(binary));
+      };
+      reader.onerror = () => finish(null);
+      reader.readAsArrayBuffer(file);
+    });
+    document.body.appendChild(input);
+    input.click();
+  }),
+};
+
 _flutter.loader.load();
