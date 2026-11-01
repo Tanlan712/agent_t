@@ -102,6 +102,7 @@ ThemeData buildAppTheme({
     return _materialTheme(choice, palette, style);
   }
   final dark = choice.brightness == Brightness.dark;
+  final glass = choice.style == ThemeStyleId.glass;
   final scheme = (dark ? ColorScheme.dark : ColorScheme.light)(
     primary: palette.primary,
     onPrimary: palette.onButton,
@@ -126,7 +127,7 @@ ThemeData buildAppTheme({
     outlineVariant: palette.outline,
   );
 
-  return ThemeData(
+  final base = ThemeData(
     useMaterial3: true,
     brightness: choice.brightness,
     colorScheme: scheme,
@@ -212,6 +213,84 @@ ThemeData buildAppTheme({
     snackBarTheme: SnackBarThemeData(
       backgroundColor: palette.surfaceHigh,
       contentTextStyle: TextStyle(color: palette.text),
+    ),
+  );
+  return glass ? _glassTheme(base, palette, style) : base;
+}
+
+/// H 玻璃黏土：沿用共用配色，元件改成大圓角／膠囊形，底部導覽透明（外層畫玻璃膠囊）。
+ThemeData _glassTheme(ThemeData base, AppPalette palette, AppStyle style) {
+  const pill = StadiumBorder();
+  const r14 = BorderRadius.all(Radius.circular(14));
+  final dark = palette.brightness == Brightness.dark;
+  return base.copyWith(
+    chipTheme: base.chipTheme.copyWith(
+      side: BorderSide(color: palette.outline),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12))),
+    ),
+    tooltipTheme: base.tooltipTheme.copyWith(
+      decoration: BoxDecoration(
+          color: palette.surfaceHigh,
+          borderRadius: const BorderRadius.all(Radius.circular(10)),
+          border: Border.fromBorderSide(BorderSide(color: palette.outline))),
+    ),
+    cardTheme: base.cardTheme.copyWith(
+      color: palette.surface.withOpacity(dark ? 0.6 : 0.7),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(style.cardRadius)),
+        side: BorderSide(
+            color: dark ? Colors.white.withOpacity(0.12) : Colors.white),
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: palette.buttonFill,
+        foregroundColor: palette.onButton,
+        shape: pill,
+      ).copyWith(side: _focusSide(palette.info)),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: palette.text,
+        shape: pill,
+      ).copyWith(
+          side: _focusSide(palette.info, BorderSide(color: palette.outline))),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(foregroundColor: palette.primary, shape: pill)
+          .copyWith(side: _focusSide(palette.info)),
+    ),
+    segmentedButtonTheme: const SegmentedButtonThemeData(
+      style: ButtonStyle(shape: WidgetStatePropertyAll(pill)),
+    ),
+    inputDecorationTheme: base.inputDecorationTheme.copyWith(
+      border: const OutlineInputBorder(
+          borderRadius: r14, borderSide: BorderSide.none),
+    ),
+    dialogTheme: const DialogTheme(
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(24))),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      indicatorColor: palette.buttonFill,
+      indicatorShape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16))),
+      iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
+          color: states.contains(WidgetState.selected)
+              ? palette.onButton
+              : palette.muted)),
+      labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
+          fontSize: 12,
+          color: states.contains(WidgetState.selected)
+              ? palette.text
+              : palette.muted,
+          fontWeight: states.contains(WidgetState.selected)
+              ? FontWeight.w700
+              : FontWeight.w500)),
     ),
   );
 }

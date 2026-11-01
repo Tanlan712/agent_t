@@ -13,6 +13,9 @@ enum NavLayout {
 
   /// G：MD3 導覽抽屜（膠囊形選中指示）。
   materialDrawer,
+
+  /// H：浮起來的玻璃側欄（四周留白、選中項目是主色漸層膠囊）。
+  glassSidebar,
 }
 
 enum HeaderVariant {
@@ -25,9 +28,11 @@ enum HeaderVariant {
   evaMonitor,
   evaFusion,
   material,
+  glass,
 }
 
 /// [material]：MD3 填色卡片（無邊框、12px 圓角、hover 疊一層狀態色）。
+/// [glass]：半透明毛玻璃（上亮下淡的漸層、白色細亮邊、柔和投影）。
 enum CardVariant {
   flat,
   glowTop,
@@ -35,7 +40,8 @@ enum CardVariant {
   soft,
   evaTab,
   evaBracket,
-  material
+  material,
+  glass
 }
 
 enum KpiVariant { tiles, terminalLines, evaNumerals, evaBracket }
@@ -213,5 +219,18 @@ const _styles = <ThemeStyleId, AppStyle>{
     tileWidthFactor: 1,
     headerTitleSize: 32,
     headerWeight: FontWeight.w400,
+  ),
+  ThemeStyleId.glass: AppStyle(
+    id: ThemeStyleId.glass,
+    nav: NavLayout.glassSidebar,
+    header: HeaderVariant.glass,
+    card: CardVariant.glass,
+    kpi: KpiVariant.tiles,
+    cardRadius: 24,
+    bentoGap: 18,
+    gridSpacing: 16,
+    tileWidthFactor: 1,
+    headerTitleSize: 30,
+    headerWeight: FontWeight.w800,
   ),
 };

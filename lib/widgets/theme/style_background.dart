@@ -46,6 +46,7 @@ class StyleBackgroundState extends State<StyleBackground> {
       ThemeStyleId.neon => (_NeonPainter(p), 'bg-neon'),
       ThemeStyleId.terminal => (_TerminalPainter(p), 'bg-terminal'),
       ThemeStyleId.dreamy => (_DreamyPainter(p), 'bg-dreamy'),
+      ThemeStyleId.glass => (_GlassPainter(p), 'bg-glass'),
       _ => (null, null),
     };
     if (painter == null || key == null) return const SizedBox.shrink();
@@ -183,4 +184,48 @@ class _DreamyPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DreamyPainter old) => old.p != p;
+}
+
+/// H 玻璃黏土的光暈不透明度：疊在底色上後 text／muted 對比仍 ≥ 4.5（有測試）。
+double glassGlowOpacity(Brightness b) => b == Brightness.dark ? 0.22 : 0.30;
+
+/// H：底色漸層＋三團模糊的彩色光暈（主色漸層兩端＋青色）。
+/// 上下邊緣保持純底色、光暈不碰邊：手機的頂列與底部導覽外圍是純底色，才不會出現接縫。
+class _GlassPainter extends CustomPainter {
+  final AppPalette p;
+
+  _GlassPainter(this.p);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    canvas.drawRect(
+        rect,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [p.background, p.surfaceHigh, p.background],
+          ).createShader(rect));
+    final decor = p.decor ?? const [];
+    if (decor.length < 3) return;
+    final a = glassGlowOpacity(p.brightness);
+    final r = size.shortestSide * 0.5;
+    void glow(Offset c, Color color) => canvas.drawCircle(
+        c,
+        r,
+        Paint()
+          ..shader = RadialGradient(colors: [
+            color.withOpacity(a),
+            color.withOpacity(0),
+          ]).createShader(Rect.fromCircle(center: c, radius: r)));
+    double y(double f) =>
+        (size.height * f).clamp(r, (size.height - r).clamp(r, double.infinity));
+    glow(Offset(size.width * 0.95, y(0.25)), decor[1]);
+    glow(Offset(size.width * 0.05, y(0.55)), decor[0]);
+    glow(Offset(size.width * 0.6, y(0.85)), decor[2]);
+  }
+
+  @override
+  bool shouldRepaint(_GlassPainter old) => old.p != p;
 }

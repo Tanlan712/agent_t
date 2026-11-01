@@ -39,6 +39,7 @@ class _PanelCardState extends State<PanelCard> {
         : BorderRadius.horizontal(right: r);
     final flat = style.card == CardVariant.flat;
     final material = style.card == CardVariant.material;
+    final glass = style.card == CardVariant.glass;
     Widget content = Padding(padding: widget.padding, child: widget.child);
     final overlays = <Widget>[
       if (widget.accent != null)
@@ -133,6 +134,15 @@ class _PanelCardState extends State<PanelCard> {
                     palette.text.withOpacity(0.08), palette.surface)
                 : palette.surface)
             : (hot ? palette.surfaceHigh : palette.surface);
+    if (glass) {
+      return AnimatedContainer(
+        duration: still ? Duration.zero : const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+        clipBehavior: Clip.antiAlias,
+        decoration: glassDecoration(palette, radius, hot: hot),
+        child: content,
+      );
+    }
     return AnimatedContainer(
       duration: still ? Duration.zero : const Duration(milliseconds: 150),
       curve: Curves.easeOut,
@@ -152,6 +162,40 @@ class _PanelCardState extends State<PanelCard> {
       child: content,
     );
   }
+}
+
+/// H 玻璃黏土的半透明面板：上亮下淡的漸層（黏土的厚度感）、白色細亮邊、柔和投影。
+/// 不用 BackdropFilter：背景光暈本來就是模糊的，省下每張卡片的即時模糊成本。
+/// 側欄、底部導覽也共用這個外觀。
+BoxDecoration glassDecoration(AppPalette p, BorderRadius radius,
+    {bool hot = false}) {
+  final dark = p.brightness == Brightness.dark;
+  final a = (dark ? 0.55 : 0.62) + (hot ? 0.12 : 0);
+  return BoxDecoration(
+    borderRadius: radius,
+    gradient: LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        p.surface.withOpacity((a + 0.18).clamp(0, 1)),
+        p.surface.withOpacity(a),
+      ],
+    ),
+    border: Border.all(
+        color: dark
+            ? Colors.white.withOpacity(hot ? 0.22 : 0.12)
+            : Colors.white.withOpacity(hot ? 1 : 0.85)),
+    boxShadow: [
+      BoxShadow(
+        color: dark
+            ? Colors.black.withOpacity(0.35)
+            : p.primary.withOpacity(hot ? 0.18 : 0.10),
+        blurRadius: hot ? 32 : 24,
+        spreadRadius: -8,
+        offset: const Offset(0, 12),
+      ),
+    ],
+  );
 }
 
 /// EVA 卡片四角的小十字。

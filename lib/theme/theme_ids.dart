@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/app_settings.dart';
 
-/// 9 種整體風格（G Material 3 於 2026-10-28 加入）（規格 2026-10-21-ui-themes-design.md §2、§4）。
+/// 10 種整體風格（G Material 3 於 2026-10-28、H 玻璃黏土於 2026-11-01 加入）（規格 2026-10-21-ui-themes-design.md §2、§4）。
 enum ThemeStyleId {
   editorial,
   neon,
@@ -14,13 +14,16 @@ enum ThemeStyleId {
   evaFusion,
 
   /// G：Google Material Design 3（色彩由主色當種子色產生，元件用 MD3 預設外觀）。
-  material;
+  material,
+
+  /// H：玻璃黏土（淡紫藍漸層底＋彩色光暈、半透明毛玻璃大圓角卡片、主色漸層選中標示）。
+  glass;
 
   bool get isEva => this == evaAlert || this == evaMonitor || this == evaFusion;
 
   /// 明暗選「跟隨風格」時用的明暗。
   Brightness get defaultBrightness => switch (this) {
-        editorial || airy || dreamy || material => Brightness.light,
+        editorial || airy || dreamy || material || glass => Brightness.light,
         _ => Brightness.dark,
       };
 }

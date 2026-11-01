@@ -27,8 +27,11 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// F2／F3 的結構色（括號框、分隔直線）。
   final Color? frame;
 
-  /// E 的裝飾漸層（只用在背景，不承載文字）。
+  /// E 的裝飾漸層、H 的背景光暈（只用在背景，不承載文字）。
   final List<Color>? decor;
+
+  /// H 的主色漸層（選中導覽、主要按鈕）；上面放白字，兩端對白色對比都 ≥ 4.5。
+  final List<Color>? accentGradient;
 
   const AppPalette({
     required this.brightness,
@@ -49,6 +52,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.party,
     this.frame,
     this.decor,
+    this.accentGradient,
   });
 
   /// `AppColors.*` 讀這裡；由 `buildAppTheme` 設定。
@@ -60,6 +64,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
   static AppPalette resolve(ThemeChoice c) {
     final dark = c.brightness == Brightness.dark;
     if (c.style == ThemeStyleId.material) return _material(c);
+    if (c.style == ThemeStyleId.glass) return _glass(c);
     final n = (dark ? _neutralDark : _neutralLight)[c.style]!;
     // 暴走只在 EVA 系列有效，其他風格當成紅。
     final accent = !c.style.isEva && c.accent == AccentId.berserk
@@ -119,6 +124,43 @@ class AppPalette extends ThemeExtension<AppPalette> {
       info: dark ? const Color(0xFF38BDF8) : const Color(0xFF0369A1),
       tier: dark ? _tierDark : _tierLight,
       party: dark ? _partyDark : _partyLight,
+    );
+  }
+
+  /// H 玻璃黏土：淡紫藍（淺）／深靛（深）中性色，主色沿用共用主色，
+  /// 另外帶一組主色漸層與背景光暈色。暴走不適用，當成紅。
+  static AppPalette _glass(ThemeChoice c) {
+    final dark = c.brightness == Brightness.dark;
+    final n = dark ? _glassNeutralDark : _glassNeutralLight;
+    final accent = c.accent == AccentId.berserk ? AccentId.red : c.accent;
+    final (primary, _, on) = (dark ? _accentDark : _accentLight)[accent]!;
+    final gradient = _glassGradients[accent]!;
+    return AppPalette(
+      brightness: c.brightness,
+      background: n[0],
+      surface: n[1],
+      surfaceHigh: n[2],
+      outline: n[3],
+      text: n[4],
+      muted: n[5],
+      primary: primary,
+      buttonFill: gradient.first,
+      onButton: on,
+      win: dark ? const Color(0xFF4ADE80) : const Color(0xFF166534),
+      loss: dark ? const Color(0xFFFF6B6B) : const Color(0xFFB42318),
+      warn: dark ? const Color(0xFFFFC107) : const Color(0xFF8A5A00),
+      info: dark ? const Color(0xFF38BDF8) : const Color(0xFF0369A1),
+      tier: dark ? _tierDark : _tierLight,
+      party: dark ? _partyDark : _partyLight,
+      // 淺色的光暈先往白色混一半，免得紅、綠這種深主色把 muted 文字壓暗。
+      decor: [
+        for (final g in [
+          ...gradient,
+          dark ? const Color(0xFF1F6E9A) : const Color(0xFF5CC8F0),
+        ])
+          dark ? g : Color.lerp(g, _white, 0.5)!,
+      ],
+      accentGradient: gradient,
     );
   }
 
@@ -189,6 +231,20 @@ final _neutralLight = <ThemeStyleId, List<Color>>{
       [0xFFECE9E0, 0xFFF6F4EE, 0xFFE6E3D9, 0xFFB9B4A0, 0xFF2B2A1F, 0xFF5A5744]),
   ThemeStyleId.evaFusion: _n(
       [0xFFECE9E0, 0xFFF6F4EE, 0xFFE6E3D9, 0xFFB9B4A0, 0xFF2B2A1F, 0xFF5A5744]),
+};
+
+// H 玻璃黏土中性色（順序同上）；淺色帶一點紫，深色是深靛。
+final _glassNeutralLight = _n(
+    [0xFFECEBFF, 0xFFF8F8FF, 0xFFEEEEFB, 0xFFD6D6F0, 0xFF1D2246, 0xFF555A85]);
+final _glassNeutralDark = _n(
+    [0xFF141633, 0xFF1E2046, 0xFF282B57, 0xFF3A3E70, 0xFFEEF0FF, 0xFFA3A8D8]);
+
+/// H 的主色漸層：起點與終點對白字對比都 ≥ 4.5（有測試）。
+const _glassGradients = <AccentId, List<Color>>{
+  AccentId.red: [Color(0xFFD7263D), Color(0xFFC2185B)],
+  AccentId.blue: [Color(0xFF3F51E0), Color(0xFF6A3FD8)],
+  AccentId.green: [Color(0xFF0E7A5A), Color(0xFF0B6E80)],
+  AccentId.violet: [Color(0xFF6D3CE0), Color(0xFF8E2DC2)],
 };
 
 // 主色：primary、buttonFill、onButton（規格 §3.2）。
