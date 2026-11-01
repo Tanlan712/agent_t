@@ -27,7 +27,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// F2／F3 的結構色（括號框、分隔直線）。
   final Color? frame;
 
-  /// E 的裝飾漸層、H 的背景光暈（只用在背景，不承載文字）。
+  /// E 的裝飾漸層、H 的背景山景色（只用在背景，不承載文字）。
   final List<Color>? decor;
 
   /// H 的主色漸層（選中導覽、主要按鈕）；上面放白字，兩端對白色對比都 ≥ 4.5。
@@ -76,6 +76,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     final usesFrame =
         c.style == ThemeStyleId.evaMonitor || c.style == ThemeStyleId.evaFusion;
     // I 極簡儀表板：主要按鈕與選中標示用墨色（淺色黑底白字、深色白底黑字），主色只做點綴。
+    // J 控制台的主要按鈕用主色，反黑重點卡另外用墨色（hud_card.dart）。
     final ink = c.style == ThemeStyleId.dashboard;
     return AppPalette(
       brightness: c.brightness,
@@ -129,8 +130,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
     );
   }
 
-  /// H 玻璃黏土：淡紫藍（淺）／深靛（深）中性色，主色沿用共用主色，
-  /// 另外帶一組主色漸層與背景光暈色。暴走不適用，當成紅。
+  /// H 玻璃黏土：白天淡藍灰（淺）／暮色煙燻灰（深）中性色，主色沿用共用主色，
+  /// 另外帶一組主色漸層與背景山景色。暴走不適用，當成紅。
   static AppPalette _glass(ThemeChoice c) {
     final dark = c.brightness == Brightness.dark;
     final n = dark ? _glassNeutralDark : _glassNeutralLight;
@@ -154,14 +155,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
       info: dark ? const Color(0xFF38BDF8) : const Color(0xFF0369A1),
       tier: dark ? _tierDark : _tierLight,
       party: dark ? _partyDark : _partyLight,
-      // 淺色的光暈先往白色混一半，免得紅、綠這種深主色把 muted 文字壓暗。
-      decor: [
-        for (final g in [
-          ...gradient,
-          dark ? const Color(0xFF1F6E9A) : const Color(0xFF5CC8F0),
-        ])
-          dark ? g : Color.lerp(g, _white, 0.5)!,
-      ],
+      decor: dark ? _glassSceneDark : _glassSceneLight,
       accentGradient: gradient,
     );
   }
@@ -215,6 +209,9 @@ final _neutralDark = <ThemeStyleId, List<Color>>{
       [0xFF070302, 0xFF120A05, 0xFF1C1209, 0xFF5C3A12, 0xFFF2E6D0, 0xFFBFA888]),
   ThemeStyleId.dashboard: _n(
       [0xFF0B0B0D, 0xFF17181B, 0xFF1F2023, 0xFF2C2D32, 0xFFF3F3F5, 0xFFA2A4AC]),
+  // J 控制台：近黑畫布、深灰工作台、再亮一階的面板。
+  ThemeStyleId.console: _n(
+      [0xFF0C0C0D, 0xFF161618, 0xFF1F1F22, 0xFF2D2D31, 0xFFF2F2F0, 0xFFA4A4A9]),
 };
 
 final _neutralLight = <ThemeStyleId, List<Color>>{
@@ -237,14 +234,30 @@ final _neutralLight = <ThemeStyleId, List<Color>>{
       [0xFFECE9E0, 0xFFF6F4EE, 0xFFE6E3D9, 0xFFB9B4A0, 0xFF2B2A1F, 0xFF5A5744]),
   // I 極簡儀表板：淺灰底、純白卡片、近黑文字。
   ThemeStyleId.dashboard: _n(
-      [0xFFEFEFF1, 0xFFFFFFFF, 0xFFF5F5F7, 0xFFE2E2E6, 0xFF0F1012, 0xFF5B5D65]),
+      [0xFFEEEEEC, 0xFFFFFFFF, 0xFFF5F5F4, 0xFFE2E2DF, 0xFF0F1012, 0xFF5B5D65]),
+  // J 控制台：暖灰畫布、純白工作台、工作台上的淺灰面板。
+  ThemeStyleId.console: _n(
+      [0xFFE8E8E5, 0xFFFFFFFF, 0xFFF6F6F3, 0xFFE4E4DF, 0xFF111111, 0xFF5A5A55]),
 };
 
-// H 玻璃黏土中性色（順序同上）；淺色帶一點紫，深色是深靛。
+// H 玻璃黏土中性色（順序同上）：淺色是白天的淡藍灰，深色是暮色的煙燻灰（不帶紫）。
 final _glassNeutralLight = _n(
-    [0xFFECEBFF, 0xFFF8F8FF, 0xFFEEEEFB, 0xFFD6D6F0, 0xFF1D2246, 0xFF555A85]);
+    [0xFFE6EBF2, 0xFFFBFBFD, 0xFFEFF1F5, 0xFFD5D9E1, 0xFF1C1D22, 0xFF53555E]);
 final _glassNeutralDark = _n(
-    [0xFF141633, 0xFF1E2046, 0xFF282B57, 0xFF3A3E70, 0xFFEEF0FF, 0xFFA3A8D8]);
+    [0xFF16151B, 0xFF242328, 0xFF2E2D33, 0xFF4A4850, 0xFFF4F1EC, 0xFFBDB6AE]);
+
+/// H 背景山景的顏色：天空頂端、地平線、太陽光暈（淺色＝白天、深色＝黃昏）。
+/// 只用在背景，不承載文字；頂端與底部都收回 background，手機頂列與底部導覽沒有接縫。
+const _glassSceneLight = [
+  Color(0xFFBCD0E6),
+  Color(0xFFF1D9C4),
+  Color(0xFFFFE2B8)
+];
+const _glassSceneDark = [
+  Color(0xFF1B1D2B),
+  Color(0xFF4A3530),
+  Color(0xFFE08A4A)
+];
 
 /// H 的主色漸層：起點與終點對白字對比都 ≥ 4.5（有測試）。
 const _glassGradients = <AccentId, List<Color>>{

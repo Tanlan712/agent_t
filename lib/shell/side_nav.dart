@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_style.dart';
 import '../theme/app_theme.dart';
-import '../widgets/hud/hud_card.dart' show glassDecoration;
 import 'nav_items.dart';
 
 /// 分組側欄：展開時 248 寬（圖示＋名稱＋分組標題），收合時 72 寬（只有圖示＋提示）。
@@ -54,14 +53,14 @@ class SideNav extends StatelessWidget {
         onTap: () => onSelect(item),
       ));
     }
-    final glass = context.appStyle.nav == NavLayout.glassSidebar;
+    final console = context.appStyle.nav == NavLayout.consoleRail;
     final column = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
           padding: EdgeInsets.fromLTRB(extended ? 20 : 0, 20, 12, 4),
-          child: glass
-              ? _GlassBrand(brand: brand, extended: extended)
+          child: console
+              ? _ConsoleBrand(brand: brand, extended: extended)
               : extended
                   ? Text(brand,
                       style: TextStyle(
@@ -81,22 +80,12 @@ class SideNav extends StatelessWidget {
           Material(type: MaterialType.transparency, child: footer!),
       ],
     );
-    if (glass) {
-      // H：浮起來的玻璃面板，四周留 12px 讓背景光暈透出來。
+    if (console) {
+      // J：沒有底色，直接放在暖灰畫布上；右邊是白色工作台。
       return SizedBox(
-        width: extended ? 248 : 80,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 0, 12),
-          child: DecoratedBox(
-            key: const ValueKey('glass-side-nav'),
-            decoration: glassDecoration(
-                context.palette, const BorderRadius.all(Radius.circular(26))),
-            child: ClipRRect(
-                borderRadius: const BorderRadius.all(Radius.circular(26)),
-                child: column),
-          ),
-        ),
-      );
+          key: const ValueKey('console-side-nav'),
+          width: extended ? 232 : 72,
+          child: column);
     }
     return Container(
       width: extended ? 248 : 72,
@@ -125,8 +114,8 @@ class _NavTile extends StatelessWidget {
     if (context.appStyle.nav == NavLayout.materialDrawer) {
       return _materialTile(context);
     }
-    if (context.appStyle.nav == NavLayout.glassSidebar) {
-      return _glassTile(context);
+    if (context.appStyle.nav == NavLayout.consoleRail) {
+      return _consoleTile(context);
     }
     final color = selected ? AppColors.text : AppColors.muted;
     final still = MediaQuery.disableAnimationsOf(context);
@@ -227,26 +216,28 @@ class _NavTile extends StatelessWidget {
       child: Semantics(button: true, selected: selected, child: tile),
     );
   }
+}
 
-  /// H 玻璃黏土：選中項目是主色漸層膠囊＋白字，帶一點同色投影。
-  Widget _glassTile(BuildContext context) {
+extension on _NavTile {
+  /// J 控制台：選中項目是白色小卡（細邊＋淡投影），未選中是灰字；收合時只有圖示。
+  Widget _consoleTile(BuildContext context) {
     final p = context.palette;
     final still = MediaQuery.disableAnimationsOf(context);
-    final gradient = p.accentGradient ?? [p.buttonFill, p.buttonFill];
-    final fg = selected ? p.onButton : p.muted;
-    const radius = BorderRadius.all(Radius.circular(16));
-    Widget tile = DecoratedBox(
+    const radius = BorderRadius.all(Radius.circular(10));
+    Widget tile = AnimatedContainer(
       key: selected ? const ValueKey('nav-indicator') : null,
+      duration: still ? Duration.zero : const Duration(milliseconds: 150),
       decoration: BoxDecoration(
+        color: selected ? p.surface : Colors.transparent,
         borderRadius: radius,
-        gradient: selected ? LinearGradient(colors: gradient) : null,
+        border: Border.all(color: selected ? p.outline : Colors.transparent),
         boxShadow: selected
             ? [
                 BoxShadow(
-                    color: gradient.first.withOpacity(0.35),
-                    blurRadius: 16,
-                    spreadRadius: -6,
-                    offset: const Offset(0, 8)),
+                    color: Colors.black.withOpacity(
+                        p.brightness == Brightness.dark ? 0.3 : 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2)),
               ]
             : null,
       ),
@@ -256,27 +247,27 @@ class _NavTile extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          hoverColor: p.primary.withOpacity(0.08),
+          hoverColor: p.text.withOpacity(0.05),
           hoverDuration: still ? Duration.zero : null,
           splashFactory: still ? NoSplash.splashFactory : null,
           child: SizedBox(
-            height: 44,
+            height: 38,
             child: Row(
               mainAxisAlignment:
                   extended ? MainAxisAlignment.start : MainAxisAlignment.center,
               children: [
-                if (extended) const SizedBox(width: 14),
-                Icon(item.icon, size: 20, color: fg),
+                if (extended) const SizedBox(width: 12),
+                Icon(item.icon, size: 18, color: selected ? p.text : p.muted),
                 if (extended) ...[
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(item.label,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                            fontSize: 14,
-                            color: selected ? p.onButton : p.text,
+                            fontSize: 13.5,
+                            color: selected ? p.text : p.muted,
                             fontWeight:
-                                selected ? FontWeight.w700 : FontWeight.w500)),
+                                selected ? FontWeight.w600 : FontWeight.w500)),
                   ),
                 ],
               ],
@@ -287,42 +278,30 @@ class _NavTile extends StatelessWidget {
     );
     if (!extended) tile = Tooltip(message: item.label, child: tile);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
       child: Semantics(button: true, selected: selected, child: tile),
     );
   }
 }
 
-/// H 玻璃黏土的品牌列：主色漸層圓角方塊＋深色粗體名稱（收合時只有方塊）。
-class _GlassBrand extends StatelessWidget {
+/// J 控制台的品牌列：墨色圓角方塊＋名稱（收合時只有方塊）。
+class _ConsoleBrand extends StatelessWidget {
   final String brand;
   final bool extended;
 
-  const _GlassBrand({required this.brand, required this.extended});
+  const _ConsoleBrand({required this.brand, required this.extended});
 
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
-    final gradient = p.accentGradient ?? [p.buttonFill, p.buttonFill];
     final badge = Container(
-      key: const ValueKey('glass-brand-badge'),
-      width: 32,
-      height: 32,
+      key: const ValueKey('console-brand-badge'),
+      width: 30,
+      height: 30,
       decoration: BoxDecoration(
-        borderRadius: const BorderRadius.all(Radius.circular(11)),
-        gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: gradient),
-        boxShadow: [
-          BoxShadow(
-              color: gradient.first.withOpacity(0.4),
-              blurRadius: 14,
-              spreadRadius: -4,
-              offset: const Offset(0, 6)),
-        ],
-      ),
-      child: Icon(Icons.local_fire_department, size: 18, color: p.onButton),
+          color: p.text,
+          borderRadius: const BorderRadius.all(Radius.circular(8))),
+      child: Icon(Icons.local_fire_department, size: 17, color: p.surface),
     );
     if (!extended) return Center(child: badge);
     return Row(children: [
@@ -332,7 +311,7 @@ class _GlassBrand extends StatelessWidget {
         child: Text(brand,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-                color: p.text, fontSize: 19, fontWeight: FontWeight.w800)),
+                color: p.text, fontSize: 16, fontWeight: FontWeight.w700)),
       ),
     ]);
   }

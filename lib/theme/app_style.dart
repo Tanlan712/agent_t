@@ -14,11 +14,14 @@ enum NavLayout {
   /// G：MD3 導覽抽屜（膠囊形選中指示）。
   materialDrawer,
 
-  /// H：浮起來的玻璃側欄（四周留白、選中項目是主色漸層膠囊）。
-  glassSidebar,
+  /// H：頂部一排獨立的玻璃膠囊（圖示＋名稱），選中項目是主色漸層膠囊。
+  glassPills,
 
   /// I：頂部一整條膠囊導覽，選中項目是墨色實心膠囊。
   topPills,
+
+  /// J：透明底的分組側欄（選中項目是白色浮起小卡），內容放在右邊的白色工作台裡。
+  consoleRail,
 }
 
 enum HeaderVariant {
@@ -33,6 +36,7 @@ enum HeaderVariant {
   material,
   glass,
   dashboard,
+  console,
 }
 
 /// [material]：MD3 填色卡片（無邊框、12px 圓角、hover 疊一層狀態色）。
@@ -48,7 +52,10 @@ enum CardVariant {
   glass,
 
   /// I：純白卡片、細邊、幾乎沒有陰影（hover 才浮起一點）。
-  dashboard
+  dashboard,
+
+  /// J：工作台上的淺灰面板、細邊、沒有陰影。
+  console
 }
 
 enum KpiVariant { tiles, terminalLines, evaNumerals, evaBracket }
@@ -92,6 +99,10 @@ class AppStyle extends ThemeExtension<AppStyle> {
   });
 
   static AppStyle of(ThemeStyleId id) => _styles[id]!;
+
+  /// KPI 列第一張卡片反黑強調（I 極簡儀表板、J 控制台）。
+  bool get invertsFirstKpi =>
+      card == CardVariant.dashboard || card == CardVariant.console;
 
   @override
   AppStyle copyWith() => this;
@@ -229,7 +240,7 @@ const _styles = <ThemeStyleId, AppStyle>{
   ),
   ThemeStyleId.glass: AppStyle(
     id: ThemeStyleId.glass,
-    nav: NavLayout.glassSidebar,
+    nav: NavLayout.glassPills,
     header: HeaderVariant.glass,
     card: CardVariant.glass,
     kpi: KpiVariant.tiles,
@@ -247,6 +258,19 @@ const _styles = <ThemeStyleId, AppStyle>{
     card: CardVariant.dashboard,
     kpi: KpiVariant.tiles,
     cardRadius: 20,
+    bentoGap: 14,
+    gridSpacing: 14,
+    tileWidthFactor: 1,
+    headerTitleSize: 30,
+    headerWeight: FontWeight.w600,
+  ),
+  ThemeStyleId.console: AppStyle(
+    id: ThemeStyleId.console,
+    nav: NavLayout.consoleRail,
+    header: HeaderVariant.console,
+    card: CardVariant.console,
+    kpi: KpiVariant.tiles,
+    cardRadius: 16,
     bentoGap: 14,
     gridSpacing: 14,
     tileWidthFactor: 1,

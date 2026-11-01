@@ -22,6 +22,7 @@ import '../widgets/theme/eva/eva_layer.dart';
 import '../theme/theme_ids.dart';
 import '../widgets/theme/style_background.dart';
 import '../widgets/theme/theme_reveal.dart';
+import '../widgets/hud/hud_card.dart' show consoleSheetDecoration;
 import '../widgets/hud/page_header.dart';
 
 const appName = 'Agent T';
@@ -98,6 +99,7 @@ class AppShell extends StatelessWidget {
           child: child);
 
       final bottom = mode == NavMode.bottom;
+      final console = style.nav == NavLayout.consoleRail;
       final header = _Content(
         padding: horizontalPadding(width),
         maxWidth: maxWidth,
@@ -200,37 +202,59 @@ class AppShell extends StatelessWidget {
               if (side &&
                   style.nav != NavLayout.evaColumn &&
                   style.nav != NavLayout.materialDrawer &&
-                  style.nav != NavLayout.glassSidebar)
+                  style.nav != NavLayout.consoleRail)
                 const VerticalDivider(width: 1),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (top)
-                      TopNav(
-                        currentRoute: currentRoute,
-                        compact: !extended,
-                        layout: style.nav,
-                        brand: appName,
-                        items: ordered,
-                        onSelect: go,
-                        trailing:
-                            _RiotStatus(compact: !extended, inline: extended),
-                      ),
-                    if (!bottom) header,
-                    // 一直放在樹中（不需要時是空的），跨斷點時結構不變。
-                    const ExpiryBanner(),
-                    // 內容一律放在 NestedScrollView 裡（跨斷點時位置不變、狀態保留）；
-                    // 手機版的頁首放在捲動區上方，往上捲時跟著內容捲走。
-                    Expanded(
-                      child: NestedScrollView(
-                        headerSliverBuilder: (context, _) => [
-                          if (bottom) SliverToBoxAdapter(child: header),
+                // J 控制台：內容放在白色工作台裡（桌面四周留白露出暖灰畫布，手機整片白）。
+                // 其他風格也一律有這三層（空的外距與裝飾、不裁切），切換風格時樹結構不變。
+                child: Padding(
+                  padding: console && side
+                      ? const EdgeInsets.fromLTRB(0, 12, 12, 12)
+                      : EdgeInsets.zero,
+                  child: DecoratedBox(
+                    key: const ValueKey('shell-sheet'),
+                    decoration: !console
+                        ? const BoxDecoration()
+                        : side
+                            ? consoleSheetDecoration(context.palette)
+                            : BoxDecoration(color: context.palette.surface),
+                    child: ClipRRect(
+                      borderRadius: console && side
+                          ? const BorderRadius.all(Radius.circular(24))
+                          : BorderRadius.zero,
+                      clipBehavior:
+                          console && side ? Clip.antiAlias : Clip.none,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (top)
+                            TopNav(
+                              currentRoute: currentRoute,
+                              compact: !extended,
+                              layout: style.nav,
+                              brand: appName,
+                              items: ordered,
+                              onSelect: go,
+                              trailing: _RiotStatus(
+                                  compact: !extended, inline: extended),
+                            ),
+                          if (!bottom) header,
+                          // 一直放在樹中（不需要時是空的），跨斷點時結構不變。
+                          const ExpiryBanner(),
+                          // 內容一律放在 NestedScrollView 裡（跨斷點時位置不變、狀態保留）；
+                          // 手機版的頁首放在捲動區上方，往上捲時跟著內容捲走。
+                          Expanded(
+                            child: NestedScrollView(
+                              headerSliverBuilder: (context, _) => [
+                                if (bottom) SliverToBoxAdapter(child: header),
+                              ],
+                              body: body,
+                            ),
+                          ),
                         ],
-                        body: body,
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -266,6 +290,7 @@ const _topLayouts = {
   NavLayout.topDropdowns,
   NavLayout.topHamburger,
   NavLayout.topPills,
+  NavLayout.glassPills,
 };
 
 /// 置中並限制最大寬度的內容區。
@@ -380,6 +405,45 @@ class _RiotStatus extends StatelessWidget {
     );
     void open() => Navigator.pushNamed(context, '/riot-login');
 
+    if (inline && context.appStyle.id == ThemeStyleId.dashboard) {
+      // I：白色膠囊＋狀態點（已登入是綠點、未登入是灰點），像「● 1,284 live now」。
+      final p = context.palette;
+      return Padding(
+        padding: const EdgeInsets.only(left: 6),
+        child: Material(
+          key: const ValueKey('nav-riot'),
+          color: p.surface,
+          shape: StadiumBorder(side: BorderSide(color: p.outline)),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: open,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Container(
+                  key: const ValueKey('riot-status-dot'),
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                      color: riot.isLoggedIn ? p.win : p.muted,
+                      shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 160),
+                  child: Text(riot.isLoggedIn ? '$label・已連線' : label,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: p.text,
+                          fontWeight: FontWeight.w500)),
+                ),
+              ]),
+            ),
+          ),
+        ),
+      );
+    }
     if (inline) {
       return TextButton.icon(
         key: const ValueKey('nav-riot'),

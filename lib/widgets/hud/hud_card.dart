@@ -134,6 +134,15 @@ class _PanelCardState extends State<PanelCard> {
                     palette.text.withOpacity(0.08), palette.surface)
                 : palette.surface)
             : (hot ? palette.surfaceHigh : palette.surface);
+    if (style.card == CardVariant.console) {
+      return AnimatedContainer(
+        duration: still ? Duration.zero : const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+        clipBehavior: Clip.antiAlias,
+        decoration: consoleDecoration(palette, radius, hot: hot),
+        child: content,
+      );
+    }
     if (style.card == CardVariant.dashboard) {
       return AnimatedContainer(
         duration: still ? Duration.zero : const Duration(milliseconds: 150),
@@ -192,6 +201,50 @@ BoxDecoration dashboardDecoration(AppPalette p, BorderRadius radius,
             ),
           ]
         : null,
+  );
+}
+
+/// J 控制台的面板：白色工作台上的淺灰底、細邊、沒有陰影；hover 時底色變白、邊框加深。
+/// [inverted] 是反黑重點卡（KPI 第一張）：墨色底、沒有邊框、一點投影。
+BoxDecoration consoleDecoration(AppPalette p, BorderRadius radius,
+    {bool hot = false, bool inverted = false}) {
+  final dark = p.brightness == Brightness.dark;
+  if (inverted) {
+    return BoxDecoration(
+      color: p.text,
+      borderRadius: radius,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(dark ? 0.4 : 0.18),
+          blurRadius: 18,
+          spreadRadius: -6,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    );
+  }
+  return BoxDecoration(
+    color: hot ? p.surface : p.surfaceHigh,
+    borderRadius: radius,
+    border: Border.all(color: hot ? p.muted.withOpacity(0.6) : p.outline),
+  );
+}
+
+/// J 控制台的白色工作台（內容區外框）：大圓角、細邊、很淡的投影。
+BoxDecoration consoleSheetDecoration(AppPalette p) {
+  final dark = p.brightness == Brightness.dark;
+  return BoxDecoration(
+    color: p.surface,
+    borderRadius: const BorderRadius.all(Radius.circular(24)),
+    border: Border.all(color: p.outline),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withOpacity(dark ? 0.35 : 0.06),
+        blurRadius: 30,
+        spreadRadius: -10,
+        offset: const Offset(0, 12),
+      ),
+    ],
   );
 }
 
