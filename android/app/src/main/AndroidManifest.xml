@@ -104,7 +104,7 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/shop_widget_info" />
         </receiver>
-        <!-- App 內更新：只分享快取資料夾 updates/ 裡下載的 APK 給系統安裝程式。 -->
+        <!-- 只分享快取資料夾 updates/（App 內更新的 APK）與 shared/（使用者按「分享」的圖片與備份檔）。 -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.updates"

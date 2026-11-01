@@ -25,7 +25,9 @@ import 'package:agent_t/storage/offer_price_storage.dart';
 import 'package:agent_t/services/progress_reference_api.dart';
 import 'package:agent_t/providers/seen_players_provider.dart';
 import 'package:agent_t/providers/settings_provider.dart';
+import 'package:agent_t/providers/shop_history_provider.dart';
 import 'package:agent_t/providers/shop_provider.dart';
+import 'package:agent_t/storage/shop_history_storage.dart';
 import 'package:agent_t/providers/purchase_history_provider.dart';
 import 'package:agent_t/providers/wishlist_provider.dart';
 import 'package:agent_t/services/live_client.dart';
@@ -92,6 +94,8 @@ class Harness {
   late final PurchaseHistoryProvider purchaseHistory;
   late final RemoteClient remoteClient;
   late final LoadoutProvider loadout;
+  late final ShopHistoryProvider shopHistory =
+      ShopHistoryProvider(ShopHistoryStorage(prefs));
   late final EncounterProvider encounters =
       EncounterProvider(EncounterStorage(prefs));
   late final RecentFormLoader recentForm = RecentFormLoader(
@@ -173,7 +177,9 @@ class Harness {
     h.penalties = PenaltyProvider(riot, rc, delay: (_) async {});
     h.prices =
         OfferPriceProvider(OfferPriceStorage(prefs), now: now ?? DateTime.now);
-    riot.onStorefront = h.prices.record;
+    riot
+      ..onStorefront = h.prices.record
+      ..onShopSynced = h.shopHistory.record;
     h.purchaseHistory = PurchaseHistoryProvider(PurchaseHistoryStorage(prefs),
         now: now ?? DateTime.now);
     return h;
@@ -228,6 +234,8 @@ class Harness {
         ChangeNotifierProvider.value(value: recentForm),
         ChangeNotifierProvider.value(value: seenPlayers),
         ChangeNotifierProvider.value(value: encounters),
+        ChangeNotifierProvider.value(value: shopHistory),
+        Provider.value(value: prefs),
         ChangeNotifierProvider.value(value: matchHistory),
         ChangeNotifierProvider.value(value: matchReference),
       ],

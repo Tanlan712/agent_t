@@ -20,7 +20,9 @@ import 'providers/riot_resource.dart';
 import 'providers/seen_players_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/shop_auto_refresh.dart';
+import 'providers/shop_history_provider.dart';
 import 'providers/shop_provider.dart';
+import 'providers/theme_schedule_clock.dart';
 import 'providers/purchase_history_provider.dart';
 import 'providers/wishlist_provider.dart';
 import 'app_routes.dart';
@@ -47,6 +49,7 @@ import 'storage/pass_xp_storage.dart';
 import 'storage/seen_players_storage.dart';
 import 'storage/session_storage.dart';
 import 'storage/settings_storage.dart';
+import 'storage/shop_history_storage.dart';
 import 'storage/shop_storage.dart';
 import 'storage/purchase_history_storage.dart';
 import 'storage/wishlist_storage.dart';
@@ -104,6 +107,11 @@ Future<void> main() async {
   final purchaseHistory =
       PurchaseHistoryProvider(PurchaseHistoryStorage(prefs));
   final shop = ShopProvider(ShopStorage(prefs));
+  // 商店歷史：每次同步記下每日商店與夜市（各帳號分開、只存在本機，不另外送請求）。
+  final shopHistory = ShopHistoryProvider(ShopHistoryStorage(prefs));
+  riot.onShopSynced = shopHistory.record;
+  // 主題排程：到了白天／晚上的切換時間重新套用明暗。
+  final themeClock = ThemeScheduleClock(settings);
   // 多帳號：每個帳號各自記住最後看到的商店，切換時先顯示，再由背景同步更新。
   riot
     ..onAccountChanged = shop.switchAccount
@@ -135,6 +143,10 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider.value(value: catalog),
         ChangeNotifierProvider.value(value: shop),
+        ChangeNotifierProvider.value(value: shopHistory),
+        ChangeNotifierProvider.value(value: themeClock),
+        // 本機資料備份讀寫 localStorage／SharedPreferences（設定頁）。
+        Provider.value(value: prefs),
         ChangeNotifierProvider(
             create: (_) => WishlistProvider(WishlistStorage(prefs))),
         ChangeNotifierProvider.value(value: settings),

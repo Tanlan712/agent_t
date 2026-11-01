@@ -18,6 +18,7 @@ import '../theme/app_theme.dart';
 import '../widgets/accessory_store.dart';
 import '../widgets/bundle_tile.dart';
 import '../widgets/catalog_gate.dart';
+import '../widgets/reset_countdown_card.dart';
 import '../widgets/combat_stats.dart';
 import '../widgets/hud/hud.dart';
 import '../widgets/skin_card.dart';
@@ -313,7 +314,23 @@ class MyShopPage extends StatelessWidget {
                       ],
                     )
                   : null;
-              final side = [if (kpi != null) kpi, if (hits != null) hits];
+              final settings = context.watch<SettingsProvider>().settings;
+              // 未登入時不顯示（無法同步，倒數也沒有意義）；版面維持單欄。
+              final countdown = !riot.isLoggedIn
+                  ? null
+                  : ResetCountdownCard(
+                      shop: shop,
+                      resetHour: settings.resetHour,
+                      resetMinute: settings.resetMinute,
+                      now: now,
+                      onOpenHistory: () =>
+                          Navigator.pushNamed(context, '/shop-history'),
+                    );
+              final side = [
+                if (kpi != null) kpi,
+                if (countdown != null) countdown,
+                if (hits != null) hits,
+              ];
               // 有兩欄時左右各自往下排：右欄 KPI 較高也不會在每日商店下面留白。
               // 單欄（手機）維持 每日商店 → KPI → 夜市 → 願望清單 的順序。
               final twoColumns = bentoColumns(c.maxWidth) > 1;
@@ -342,6 +359,7 @@ class MyShopPage extends StatelessWidget {
                 ] else ...[
                   BentoTile(span: side.isEmpty ? 12 : 8, child: dailySection),
                   if (kpi != null) BentoTile(span: 4, child: kpi),
+                  if (countdown != null) BentoTile(span: 4, child: countdown),
                   BentoTile(span: side.isEmpty ? 12 : 8, child: nightSection),
                   if (hits != null) BentoTile(span: 4, child: hits),
                 ],

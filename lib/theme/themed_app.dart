@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../logic/theme_schedule.dart';
 import '../providers/settings_provider.dart';
+import '../providers/theme_schedule_clock.dart';
 import '../widgets/theme/theme_reveal.dart';
 import 'app_theme.dart';
 import 'theme_ids.dart';
@@ -26,8 +28,10 @@ class _ThemedAppState extends State<ThemedApp> {
 
   @override
   Widget build(BuildContext context) {
-    final choice =
-        ThemeChoice.fromSettings(context.watch<SettingsProvider>().settings);
+    // 主題排程（lib/logic/theme_schedule.dart）：到了切換時間由 ThemeScheduleClock 通知重建。
+    context.watch<ThemeScheduleClock?>();
+    final choice = ThemeChoice.fromSettings(applyThemeSchedule(
+        context.watch<SettingsProvider>().settings, DateTime.now()));
     // 主題沒變（例如只記錄了一個彩蛋）時沿用同一個 ThemeData，避免整個 App 重建。
     final key = '${choice.key}-${widget.useGoogleFonts}';
     if (key != _key || _theme == null) {

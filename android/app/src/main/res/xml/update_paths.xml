@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- App 內更新下載的 APK（AppUpdater.kt）。 -->
+<!-- App 內更新下載的 APK（AppUpdater.kt），與分享的今日小結圖片／備份檔（FileBridge.kt）。 -->
 <paths>
     <cache-path name="updates" path="updates/" />
+    <cache-path name="shared" path="shared/" />
 </paths>
