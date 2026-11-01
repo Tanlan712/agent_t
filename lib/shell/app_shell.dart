@@ -19,7 +19,9 @@ import '../theme/app_fonts.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_style.dart';
 import '../widgets/theme/eva/eva_layer.dart';
+import '../theme/theme_ids.dart';
 import '../widgets/theme/style_background.dart';
+import '../widgets/theme/theme_reveal.dart';
 import '../widgets/hud/page_header.dart';
 
 const appName = 'Agent T';
@@ -137,7 +139,11 @@ class AppShell extends StatelessWidget {
                         color: AppColors.primary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold)),
-                actions: const [_RiotStatus(compact: true, appBar: true)])
+                actions: [
+                    if (style.id == ThemeStyleId.dashboard)
+                      const ThemeRevealToggle(),
+                    const _RiotStatus(compact: true, appBar: true),
+                  ])
             : null,
         drawer: top && style.nav == NavLayout.topHamburger
             ? Drawer(
@@ -259,6 +265,7 @@ const _topLayouts = {
   NavLayout.topTabs,
   NavLayout.topDropdowns,
   NavLayout.topHamburger,
+  NavLayout.topPills,
 };
 
 /// 置中並限制最大寬度的內容區。

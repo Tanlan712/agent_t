@@ -215,7 +215,97 @@ ThemeData buildAppTheme({
       contentTextStyle: TextStyle(color: palette.text),
     ),
   );
+  if (choice.style == ThemeStyleId.dashboard) {
+    return _dashboardTheme(base, palette);
+  }
   return glass ? _glassTheme(base, palette, style) : base;
+}
+
+/// I 極簡儀表板：墨色膠囊按鈕、膠囊籌碼、細邊白卡；
+/// 手機底部導覽透明（外層畫白色浮動膠囊），選中項目是墨色膠囊。
+ThemeData _dashboardTheme(ThemeData base, AppPalette palette) {
+  const pill = StadiumBorder();
+  WidgetStateProperty<T> sel<T>(T on, T off) => WidgetStateProperty.resolveWith(
+      (s) => s.contains(WidgetState.selected) ? on : off);
+  return base.copyWith(
+    chipTheme: base.chipTheme.copyWith(
+      backgroundColor: palette.surface,
+      selectedColor: palette.buttonFill,
+      secondaryLabelStyle: TextStyle(color: palette.onButton, fontSize: 12),
+      checkmarkColor: palette.onButton,
+      shape: const StadiumBorder(),
+    ),
+    tooltipTheme: base.tooltipTheme.copyWith(
+      decoration: BoxDecoration(
+          color: palette.surface,
+          borderRadius: const BorderRadius.all(Radius.circular(10)),
+          border: Border.fromBorderSide(BorderSide(color: palette.outline)),
+          boxShadow: const [
+            BoxShadow(
+                color: Color(0x1A000000), blurRadius: 16, offset: Offset(0, 6)),
+          ]),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: palette.buttonFill,
+        foregroundColor: palette.onButton,
+        shape: pill,
+      ).copyWith(side: _focusSide(palette.info)),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: palette.text,
+        backgroundColor: palette.surface,
+        shape: pill,
+      ).copyWith(
+          side: _focusSide(palette.info, BorderSide(color: palette.outline))),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(foregroundColor: palette.text, shape: pill)
+          .copyWith(side: _focusSide(palette.info)),
+    ),
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: ButtonStyle(
+        shape: const WidgetStatePropertyAll(pill),
+        backgroundColor: sel(palette.buttonFill, palette.surface),
+        foregroundColor: sel(palette.onButton, palette.text),
+        iconColor: sel(palette.onButton, palette.text),
+        side: WidgetStatePropertyAll(BorderSide(color: palette.outline)),
+      ),
+    ),
+    switchTheme: SwitchThemeData(
+      trackColor: sel(palette.buttonFill, palette.surfaceHigh),
+      thumbColor: sel(palette.onButton, palette.muted),
+    ),
+    inputDecorationTheme: base.inputDecorationTheme.copyWith(
+      fillColor: palette.surface,
+      border: OutlineInputBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(12)),
+          borderSide: BorderSide(color: palette.outline)),
+      enabledBorder: OutlineInputBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(12)),
+          borderSide: BorderSide(color: palette.outline)),
+    ),
+    dialogTheme: DialogTheme(
+      backgroundColor: palette.surface,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20))),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      indicatorColor: palette.buttonFill,
+      indicatorShape: pill,
+      iconTheme: sel(IconThemeData(color: palette.onButton),
+          IconThemeData(color: palette.muted)),
+      labelTextStyle: sel(
+          TextStyle(
+              fontSize: 12, color: palette.text, fontWeight: FontWeight.w700),
+          TextStyle(
+              fontSize: 12, color: palette.muted, fontWeight: FontWeight.w500)),
+    ),
+  );
 }
 
 /// H 玻璃黏土：沿用共用配色，元件改成大圓角／膠囊形，底部導覽透明（外層畫玻璃膠囊）。

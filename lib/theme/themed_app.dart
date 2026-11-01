@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/settings_provider.dart';
+import '../widgets/theme/theme_reveal.dart';
 import 'app_theme.dart';
 import 'theme_ids.dart';
 
@@ -36,8 +37,9 @@ class _ThemedAppState extends State<ThemedApp> {
     }
     return widget.builder(
         _theme!,
-        (context, child) => RebuildOnChange(
-            token: choice.key, child: child ?? const SizedBox()));
+        (context, child) => ThemeReveal(
+            child: RebuildOnChange(
+                token: choice.key, child: child ?? const SizedBox())));
   }
 }
 

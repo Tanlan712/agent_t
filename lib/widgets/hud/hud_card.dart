@@ -134,6 +134,15 @@ class _PanelCardState extends State<PanelCard> {
                     palette.text.withOpacity(0.08), palette.surface)
                 : palette.surface)
             : (hot ? palette.surfaceHigh : palette.surface);
+    if (style.card == CardVariant.dashboard) {
+      return AnimatedContainer(
+        duration: still ? Duration.zero : const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+        clipBehavior: Clip.antiAlias,
+        decoration: dashboardDecoration(palette, radius, hot: hot),
+        child: content,
+      );
+    }
     if (glass) {
       return AnimatedContainer(
         duration: still ? Duration.zero : const Duration(milliseconds: 150),
@@ -162,6 +171,28 @@ class _PanelCardState extends State<PanelCard> {
       child: content,
     );
   }
+}
+
+/// I 極簡儀表板的卡片：純色底、細邊、平常沒有陰影，hover 時浮起一點。
+/// [inverted] 是反黑重點卡（KPI 第一張）：墨色底、沒有邊框。
+BoxDecoration dashboardDecoration(AppPalette p, BorderRadius radius,
+    {bool hot = false, bool inverted = false}) {
+  final dark = p.brightness == Brightness.dark;
+  return BoxDecoration(
+    color: inverted ? p.text : p.surface,
+    borderRadius: radius,
+    border: inverted ? null : Border.all(color: hot ? p.muted : p.outline),
+    boxShadow: hot || inverted
+        ? [
+            BoxShadow(
+              color: Colors.black.withOpacity(dark ? 0.4 : 0.08),
+              blurRadius: 20,
+              spreadRadius: -6,
+              offset: const Offset(0, 8),
+            ),
+          ]
+        : null,
+  );
 }
 
 /// H 玻璃黏土的半透明面板：上亮下淡的漸層（黏土的厚度感）、白色細亮邊、柔和投影。

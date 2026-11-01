@@ -37,7 +37,10 @@ class StatusChip extends StatelessWidget {
           ThemeStyleId.airy ||
           ThemeStyleId.terminal =>
             0,
-          ThemeStyleId.dreamy || ThemeStyleId.glass => 999,
+          ThemeStyleId.dreamy ||
+          ThemeStyleId.glass ||
+          ThemeStyleId.dashboard =>
+            999,
           ThemeStyleId.evaAlert ||
           ThemeStyleId.evaMonitor ||
           ThemeStyleId.evaFusion =>

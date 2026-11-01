@@ -75,6 +75,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
         : (dark ? _accentDark : _accentLight)[accent]!;
     final usesFrame =
         c.style == ThemeStyleId.evaMonitor || c.style == ThemeStyleId.evaFusion;
+    // I 極簡儀表板：主要按鈕與選中標示用墨色（淺色黑底白字、深色白底黑字），主色只做點綴。
+    final ink = c.style == ThemeStyleId.dashboard;
     return AppPalette(
       brightness: c.brightness,
       background: n[0],
@@ -84,8 +86,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
       text: n[4],
       muted: n[5],
       primary: primary,
-      buttonFill: fill,
-      onButton: on,
+      buttonFill: ink ? n[4] : fill,
+      onButton: ink ? n[1] : on,
       win: dark ? const Color(0xFF4ADE80) : const Color(0xFF166534),
       loss: dark ? const Color(0xFFFF6B6B) : const Color(0xFFB42318),
       warn: dark ? const Color(0xFFFFC107) : const Color(0xFF8A5A00),
@@ -211,6 +213,8 @@ final _neutralDark = <ThemeStyleId, List<Color>>{
       [0xFF070302, 0xFF120A05, 0xFF1C1209, 0xFF5C3A12, 0xFFF2E6D0, 0xFFBFA888]),
   ThemeStyleId.evaFusion: _n(
       [0xFF070302, 0xFF120A05, 0xFF1C1209, 0xFF5C3A12, 0xFFF2E6D0, 0xFFBFA888]),
+  ThemeStyleId.dashboard: _n(
+      [0xFF0B0B0D, 0xFF17181B, 0xFF1F2023, 0xFF2C2D32, 0xFFF3F3F5, 0xFFA2A4AC]),
 };
 
 final _neutralLight = <ThemeStyleId, List<Color>>{
@@ -231,6 +235,9 @@ final _neutralLight = <ThemeStyleId, List<Color>>{
       [0xFFECE9E0, 0xFFF6F4EE, 0xFFE6E3D9, 0xFFB9B4A0, 0xFF2B2A1F, 0xFF5A5744]),
   ThemeStyleId.evaFusion: _n(
       [0xFFECE9E0, 0xFFF6F4EE, 0xFFE6E3D9, 0xFFB9B4A0, 0xFF2B2A1F, 0xFF5A5744]),
+  // I 極簡儀表板：淺灰底、純白卡片、近黑文字。
+  ThemeStyleId.dashboard: _n(
+      [0xFFEFEFF1, 0xFFFFFFFF, 0xFFF5F5F7, 0xFFE2E2E6, 0xFF0F1012, 0xFF5B5D65]),
 };
 
 // H 玻璃黏土中性色（順序同上）；淺色帶一點紫，深色是深靛。

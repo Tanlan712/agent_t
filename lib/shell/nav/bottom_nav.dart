@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_style.dart';
 import '../../theme/theme_ids.dart';
-import '../../widgets/hud/hud_card.dart' show glassDecoration;
+import '../../widgets/hud/hud_card.dart'
+    show dashboardDecoration, glassDecoration;
 
 /// 手機（<600）的底部導覽；形狀依目前風格（規格 §4.1）。
 class ThemedBottomNav extends StatelessWidget {
@@ -36,6 +37,27 @@ class ThemedBottomNav extends StatelessWidget {
           child: DecoratedBox(
             key: const ValueKey('bottom-glass'),
             decoration: glassDecoration(p, radius),
+            child: ClipRRect(borderRadius: radius, child: bar),
+          ),
+        ),
+      );
+    }
+    if (id == ThemeStyleId.dashboard) {
+      // I：白色浮動膠囊，細邊＋淡投影；NavigationBar 本身透明（主題設定）。
+      const radius = BorderRadius.all(Radius.circular(28));
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+          child: DecoratedBox(
+            key: const ValueKey('bottom-dashboard'),
+            decoration: dashboardDecoration(p, radius).copyWith(boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(
+                      p.brightness == Brightness.dark ? 0.4 : 0.08),
+                  blurRadius: 20,
+                  spreadRadius: -6,
+                  offset: const Offset(0, 8)),
+            ]),
             child: ClipRRect(borderRadius: radius, child: bar),
           ),
         ),
