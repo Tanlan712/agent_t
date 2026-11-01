@@ -179,6 +179,27 @@ class PageHeader extends StatelessWidget {
                 if (sub != null) sub,
               ],
             ));
+      case HeaderVariant.console:
+        // J：標題上方一行小字麵包屑（AGENT T / 頁面英文名）。
+        return row(
+            const [],
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(en == null ? 'AGENT T' : 'AGENT T  /  ${en.toUpperCase()}',
+                    key: const ValueKey('header-breadcrumb'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontSize: 11,
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w500,
+                        color: p.muted)),
+                const SizedBox(height: 6),
+                titleBlock(),
+              ],
+            ));
       case HeaderVariant.material:
       case HeaderVariant.glass:
       case HeaderVariant.dashboard:

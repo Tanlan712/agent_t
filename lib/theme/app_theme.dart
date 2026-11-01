@@ -218,6 +218,9 @@ ThemeData buildAppTheme({
   if (choice.style == ThemeStyleId.dashboard) {
     return _dashboardTheme(base, palette);
   }
+  if (choice.style == ThemeStyleId.console) {
+    return _consoleTheme(base, palette);
+  }
   return glass ? _glassTheme(base, palette, style) : base;
 }
 
@@ -302,6 +305,98 @@ ThemeData _dashboardTheme(ThemeData base, AppPalette palette) {
       labelTextStyle: sel(
           TextStyle(
               fontSize: 12, color: palette.text, fontWeight: FontWeight.w700),
+          TextStyle(
+              fontSize: 12, color: palette.muted, fontWeight: FontWeight.w500)),
+    ),
+  );
+}
+
+/// J 控制台：主色實心膠囊按鈕、白底細邊膠囊次要按鈕、主色開關、20px 對話框；
+/// 手機頂列與底部導覽用工作台的白色（內容區整片白，桌面版外圍才是暖灰畫布）。
+ThemeData _consoleTheme(ThemeData base, AppPalette palette) {
+  const pill = StadiumBorder();
+  const r12 = BorderRadius.all(Radius.circular(12));
+  WidgetStateProperty<T> sel<T>(T on, T off) => WidgetStateProperty.resolveWith(
+      (s) => s.contains(WidgetState.selected) ? on : off);
+  return base.copyWith(
+    appBarTheme: base.appBarTheme.copyWith(backgroundColor: palette.surface),
+    chipTheme: base.chipTheme.copyWith(
+      backgroundColor: palette.surface,
+      selectedColor: palette.text,
+      secondaryLabelStyle: TextStyle(color: palette.surface, fontSize: 12),
+      checkmarkColor: palette.surface,
+      shape: pill,
+    ),
+    tooltipTheme: base.tooltipTheme.copyWith(
+      decoration: BoxDecoration(
+          color: palette.text,
+          borderRadius: const BorderRadius.all(Radius.circular(8))),
+      textStyle: TextStyle(color: palette.surface, fontSize: 12),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: palette.buttonFill,
+        foregroundColor: palette.onButton,
+        shape: pill,
+      ).copyWith(side: _focusSide(palette.info)),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: palette.text,
+        backgroundColor: palette.surface,
+        shape: pill,
+      ).copyWith(
+          side: _focusSide(palette.info, BorderSide(color: palette.outline))),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(foregroundColor: palette.primary, shape: pill)
+          .copyWith(side: _focusSide(palette.info)),
+    ),
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: ButtonStyle(
+        shape: const WidgetStatePropertyAll(pill),
+        backgroundColor: sel(palette.text, palette.surface),
+        foregroundColor: sel(palette.surface, palette.text),
+        iconColor: sel(palette.surface, palette.text),
+        side: WidgetStatePropertyAll(BorderSide(color: palette.outline)),
+      ),
+    ),
+    switchTheme: SwitchThemeData(
+      trackColor: sel(palette.buttonFill, palette.surfaceHigh),
+      thumbColor: sel(palette.onButton, palette.muted),
+      trackOutlineColor: sel(Colors.transparent, palette.outline),
+    ),
+    inputDecorationTheme: base.inputDecorationTheme.copyWith(
+      fillColor: palette.surfaceHigh,
+      border: OutlineInputBorder(
+          borderRadius: r12, borderSide: BorderSide(color: palette.outline)),
+      enabledBorder: OutlineInputBorder(
+          borderRadius: r12, borderSide: BorderSide(color: palette.outline)),
+    ),
+    dialogTheme: DialogTheme(
+      backgroundColor: palette.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20))),
+    ),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: palette.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: palette.surface,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      indicatorColor: palette.surfaceHigh,
+      indicatorShape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(10))),
+      iconTheme: sel(IconThemeData(color: palette.text),
+          IconThemeData(color: palette.muted)),
+      labelTextStyle: sel(
+          TextStyle(
+              fontSize: 12, color: palette.text, fontWeight: FontWeight.w600),
           TextStyle(
               fontSize: 12, color: palette.muted, fontWeight: FontWeight.w500)),
     ),

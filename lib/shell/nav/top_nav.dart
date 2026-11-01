@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_palette.dart';
 import '../../theme/app_style.dart';
+import '../../widgets/hud/hud_card.dart' show glassDecoration;
 import '../nav_items.dart';
 import '../../widgets/theme/theme_reveal.dart';
 import 'fullscreen_menu.dart';
@@ -31,6 +32,16 @@ class TopNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (layout == NavLayout.glassPills) {
+      return GlassTopNav(
+        currentRoute: currentRoute,
+        compact: compact,
+        onSelect: onSelect,
+        brand: brand,
+        items: items,
+        trailing: trailing,
+      );
+    }
     if (layout == NavLayout.topPills) {
       return PillTopNav(
         currentRoute: currentRoute,
@@ -440,5 +451,239 @@ class _PillLink extends StatelessWidget {
     );
     if (compact) tile = Tooltip(message: item.label, child: tile);
     return Semantics(button: true, selected: selected, child: tile);
+  }
+}
+
+/// H 玻璃黏土的頂部導覽：左邊漸層品牌方塊，中間一排各自獨立的玻璃膠囊（圖示＋名稱），
+/// 選中的是主色漸層膠囊；其餘頁面收進「更多」。沒有底色，直接浮在山景上。
+class GlassTopNav extends StatelessWidget {
+  final String currentRoute;
+  final bool compact;
+  final ValueChanged<NavItem> onSelect;
+  final String brand;
+  final List<NavItem> items;
+  final Widget? trailing;
+
+  const GlassTopNav({
+    super.key,
+    required this.currentRoute,
+    required this.compact,
+    required this.onSelect,
+    required this.brand,
+    required this.items,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final selected = canonicalRoute(currentRoute);
+    final main = items.where((n) => n.group == NavGroup.shop).toList();
+    final others = items.where((n) => n.group != NavGroup.shop).toList();
+    final otherSelected = others.any((n) => n.route == selected);
+
+    final more = PopupMenuButton<NavItem>(
+      key: const ValueKey('nav-group-more'),
+      tooltip: '更多頁面',
+      onSelected: onSelect,
+      itemBuilder: (_) => [
+        for (final n in others)
+          PopupMenuItem(
+            value: n,
+            child: Row(children: [
+              Icon(n.icon,
+                  size: 18, color: n.route == selected ? p.primary : p.muted),
+              const SizedBox(width: 10),
+              Text(n.label),
+            ]),
+          ),
+      ],
+      child: _GlassPill(
+        selected: otherSelected,
+        icon: otherSelected
+            ? others.firstWhere((n) => n.route == selected).icon
+            : Icons.apps,
+        label: compact
+            ? null
+            : otherSelected
+                ? others.firstWhere((n) => n.route == selected).label
+                : '更多',
+        trailingIcon: Icons.expand_more,
+      ),
+    );
+
+    return SizedBox(
+      key: const ValueKey('glass-top-nav'),
+      height: 72,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(children: [
+          _GlassBrand(brand: brand, extended: !compact),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Center(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  for (final n in main)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: _GlassLink(
+                        key: ValueKey('nav-${n.route}'),
+                        item: n,
+                        selected: n.route == selected,
+                        compact: compact,
+                        onTap: () => onSelect(n),
+                      ),
+                    ),
+                  if (others.isNotEmpty)
+                    Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        child: more),
+                ]),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          if (trailing != null) trailing!,
+        ]),
+      ),
+    );
+  }
+}
+
+/// 一顆玻璃膠囊：未選中是半透明玻璃，選中是主色漸層＋白字。
+class _GlassPill extends StatelessWidget {
+  final bool selected;
+  final IconData icon;
+  final String? label;
+  final IconData? trailingIcon;
+
+  const _GlassPill(
+      {required this.selected,
+      required this.icon,
+      this.label,
+      this.trailingIcon});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final gradient = p.accentGradient ?? [p.buttonFill, p.buttonFill];
+    const radius = BorderRadius.all(Radius.circular(999));
+    final fg = selected ? p.onButton : p.text;
+    return DecoratedBox(
+      key: selected ? const ValueKey('nav-indicator') : null,
+      decoration: selected
+          ? BoxDecoration(
+              borderRadius: radius,
+              gradient: LinearGradient(colors: gradient),
+              boxShadow: [
+                BoxShadow(
+                    color: gradient.first.withOpacity(0.35),
+                    blurRadius: 14,
+                    spreadRadius: -5,
+                    offset: const Offset(0, 6)),
+              ],
+            )
+          : glassDecoration(p, radius),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 38, minWidth: 44),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: label == null ? 10 : 14),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(icon, size: 16, color: fg),
+            if (label != null) ...[
+              const SizedBox(width: 6),
+              Text(label!,
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: fg,
+                      fontWeight:
+                          selected ? FontWeight.w700 : FontWeight.w500)),
+            ],
+            if (trailingIcon != null) Icon(trailingIcon, size: 16, color: fg),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _GlassLink extends StatelessWidget {
+  final NavItem item;
+  final bool selected;
+  final bool compact;
+  final VoidCallback onTap;
+
+  const _GlassLink({
+    super.key,
+    required this.item,
+    required this.selected,
+    required this.compact,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final still = MediaQuery.disableAnimationsOf(context);
+    Widget tile = Material(
+      type: MaterialType.transparency,
+      shape: const StadiumBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const StadiumBorder(),
+        hoverDuration: still ? Duration.zero : null,
+        splashFactory: still ? NoSplash.splashFactory : null,
+        child: _GlassPill(
+            selected: selected,
+            icon: item.icon,
+            label: compact ? null : item.label),
+      ),
+    );
+    if (compact) tile = Tooltip(message: item.label, child: tile);
+    return Semantics(button: true, selected: selected, child: tile);
+  }
+}
+
+/// H 玻璃黏土的品牌列：主色漸層圓角方塊＋深色粗體名稱（收合時只有方塊）。
+class _GlassBrand extends StatelessWidget {
+  final String brand;
+  final bool extended;
+
+  const _GlassBrand({required this.brand, required this.extended});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final gradient = p.accentGradient ?? [p.buttonFill, p.buttonFill];
+    final badge = Container(
+      key: const ValueKey('glass-brand-badge'),
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.all(Radius.circular(11)),
+        gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: gradient),
+        boxShadow: [
+          BoxShadow(
+              color: gradient.first.withOpacity(0.4),
+              blurRadius: 14,
+              spreadRadius: -4,
+              offset: const Offset(0, 6)),
+        ],
+      ),
+      child: Icon(Icons.local_fire_department, size: 18, color: p.onButton),
+    );
+    if (!extended) return badge;
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      badge,
+      const SizedBox(width: 10),
+      Text(brand,
+          style: TextStyle(
+              color: p.text, fontSize: 18, fontWeight: FontWeight.w800)),
+    ]);
   }
 }

@@ -23,6 +23,7 @@ const themeStyleNames = {
   ThemeStyleId.material: 'G Material 3',
   ThemeStyleId.glass: 'H 玻璃黏土',
   ThemeStyleId.dashboard: 'I 極簡儀表板',
+  ThemeStyleId.console: 'J 控制台',
 };
 
 /// 主色名稱；EVA 系列用 EVA 對應色的名稱（規格 §3.2）。
