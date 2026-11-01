@@ -13,7 +13,7 @@ import '../app_harness.dart';
 import '../shell/app_shell_test.dart' show setWidth;
 import 'contrast.dart';
 
-/// H 玻璃黏土：配色、背景光暈、玻璃卡片與導覽。
+/// H 玻璃黏土：配色、背景山景、玻璃卡片與導覽。
 void main() {
   tearDown(AppPalette.reset);
 
@@ -48,19 +48,25 @@ void main() {
     }
   });
 
-  test('背景光暈疊上去後 text／muted 對比仍 ≥ 4.5', () {
+  test('背景山景（天空、地平線、太陽光暈）上 text／muted 對比仍 ≥ 4.5', () {
     for (final accent in AccentId.values) {
       for (final mode in [BrightnessMode.light, BrightnessMode.dark]) {
         final p = AppPalette.resolve(
             ThemeChoice(style: ThemeStyleId.glass, accent: accent, mode: mode));
+        final scene = p.decor!;
         final a = glassGlowOpacity(p.brightness);
-        for (final glow in p.decor!) {
-          for (final bg in [p.background, p.surfaceHigh]) {
-            final mixed = Color.alphaBlend(glow.withOpacity(a), bg);
-            expect(contrast(p.text, mixed), greaterThanOrEqualTo(4.5),
-                reason: 'text $accent $mode $glow');
-            expect(contrast(p.muted, mixed), greaterThanOrEqualTo(4.5),
-                reason: 'muted $accent $mode $glow');
+        for (final bg in [
+          p.background,
+          scene[0],
+          scene[1],
+          // 太陽光暈最亮處疊在地平線色上。
+          Color.alphaBlend(scene[2].withOpacity(a), scene[1]),
+        ]) {
+          expect(contrast(p.text, bg), greaterThanOrEqualTo(4.5),
+              reason: 'text $accent $mode $bg');
+          if (bg != Color.alphaBlend(scene[2].withOpacity(a), scene[1])) {
+            expect(contrast(p.muted, bg), greaterThanOrEqualTo(4.5),
+                reason: 'muted $accent $mode $bg');
           }
         }
       }
@@ -93,7 +99,7 @@ void main() {
     expect(d.borderRadius, const BorderRadius.all(Radius.circular(24)));
   });
 
-  testWidgets('桌面：浮動玻璃側欄，選中項目是漸層膠囊，沒有分隔線', (tester) async {
+  testWidgets('桌面：頂部玻璃膠囊導覽，選中項目是漸層膠囊，沒有側欄與分隔線', (tester) async {
     setWidth(tester, 1440);
     final h = await Harness.create(tester);
     await tester.pumpWidget(h.wrap(
@@ -101,8 +107,8 @@ void main() {
         home: const AppShell(
             currentRoute: '/players', title: '遇過的玩家', child: Text('內容'))));
     await tester.pumpAndSettle();
-    expect(find.byType(SideNav), findsOneWidget);
-    expect(find.byKey(const ValueKey('glass-side-nav')), findsOneWidget);
+    expect(find.byType(SideNav), findsNothing);
+    expect(find.byKey(const ValueKey('glass-top-nav')), findsOneWidget);
     expect(find.byKey(const ValueKey('bg-glass')), findsOneWidget);
     expect(find.byType(VerticalDivider), findsNothing);
     final pill = tester

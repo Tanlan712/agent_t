@@ -100,7 +100,7 @@ class KpiTile extends StatelessWidget {
   }
 
   Widget _plain(BuildContext context) {
-    if (context.appStyle.card == CardVariant.dashboard) {
+    if (context.appStyle.invertsFirstKpi) {
       return _dashboard(context,
           inverted:
               context.dependOnInheritedWidgetOfExactType<_KpiEmphasis>() !=
@@ -163,7 +163,7 @@ class KpiTile extends StatelessWidget {
 }
 
 extension on KpiTile {
-  /// I 極簡儀表板：小標籤、大數字、變化放在淡色膠囊標章裡；[inverted] 是反黑重點卡。
+  /// I 極簡儀表板、J 控制台：小標籤、大數字、變化放在淡色膠囊標章裡；[inverted] 是反黑重點卡。
   Widget _dashboard(BuildContext context, {required bool inverted}) {
     final p = context.palette;
     final style = context.appStyle;
@@ -171,7 +171,7 @@ extension on KpiTile {
     final sub = inverted ? Color.lerp(p.surface, p.text, 0.32)! : p.muted;
     // 反黑卡片上的勝負色改用另一個明暗的版本，才看得清楚。
     final opposite = AppPalette.resolve(ThemeChoice(
-        style: ThemeStyleId.dashboard,
+        style: style.id,
         mode: p.brightness == Brightness.dark
             ? BrightnessMode.light
             : BrightnessMode.dark));
@@ -181,6 +181,7 @@ extension on KpiTile {
       null => sub,
     };
     final radius = BorderRadius.all(Radius.circular(style.cardRadius));
+    final console = style.card == CardVariant.console;
     final body = Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Column(
@@ -237,13 +238,15 @@ extension on KpiTile {
     if (!inverted) return PanelCard(padding: EdgeInsets.zero, child: body);
     return DecoratedBox(
       key: const ValueKey('kpi-inverted'),
-      decoration: dashboardDecoration(p, radius, inverted: true),
+      decoration: console
+          ? consoleDecoration(p, radius, inverted: true)
+          : dashboardDecoration(p, radius, inverted: true),
       child: body,
     );
   }
 }
 
-/// I 極簡儀表板：KPI 列第一張卡片反黑強調。
+/// I 極簡儀表板、J 控制台：KPI 列第一張卡片反黑強調。
 class _KpiEmphasis extends InheritedWidget {
   const _KpiEmphasis({required super.child});
 
@@ -328,7 +331,7 @@ class KpiStrip extends StatelessWidget {
           for (final (i, t) in tiles.indexed)
             SizedBox(
                 width: width,
-                child: i == 0 && context.appStyle.card == CardVariant.dashboard
+                child: i == 0 && context.appStyle.invertsFirstKpi
                     ? _KpiEmphasis(child: t)
                     : t),
         ],
