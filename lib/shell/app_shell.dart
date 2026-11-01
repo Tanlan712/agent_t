@@ -193,7 +193,8 @@ class AppShell extends StatelessWidget {
                 ),
               if (side &&
                   style.nav != NavLayout.evaColumn &&
-                  style.nav != NavLayout.materialDrawer)
+                  style.nav != NavLayout.materialDrawer &&
+                  style.nav != NavLayout.glassSidebar)
                 const VerticalDivider(width: 1),
               Expanded(
                 child: Column(
