@@ -22,6 +22,7 @@ const themeStyleNames = {
   ThemeStyleId.evaFusion: 'F3 綜合',
   ThemeStyleId.material: 'G Material 3',
   ThemeStyleId.glass: 'H 玻璃黏土',
+  ThemeStyleId.dashboard: 'I 極簡儀表板',
 };
 
 /// 主色名稱；EVA 系列用 EVA 對應色的名稱（規格 §3.2）。

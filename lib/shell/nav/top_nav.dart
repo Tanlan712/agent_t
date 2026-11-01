@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_style.dart';
 import '../nav_items.dart';
+import '../../widgets/theme/theme_reveal.dart';
 import 'fullscreen_menu.dart';
 
 /// 頂部導覽列（A 編輯海報、B 數位霓虹、C 優雅留白、E 夢幻漸層）。
@@ -30,6 +31,16 @@ class TopNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (layout == NavLayout.topPills) {
+      return PillTopNav(
+        currentRoute: currentRoute,
+        compact: compact,
+        onSelect: onSelect,
+        brand: brand,
+        items: items,
+        trailing: trailing,
+      );
+    }
     final p = context.palette;
     final selected = canonicalRoute(currentRoute);
     final main = items.where((n) => n.group == NavGroup.shop).toList();
@@ -222,6 +233,209 @@ class _TopLink extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Center(child: body),
         ),
+      ),
+    );
+    if (compact) tile = Tooltip(message: item.label, child: tile);
+    return Semantics(button: true, selected: selected, child: tile);
+  }
+}
+
+/// I 極簡儀表板的頂部導覽：左邊墨色品牌方塊，中間一整條膠囊放主要頁面
+/// （選中的是墨色實心膠囊），其餘頁面收進「更多」；右邊是深淺色切換與 Riot 狀態。
+/// 沒有底色與分隔線，直接浮在淺灰底上。
+class PillTopNav extends StatelessWidget {
+  final String currentRoute;
+  final bool compact;
+  final ValueChanged<NavItem> onSelect;
+  final String brand;
+  final List<NavItem> items;
+  final Widget? trailing;
+
+  const PillTopNav({
+    super.key,
+    required this.currentRoute,
+    required this.compact,
+    required this.onSelect,
+    required this.brand,
+    required this.items,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final selected = canonicalRoute(currentRoute);
+    final main = items.where((n) => n.group == NavGroup.shop).toList();
+    final others = items.where((n) => n.group != NavGroup.shop).toList();
+    final otherSelected = others.any((n) => n.route == selected);
+    final still = MediaQuery.disableAnimationsOf(context);
+
+    final more = PopupMenuButton<NavItem>(
+      key: const ValueKey('nav-group-more'),
+      tooltip: '更多頁面',
+      onSelected: onSelect,
+      itemBuilder: (_) => [
+        for (final n in others)
+          PopupMenuItem(
+            value: n,
+            child: Row(children: [
+              Icon(n.icon,
+                  size: 18, color: n.route == selected ? p.text : p.muted),
+              const SizedBox(width: 10),
+              Text(n.label,
+                  style: TextStyle(
+                      fontWeight: n.route == selected
+                          ? FontWeight.w700
+                          : FontWeight.w400)),
+            ]),
+          ),
+      ],
+      child: _Pill(
+        selected: otherSelected,
+        still: still,
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (compact)
+            Icon(Icons.more_horiz,
+                size: 18, color: otherSelected ? p.onButton : p.muted)
+          else
+            Text(
+                otherSelected
+                    ? others.firstWhere((n) => n.route == selected).label
+                    : '更多',
+                style: TextStyle(
+                    fontSize: 13,
+                    color: otherSelected ? p.onButton : p.muted,
+                    fontWeight:
+                        otherSelected ? FontWeight.w600 : FontWeight.w500)),
+          Icon(Icons.expand_more,
+              size: 16, color: otherSelected ? p.onButton : p.muted),
+        ]),
+      ),
+    );
+
+    final capsule = Container(
+      key: const ValueKey('pill-nav'),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: const BorderRadius.all(Radius.circular(999)),
+        border: Border.all(color: p.outline),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        for (final n in main)
+          _PillLink(
+            key: ValueKey('nav-${n.route}'),
+            item: n,
+            selected: n.route == selected,
+            compact: compact,
+            onTap: () => onSelect(n),
+          ),
+        if (others.isNotEmpty) more,
+      ]),
+    );
+
+    final badge = Container(
+      key: const ValueKey('dashboard-brand-badge'),
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+          color: p.buttonFill,
+          borderRadius: const BorderRadius.all(Radius.circular(9))),
+      child: Icon(Icons.local_fire_department, size: 18, color: p.onButton),
+    );
+
+    return SizedBox(
+      height: 68,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(children: [
+          badge,
+          if (!compact) ...[
+            const SizedBox(width: 10),
+            Text(brand,
+                style: TextStyle(
+                    color: p.text, fontSize: 15, fontWeight: FontWeight.w700)),
+          ],
+          const SizedBox(width: 16),
+          Expanded(
+            child: Center(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: capsule,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          const ThemeRevealToggle(),
+          if (trailing != null) trailing!,
+        ]),
+      ),
+    );
+  }
+}
+
+/// 膠囊導覽裡的一格：選中時墨色實心，否則透明。
+class _Pill extends StatelessWidget {
+  final bool selected;
+  final bool still;
+  final Widget child;
+
+  const _Pill(
+      {required this.selected, required this.still, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return AnimatedContainer(
+      key: selected ? const ValueKey('nav-indicator') : null,
+      duration: still ? Duration.zero : const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      constraints: const BoxConstraints(minHeight: 36, minWidth: 44),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: selected ? p.buttonFill : Colors.transparent,
+        borderRadius: const BorderRadius.all(Radius.circular(999)),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _PillLink extends StatelessWidget {
+  final NavItem item;
+  final bool selected;
+  final bool compact;
+  final VoidCallback onTap;
+
+  const _PillLink({
+    super.key,
+    required this.item,
+    required this.selected,
+    required this.compact,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final still = MediaQuery.disableAnimationsOf(context);
+    final fg = selected ? p.onButton : p.muted;
+    Widget tile = InkWell(
+      onTap: onTap,
+      customBorder: const StadiumBorder(),
+      hoverColor: p.text.withOpacity(0.06),
+      hoverDuration: still ? Duration.zero : null,
+      splashFactory: still ? NoSplash.splashFactory : null,
+      child: _Pill(
+        selected: selected,
+        still: still,
+        child: compact
+            ? Icon(item.icon, size: 18, color: fg)
+            : Text(item.label,
+                style: TextStyle(
+                    fontSize: 13,
+                    color: selected ? p.onButton : p.text,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500)),
       ),
     );
     if (compact) tile = Tooltip(message: item.label, child: tile);

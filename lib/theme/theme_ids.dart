@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/app_settings.dart';
 
-/// 10 種整體風格（G Material 3 於 2026-10-28、H 玻璃黏土於 2026-11-01 加入）（規格 2026-10-21-ui-themes-design.md §2、§4）。
+/// 11 種整體風格（G Material 3 於 2026-10-28、H 玻璃黏土與 I 極簡儀表板於 2026-11-01 加入）（規格 2026-10-21-ui-themes-design.md §2、§4）。
 enum ThemeStyleId {
   editorial,
   neon,
@@ -17,13 +17,22 @@ enum ThemeStyleId {
   material,
 
   /// H：玻璃黏土（淡紫藍漸層底＋彩色光暈、半透明毛玻璃大圓角卡片、主色漸層選中標示）。
-  glass;
+  glass,
+
+  /// I：極簡儀表板（淺灰底白卡、黑色膠囊導覽、第一張 KPI 反黑、圓形擴散的深淺色切換）。
+  dashboard;
 
   bool get isEva => this == evaAlert || this == evaMonitor || this == evaFusion;
 
   /// 明暗選「跟隨風格」時用的明暗。
   Brightness get defaultBrightness => switch (this) {
-        editorial || airy || dreamy || material || glass => Brightness.light,
+        editorial ||
+        airy ||
+        dreamy ||
+        material ||
+        glass ||
+        dashboard =>
+          Brightness.light,
         _ => Brightness.dark,
       };
 }

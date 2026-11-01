@@ -5,6 +5,7 @@ import '../../theme/app_palette.dart';
 import '../../theme/app_style.dart';
 import '../../theme/app_theme.dart';
 import '../theme/eva/eva_bracket.dart';
+import '../../theme/theme_ids.dart';
 import 'hud_card.dart';
 
 /// KPI 摘要卡：標籤、大數字、變化（勝負色加箭頭）。
@@ -99,6 +100,12 @@ class KpiTile extends StatelessWidget {
   }
 
   Widget _plain(BuildContext context) {
+    if (context.appStyle.card == CardVariant.dashboard) {
+      return _dashboard(context,
+          inverted:
+              context.dependOnInheritedWidgetOfExactType<_KpiEmphasis>() !=
+                  null);
+    }
     final color = switch (up) {
       true => AppColors.win,
       false => AppColors.loss,
@@ -153,6 +160,95 @@ class KpiTile extends StatelessWidget {
       ),
     );
   }
+}
+
+extension on KpiTile {
+  /// I 極簡儀表板：小標籤、大數字、變化放在淡色膠囊標章裡；[inverted] 是反黑重點卡。
+  Widget _dashboard(BuildContext context, {required bool inverted}) {
+    final p = context.palette;
+    final style = context.appStyle;
+    final fg = inverted ? p.surface : p.text;
+    final sub = inverted ? Color.lerp(p.surface, p.text, 0.32)! : p.muted;
+    // 反黑卡片上的勝負色改用另一個明暗的版本，才看得清楚。
+    final opposite = AppPalette.resolve(ThemeChoice(
+        style: ThemeStyleId.dashboard,
+        mode: p.brightness == Brightness.dark
+            ? BrightnessMode.light
+            : BrightnessMode.dark));
+    final tone = switch (up) {
+      true => inverted ? opposite.win : p.win,
+      false => inverted ? opposite.loss : p.loss,
+      null => sub,
+    };
+    final radius = BorderRadius.all(Radius.circular(style.cardRadius));
+    final body = Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(children: [
+            if (leading != null) ...[
+              IconTheme.merge(
+                  data: IconThemeData(color: fg, size: 16), child: leading!),
+              const SizedBox(width: 6),
+            ],
+            Flexible(
+              child: Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12, color: sub)),
+            ),
+          ]),
+          const SizedBox(height: 6),
+          Text(value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppText.kpi(context).copyWith(
+                  color: fg, fontWeight: FontWeight.w600, letterSpacing: -0.5)),
+          if (delta != null || up != null) ...[
+            const SizedBox(height: 6),
+            Container(
+              key: const ValueKey('kpi-delta-pill'),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: tone.withOpacity(inverted ? 0.22 : 0.12),
+                borderRadius: const BorderRadius.all(Radius.circular(999)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                if (up != null)
+                  Icon(up! ? Icons.arrow_upward : Icons.arrow_downward,
+                      size: 12, color: tone),
+                if (delta != null)
+                  Flexible(
+                    child: Text(delta!,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.tabular(TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: tone))),
+                  ),
+              ]),
+            ),
+          ],
+        ],
+      ),
+    );
+    if (!inverted) return PanelCard(padding: EdgeInsets.zero, child: body);
+    return DecoratedBox(
+      key: const ValueKey('kpi-inverted'),
+      decoration: dashboardDecoration(p, radius, inverted: true),
+      child: body,
+    );
+  }
+}
+
+/// I 極簡儀表板：KPI 列第一張卡片反黑強調。
+class _KpiEmphasis extends InheritedWidget {
+  const _KpiEmphasis({required super.child});
+
+  @override
+  bool updateShouldNotify(_KpiEmphasis oldWidget) => false;
 }
 
 /// 純數字（可含千分位逗號、小數、結尾 %）第一次出現時從 0 數到實際值（0.9 秒）；
@@ -229,7 +325,12 @@ class KpiStrip extends StatelessWidget {
         spacing: gap,
         runSpacing: gap,
         children: [
-          for (final t in tiles) SizedBox(width: width, child: t),
+          for (final (i, t) in tiles.indexed)
+            SizedBox(
+                width: width,
+                child: i == 0 && context.appStyle.card == CardVariant.dashboard
+                    ? _KpiEmphasis(child: t)
+                    : t),
         ],
       );
     });
