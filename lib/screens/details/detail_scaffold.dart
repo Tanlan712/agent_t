@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../theme/app_theme.dart';
-
-/// 在新分頁開啟（造型影片）。
-Future<bool> openInNewTab(Uri uri) =>
-    launchUrl(uri, webOnlyWindowName: '_blank');
 
 /// 資料庫詳細頁的共用外框：標題列＋置中、最大寬度 1080 的捲動內容。
 class DetailScaffold extends StatelessWidget {

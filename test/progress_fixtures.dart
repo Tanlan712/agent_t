@@ -59,8 +59,13 @@ ProgressReference testProgressRef({DateTime? seasonEnd}) => ProgressReference(
       chromas: const {
         'ch-v-base':
             RefChroma(skinUuid: 'skin-v', swatchUrl: 'base.png', index: 0),
-        'ch-v-red':
-            RefChroma(skinUuid: 'skin-v', swatchUrl: 'red.png', index: 1),
+        'ch-v-red': RefChroma(
+            skinUuid: 'skin-v',
+            swatchUrl: 'red.png',
+            iconUrl: 'red-full.png',
+            index: 1,
+            name: '紅色',
+            videoUrl: 'https://example.test/red.mp4'),
         'ch-p-base':
             RefChroma(skinUuid: 'skin-p', swatchUrl: 'pbase.png', index: 0),
       },

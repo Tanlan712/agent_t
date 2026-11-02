@@ -7,6 +7,7 @@ import '../../shell/responsive_grid.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/hud/hud.dart';
 import '../../widgets/skin_tile.dart' show SkinIcon;
+import '../../widgets/skin_viewer.dart';
 import 'detail_scaffold.dart';
 
 /// 組合包配對造型用的資料：所有主題與所有造型。
@@ -53,13 +54,13 @@ class BundleDetailPage extends StatefulWidget {
 
   /// 取得主題與造型（列表頁快取，只下載一次）。
   final Future<BundleCatalog> Function() load;
-  final Future<bool> Function(Uri) launch;
+  final SkinVideoOpener playVideo;
 
   const BundleDetailPage({
     super.key,
     required this.name,
     required this.load,
-    this.launch = openInNewTab,
+    this.playVideo = showSkinVideo,
   });
 
   @override
@@ -125,7 +126,7 @@ class _BundleDetailPageState extends State<BundleDetailPage> {
                           context,
                           MaterialPageRoute<void>(
                               builder: (_) => SkinDetailPage(
-                                  skin: s, launch: widget.launch))),
+                                  skin: s, playVideo: widget.playVideo))),
                       child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -154,18 +155,36 @@ class _BundleDetailPageState extends State<BundleDetailPage> {
 /// 造型詳細頁：所有等級（影片預覽）與所有炫彩（其他顏色）。
 class SkinDetailPage extends StatelessWidget {
   final SkinInfo skin;
-  final Future<bool> Function(Uri) launch;
+  final SkinVideoOpener playVideo;
 
   const SkinDetailPage(
-      {super.key, required this.skin, this.launch = openInNewTab});
+      {super.key, required this.skin, this.playVideo = showSkinVideo});
 
   @override
   Widget build(BuildContext context) => DetailScaffold(
         title: skin.name,
         children: [
           PanelCard(
-            child: SizedBox(
-                height: 180, child: Center(child: SkinIcon(url: skin.icon))),
+            child: SkinViewer(
+              id: skin.uuid,
+              title: skin.name,
+              fallbackImage: skin.icon,
+              playVideo: playVideo,
+              // 預設選最高等級：升級特效、炫彩都在最高級才看得到。
+              initialLevel: skin.levels.isEmpty ? 0 : skin.levels.length - 1,
+              levels: [
+                for (final l in skin.levels)
+                  SkinLevelOption(image: l.icon, videoUrl: l.videoUrl),
+              ],
+              chromas: [
+                for (final c in skin.chromas)
+                  SkinChromaOption(
+                      name: c.name,
+                      image: c.image,
+                      swatch: c.swatch,
+                      videoUrl: c.videoUrl),
+              ],
+            ),
           ),
           PanelCard(
             child: Column(
@@ -190,7 +209,8 @@ class SkinDetailPage extends StatelessWidget {
                         if (skin.levels[i].videoUrl case final url?)
                           OutlinedButton.icon(
                             key: ValueKey('level-video-$i'),
-                            onPressed: () => launch(Uri.parse(url)),
+                            onPressed: () => playVideo(context, Uri.parse(url),
+                                '${skin.name}・等級 ${i + 1}'),
                             icon:
                                 const Icon(Icons.play_circle_outline, size: 18),
                             label: const Text('預覽影片'),
@@ -237,7 +257,10 @@ class SkinDetailPage extends StatelessWidget {
                                 if (c.videoUrl case final url?)
                                   IconButton(
                                     tooltip: '預覽影片',
-                                    onPressed: () => launch(Uri.parse(url)),
+                                    onPressed: () => playVideo(
+                                        context,
+                                        Uri.parse(url),
+                                        '${skin.name}・${c.name}'),
                                     icon: const Icon(Icons.play_circle_outline),
                                   ),
                               ]),
@@ -255,14 +278,14 @@ class ShopSkinDetailPage extends StatefulWidget {
   final String skinUuid;
   final String title;
   final Future<BundleCatalog> Function() load;
-  final Future<bool> Function(Uri) launch;
+  final SkinVideoOpener playVideo;
 
   const ShopSkinDetailPage({
     super.key,
     required this.skinUuid,
     required this.title,
     required this.load,
-    this.launch = openInNewTab,
+    this.playVideo = showSkinVideo,
   });
 
   @override
@@ -309,7 +332,7 @@ class _ShopSkinDetailPageState extends State<ShopSkinDetailPage> {
               ),
             ]);
           }
-          return SkinDetailPage(skin: skin, launch: widget.launch);
+          return SkinDetailPage(skin: skin, playVideo: widget.playVideo);
         },
       );
 }

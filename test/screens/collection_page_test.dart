@@ -176,9 +176,9 @@ void main() {
     setWidth(tester, 1440);
     final launched = <Uri>[];
     final h = await withSkins(tester);
-    await tester.pumpWidget(h.wrap(home: CollectionPage(launch: (u) async {
+    await tester
+        .pumpWidget(h.wrap(home: CollectionPage(playVideo: (_, u, __) async {
       launched.add(u);
-      return true;
     })));
     await settle(tester);
     await tester.tap(find.byKey(const ValueKey('weapon-w-vandal')));
@@ -193,6 +193,34 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('weapon-w-sheriff')));
     await tester.pumpAndSettle();
     expect(find.text('還沒有這把槍的造型'), findsOneWidget);
+  });
+
+  testWidgets('造型卡：切換等級與炫彩，預覽影片跟著換、在站內播放', (tester) async {
+    setWidth(tester, 1440);
+    final played = <(Uri, String)>[];
+    final h = await withSkins(tester);
+    await tester
+        .pumpWidget(h.wrap(home: CollectionPage(playVideo: (_, u, t) async {
+      played.add((u, t));
+    })));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('weapon-w-vandal')));
+    await tester.pumpAndSettle();
+    // 預設選擁有的最高等級（Lv2，有影片）。
+    expect(find.byKey(const ValueKey('level-skin-v-0')), findsOneWidget);
+    expect(find.byKey(const ValueKey('level-skin-v-1')), findsOneWidget);
+    expect(find.text('預覽影片'), findsOneWidget);
+    // Lv1 沒有影片：按鈕消失。
+    await tester.tap(find.byKey(const ValueKey('level-skin-v-0')));
+    await tester.pump();
+    expect(find.text('預覽影片'), findsNothing);
+    // 選紅色炫彩：改播炫彩影片，標題帶炫彩名。
+    await tester.tap(find.byKey(const ValueKey('swatch-skin-v-1')));
+    await tester.pump();
+    await tester.tap(find.text('預覽影片'));
+    expect(played.single.$1, Uri.parse('https://example.test/red.mp4'));
+    expect(played.single.$2, '光幻 暴徒・紅色');
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('特務分頁顯示特務等級；沒有紀錄的顯示尚未開始', (tester) async {

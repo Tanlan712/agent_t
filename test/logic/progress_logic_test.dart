@@ -115,6 +115,22 @@ void main() {
   });
 
   group('groupOwnedSkins', () {
+    test('帶出全部等級與炫彩，標記哪些擁有、預設選擁有的最高等級', () {
+      final vandal =
+          groupOwnedSkins(const {'lv-vandal-1'}, const {'ch-v-red'}, ref())
+              .single
+              .skins
+              .single;
+      expect(vandal.levels, hasLength(2));
+      expect(vandal.ownedLevel, 0);
+      expect(vandal.levels.map((l) => l.owned), [true, false]);
+      expect(vandal.levels.last.videoUrl, 'v2.mp4');
+      final owned = {
+        for (final c in vandal.chromas) c.swatch: c.owned,
+      };
+      expect(owned, {'red.png': true, 'blue.png': false});
+    });
+
     test('依武器分組，同一造型只算一次並取最高等級與影片', () {
       final groups = groupOwnedSkins(
           const {'lv-vandal-1', 'lv-vandal-2', 'lv-phantom-1', 'lv-unknown'},
@@ -203,8 +219,8 @@ void main() {
       final bp =
           currentBattlePass(snapshot, ref(), DateTime.utc(2026, 10, 21))!;
       expect(passPace(bp, DateTime.utc(2026, 11, 2))!.perDay, isNull);
-      const agent = BattlePass(
-          name: 'a', tiers: [], reached: 0, towardsNext: 0);
+      const agent =
+          BattlePass(name: 'a', tiers: [], reached: 0, towardsNext: 0);
       expect(passPace(agent, DateTime.utc(2026, 10, 21)), isNull);
     });
 
@@ -213,11 +229,12 @@ void main() {
         name: 'bp',
         tiers: [RefTier(reward: RefReward(type: 'x', uuid: 'a'), xp: 100)],
         chapters: [
-          RefChapter(
-              tiers: [RefTier(reward: RefReward(type: 'x', uuid: 'a'), xp: 100)]),
-          RefChapter(
-              tiers: [RefTier(reward: RefReward(type: 'x', uuid: 'b'), xp: 900)],
-              isEpilogue: true),
+          RefChapter(tiers: [
+            RefTier(reward: RefReward(type: 'x', uuid: 'a'), xp: 100)
+          ]),
+          RefChapter(tiers: [
+            RefTier(reward: RefReward(type: 'x', uuid: 'b'), xp: 900)
+          ], isEpilogue: true),
         ],
         reached: 1,
         towardsNext: 0,

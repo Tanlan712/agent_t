@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../shell/app_shell.dart';
 import 'details/bundle_detail_page.dart';
-import 'details/detail_scaffold.dart';
 import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
+import '../widgets/skin_viewer.dart';
 import 'package:agent_t/services/valorant_api_service.dart';
 
 class BundlesPage extends StatefulWidget {
   /// 測試時注入。
   final ValorantApiService? api;
-  final Future<bool> Function(Uri) launch;
+  final SkinVideoOpener playVideo;
 
-  const BundlesPage({super.key, this.api, this.launch = openInNewTab});
+  const BundlesPage({super.key, this.api, this.playVideo = showSkinVideo});
 
   @override
   State<BundlesPage> createState() => _BundlesPageState();
@@ -114,7 +114,7 @@ class _BundlesPageState extends State<BundlesPage> {
                 builder: (_) => BundleDetailPage(
                     name: displayName,
                     load: _catalog.load,
-                    launch: widget.launch))),
+                    playVideo: widget.playVideo))),
         child: Stack(
           fit: StackFit.expand,
           children: [
