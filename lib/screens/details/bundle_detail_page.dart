@@ -51,6 +51,9 @@ final sharedBundleCatalog = BundleCatalogLoader();
 class BundleDetailPage extends StatefulWidget {
   final String name;
 
+  /// 商店同步到的組合包內容（造型或等級 uuid）；有時依內容配對，比主題名稱準。
+  final List<String> itemIds;
+
   /// 取得主題與造型（列表頁快取，只下載一次）。
   final Future<BundleCatalog> Function() load;
   final Future<bool> Function(Uri) launch;
@@ -59,6 +62,7 @@ class BundleDetailPage extends StatefulWidget {
     super.key,
     required this.name,
     required this.load,
+    this.itemIds = const [],
     this.launch = openInNewTab,
   });
 
@@ -101,7 +105,8 @@ class _BundleDetailPageState extends State<BundleDetailPage> {
             ]);
           }
           final c = snap.data!;
-          final skins = bundleSkins(widget.name, c.themes, c.skins);
+          final skins = bundleSkins(widget.name, c.themes, c.skins,
+              itemIds: widget.itemIds);
           return DetailScaffold(title: widget.name, children: [
             if (skins.isEmpty)
               const PanelCard(
