@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../logic/bundle_fallback.dart';
 import '../logic/shop_time.dart';
 import '../logic/wishlist_match.dart';
 import '../models/current_shop.dart';
@@ -224,6 +225,11 @@ class MyShopPage extends StatelessWidget {
     );
 
     final bundles = shop.bundles;
+    // 有對不到的組合包時，背景重新下載一次造型目錄（新上架的組合包）。
+    if (bundles.any((b) => catalog.bundleById(b.bundleUuid) == null)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) =>
+          catalog.refreshIfMissingBundles(bundles.map((b) => b.bundleUuid)));
+    }
     void openBundle(BundleEntry b) {
       final info = catalog.bundleById(b.bundleUuid);
       if (info == null) return;
@@ -239,7 +245,8 @@ class MyShopPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             BundleTile(
-                bundle: catalog.bundleById(b.bundleUuid),
+                bundle: catalog.bundleById(b.bundleUuid) ??
+                    fallbackBundle(b, catalog.skinById),
                 price: b.price,
                 banner: true,
                 onTap: catalog.bundleById(b.bundleUuid) == null

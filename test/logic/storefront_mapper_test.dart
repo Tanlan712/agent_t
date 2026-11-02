@@ -65,6 +65,27 @@ void main() {
     expect(shop.featuredBundle!.bundleUuid, 'bundle-rgx');
   });
 
+  test('組合包 Items 的武器造型轉成造型 uuid（其他類型略過）', () {
+    final json = storefrontJson();
+    final bundle = (json['FeaturedBundle'] as Map<String, dynamic>)['Bundle']
+        as Map<String, dynamic>;
+    Map<String, dynamic> item(String type, String id) => {
+          'Item': {'ItemTypeID': type, 'ItemID': id, 'Amount': 1},
+          'BasePrice': 1775,
+        };
+    const skinType = 'E7C63390-EDA7-46E0-BB7A-A6ABDACD2433';
+    bundle['Items'] = [
+      item(skinType, 'lvl-odin'),
+      item('dd3bf334-87f3-40bd-b043-682a57a8dc3a', 'buddy'),
+      item(skinType, 'lvl-a'),
+      item(skinType, 'lvl-odin'),
+    ];
+    final shop = mapStorefront(json, resolve, now);
+    expect(shop.featuredBundle!.skinUuids, ['skin-odin', 'skin-a']);
+    final back = BundleEntry.fromJson(shop.featuredBundle!.toJson());
+    expect(back.skinUuids, ['skin-odin', 'skin-a']);
+  });
+
   test('只有 Bundle 時 featuredBundles 也有一個，含剩餘時間', () {
     final shop = mapStorefront(storefrontJson(), resolve, now);
     expect(shop.featuredBundles.single.bundleUuid, 'bundle-rgx');
@@ -118,7 +139,9 @@ void main() {
             ],
           },
         },
-        {'Offer': {'OfferID': 'bad', 'Rewards': []}},
+        {
+          'Offer': {'OfferID': 'bad', 'Rewards': []}
+        },
       ],
       'AccessoryStoreRemainingDurationInSeconds': 7200,
     };

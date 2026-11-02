@@ -37,8 +37,9 @@ Future<CatalogProvider> loadedCatalog(
   final cache = CatalogCache(prefs);
   await cache.save(
       SkinCatalog(skins: skins, bundles: bundles, fetchedAt: catalogFetchedAt));
-  final provider =
-      CatalogProvider(CatalogApi(client: client ?? _downClient()), cache);
+  final provider = CatalogProvider(
+      CatalogApi(client: client ?? _downClient()), cache,
+      now: () => catalogFetchedAt);
   await tester.runAsync(provider.init);
   return provider;
 }

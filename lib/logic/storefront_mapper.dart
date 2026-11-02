@@ -18,6 +18,28 @@ String _itemId(Map<String, dynamic> offer) {
   return offer['OfferID'] as String;
 }
 
+/// 武器造型等級的 ItemTypeID。
+const _skinLevelType = 'e7c63390-eda7-46e0-bb7a-a6abdacd2433';
+
+/// 組合包 Items 裡的武器造型，依 storefront 順序、不重複。
+List<String> _bundleSkins(
+    Map<String, dynamic> bundle, String Function(String) resolveSkinUuid) {
+  final out = <String>[];
+  for (final it in (bundle['Items'] as List<dynamic>? ?? const [])) {
+    if (it is! Map<String, dynamic>) continue;
+    final item = it['Item'];
+    if (item is! Map<String, dynamic>) continue;
+    if ((item['ItemTypeID'] as String?)?.toLowerCase() != _skinLevelType) {
+      continue;
+    }
+    final id = item['ItemID'];
+    if (id is! String) continue;
+    final uuid = resolveSkinUuid(id);
+    if (!out.contains(uuid)) out.add(uuid);
+  }
+  return out;
+}
+
 Duration _seconds(Object? v) => Duration(seconds: (v as num?)?.toInt() ?? 0);
 
 /// 把 Riot storefront 回應轉成 [CurrentShop]。
@@ -65,6 +87,7 @@ CurrentShop mapStorefront(
             : _vp(b['TotalBaseCost']),
         endsAt: now
             .add(_seconds(b['DurationRemainingInSeconds'] ?? fallbackSeconds)),
+        skinUuids: _bundleSkins(b, resolveSkinUuid),
       ),
   ];
 

@@ -41,7 +41,37 @@ void main() {
       provider = CatalogProvider(
         CatalogApi(client: client, now: () => now),
         CatalogCache(prefs),
+        now: () => now,
       );
+    });
+
+    test('快取超過 3 天時 init 先用快取再背景更新', () async {
+      await CatalogCache(prefs).save(SkinCatalog(
+          skins: const [],
+          bundles: const [],
+          fetchedAt: now.subtract(const Duration(days: 4))));
+      await provider.init();
+      expect(requests, greaterThan(0));
+      expect(provider.bundleById('bundle-rgx')!.name, 'RGX 11z Pro');
+    });
+
+    test('商店有對不到的組合包時重新下載一次', () async {
+      await CatalogCache(prefs).save(
+          SkinCatalog(skins: const [], bundles: const [], fetchedAt: now));
+      await provider.init();
+      expect(requests, 0);
+      provider.refreshIfMissingBundles(['bundle-rgx']);
+      await Future<void>.delayed(Duration.zero);
+      while (provider.isLoading) {
+        await Future<void>.delayed(const Duration(milliseconds: 1));
+      }
+      final after = requests;
+      expect(after, greaterThan(0));
+      expect(provider.bundleById('bundle-rgx'), isNotNull);
+      // 同一次執行只試一次。
+      provider.refreshIfMissingBundles(['bundle-new']);
+      expect(provider.isLoading, isFalse);
+      expect(requests, after);
     });
 
     test('沒有快取時 init 下載並存入快取', () async {
