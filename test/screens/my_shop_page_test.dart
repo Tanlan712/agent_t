@@ -402,6 +402,48 @@ void layoutTests() {
           findsNothing);
     });
 
+    testWidgets('目錄沒有的組合包：用內含造型湊名稱，不顯示「未知組合包」', (tester) async {
+      setWidth(tester, 1440);
+      final h = await Harness.create(tester,
+          shop: CurrentShop(
+            daily: const [ShopEntry(skinUuid: 'o', price: 1275)],
+            dailyExpiresAt: now.add(const Duration(hours: 5)),
+            featuredBundles: [
+              BundleEntry(
+                  bundleUuid: 'b',
+                  price: 7100,
+                  endsAt: now.add(const Duration(days: 3))),
+              BundleEntry(
+                  bundleUuid: 'new',
+                  price: 1375,
+                  endsAt: now.add(const Duration(days: 22)),
+                  skinUuids: const ['r']),
+              BundleEntry(
+                  bundleUuid: 'b3',
+                  price: 2320,
+                  endsAt: now.add(const Duration(hours: 9, minutes: 5))),
+            ],
+          ));
+      await tester.pumpWidget(h.wrap(home: MyShopPage(now: () => now)));
+      await tester.pumpAndSettle();
+      expect(
+          find.descendant(
+              of: find.byKey(const ValueKey('shop-bundle-new')),
+              matching: find.text('掠奪者')),
+          findsOneWidget);
+      // 最後一張卡下面的剩餘時間完整顯示在區塊內。
+      final last = find.descendant(
+          of: find.byKey(const ValueKey('shop-bundle-b3')),
+          matching: find.text('剩餘 9 小時 5 分'));
+      expect(last, findsOneWidget);
+      expect(
+          tester.getBottomLeft(last).dy,
+          lessThanOrEqualTo(tester
+              .getBottomLeft(find.byKey(const ValueKey('shop-bundles')))
+              .dy));
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('375 寬：多個組合包不溢出', (tester) async {
       setWidth(tester, 375);
       final h = await Harness.create(tester, shop: bundled);

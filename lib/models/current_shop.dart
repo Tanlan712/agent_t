@@ -44,8 +44,16 @@ class BundleEntry {
   /// 這個組合包下架的時間；手動輸入或舊資料沒有。
   final DateTime? endsAt;
 
-  const BundleEntry(
-      {required this.bundleUuid, required this.price, this.endsAt});
+  /// 組合包內的武器造型 uuid（storefront 的 Items）。
+  /// 造型目錄還沒有這個組合包時，用來湊出名稱與圖片。
+  final List<String> skinUuids;
+
+  const BundleEntry({
+    required this.bundleUuid,
+    required this.price,
+    this.endsAt,
+    this.skinUuids = const [],
+  });
 
   factory BundleEntry.fromJson(Map<String, dynamic> json) => BundleEntry(
         bundleUuid: json['bundleUuid'] as String,
@@ -53,12 +61,17 @@ class BundleEntry {
         endsAt: json['endsAt'] is String
             ? DateTime.tryParse(json['endsAt'] as String)
             : null,
+        skinUuids: [
+          for (final s in (json['skinUuids'] as List<dynamic>? ?? const []))
+            if (s is String) s,
+        ],
       );
 
   Map<String, dynamic> toJson() => {
         'bundleUuid': bundleUuid,
         'price': price,
         if (endsAt != null) 'endsAt': endsAt!.toIso8601String(),
+        if (skinUuids.isNotEmpty) 'skinUuids': skinUuids,
       };
 }
 

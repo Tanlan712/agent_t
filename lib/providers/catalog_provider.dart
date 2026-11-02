@@ -20,7 +20,16 @@ class CatalogProvider with ChangeNotifier {
   String? _error;
   bool _usingStaleCache = false;
 
-  CatalogProvider(this._api, this._cache);
+  final DateTime Function() _now;
+
+  /// 本次執行是否已因為對不到資料自動重新下載過（只試一次，避免一直下載）。
+  bool _autoRefreshed = false;
+
+  /// 快取超過這麼久，開啟時在背景重新下載（新組合包、新造型才會出現）。
+  static const staleAfter = Duration(days: 3);
+
+  CatalogProvider(this._api, this._cache, {DateTime Function()? now})
+      : _now = now ?? DateTime.now;
 
   SkinCatalog? get catalog => _catalog;
   bool get isLoading => _isLoading;
@@ -36,15 +45,28 @@ class CatalogProvider with ChangeNotifier {
   /// Riot API 的 ItemID 可能是造型 uuid 或第一個等級的 uuid。
   SkinInfo? skinByItemId(String id) => _skins[id] ?? _skinsByLevel[id];
 
-  /// 先讀快取，沒有快取才下載。
+  /// 先讀快取，沒有快取才下載；快取太舊時先顯示快取，再在背景更新。
   Future<void> init() async {
     final cached = _cache.load();
     if (cached != null) {
       _setCatalog(cached);
       notifyListeners();
+      if (_now().difference(cached.fetchedAt) > staleAfter) {
+        _autoRefreshed = true;
+        await refresh();
+      }
       return;
     }
     await refresh();
+  }
+
+  /// 商店裡有目錄對不到的組合包（通常是快取之後才上架的新組合包）時，
+  /// 在背景重新下載一次。每次執行最多一次。
+  void refreshIfMissingBundles(Iterable<String> bundleUuids) {
+    if (_autoRefreshed || _isLoading || _catalog == null) return;
+    if (bundleUuids.every(_bundles.containsKey)) return;
+    _autoRefreshed = true;
+    refresh();
   }
 
   /// 強制重新下載。
