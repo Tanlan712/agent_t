@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../logic/bundle_fallback.dart';
 import '../logic/shop_time.dart';
 import '../logic/wishlist_match.dart';
+import '../models/bundle_info.dart';
 import '../models/current_shop.dart';
 import '../models/riot_session.dart';
 import '../providers/catalog_provider.dart';
@@ -230,28 +231,33 @@ class MyShopPage extends StatelessWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) =>
           catalog.refreshIfMissingBundles(bundles.map((b) => b.bundleUuid)));
     }
-    void openBundle(BundleEntry b) {
-      final info = catalog.bundleById(b.bundleUuid);
-      if (info == null) return;
-      Navigator.push(
-          context,
-          MaterialPageRoute<void>(
-              builder: (_) =>
-                  BundleDetailPage(name: info.name, load: loader.load)));
-    }
+    BundleInfo? bundleInfo(BundleEntry b) =>
+        catalog.bundleById(b.bundleUuid) ?? fallbackBundle(b, catalog.skinById);
+    void openBundle(BundleEntry b, BundleInfo info) => Navigator.push(
+        context,
+        MaterialPageRoute<void>(
+            builder: (_) => BundleDetailPage(
+                name: info.name,
+                itemIds: [
+                  for (final id in b.skinUuids) ...[
+                    id,
+                    if (catalog.skinById(id)?.levelUuid case final l?) l,
+                  ],
+                ],
+                load: loader.load)));
 
     Widget bundleTile(BundleEntry b) => Column(
           key: ValueKey('shop-bundle-${b.bundleUuid}'),
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             BundleTile(
-                bundle: catalog.bundleById(b.bundleUuid) ??
-                    fallbackBundle(b, catalog.skinById),
+                bundle: bundleInfo(b),
                 price: b.price,
                 banner: true,
-                onTap: catalog.bundleById(b.bundleUuid) == null
-                    ? null
-                    : () => openBundle(b)),
+                onTap: switch (bundleInfo(b)) {
+                  final info? => () => openBundle(b, info),
+                  null => null,
+                }),
             if (b.endsAt case final end?)
               Padding(
                 padding: const EdgeInsets.only(top: 6, left: 4),

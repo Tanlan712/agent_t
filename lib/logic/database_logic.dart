@@ -82,15 +82,38 @@ String formatNumber(num? v) {
   return s.endsWith('0') ? s.substring(0, s.length - 1) : s;
 }
 
-/// 組合包的造型：公開資料沒有內含項目，以「組合包名稱＝主題名稱」配對。
-/// 同名組合包會得到同一批造型。
+/// 組合包的造型。
+///
+/// 有 [itemIds]（商店 storefront 的組合包內容，造型或等級 uuid）時直接依內容配對，
+/// 最準確。沒有時（資料庫頁、舊資料）退回以「組合包名稱＝主題名稱」配對；
+/// 名稱不完全相同時，再試唯一一個名稱互相包含的主題。
 List<SkinInfo> bundleSkins(
-    String bundleName, List<ThemeRef> themes, List<SkinInfo> skins) {
+    String bundleName, List<ThemeRef> themes, List<SkinInfo> skins,
+    {Iterable<String> itemIds = const []}) {
+  final wanted = {for (final id in itemIds) id.toLowerCase()};
+  if (wanted.isNotEmpty) {
+    final byItems = [
+      for (final s in skins)
+        if (wanted.contains(s.uuid.toLowerCase()) ||
+            s.levelUuids.any(wanted.contains))
+          s
+    ];
+    if (byItems.isNotEmpty) return byItems;
+  }
   final name = bundleName.trim();
-  final ids = {
+  var ids = {
     for (final t in themes)
       if (t.name.trim() == name) t.uuid
   };
+  if (ids.isEmpty && name.length >= 2) {
+    final loose = {
+      for (final t in themes)
+        if (t.name.trim().length >= 2 &&
+            (name.contains(t.name.trim()) || t.name.trim().contains(name)))
+          t.uuid
+    };
+    if (loose.length == 1) ids = loose;
+  }
   if (ids.isEmpty) return const [];
   return [
     for (final s in skins)
