@@ -1,5 +1,6 @@
 import '../models/account_progress.dart';
 import '../models/progress_reference.dart';
+import '../models/skin_options.dart';
 
 /// 擁有的特務：entitlements 裡的特務加上初始特務，依名稱排序。
 List<RefAgent> ownedAgents(Set<String> owned, ProgressReference ref) => [
@@ -14,14 +15,55 @@ class OwnedSkin {
   final String? videoUrl;
   final List<String> swatches;
 
+  /// 這個造型的所有等級（含未擁有，依順序）與所有炫彩（第 0 個是基本款）。
+  final List<SkinLevelOption> levels;
+  final List<SkinChromaOption> chromas;
+
+  /// 擁有的最高等級（0 起算），卡片預設選這一級。
+  final int ownedLevel;
+
   const OwnedSkin({
     required this.skinUuid,
     required this.name,
     this.iconUrl,
     this.videoUrl,
     this.swatches = const [],
+    this.levels = const [],
+    this.chromas = const [],
+    this.ownedLevel = 0,
   });
 }
+
+/// 造型 uuid → 該造型的所有等級／炫彩（依順序）；每份參考資料只建一次。
+final _levelsBySkin = Expando<Map<String, List<RefSkinLevel>>>();
+final _chromasBySkin =
+    Expando<Map<String, List<MapEntry<String, RefChroma>>>>();
+
+Map<String, List<RefSkinLevel>> _levelIndex(ProgressReference ref) =>
+    _levelsBySkin[ref] ??= () {
+      final m = <String, List<RefSkinLevel>>{};
+      for (final lv in ref.skinLevels.values) {
+        (m[lv.skinUuid] ??= []).add(lv);
+      }
+      for (final l in m.values) {
+        l.sort((a, b) => a.levelIndex.compareTo(b.levelIndex));
+      }
+      return m;
+    }();
+
+/// 造型 uuid → (炫彩 uuid, 炫彩)，依炫彩順序。
+Map<String, List<MapEntry<String, RefChroma>>> _chromaIndex(
+        ProgressReference ref) =>
+    _chromasBySkin[ref] ??= () {
+      final m = <String, List<MapEntry<String, RefChroma>>>{};
+      for (final e in ref.chromas.entries) {
+        (m[e.value.skinUuid] ??= []).add(e);
+      }
+      for (final l in m.values) {
+        l.sort((a, b) => a.value.index.compareTo(b.value.index));
+      }
+      return m;
+    }();
 
 class WeaponGroup {
   final String weaponName;
@@ -48,13 +90,42 @@ List<WeaponGroup> groupOwnedSkins(
     }
   }
   final byWeapon = <String, List<OwnedSkin>>{};
+  final allLevels = _levelIndex(ref);
+  final allChromas = _chromaIndex(ref);
+  final ownedLevelIds = {
+    for (final id in levels)
+      if (ref.skinLevels[id] case final lv?) '${lv.skinUuid}#${lv.levelIndex}',
+  };
   for (final lv in best.values) {
+    final skinLevels = allLevels[lv.skinUuid] ?? [lv];
+    final skinChromas =
+        allChromas[lv.skinUuid] ?? const <MapEntry<String, RefChroma>>[];
     (byWeapon[lv.weaponName] ??= []).add(OwnedSkin(
       skinUuid: lv.skinUuid,
       name: lv.skinName,
       iconUrl: lv.iconUrl,
       videoUrl: lv.videoUrl,
       swatches: swatches[lv.skinUuid] ?? const [],
+      ownedLevel: skinLevels.indexWhere((l) => l.levelIndex == lv.levelIndex),
+      levels: [
+        for (final l in skinLevels)
+          SkinLevelOption(
+            image: l.iconUrl,
+            videoUrl: l.videoUrl,
+            owned: ownedLevelIds.contains('${l.skinUuid}#${l.levelIndex}'),
+          ),
+      ],
+      chromas: [
+        for (final MapEntry(key: id, value: c) in skinChromas)
+          SkinChromaOption(
+            name: c.name,
+            image: c.iconUrl,
+            swatch: c.swatchUrl,
+            videoUrl: c.videoUrl,
+            // 基本款人人都有，不在 entitlements 裡。
+            owned: c.index == 0 || chromas.contains(id),
+          ),
+      ],
     ));
   }
   final names = byWeapon.keys.toList()..sort();

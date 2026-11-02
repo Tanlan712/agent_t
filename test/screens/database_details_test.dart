@@ -247,9 +247,8 @@ void main() {
         await tester.pumpWidget(h.wrap(
             home: BundlesPage(
                 api: api,
-                launch: (u) async {
+                playVideo: (_, u, __) async {
                   opened.add(u);
-                  return true;
                 })));
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const ValueKey('db-bundle-b-rgx')));

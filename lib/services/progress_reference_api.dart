@@ -69,7 +69,9 @@ class ProgressReferenceApi {
               swatchUrl: c['swatch'] as String?,
               iconUrl:
                   c['fullRender'] as String? ?? c['displayIcon'] as String?,
-              index: i);
+              index: i,
+              name: c['displayName'] as String? ?? '',
+              videoUrl: c['streamedVideo'] as String?);
         }
       }
     }

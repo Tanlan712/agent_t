@@ -52,9 +52,16 @@ class RefChroma {
 
   /// 在造型 chromas 裡的順序；0 是基本款（人人都有，不在 entitlements 裡）。
   final int index;
+  final String name;
+  final String? videoUrl;
 
   const RefChroma(
-      {required this.skinUuid, this.swatchUrl, this.iconUrl, this.index = -1});
+      {required this.skinUuid,
+      this.swatchUrl,
+      this.iconUrl,
+      this.index = -1,
+      this.name = '',
+      this.videoUrl});
 }
 
 class RefAgent {

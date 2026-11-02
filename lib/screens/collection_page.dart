@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../logic/database_logic.dart' show groupByWeaponCategory;
 import '../logic/equipped_view.dart';
@@ -22,17 +21,15 @@ import '../shell/responsive_grid.dart';
 import '../theme/app_theme.dart';
 import '../widgets/hud/hud.dart';
 import '../widgets/skin_tile.dart' show SkinIcon;
+import '../widgets/skin_viewer.dart';
 import 'details/agent_level_page.dart';
-
-Future<bool> _openInNewTab(Uri uri) =>
-    launchUrl(uri, webOnlyWindowName: '_blank');
 
 /// 我的收藏：只顯示登入者自己擁有的物品（只讀 GET，AGENTS.md 第 3 節）。
 class CollectionPage extends StatefulWidget {
-  /// 開啟造型影片（測試時注入）。
-  final Future<bool> Function(Uri) launch;
+  /// 在站內播放造型影片（測試時注入）。
+  final SkinVideoOpener playVideo;
 
-  const CollectionPage({super.key, this.launch = _openInNewTab});
+  const CollectionPage({super.key, this.playVideo = showSkinVideo});
 
   @override
   State<CollectionPage> createState() => _CollectionPageState();
@@ -186,7 +183,7 @@ class _CollectionPageState extends State<CollectionPage> {
                         loading: col.isLoading &&
                             col.owned[ItemTypes.skinLevel] == null,
                         weapons: weaponSummaries(of(ItemTypes.skinLevel), ref),
-                        launch: widget.launch)),
+                        playVideo: widget.playVideo)),
                 tab(
                     [ItemTypes.agent],
                     agents.isEmpty,
@@ -388,7 +385,7 @@ class _Skeleton extends StatelessWidget {
 /// 造型分頁：所有槍枝與擁有的造型數；點進去看該槍擁有的造型。
 class _WeaponGrid extends StatelessWidget {
   final List<WeaponSummary> weapons;
-  final Future<bool> Function(Uri) launch;
+  final SkinVideoOpener playVideo;
 
   /// 造型還在讀取：顯示「讀取中…」，不要讓「擁有 0 款」看起來像真的沒有。
   final bool loading;
@@ -398,7 +395,7 @@ class _WeaponGrid extends StatelessWidget {
 
   const _WeaponGrid(
       {required this.weapons,
-      required this.launch,
+      required this.playVideo,
       required this.ownedCount,
       this.loading = false});
 
@@ -441,7 +438,9 @@ class _WeaponGrid extends StatelessWidget {
           context,
           MaterialPageRoute<void>(
               builder: (_) => WeaponSkinsPage(
-                  weaponUuid: w.uuid, weaponName: w.name, launch: launch))),
+                  weaponUuid: w.uuid,
+                  weaponName: w.name,
+                  playVideo: playVideo))),
       child: Opacity(
         // 沒有造型的槍枝變淡，但仍可點進去。
         opacity: none ? 0.5 : 1,
@@ -472,13 +471,13 @@ class _WeaponGrid extends StatelessWidget {
 class WeaponSkinsPage extends StatefulWidget {
   final String weaponUuid;
   final String weaponName;
-  final Future<bool> Function(Uri) launch;
+  final SkinVideoOpener playVideo;
 
   const WeaponSkinsPage({
     super.key,
     required this.weaponUuid,
     required this.weaponName,
-    this.launch = _openInNewTab,
+    this.playVideo = showSkinVideo,
   });
 
   @override
@@ -501,7 +500,7 @@ class _WeaponSkinsPageState extends State<WeaponSkinsPage> {
   @override
   Widget build(BuildContext context) {
     final weaponUuid = widget.weaponUuid;
-    final launch = widget.launch;
+    final playVideo = widget.playVideo;
     final col = context.watch<CollectionProvider>();
     final ref = context.watch<ProgressProvider>().ref;
     final remote = context.watch<SettingsProvider>().settings.remoteControl;
@@ -532,11 +531,13 @@ class _WeaponSkinsPageState extends State<WeaponSkinsPage> {
               : ResponsiveGridView.builder(
                   minTileWidth: 220,
                   childAspectRatio: 1.1,
+                  // 固定高度：等級、炫彩、影片、裝備列都放得下，圖不會被擠扁。
+                  mainAxisExtent: loadout == null ? 290 : 330,
                   padding: const EdgeInsets.all(16),
                   itemCount: skins.length,
                   itemBuilder: (context, i) => _SkinCard(
                       skin: skins[i],
-                      launch: launch,
+                      playVideo: playVideo,
                       equip: loadout == null || ref == null
                           ? null
                           : equipFor(skins[i].skinUuid, levels, chromas, ref),
@@ -548,19 +549,28 @@ class _WeaponSkinsPageState extends State<WeaponSkinsPage> {
   }
 }
 
-class _SkinCard extends StatelessWidget {
+class _SkinCard extends StatefulWidget {
   final OwnedSkin skin;
-  final Future<bool> Function(Uri) launch;
-
-  /// 遠端裝備用的 ID；未同意遠端操作時為 null（不顯示裝備按鈕）。
+  final SkinVideoOpener playVideo;
   final SkinEquip? equip;
   final bool equipped;
 
   const _SkinCard(
       {required this.skin,
-      required this.launch,
+      required this.playVideo,
       this.equip,
       this.equipped = false});
+
+  @override
+  State<_SkinCard> createState() => _SkinCardState();
+}
+
+/// 造型卡：可切換等級（Lv1…）與炫彩，圖與「預覽影片」跟著換；影片在站內播放。
+class _SkinCardState extends State<_SkinCard> {
+  late int _level = widget.skin.ownedLevel < 0 ? 0 : widget.skin.ownedLevel;
+  int _chroma = 0;
+
+  OwnedSkin get skin => widget.skin;
 
   Future<void> _equip(BuildContext context, SkinEquip e) async {
     final loadout = context.read<LoadoutProvider>();
@@ -596,65 +606,92 @@ class _SkinCard extends StatelessWidget {
         content: Text(ok ? '已裝備 ${skin.name}' : loadout.error ?? '裝備失敗')));
   }
 
+  /// 沒有完整等級資料（舊參考資料）時，退回只顯示擁有的最高等級。
+  List<SkinLevelOption> get _levels => skin.levels.isNotEmpty
+      ? skin.levels
+      : [SkinLevelOption(image: skin.iconUrl, videoUrl: skin.videoUrl)];
+
+  /// 炫彩：有完整資料用完整資料，否則用擁有的色票。
+  List<SkinChromaOption> get _chromas => skin.chromas.isNotEmpty
+      ? skin.chromas
+      : [for (final sw in skin.swatches) SkinChromaOption(swatch: sw)];
+
   @override
-  Widget build(BuildContext context) => PanelCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: Center(child: SkinIcon(url: skin.iconUrl))),
-            const SizedBox(height: 8),
-            Text(skin.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            // 色票與影片按鈕可換行：窄格（例如 1024 寬三欄）時不會 overflow。
-            if (skin.swatches.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                children: [
-                  for (var i = 0; i < skin.swatches.length && i < 5; i++)
-                    ClipOval(
-                      key: ValueKey('swatch-${skin.skinUuid}-$i'),
-                      child: SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: SkinIcon(
-                              url: skin.swatches[i], fit: BoxFit.cover)),
-                    ),
-                ],
-              ),
-            ],
-            if (skin.videoUrl case final url?) ...[
-              const SizedBox(height: 6),
-              OutlinedButton.icon(
-                onPressed: () => launch(Uri.parse(url)),
-                icon: const Icon(Icons.play_circle_outline, size: 18),
-                label: const Text('預覽影片'),
-              ),
-            ],
-            if (equip case final e?) ...[
-              const SizedBox(height: 6),
-              if (equipped)
-                StatusChip(
-                    key: ValueKey('equipped-${skin.skinUuid}'),
-                    label: '裝備中',
-                    color: AppColors.owned,
-                    icon: Icons.check)
-              else
-                FilledButton.tonalIcon(
-                  key: ValueKey('equip-${skin.skinUuid}'),
-                  onPressed: context.watch<LoadoutProvider>().busy
-                      ? null
-                      : () => _equip(context, e),
-                  icon: const Icon(Icons.settings_remote, size: 18),
-                  label: const Text('裝備'),
-                ),
-            ],
+  Widget build(BuildContext context) {
+    final levels = _levels;
+    final chromas = _chromas;
+    final level = _level.clamp(0, levels.length - 1);
+    final chroma = chromas.isEmpty ? 0 : _chroma.clamp(0, chromas.length - 1);
+    final image =
+        skinImageFor(levels, chromas, level, chroma, fallback: skin.iconUrl);
+    final video = skinVideoFor(levels, chromas, level, chroma);
+    final chromaVideo = chroma > 0 && chromas[chroma].videoUrl != null;
+    return PanelCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: Center(child: SkinIcon(url: image))),
+          const SizedBox(height: 8),
+          Text(skin.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600)),
+          // 等級與色票可換行：窄格（例如 1024 寬三欄）時不會 overflow。
+          if (levels.length > 1) ...[
+            const SizedBox(height: 6),
+            SkinLevelPicker(
+              keyPrefix: 'level-${skin.skinUuid}',
+              levels: levels,
+              selected: level,
+              onSelect: (i) => setState(() => _level = i),
+            ),
           ],
-        ),
-      );
+          if (chromas.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            SkinChromaPicker(
+              keyPrefix: 'swatch-${skin.skinUuid}',
+              chromas: chromas,
+              selected: chroma,
+              size: 16,
+              onSelect: (i) => setState(() => _chroma = i),
+            ),
+          ],
+          if (video case final url?) ...[
+            const SizedBox(height: 6),
+            OutlinedButton.icon(
+              key: ValueKey('video-${skin.skinUuid}'),
+              onPressed: () => widget.playVideo(
+                  context,
+                  Uri.parse(url),
+                  chromaVideo
+                      ? '${skin.name}・${chromas[chroma].name}'
+                      : '${skin.name}・等級 ${level + 1}'),
+              icon: const Icon(Icons.play_circle_outline, size: 18),
+              label: const Text('預覽影片'),
+            ),
+          ],
+          if (widget.equip case final e?) ...[
+            const SizedBox(height: 6),
+            if (widget.equipped)
+              StatusChip(
+                  key: ValueKey('equipped-${skin.skinUuid}'),
+                  label: '裝備中',
+                  color: AppColors.owned,
+                  icon: Icons.check)
+            else
+              FilledButton.tonalIcon(
+                key: ValueKey('equip-${skin.skinUuid}'),
+                onPressed: context.watch<LoadoutProvider>().busy
+                    ? null
+                    : () => _equip(context, e),
+                icon: const Icon(Icons.settings_remote, size: 18),
+                label: const Text('裝備'),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 class _AgentsTab extends StatelessWidget {
