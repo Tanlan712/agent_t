@@ -247,11 +247,15 @@ class SkinInfo {
   final List<SkinLevelInfo> levels;
   final List<ChromaInfo> chromas;
 
+  /// 所有等級的 uuid（Riot 商店用第一個等級的 uuid 表示造型）。
+  final List<String> levelUuids;
+
   const SkinInfo({
     required this.uuid,
     required this.name,
     this.icon,
     this.themeUuid,
+    this.levelUuids = const [],
     this.levels = const [],
     this.chromas = const [],
   });
@@ -270,6 +274,10 @@ class SkinInfo {
                   _str(chromas.first['displayIcon'])) ??
           (levels.isEmpty ? null : _str(levels.first['displayIcon'])),
       themeUuid: _str(j['themeUuid']),
+      levelUuids: [
+        for (final l in levels)
+          if (_str(l['uuid']) case final id?) id.toLowerCase(),
+      ],
       levels: [
         for (final l in levels)
           SkinLevelInfo(

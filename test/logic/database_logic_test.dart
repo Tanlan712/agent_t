@@ -127,6 +127,33 @@ void main() {
       expect(bundleSkins('特戰英豪 GO！', themes, skins), isEmpty);
     });
 
+    test('有商店內容時依造型或等級 uuid 配對，不看主題名稱', () {
+      const custom = [
+        SkinInfo(uuid: 'a', name: 'A', themeUuid: 't-x', levelUuids: ['lv-a']),
+        SkinInfo(uuid: 'b', name: 'B', themeUuid: 't-y', levelUuids: ['lv-b']),
+        SkinInfo(uuid: 'c', name: 'C', themeUuid: 't-z', levelUuids: ['lv-c']),
+      ];
+      expect([
+        for (final s in bundleSkins('墳墓要事', themes, custom,
+            itemIds: ['A', 'lv-b', 'unknown']))
+          s.uuid
+      ], [
+        'a',
+        'b'
+      ]);
+    });
+
+    test('內容對不到時退回主題名稱；名稱互相包含且唯一時也算', () {
+      expect(bundleSkins('RGX 11z Pro', themes, skins, itemIds: ['nope']),
+          hasLength(2));
+      expect(bundleSkins('RGX 11z Pro 組合包', themes, skins), hasLength(2));
+    });
+
+    test('等級 uuid 從 levels 讀出（小寫）', () {
+      final s = SkinInfo.fromJson(skinJson(uuid: 's1', theme: 't'));
+      expect(s.levelUuids, ['l1', 'l2']);
+    });
+
     test('名稱前後空白不影響配對', () {
       expect(bundleSkins(' RGX 11z Pro ', themes, skins), hasLength(2));
     });
