@@ -56,7 +56,7 @@ void main() {
       expect(find.text('+18'), findsWidgets);
       expect(find.text('鑽石 2'), findsOneWidget);
       expect(find.text('45 RR'), findsOneWidget);
-      expect(find.text('名稱資料來自 Riot，請勿公開或分享他人資訊'), findsOneWidget);
+      expect(find.text('請勿公開或分享他人資訊'), findsOneWidget);
       expect(find.text('載入更多'), findsNothing);
     });
 

@@ -32,7 +32,6 @@ class MyShopSettingsCard extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.account_circle),
               title: const Text('Riot 帳號'),
-              subtitle: const Text('登入後可自動同步商店、錢包與已擁有造型'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.pushNamed(context, '/riot-login'),
             ),
@@ -41,7 +40,6 @@ class MyShopSettingsCard extends StatelessWidget {
               leading: const Icon(Icons.schedule),
               title: Text(
                   '商店刷新時間 ${_two(settings.resetHour)}:${_two(settings.resetMinute)}'),
-              subtitle: const Text('用來計算每日商店的到期時間'),
               onTap: () async {
                 final picked = await showTimePicker(
                   context: context,

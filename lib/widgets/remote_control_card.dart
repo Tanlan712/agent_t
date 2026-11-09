@@ -67,9 +67,6 @@ class RemoteControlCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text('遠端操作', style: Theme.of(context).textTheme.titleLarge),
             ]),
-            const SizedBox(height: 8),
-            const Text('在收藏庫換造型、預選特務並在選角時一鍵選擇或鎖定、'
-                '在隊伍中切換準備；隊長可以取得隊伍代碼、開始或取消排隊、變更模式、開放或鎖定隊伍。'),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
@@ -101,9 +98,9 @@ class RemoteControlCard extends StatelessWidget {
               key: const ValueKey('remote-consent-switch'),
               contentPadding: EdgeInsets.zero,
               title: Text(s.remoteControl ? '已啟用遠端操作' : '我同意，啟用遠端操作'),
-              subtitle: Text(s.remoteControl
-                  ? '同意時間：${since == null ? '—' : _date(since)}・關閉即撤回同意'
-                  : '預設關閉；關閉時所有遠端按鈕都不會顯示'),
+              subtitle: s.remoteControl && since != null
+                  ? Text('${_date(since)} 同意')
+                  : null,
               value: s.remoteControl,
               onChanged: (v) =>
                   v ? _enable(context) : provider.setRemoteControl(false),

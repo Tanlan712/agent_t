@@ -196,7 +196,7 @@ void main() {
       ]) {
         expect(find.byKey(ValueKey(k)), findsNothing, reason: k);
       }
-      expect(find.textContaining('只有隊長'), findsOneWidget);
+      expect(find.text('隊長限定'), findsOneWidget);
       await leave(tester, h);
     });
 
@@ -234,12 +234,11 @@ void main() {
       await leave(tester, h);
     });
 
-    testWidgets('沒有預選特務時按鈕停用並提示設定方式', (tester) async {
+    testWidgets('沒有預選特務時按鈕停用', (tester) async {
       setWidth(tester, 1400);
       final h = await harness(tester, consent: true, pregameStatus: 200);
       await tester.pumpWidget(h.wrap(home: const LivePage()));
       await drain(tester);
-      expect(find.textContaining('尚未預選特務'), findsOneWidget);
       final lock = tester.widget<ButtonStyleButton>(
           find.byKey(const ValueKey('remote-lock-agent')));
       expect(lock.onPressed, isNull);
@@ -465,15 +464,17 @@ void main() {
       await tester.tap(find.text('死鬥').last);
       await drain(tester);
       await tapKey(tester, 'remote-rule-PlayOutAllRounds');
-      expect([for (final r in writes) r.url.path], [
+      expect([
+        for (final r in writes) r.url.path
+      ], [
         '/parties/v1/parties/$testPartyId/customgamesettings',
         '/parties/v1/parties/$testPartyId/customgamesettings',
       ]);
       final mode = jsonDecode(writes[0].body) as Map<String, dynamic>;
       expect(mode['Mode'],
           '/Game/GameModes/Deathmatch/DeathmatchGameMode.DeathmatchGameMode_C');
-      expect(mode['GamePod'],
-          'aresriot.aws-rclusterprod-ape1-1.ap-gp-hongkong-1');
+      expect(
+          mode['GamePod'], 'aresriot.aws-rclusterprod-ape1-1.ap-gp-hongkong-1');
       final rule = jsonDecode(writes[1].body) as Map<String, dynamic>;
       expect(rule['GameRules'],
           {'TournamentMode': 'true', 'PlayOutAllRounds': 'true'});
@@ -495,8 +496,8 @@ void main() {
             });
       await tester.pumpWidget(h.wrap(home: const LivePage()));
       await drain(tester);
-      expect(find.byKey(const ValueKey('remote-custom-settings')),
-          findsOneWidget);
+      expect(
+          find.byKey(const ValueKey('remote-custom-settings')), findsOneWidget);
       expect(tester.takeException(), isNull);
       await leave(tester, h);
     });

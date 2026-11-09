@@ -109,7 +109,7 @@ void main() {
     expect(find.byKey(const ValueKey('pass-pace')), findsOneWidget);
     expect(inKey('pace-days', find.textContaining('天')), findsWidgets);
     expect(find.byKey(const ValueKey('pace-remaining')), findsOneWidget);
-    expect(find.textContaining('明天起就能看到'), findsOneWidget);
+    expect(find.text('明天起顯示'), findsOneWidget);
   });
 
   testWidgets('通行證：進度條、已達成打勾、下一階外框、獎勵名稱', (tester) async {

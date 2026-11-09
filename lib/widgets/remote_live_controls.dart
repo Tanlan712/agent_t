@@ -147,11 +147,6 @@ class _RemotePregameControlsState extends State<RemotePregameControls> {
             title: '遠端選角',
             actions: actions,
             children: [
-              if (widget.preferredAgent == null) ...[
-                Text('尚未預選特務：到「我的收藏 → 特務」按圖釘設定，或在下面直接選。',
-                    style: TextStyle(color: AppColors.muted)),
-                const SizedBox(height: 8),
-              ],
               if (choices.isNotEmpty)
                 Row(children: [
                   if (id != null)
@@ -198,7 +193,7 @@ class _RemotePregameControlsState extends State<RemotePregameControls> {
               ],
               if (blocked) ...[
                 const SizedBox(height: 4),
-                Text('隊友已鎖定這位特務，請改選其他特務。',
+                Text('隊友已鎖定這位特務',
                     key: const ValueKey('remote-agent-taken'),
                     style: TextStyle(color: AppColors.error, fontSize: 12)),
               ],
@@ -222,9 +217,6 @@ class _RemotePregameControlsState extends State<RemotePregameControls> {
                   label: Text(locked ? '已鎖定' : '鎖定'),
                 ),
               ]),
-              const SizedBox(height: 8),
-              Text('不會自動送出：要你親手按「鎖定」才會鎖定。',
-                  style: TextStyle(color: AppColors.muted, fontSize: 12)),
               const SizedBox(height: 8),
               TextButton.icon(
                 key: const ValueKey('remote-quit-pregame'),
@@ -679,7 +671,7 @@ class _RemotePartyControlsState extends State<RemotePartyControls> {
               ],
               if (!owner) ...[
                 const SizedBox(height: 8),
-                Text('只有隊長可以取得代碼、排隊、變更模式、開放或鎖定隊伍、踢人與自訂對戰。',
+                Text('隊長限定',
                     style: TextStyle(color: AppColors.muted, fontSize: 12)),
               ],
             ],

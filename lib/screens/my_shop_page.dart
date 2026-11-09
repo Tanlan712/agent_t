@@ -70,7 +70,7 @@ class _DailyRow extends StatelessWidget {
               .clamp(_minCard, _maxCard);
           return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             for (var i = 0; i < n; i++) ...[
-              if (i > 0) SizedBox(width: gap),
+              if (i > 0) const SizedBox(width: gap),
               SizedBox(
                   width: width,
                   child:
@@ -84,7 +84,7 @@ class _DailyRow extends StatelessWidget {
             key: const ValueKey('shop-daily-row'),
             scrollDirection: Axis.horizontal,
             itemCount: n,
-            separatorBuilder: (_, __) => SizedBox(width: gap),
+            separatorBuilder: (_, __) => const SizedBox(width: gap),
             itemBuilder: (_, i) => SizedBox(width: _minCard, child: cards[i]),
           ),
         );
@@ -289,7 +289,7 @@ class MyShopPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       for (var j = 0; j < perRow; j++) ...[
-                        if (j > 0) SizedBox(width: gridSpacing),
+                        if (j > 0) const SizedBox(width: gridSpacing),
                         Expanded(
                             child: j < chunk.length
                                 ? bundleTile(chunk[j])
@@ -410,8 +410,8 @@ class _LoginHero extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.login, color: AppColors.primary, size: 28),
-                SizedBox(width: 16),
-                Flexible(
+                const SizedBox(width: 16),
+                const Flexible(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
@@ -419,10 +419,6 @@ class _LoginHero extends StatelessWidget {
                       Text('登入 Riot 以自動同步',
                           style: TextStyle(
                               fontSize: 18, fontWeight: FontWeight.w600)),
-                      SizedBox(height: 4),
-                      Text('自動讀取每日商店、夜市、精選組合包與錢包',
-                          style:
-                              TextStyle(fontSize: 14, color: AppColors.muted)),
                     ],
                   ),
                 ),

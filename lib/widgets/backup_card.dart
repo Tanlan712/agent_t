@@ -165,13 +165,7 @@ class _BackupCardState extends State<BackupCard> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SectionHeader(title: '本機資料備份'),
-          Text(
-            '商店歷史、遇過的玩家與同場紀錄、通行證經驗、購買紀錄和設定只存在這台裝置。'
-            '可以匯出成檔案，換手機或清除資料後再還原。備份不含 token 與登入 cookie。',
-            style: TextStyle(color: AppColors.muted, fontSize: 13),
-          ),
-          const SizedBox(height: 4),
-          Text('備份裡有其他玩家的 ID 與同場紀錄，請自己保存，不要分享給別人。',
+          Text('含其他玩家的紀錄，請勿分享',
               style: TextStyle(color: AppColors.warn, fontSize: 13)),
           const SizedBox(height: 12),
           Wrap(spacing: 8, runSpacing: 8, children: [

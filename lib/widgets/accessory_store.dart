@@ -86,8 +86,6 @@ class _AccessoryStoreSectionState extends State<AccessoryStoreSection> {
               ),
             ),
           ]),
-          const SizedBox(height: 4),
-          Text('用王國幣（獎章）購買', style: TextStyle(color: AppColors.muted)),
           const SizedBox(height: 12),
           ResponsiveGrid(
             minTileWidth: 200,

@@ -229,8 +229,7 @@ class _LivePageState extends State<LivePage> {
           return const EmptyState(
               key: ValueKey('live-offline'),
               icon: Icons.power_settings_new,
-              title: '遊戲沒有開啟',
-              message: '開啟 VALORANT 後這頁會自動更新');
+              title: '遊戲沒有開啟');
         case LiveStatus.noParty:
           return const EmptyState(
               key: ValueKey('live-no-party'),
@@ -297,7 +296,7 @@ class _LivePageState extends State<LivePage> {
         }),
         const SizedBox(height: 24),
         Center(
-          child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊（包含隱藏名稱的成員）。',
+          child: Text('請勿公開或分享他人資訊',
               style: TextStyle(color: AppColors.muted, fontSize: 12)),
         ),
       ],
@@ -596,7 +595,7 @@ class _MatchView extends StatelessWidget {
         }),
         const SizedBox(height: 24),
         Center(
-          child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊。',
+          child: Text('請勿公開或分享他人資訊',
               style: TextStyle(color: AppColors.muted, fontSize: 12)),
         ),
       ],
@@ -870,7 +869,7 @@ class _PregameViewState extends State<_PregameView> {
         ),
         const SizedBox(height: 24),
         Center(
-          child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊。',
+          child: Text('請勿公開或分享他人資訊',
               style: TextStyle(color: AppColors.muted, fontSize: 12)),
         ),
       ],

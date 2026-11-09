@@ -173,8 +173,7 @@ class AppUpdateCard extends StatelessWidget {
                   Text('App 更新', style: Theme.of(context).textTheme.titleLarge),
                 ]),
                 const SizedBox(height: 8),
-                Text('目前版本 #${current ?? '—'}・從 GitHub Release 下載新版，'
-                    '由 Android 系統安裝畫面完成更新（登入與本機資料會保留）。'),
+                Text('目前版本 #${current ?? '—'}'),
                 const SizedBox(height: 8),
                 Text(_status(c),
                     key: const ValueKey('app-update-status'),

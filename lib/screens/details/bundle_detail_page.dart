@@ -113,13 +113,9 @@ class _BundleDetailPageState extends State<BundleDetailPage> {
               const PanelCard(
                 padding: EdgeInsets.all(24),
                 child: EmptyState(
-                    icon: Icons.inventory_2_outlined,
-                    title: '這個組合包沒有槍枝造型資料',
-                    message: '可能只包含卡片、噴漆或吊飾'),
+                    icon: Icons.inventory_2_outlined, title: '這個組合包沒有槍枝造型'),
               )
             else ...[
-              Text('${skins.length} 款造型・依主題名稱配對，同名組合包會顯示相同內容',
-                  style: TextStyle(color: AppColors.muted, fontSize: 12)),
               ResponsiveGrid(
                 minTileWidth: 220,
                 childAspectRatio: 1.3,

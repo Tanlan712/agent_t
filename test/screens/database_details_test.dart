@@ -256,7 +256,6 @@ void main() {
         expect(find.byKey(const ValueKey('db-skin-s1')), findsOneWidget);
         expect(find.byKey(const ValueKey('db-skin-s3')), findsOneWidget);
         expect(find.byKey(const ValueKey('db-skin-s2')), findsNothing);
-        expect(find.textContaining('同名組合包'), findsOneWidget);
 
         await tester.tap(find.byKey(const ValueKey('db-skin-s1')));
         await tester.pumpAndSettle();
@@ -280,7 +279,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('db-bundle-b-go')));
       await tester.pumpAndSettle();
-      expect(find.text('這個組合包沒有槍枝造型資料'), findsOneWidget);
+      expect(find.text('這個組合包沒有槍枝造型'), findsOneWidget);
       await tester.pageBack();
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('db-bundle-b-rgx')));

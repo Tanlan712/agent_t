@@ -182,7 +182,6 @@ class _ThemePickerState extends State<ThemePicker> {
               key: const ValueKey('theme-motion'),
               contentPadding: EdgeInsets.zero,
               title: const Text('動態背景'),
-              subtitle: const Text('互動格線與掃描線；系統開啟「減少動態效果」時一律靜止'),
               value: settings.settings.backgroundMotion,
               onChanged: settings.setBackgroundMotion,
             ),
@@ -190,7 +189,6 @@ class _ThemePickerState extends State<ThemePicker> {
               key: const ValueKey('theme-eva-eggs'),
               contentPadding: EdgeInsets.zero,
               title: const Text('彩蛋'),
-              subtitle: const Text('隱藏的觸發與機密文件；只讀已載入的資料，不會另外連線'),
               value: settings.settings.evaEnabled,
               onChanged: (v) =>
                   settings.updateEva((s) => s.copyWith(evaEnabled: v)),

@@ -81,7 +81,6 @@ class _CollectionPageState extends State<CollectionPage> {
               child: EmptyState(
                 icon: Icons.collections_bookmark,
                 title: '登入 Riot 以查看你的收藏',
-                message: '登入後會列出你擁有的造型、特務、吊飾、噴漆、玩家卡片與稱號',
                 actionLabel: '登入 Riot',
                 onAction: () => Navigator.pushNamed(context, '/riot-login'),
               ),
@@ -117,12 +116,6 @@ class _CollectionPageState extends State<CollectionPage> {
     final cards = items(ItemTypes.playerCard, ref.cards);
     final titles = items(ItemTypes.title, ref.titles);
     final skinCount = skins.fold<int>(0, (a, g) => a + g.skins.length);
-    final total = skinCount +
-        agents.length +
-        buddies.length +
-        sprays.length +
-        cards.length +
-        titles.length;
 
     Widget tab(List<String> types, bool empty, Widget content) {
       final error = types.map((t) => col.errors[t]).whereType<String>();
@@ -147,7 +140,6 @@ class _CollectionPageState extends State<CollectionPage> {
     return AppShell(
       currentRoute: '/collection',
       title: '我的收藏',
-      subtitle: '共 $total 件',
       actions: [
         IconButton(
           tooltip: '重新整理',

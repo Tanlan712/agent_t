@@ -141,16 +141,11 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(Icons.warning_amber, color: AppColors.warn),
-                    SizedBox(width: 12),
-                    Expanded(
+                    const SizedBox(width: 12),
+                    const Expanded(
                       child: Text(
-                        '使用 Riot 未公開 API，可能違反服務條款，帳號有受處分的風險，'
-                        'API 也可能隨時失效。建議使用非主要帳號。\n'
-                        '本 App 不會接觸你的密碼。登入資訊（token）會保存在這個瀏覽器，'
-                        '重新開啟頁面時保持登入；登入過的帳號都會保存，可以直接切換。'
-                        'token 約 1 小時後過期，需要重新登入。'
-                        '能使用這個瀏覽器的人在過期前都能用它讀取你的帳號資料，'
-                        '用完請按「登出」刪除。',
+                        '使用 Riot 未公開 API，可能違反服務條款，帳號有受處分的風險。'
+                        '登入資訊保存在這個瀏覽器，用完請登出。',
                       ),
                     ),
                   ],
@@ -188,11 +183,8 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
                   const SizedBox(height: 16),
                   Text(
                     inApp
-                        ? '新增帳號會先清除內嵌頁記住的 Riot 帳號，請在 Riot 頁面登入另一個帳號。'
-                            '登入成功後兩個帳號都會保存在上方清單。'
-                        : 'Riot 記得目前的帳號時會直接登入它。要登入另一個帳號，'
-                            '請先在 Riot 登入頁登出，或在無痕視窗開啟登入網址。'
-                            '登入成功後兩個帳號都會保存在上方清單。',
+                        ? '請在 Riot 頁面登入另一個帳號。'
+                        : '請先在 Riot 登入頁登出，或用無痕視窗開啟登入網址。',
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -202,14 +194,9 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
                     icon: const Icon(Icons.login),
                     label: const Text('在 App 內登入 Riot'),
                   ),
-                  const SizedBox(height: 8),
-                  const Text('在 Riot 官方頁面登入後會自動回到 App，之後 App 會在背景自動續期，'
-                      '直到 Riot 要求重新輸入密碼（按「登出」會一併清除）。'
-                      '登入不了時，也可以改用下面的網頁登入方式。'),
                   const SizedBox(height: 16),
                 ],
-                const Text('1. 開啟 Riot 官方登入頁並登入。'
-                    '勾選 Riot 頁面上的「保持登入」，之後就不用再輸入密碼。'),
+                const Text('1. 開啟 Riot 登入頁並登入（勾選「保持登入」）'),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 12,
@@ -228,9 +215,8 @@ class _RiotLoginPageState extends State<RiotLoginPage> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                const Text('2. 登入後網頁會跳到 playvalorant.com，'
-                    '複製網址列的完整網址，貼到下方後按「完成登入」。\n'
-                    'Android：把本站安裝成 App 後，在跳轉頁按瀏覽器的「分享」選本 App，就會直接登入。'),
+                const Text('2. 複製跳轉後 playvalorant.com 的完整網址，貼到下方'
+                    '（Android App 可直接「分享」給本 App）'),
                 const SizedBox(height: 8),
                 TextField(
                   key: const ValueKey('redirect-field'),

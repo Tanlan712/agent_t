@@ -77,9 +77,7 @@ class _ShopHistoryPageState extends State<ShopHistoryPage> {
     if (history.isEmpty) {
       children.add(const PanelCard(
           child: EmptyState(
-              icon: Icons.history,
-              title: '還沒有紀錄',
-              message: '從現在開始，每次同步商店都會記下當天的 4 款與夜市（只存在這台裝置）')));
+              icon: Icons.history, title: '還沒有紀錄', message: '同步商店後會自動記錄')));
     } else if (q.isNotEmpty) {
       final skins = catalog.catalog?.skins ?? const [];
       final found = searchSkins(skins, q).take(60).toList()

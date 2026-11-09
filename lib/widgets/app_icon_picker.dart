@@ -55,9 +55,6 @@ class _AppIconPickerState extends State<AppIconPicker> {
             const Text('App 圖示',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ]),
-          const SizedBox(height: 4),
-          Text('桌面上的圖示；Android 換完桌面可能要幾秒才更新，iOS 會跳出系統提示',
-              style: TextStyle(fontSize: 13, color: p.muted)),
           const SizedBox(height: 12),
           Wrap(
             spacing: 12,

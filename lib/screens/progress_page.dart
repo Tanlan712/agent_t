@@ -80,7 +80,6 @@ class _ProgressPageState extends State<ProgressPage> {
               child: EmptyState(
                 icon: Icons.military_tech,
                 title: '登入 Riot 以查看通行證與任務',
-                message: '登入後會顯示你的帳號等級、通行證進度與每日／每週任務',
                 actionLabel: '登入 Riot',
                 onAction: () => Navigator.pushNamed(context, '/riot-login'),
               ),
@@ -341,9 +340,6 @@ class PenaltyCard extends StatelessWidget {
                 ].join('・'),
               ),
             ),
-          const SizedBox(height: 6),
-          Text('格式依社群文件推測，可能不完整',
-              style: TextStyle(fontSize: 12, color: AppColors.muted)),
         ],
       );
     }

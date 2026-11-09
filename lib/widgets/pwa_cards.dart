@@ -14,9 +14,9 @@ class PwaInstallCard extends StatelessWidget {
     final pwa = context.watch<PwaController>();
     final state = pwa.installState;
     final (String text, Widget? action) = switch (state) {
-      PwaInstallState.installed => ('已經安裝成 App，可以從主畫面或應用程式清單開啟。', null),
+      PwaInstallState.installed => ('已安裝', null),
       PwaInstallState.available => (
-          '安裝後會有自己的視窗與圖示，沒有網路時也能打開，看上次同步的商店。',
+          '可離線開啟',
           FilledButton.icon(
             key: const ValueKey('pwa-install-button'),
             onPressed: () async {
@@ -30,13 +30,11 @@ class PwaInstallCard extends StatelessWidget {
           ),
         ),
       PwaInstallState.iosManual => (
-          '在 Safari 按下方的「分享」按鈕，選「加入主畫面」。'
-              '加入後從主畫面開啟，才能收到商店刷新通知（iOS 16.4 以上）。',
+          'Safari「分享」→「加入主畫面」',
           null,
         ),
       _ => (
-          '這個瀏覽器目前沒有提供安裝提示。可以從網址列或選單的「安裝」／「加到主畫面」安裝；'
-              '已經安裝過的話，直接從主畫面開啟。',
+          '從瀏覽器選單「安裝」或「加到主畫面」',
           null,
         ),
     };
@@ -64,23 +62,18 @@ class PushNotificationCard extends StatelessWidget {
     final List<Widget> body;
     if (!pwa.pushConfigured) {
       body = const [
-        Text('尚未設定推播金鑰。照 docs/push.md 在 GitHub 設定 VAPID 金鑰後，這裡就能開啟通知。',
-            key: ValueKey('push-not-configured')),
+        Text('尚未設定推播金鑰（docs/push.md）', key: ValueKey('push-not-configured')),
       ];
     } else if (permission == 'unsupported') {
       body = const [
-        Text('這個瀏覽器不支援通知。iPhone／iPad 要先「加入主畫面」，再從主畫面開啟 App（iOS 16.4 以上）。',
-            key: ValueKey('push-unsupported')),
+        Text('這個瀏覽器不支援通知；iOS 請從主畫面開啟', key: ValueKey('push-unsupported')),
       ];
     } else if (permission == 'denied') {
       body = const [
-        Text('通知已被封鎖。請在瀏覽器的網站設定中允許通知，再回到這裡。', key: ValueKey('push-denied')),
+        Text('通知已被瀏覽器封鎖', key: ValueKey('push-denied')),
       ];
     } else if (subscription == null) {
       body = [
-        const Text('每天台灣時間早上 8 點左右（每日商店刷新）收到一則通知。'
-            'GitHub 排程可能延遲幾分鐘到一小時。'),
-        const SizedBox(height: 12),
         FilledButton.icon(
           key: const ValueKey('push-subscribe'),
           onPressed: pwa.busy
@@ -97,11 +90,7 @@ class PushNotificationCard extends StatelessWidget {
       ];
     } else {
       body = [
-        const Text('這台裝置已訂閱。最後一步：按「複製訂閱資料」，貼到 GitHub 的 secret '
-            'PUSH_SUBSCRIPTIONS（多台裝置就放在同一個 JSON 陣列），詳見 docs/push.md。'),
-        const SizedBox(height: 8),
-        Text('訂閱資料只用來把通知送到這台裝置，請勿公開貼出。',
-            style: TextStyle(color: AppColors.muted)),
+        const Text('複製訂閱資料，貼到 GitHub secret PUSH_SUBSCRIPTIONS'),
         const SizedBox(height: 12),
         Wrap(spacing: 8, runSpacing: 8, children: [
           FilledButton.icon(

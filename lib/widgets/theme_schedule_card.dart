@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 
 import '../logic/theme_schedule.dart';
 import '../providers/settings_provider.dart';
-import '../theme/app_theme.dart';
 import 'hud/hud.dart';
 
 /// 設定頁「主題排程」：白天自動淺色、晚上自動深色。
@@ -46,8 +45,6 @@ class ThemeScheduleCard extends StatelessWidget {
             key: const ValueKey('theme-schedule-switch'),
             contentPadding: EdgeInsets.zero,
             title: const Text('白天淺色、晚上深色'),
-            subtitle: Text('開啟後依時間自動切換，會覆蓋上方的明暗選擇（風格與主色不變）',
-                style: TextStyle(color: AppColors.muted, fontSize: 13)),
             value: s.themeSchedule,
             onChanged: (v) => provider.setThemeSchedule(enabled: v),
           ),

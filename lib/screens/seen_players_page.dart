@@ -46,14 +46,11 @@ class _SeenPlayersPageState extends State<SeenPlayersPage> {
 
     final Widget body;
     if (seen.players.isEmpty) {
-      body = Center(
+      body = const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text('還沒有遇過的玩家'),
-            SizedBox(height: 8),
-            Text('打開對戰紀錄後，同場的玩家會自動記錄在這裡',
-                style: TextStyle(color: AppColors.muted)),
           ],
         ),
       );
@@ -108,7 +105,7 @@ class _SeenPlayersPageState extends State<SeenPlayersPage> {
           ),
           Padding(
             padding: const EdgeInsets.all(12),
-            child: Text('共 ${seen.players.length} 位・只存在這個瀏覽器，請勿公開或分享他人資訊',
+            child: Text('請勿公開或分享他人資訊',
                 style: TextStyle(color: AppColors.muted, fontSize: 12)),
           ),
         ],

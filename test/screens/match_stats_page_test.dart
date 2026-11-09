@@ -114,14 +114,14 @@ void main() {
       await tester.ensureVisible(maps);
       expect(find.descendant(of: maps, matching: find.text('亞海懸城')),
           findsOneWidget);
-      expect(find.textContaining('依已載入的最近 3 場'), findsOneWidget);
+      expect(find.textContaining('最近 3 場'), findsOneWidget);
       // 統計也套用篩選。
       await tester.tap(find.text('對戰'));
       await tester.pumpAndSettle();
       await choose(tester, 'filter-mode', '競技');
       await tester.tap(find.text('統計'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('依已載入的最近 1 場'), findsOneWidget);
+      expect(find.textContaining('最近 1 場'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }

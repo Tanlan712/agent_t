@@ -46,9 +46,6 @@ class _MapDetailPageState extends State<MapDetailPage> {
           if (minimap == null)
             const EmptyState(icon: Icons.map_outlined, title: '這張地圖沒有小地圖')
           else ...[
-            Text('滾輪或雙指縮放，拖曳移動',
-                style: TextStyle(color: AppColors.muted, fontSize: 12)),
-            const SizedBox(height: 8),
             LayoutBuilder(builder: (context, c) {
               final side = min(c.maxWidth, 720.0);
               return Center(

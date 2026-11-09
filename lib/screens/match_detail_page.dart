@@ -207,7 +207,7 @@ class _DetailBody extends StatelessWidget {
                 ],
                 const SizedBox(height: 24),
                 Center(
-                  child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊',
+                  child: Text('請勿公開或分享他人資訊',
                       style: TextStyle(color: AppColors.muted, fontSize: 12)),
                 ),
               ],

@@ -85,7 +85,6 @@ void main() {
           findsOneWidget,
           reason: label);
     }
-    expect(find.textContaining('共 '), findsOneWidget);
   });
 
   Future<Harness> withSkins(WidgetTester tester) async {

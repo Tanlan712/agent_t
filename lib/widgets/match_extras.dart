@@ -491,8 +491,6 @@ class WeaponStatsTable extends StatelessWidget {
                       style: AppText.tabular(null))),
             ]),
           ),
-        const SizedBox(height: 4),
-        Text('爆頭率與勝率以每回合的主武器推算', style: muted),
       ],
     );
   }

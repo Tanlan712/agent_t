@@ -90,7 +90,6 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
             child: EmptyState(
               icon: Icons.history,
               title: '登入 Riot 以查看對戰紀錄',
-              message: '登入後會列出最近的對戰、RR 變化與表現',
               actionLabel: '登入 Riot',
               onAction: () => Navigator.pushNamed(context, '/riot-login'),
             ),
@@ -206,7 +205,7 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
             ),
           const SizedBox(height: 24),
           Center(
-            child: Text('名稱資料來自 Riot，請勿公開或分享他人資訊',
+            child: Text('請勿公開或分享他人資訊',
                 style: TextStyle(color: AppColors.muted, fontSize: 12)),
           ),
         ],
@@ -300,7 +299,7 @@ class _RecentForm extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('近期戰績（新 → 舊）', style: label),
+        Text('近期戰績', style: label),
         const SizedBox(height: 8),
         Wrap(spacing: 4, runSpacing: 4, children: [
           for (final d in overview.form)
@@ -993,7 +992,7 @@ class _StatsView extends StatelessWidget {
           ]),
         );
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text('依已載入的最近 ${games.length} 場計算（按「載入更多」可加入更早的場次）',
+      Text('最近 ${games.length} 場',
           style: TextStyle(color: AppColors.muted, fontSize: 12)),
       const SizedBox(height: 12),
       table('stats-agents', '特務', statsBy(games, (g) => g.myAgentId),

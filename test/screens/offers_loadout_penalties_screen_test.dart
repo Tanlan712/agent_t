@@ -180,7 +180,6 @@ void main() {
         expect(find.text('排隊延遲・剩 2 小時 30 分'), findsOneWidget);
         expect(find.text('禁止競技、警告通知・還要 2 場'), findsOneWidget);
         expect(find.textContaining('禁止遊戲'), findsNothing);
-        expect(find.text('格式依社群文件推測，可能不完整'), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
     }

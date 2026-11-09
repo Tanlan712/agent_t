@@ -49,9 +49,9 @@ void main() {
             matching: find.text('227')),
         findsOneWidget);
     // 一頁 20 場，頁尾提示要捲到底才會建立。
-    await tester.scrollUntilVisible(find.text('名稱資料來自 Riot，請勿公開或分享他人資訊'), 600,
+    await tester.scrollUntilVisible(find.text('請勿公開或分享他人資訊'), 600,
         scrollable: find.byType(Scrollable).first);
-    expect(find.text('名稱資料來自 Riot，請勿公開或分享他人資訊'), findsOneWidget);
+    expect(find.text('請勿公開或分享他人資訊'), findsOneWidget);
   });
 
   testWidgets('點卡片進入該場詳情', (tester) async {

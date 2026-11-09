@@ -42,10 +42,7 @@ class WeaponDetailPage extends StatelessWidget {
       if (s == null)
         const PanelCard(
           padding: EdgeInsets.all(24),
-          child: EmptyState(
-              icon: Icons.info_outline,
-              title: '無射擊數據',
-              message: '近戰武器沒有射速、彈匣與傷害資料'),
+          child: EmptyState(icon: Icons.info_outline, title: '無射擊數據'),
         )
       else ...[
         _StatsCard(title: '基本數據', tiles: [

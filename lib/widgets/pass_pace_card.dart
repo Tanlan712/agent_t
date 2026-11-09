@@ -88,13 +88,13 @@ class _PassPaceCardState extends State<PassPaceCard> {
             ],
           ]),
           const SizedBox(height: 8),
-          Text('已累積 ${n(pace.earnedXp)} / ${n(pace.targetXp)} XP（不含尾聲）',
+          Text('已累積 ${n(pace.earnedXp)} / ${n(pace.targetXp)} XP',
               style: AppText.tabular(muted)),
           const SizedBox(height: 16),
           const Text('每日經驗紀錄', style: TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
           if (gains.isEmpty)
-            Text('每天打開這頁會記下進度，明天起就能看到每天拿了多少經驗', style: muted)
+            Text('明天起顯示', style: muted)
           else
             for (final (day, gained) in gains)
               Padding(
