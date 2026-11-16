@@ -5,6 +5,7 @@ import '../../logic/progress_logic.dart';
 import '../../models/progress_reference.dart';
 import '../../providers/progress_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/web_bold.dart';
 import '../../widgets/hud/hud.dart';
 import '../../widgets/pass_card.dart';
 import '../../widgets/skin_tile.dart' show SkinIcon;
@@ -50,8 +51,10 @@ class AgentLevelPage extends StatelessWidget {
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(a.name,
-                  style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold)),
+                  style: webSafeBold(TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.text))),
               Text(a.role, style: TextStyle(color: AppColors.muted)),
             ]),
           ),

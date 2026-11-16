@@ -21,7 +21,8 @@ void main() {
     expect(odin.name, '凌空之志 奧丁');
     expect(odin.weaponName, '奧丁');
     expect(odin.tier, Tier.deluxe);
-    expect(odin.iconUrl, 'https://x/odin.png');
+    // 炫彩的 fullRender 優先（displayIcon 可能是缺圖佔位圖）。
+    expect(odin.iconUrl, 'https://x/odin-render.png');
     final noIcon = catalog.skins.firstWhere((s) => s.uuid == 'skin-noicon');
     expect(noIcon.iconUrl, 'https://x/level0.png');
     expect(noIcon.tier, Tier.ultra);

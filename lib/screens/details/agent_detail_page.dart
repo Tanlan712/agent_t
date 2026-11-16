@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../logic/database_logic.dart';
 import '../../models/game_data.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/web_bold.dart';
 import '../../widgets/hud/hud.dart';
 import '../../widgets/skin_tile.dart' show SkinIcon;
 import 'detail_scaffold.dart';
@@ -28,8 +29,10 @@ class AgentDetailPage extends StatelessWidget {
           final info =
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(a.name,
-                style:
-                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                style: webSafeBold(TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.text))),
             if (a.role case final r?)
               Text(r, style: TextStyle(color: AppColors.muted)),
             const SizedBox(height: 12),

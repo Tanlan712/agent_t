@@ -266,12 +266,10 @@ class SkinInfo {
     return SkinInfo(
       uuid: _str(j['uuid']) ?? '',
       name: _str(j['displayName']) ?? '',
-      // 造型本身常沒有圖，改用第一個炫彩或等級的圖。
-      icon: _str(j['displayIcon']) ??
-          (chromas.isEmpty
-              ? null
-              : _str(chromas.first['fullRender']) ??
-                  _str(chromas.first['displayIcon'])) ??
+      // 造型本身的圖常缺少或是「缺圖」佔位圖（灰底大 X），優先用第一個炫彩的 fullRender。
+      icon: (chromas.isEmpty ? null : _str(chromas.first['fullRender'])) ??
+          _str(j['displayIcon']) ??
+          (chromas.isEmpty ? null : _str(chromas.first['displayIcon'])) ??
           (levels.isEmpty ? null : _str(levels.first['displayIcon'])),
       themeUuid: _str(j['themeUuid']),
       levelUuids: [

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../logic/database_logic.dart';
 import '../../models/game_data.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/web_bold.dart';
 import '../../widgets/hud/hud.dart';
 import '../../widgets/skin_tile.dart' show SkinIcon;
 import 'detail_scaffold.dart';
@@ -27,8 +28,10 @@ class WeaponDetailPage extends StatelessWidget {
           Row(children: [
             Expanded(
               child: Text(weapon.name,
-                  style: const TextStyle(
-                      fontSize: 22, fontWeight: FontWeight.bold)),
+                  style: webSafeBold(TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.text))),
             ),
             Text(weapon.cost > 0 ? '\$${weapon.cost}' : '免費',
                 style: AppText.tabular(TextStyle(

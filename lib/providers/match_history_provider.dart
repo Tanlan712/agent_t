@@ -7,6 +7,7 @@ import '../services/match_client.dart';
 import '../services/riot_client.dart';
 import 'match_detail_cache.dart';
 import 'riot_provider.dart';
+import 'riot_retry.dart';
 
 class MatchEntry {
   final MatchRef ref;
@@ -47,13 +48,18 @@ class MatchHistoryProvider with ChangeNotifier {
   final void Function(Iterable<MatchDetail> details)? onDetails;
   bool _disposed = false;
 
+  /// 重試前的等待；測試傳入立即完成的版本。
+  final Future<void> Function(Duration) _delay;
+
   MatchHistoryProvider(this._client, this._riot,
       {MatchDetailCache? cache,
       this.focusPuuid,
       this.onDetails,
       this.pageSize = 10,
-      this.maxConcurrent = 4})
-      : cache = cache ?? MatchDetailCache();
+      this.maxConcurrent = 4,
+      Future<void> Function(Duration)? delay})
+      : cache = cache ?? MatchDetailCache(),
+        _delay = delay ?? Future<void>.delayed;
 
   @override
   void dispose() {
@@ -163,8 +169,11 @@ class MatchHistoryProvider with ChangeNotifier {
   }
 
   Future<void> _loadPage(RiotSession s, int start, int gen) async {
-    final (refs, total) =
-        await _client.fetchHistory(s, start, pageSize, puuid: focusPuuid);
+    // 網頁上限流回應沒有 CORS 標頭，只會看到「連線失敗」；查看他人時尤其容易遇到，
+    // 所以列表與單場都依 AGENTS.md 第 3 節退避重試。
+    final (refs, total) = await withRiotRetry(
+        () => _client.fetchHistory(s, start, pageSize, puuid: focusPuuid),
+        delay: _delay);
     if (gen != _generation) return;
     _total = total;
     final results = List<MatchEntry?>.filled(refs.length, null);
@@ -178,7 +187,9 @@ class MatchHistoryProvider with ChangeNotifier {
         final i = next++;
         final ref = refs[i];
         try {
-          final json = await cache.json(s, ref.matchId, _client);
+          final json = await withRiotRetry(
+              () => cache.json(s, ref.matchId, _client),
+              delay: _delay);
           final d = mapMatchDetail(json, focusPuuid ?? s.puuid,
               selfPuuid: s.puuid, rrChange: _rr[ref.matchId]);
           fetched[ref.matchId] = d;

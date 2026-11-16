@@ -1,3 +1,4 @@
+import '../theme/web_bold.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -270,10 +271,10 @@ class TodayShareImage extends StatelessWidget {
           children: [
             Row(children: [
               Text('今日小結',
-                  style: TextStyle(
+                  style: webSafeBold(TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.text)),
+                      color: AppColors.text))),
               const Spacer(),
               Text(_dateLabel(now),
                   style: TextStyle(fontSize: 13, color: AppColors.muted)),
