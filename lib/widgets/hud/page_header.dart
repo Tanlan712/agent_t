@@ -8,6 +8,7 @@ import '../../theme/app_fonts.dart';
 import '../../theme/app_palette.dart';
 import '../../theme/app_style.dart';
 import '../../theme/nav_labels_en.dart';
+import '../../theme/web_bold.dart';
 import '../theme/eva/eva_header.dart';
 
 /// 頁首：標題、可選副標、右側動作；版型依目前風格（AppStyle.header）。
@@ -41,12 +42,12 @@ class PageHeader extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         textAlign:
             style.header == HeaderVariant.centered ? TextAlign.center : null,
-        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+        style: webSafeBold(Theme.of(context).textTheme.headlineSmall!.copyWith(
             fontSize: style.headerTitleSize,
             fontWeight: style.headerWeight,
             letterSpacing: style.header == HeaderVariant.poster ? -1 : null,
             height: 1.1,
-            color: p.text));
+            color: p.text)));
     final sub = subtitle == null
         ? null
         : Text(subtitle!, style: TextStyle(fontSize: 14, color: p.muted));

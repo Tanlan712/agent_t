@@ -8,6 +8,7 @@ class PlayerHistoryProvider extends MatchHistoryProvider {
       {required String puuid,
       super.pageSize = 20,
       super.maxConcurrent = 2,
-      super.onDetails})
+      super.onDetails,
+      super.delay})
       : super(cache: cache, focusPuuid: puuid);
 }

@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:agent_t/models/match_models.dart';
 import 'package:agent_t/providers/match_detail_cache.dart';
 import 'package:agent_t/providers/match_history_provider.dart';
@@ -46,6 +48,30 @@ void main() {
     await p.loadMore();
     expect(p.entries.map((e) => e.ref.matchId).toList(),
         ['m1', 'r1-g1', 'r1-g2', 'r1-g3', 'r1-g4', 'r1-g5']);
+  });
+
+  test('網頁上限流只看到連線失敗時退避重試，之後成功載入', () async {
+    final inner = riotClient(blankNames: true);
+    var historyFailures = 0;
+    final waits = <Duration>[];
+    final rc = RiotClient(client: MockClient((req) async {
+      if (req.url.path.startsWith('/match-history/') && historyFailures < 2) {
+        historyFailures++;
+        throw http.ClientException('XMLHttpRequest error.');
+      }
+      final copy = http.Request(req.method, req.url)
+        ..headers.addAll(req.headers)
+        ..bodyBytes = req.bodyBytes;
+      return http.Response.fromStream(await inner.send(copy));
+    }));
+    final riot = RiotProvider(rc);
+    await riot.login(fakeRedirect);
+    final p = PlayerHistoryProvider(MatchClient(rc), riot, MatchDetailCache(),
+        puuid: 'r1', pageSize: 3, delay: (d) async => waits.add(d));
+    await p.loadFirstPage();
+    expect(p.error, isNull);
+    expect(p.entries.length, 3);
+    expect(waits, [const Duration(seconds: 2), const Duration(seconds: 4)]);
   });
 
   test('第一頁 500 時有錯誤訊息', () async {

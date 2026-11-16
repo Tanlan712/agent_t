@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_palette.dart';
+import '../../theme/web_bold.dart';
 import '../nav_items.dart';
 
 /// A 編輯海報的全螢幕選單：依分組列出所有頁面；Esc 或右上角關閉。
@@ -73,12 +74,12 @@ class _FullscreenMenu extends StatelessWidget {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 6),
                           child: Text(n.label,
-                              style: TextStyle(
+                              style: webSafeBold(TextStyle(
                                   fontSize: 28,
                                   fontWeight: FontWeight.w800,
                                   color: n.route == currentRoute
                                       ? p.primary
-                                      : p.text)),
+                                      : p.text))),
                         ),
                       ),
                   ],

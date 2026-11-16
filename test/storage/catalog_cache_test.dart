@@ -41,6 +41,6 @@ void main() {
   });
 
   test('內容損壞時回傳 null', () async {
-    expect((await cacheWith({'catalog_v2': '{bad'})).load(), isNull);
+    expect((await cacheWith({'catalog_v3': '{bad'})).load(), isNull);
   });
 }

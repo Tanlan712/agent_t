@@ -51,7 +51,8 @@ class CatalogApi {
           name: skin['displayName'] as String,
           weaponName: weaponName,
           tier: tier,
-          iconUrl: skin['displayIcon'] as String? ??
+          iconUrl: _firstChroma(skin)?['fullRender'] as String? ??
+              skin['displayIcon'] as String? ??
               _firstLevel(skin)?['displayIcon'] as String?,
           levelUuid: _firstLevel(skin)?['uuid'] as String?,
         ));
@@ -70,6 +71,14 @@ class CatalogApi {
           .toList(),
       fetchedAt: _now(),
     );
+  }
+
+  /// 部分造型的 displayIcon 是遊戲裡的「缺圖」佔位圖（灰底大 X），
+  /// 第一個炫彩的 fullRender 才是實際外觀，所以優先用它。
+  Map<String, dynamic>? _firstChroma(Map<String, dynamic> skin) {
+    final chromas = skin['chromas'] as List<dynamic>? ?? [];
+    if (chromas.isEmpty) return null;
+    return chromas.first as Map<String, dynamic>;
   }
 
   Map<String, dynamic>? _firstLevel(Map<String, dynamic> skin) {

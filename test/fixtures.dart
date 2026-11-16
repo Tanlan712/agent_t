@@ -14,7 +14,8 @@ const weaponsJson = '''
 {"status":200,"data":[
   {"uuid":"w-odin","displayName":"奧丁","skins":[
     {"uuid":"skin-odin","displayName":"凌空之志 奧丁","contentTierUuid":"tier-deluxe",
-     "displayIcon":"https://x/odin.png","levels":[{"uuid":"lvl-odin","displayIcon":"https://x/odin-l0.png"}]},
+     "displayIcon":"https://x/odin.png","levels":[{"uuid":"lvl-odin","displayIcon":"https://x/odin-l0.png"}],
+     "chromas":[{"fullRender":"https://x/odin-render.png"}]},
     {"uuid":"skin-standard","displayName":"標準 奧丁","contentTierUuid":null,
      "displayIcon":"https://x/std.png","levels":[]},
     {"uuid":"skin-noicon","displayName":"究極 奧丁","contentTierUuid":"tier-ultra",

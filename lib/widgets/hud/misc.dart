@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_style.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/web_bold.dart';
 import '../theme/eva/eva_bracket.dart';
 
 /// 區塊標題：18px 標題＋右側動作。
@@ -33,10 +34,10 @@ class SectionHeader extends StatelessWidget {
           children: [
             Expanded(
                 child: Text(title,
-                    style: Theme.of(context)
+                    style: webSafeBold(Theme.of(context)
                         .textTheme
-                        .titleLarge
-                        ?.copyWith(fontSize: 18, fontWeight: FontWeight.w600))),
+                        .titleLarge!
+                        .copyWith(fontSize: 18, fontWeight: FontWeight.w600)))),
             if (trailing != null) trailing!,
           ],
         ),
@@ -77,8 +78,10 @@ class EmptyState extends StatelessWidget {
               const SizedBox(height: 12),
               Text(title,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600)),
+                  style: webSafeBold(TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.text))),
               if (message != null) ...[
                 const SizedBox(height: 4),
                 Text(message!,
