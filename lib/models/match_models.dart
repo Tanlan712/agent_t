@@ -135,6 +135,28 @@ class MatchSummary {
     this.acs = 0,
     this.rrChange,
   });
+
+  /// 同一場、換上 RR 變化（RR 比對戰詳情晚讀到時用）。
+  MatchSummary withRr(int? rr) => MatchSummary(
+        matchId: matchId,
+        startTime: startTime,
+        queueId: queueId,
+        mapId: mapId,
+        seasonId: seasonId,
+        durationMs: durationMs,
+        isRanked: isRanked,
+        myTeamId: myTeamId,
+        focusPuuid: focusPuuid,
+        won: won,
+        myScore: myScore,
+        enemyScore: enemyScore,
+        myAgentId: myAgentId,
+        kills: kills,
+        deaths: deaths,
+        assists: assists,
+        acs: acs,
+        rrChange: rr,
+      );
 }
 
 class MatchDetail {
