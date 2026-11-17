@@ -109,17 +109,9 @@ class _ShopKpi extends StatelessWidget {
       KpiTile(label: '輻能點數', value: '${w.radianite}'),
       KpiTile(label: '王國幣', value: '${w.kingdom}'),
     ];
-    // 右欄直向堆疊；6 欄以下由 BentoGrid 換到下一列，仍是直向。
-    return Column(
-      key: const ValueKey('shop-kpi'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var i = 0; i < tiles.length; i++) ...[
-          if (i > 0) const SizedBox(height: 12),
-          tiles[i],
-        ],
-      ],
-    );
+    // 三種貨幣數字都短：同一列並排，手機上不用各佔一整列。
+    return KpiStrip(
+        key: const ValueKey('shop-kpi'), minTileWidth: 88, tiles: tiles);
   }
 }
 
