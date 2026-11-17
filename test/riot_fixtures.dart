@@ -175,8 +175,8 @@ MockClient riotClient({
                             ? 'PREGAME'
                             : 'MENUS'),
               })
-            : json({'httpStatus': sessionStatus, 'errorCode': 'x'},
-                sessionStatus);
+            : json(
+                {'httpStatus': sessionStatus, 'errorCode': 'x'}, sessionStatus);
       }
       // 預設不在選角也不在對局（404），與實測相同。
       if (path == '/core-game/v1/players/puuid-1') {
@@ -332,6 +332,17 @@ MockClient riotClient({
       }
       if (path == '/mmr/v1/players/puuid-1/competitiveupdates') {
         return json(competitiveUpdatesJson());
+      }
+      // 他人的競技更新：對應他的對戰紀錄（m1、{puuid}-g1…），偶數場 +20、奇數場 −15。
+      if (path.startsWith('/mmr/v1/players/') &&
+          path.endsWith('/competitiveupdates')) {
+        final p = path.split('/')[4];
+        final status = otherMmrStatus[p] ?? 200;
+        if (status != 200) return json({'errorCode': 'x'}, status);
+        final start = int.parse(req.url.queryParameters['startIndex'] ?? '0');
+        final end = int.parse(req.url.queryParameters['endIndex'] ?? '20');
+        if (end - start > 20) return json({'errorCode': 'x'}, 400);
+        return json(otherCompetitiveUpdatesJson(p, start, end));
       }
       // 他人的 MMR：用賽季資料找出他在這季的競技牌位。
       if (path.startsWith('/mmr/v1/players/') &&

@@ -4,20 +4,19 @@ import 'package:provider/provider.dart';
 import '../models/match_models.dart';
 import '../providers/encounter_provider.dart';
 import '../providers/match_detail_cache.dart';
-import '../providers/match_reference_provider.dart';
 import '../providers/player_history_provider.dart';
 import '../providers/riot_provider.dart';
 import '../providers/seen_players_provider.dart';
 import '../services/match_client.dart';
-import '../theme/app_theme.dart';
-import '../widgets/hud/hud.dart';
-import 'match_history_page.dart' show MatchCard;
+import 'match_history_page.dart' show MatchHistoryBody;
 
-/// 其他玩家的對戰紀錄；資料只放在記憶體，離開頁面即釋放。
+/// 其他玩家的對戰紀錄：牌位與 RR、KPI、各模式戰績、走勢、篩選與統計，
+/// 版面與自己的對戰紀錄相同。資料只放在記憶體，離開頁面即釋放。
 class PlayerPage extends StatefulWidget {
   final PlayerRef player;
+  final DateTime Function() now;
 
-  const PlayerPage({super.key, required this.player});
+  const PlayerPage({super.key, required this.player, this.now = DateTime.now});
 
   @override
   State<PlayerPage> createState() => _PlayerPageState();
@@ -53,78 +52,9 @@ class _PlayerPageState extends State<PlayerPage> {
       appBar: AppBar(title: Text(widget.player.riotId)),
       body: ListenableBuilder(
         listenable: _history,
-        builder: (context, _) => _body(context),
+        builder: (context, _) => MatchHistoryBody(
+            history: _history, otherPlayer: true, now: widget.now),
       ),
-    );
-  }
-
-  Widget _body(BuildContext context) {
-    final h = _history;
-    final ref = context.watch<MatchReferenceProvider>();
-    if (h.entries.isEmpty && h.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    final recent = [
-      for (final e in h.entries.take(5))
-        if (e.detail case final d?) d.summary.acs,
-    ];
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        if (recent.isNotEmpty)
-          KpiStrip(key: const ValueKey('player-kpi'), tiles: [
-            KpiTile(
-                label: '最近 ${recent.length} 場平均 ACS',
-                value:
-                    '${(recent.reduce((a, b) => a + b) / recent.length).round()}'),
-          ]),
-        if (h.error case final e?)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Wrap(
-              spacing: 12,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Text(e, style: TextStyle(color: AppColors.error)),
-                if (h.entries.isEmpty && !h.isLoading)
-                  OutlinedButton(
-                    onPressed: h.loadFirstPage,
-                    child: const Text('重試'),
-                  ),
-              ],
-            ),
-          ),
-        const SizedBox(height: 16),
-        // 卡片高度依內容（窄螢幕數據分兩段），不用固定比例的格子。
-        for (final e in h.entries)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 76),
-                child: MatchCard(entry: e, ref: ref, otherPlayer: true)),
-          ),
-        if (h.hasMore)
-          Padding(
-            padding: const EdgeInsets.only(top: 16),
-            child: Center(
-              child: OutlinedButton(
-                onPressed: h.isLoading ? null : h.loadMore,
-                child: h.isLoading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('載入更多'),
-              ),
-            ),
-          ),
-        const SizedBox(height: 24),
-        Center(
-          child: Text('請勿公開或分享他人資訊',
-              style: TextStyle(color: AppColors.muted, fontSize: 12)),
-        ),
-      ],
     );
   }
 }

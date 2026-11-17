@@ -37,6 +37,7 @@ MatchDetail detail(String id,
     int? rr,
     String map = 'ascent',
     String agent = 'jett',
+    String queue = 'competitive',
     List<PlayerLine>? lines}) {
   final ls = lines ?? [line('me', agent: agent), line('x', team: 'Red')];
   final me = ls.firstWhere((l) => l.puuid == focus);
@@ -44,7 +45,7 @@ MatchDetail detail(String id,
     summary: MatchSummary(
       matchId: id,
       startTime: at ?? DateTime(2026, 10, 22, 12),
-      queueId: 'competitive',
+      queueId: queue,
       mapId: map,
       durationMs: 1,
       isRanked: true,
@@ -143,6 +144,19 @@ void main() {
       expect(o.topAgents.map((a) => a.key).toList(), ['jett', 'sage', 'omen']);
       expect(o.topAgents.first.games, 6);
       expect(o.topAgents.first.winRate, 0.5);
+    });
+
+    test('各模式依場數排序，各自算勝率', () {
+      final o = summarizeHistory([
+        detail('a', queue: 'unrated', won: true),
+        detail('b', won: true),
+        detail('c', won: false),
+        detail('d', won: false),
+      ]);
+      expect(o.modes.map((m) => m.key).toList(), ['competitive', 'unrated']);
+      expect(o.modes.first.games, 3);
+      expect(o.modes.first.winRate, closeTo(1 / 3, 1e-9));
+      expect(o.modes.last.winRate, 1);
     });
   });
 

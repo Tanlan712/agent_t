@@ -220,6 +220,25 @@ Map<String, dynamic> mmrJson({bool empty = false}) => {
         },
     };
 
+/// 他人的競技更新（共 30 筆，對應 riotClient 的他人對戰紀錄）。
+Map<String, dynamic> otherCompetitiveUpdatesJson(
+        String subject, int start, int end) =>
+    {
+      'Version': 1,
+      'Subject': subject,
+      'Matches': [
+        for (var i = start; i < end && i < 30; i++)
+          {
+            'MatchID': i == 0 ? 'm1' : '$subject-g$i',
+            'QueueID': 'competitive',
+            'TierBeforeUpdate': 21,
+            'TierAfterUpdate': 21,
+            'RankedRatingBeforeUpdate': 40,
+            'RankedRatingAfterUpdate': i.isEven ? 60 : 25,
+          },
+      ],
+    };
+
 /// 依社群文件格式的他人 MMR：QueueSkills.competitive.SeasonalInfoBySeasonID。
 Map<String, dynamic> seasonalMmrJson(String subject,
         {String season = 'season-1', int tier = 21, bool hidden = false}) =>
@@ -229,6 +248,12 @@ Map<String, dynamic> seasonalMmrJson(String subject,
       // 依社群文件：玩家在遊戲中選擇隱藏本季牌位時為 true。
       'IsActRankBadgeHidden': hidden,
       'IsLeaderboardAnonymized': false,
+      'LatestCompetitiveUpdate': {
+        'MatchID': 'm1',
+        'SeasonID': season,
+        'TierAfterUpdate': tier,
+        'RankedRatingAfterUpdate': 40,
+      },
       'QueueSkills': {
         'competitive': {
           'SeasonalInfoBySeasonID': {
@@ -237,6 +262,7 @@ Map<String, dynamic> seasonalMmrJson(String subject,
               'CompetitiveTier': tier,
               'RankedRating': 40,
               'NumberOfWins': 12,
+              'NumberOfGames': 20,
             },
           },
         },

@@ -34,12 +34,48 @@ void main() {
     expect(d.summary.myAgentId, 'agent-r1');
     expect(d.summary.myTeamId, 'Red');
     expect(d.summary.acs, 227);
-    expect(d.summary.rrChange, isNull);
+    // 他的每場 RR 由他的競技更新算出（m1 是第 0 場：+20）。
+    expect(d.summary.rrChange, 20);
     final me = d.teams.values.expand((t) => t).singleWhere((l) => l.isMe);
     expect(me.puuid, myPuuid);
     // 名稱由 name-service 補上。
     expect(d.teams['Red']!.first.riotId, 'N-r1#TW1');
+    expect(p.rank!.tier, 21);
+    expect(p.rank!.rr, 40);
+    expect(p.mmr, isNotNull);
+    expect(p.recentRr, [20, -15, 20, -15, 20]);
+  });
+
+  test('載入超過 20 場時補讀競技更新，後面的場次也有 RR', () async {
+    final requests = <http.Request>[];
+    final rc = RiotClient(client: riotClient(requests: requests));
+    final riot = RiotProvider(rc);
+    await riot.login(fakeRedirect);
+    final p = PlayerHistoryProvider(MatchClient(rc), riot, MatchDetailCache(),
+        puuid: 'r1');
+    await p.loadFirstPage();
+    await p.loadMore();
+    expect(p.entries.length, 30);
+    expect(p.entries.last.detail!.summary.rrChange, -15);
+    final updates = requests
+        .where((r) => r.url.path.endsWith('/r1/competitiveupdates'))
+        .map((r) => r.url.queryParameters['startIndex'])
+        .toList();
+    expect(updates, ['0', '20']);
+  });
+
+  test('他的 MMR 與競技更新 403 時列表照常、沒有牌位', () async {
+    final rc = RiotClient(client: riotClient(otherMmrStatus: {'r1': 403}));
+    final riot = RiotProvider(rc);
+    await riot.login(fakeRedirect);
+    final p = PlayerHistoryProvider(MatchClient(rc), riot, MatchDetailCache(),
+        puuid: 'r1', pageSize: 3);
+    await p.loadFirstPage();
+    expect(p.error, isNull);
+    expect(p.entries.length, 3);
     expect(p.rank, isNull);
+    expect(p.entries.first.detail!.summary.rrChange, isNull);
+    expect(riot.isLoggedIn, isTrue);
   });
 
   test('載入更多接在後面', () async {
