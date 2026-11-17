@@ -57,8 +57,14 @@ class RiotClient {
 
   /// 對 Riot 遊戲伺服器（*.a.pvp.net）的請求全部經過同一個限流：
   /// 不論哪個頁面或 provider 發出，同時最多 [maxPvpConcurrent] 個（AGENTS.md 第 3 節）。
-  RiotClient({http.Client? client, int maxPvpConcurrent = 2})
-      : _client = _PvpLimitedClient(client ?? http.Client(), maxPvpConcurrent);
+  /// [pvpTimeout]：單一請求超過這個時間就當成連線失敗並釋放名額，
+  /// 避免一個卡住的請求讓後面所有請求（例如整頁對戰詳情）一直排隊；null 表示不逾時。
+  RiotClient(
+      {http.Client? client,
+      int maxPvpConcurrent = 2,
+      Duration? pvpTimeout = const Duration(seconds: 15)})
+      : _client = _PvpLimitedClient(
+            client ?? http.Client(), maxPvpConcurrent, pvpTimeout);
 
   /// 瀏覽器實測：userinfo 與 riot-geo 的實際回應沒有 CORS 標頭會被擋下，
   /// 所以 puuid 從 access_token（JWT）解出，名稱優先取 id_token 的 acct，
@@ -326,10 +332,11 @@ class RiotClient {
 class _PvpLimitedClient extends http.BaseClient {
   final http.Client _inner;
   final int _max;
+  final Duration? _timeout;
   int _running = 0;
   final _waiting = <Completer<void>>[];
 
-  _PvpLimitedClient(this._inner, this._max);
+  _PvpLimitedClient(this._inner, this._max, this._timeout);
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
@@ -343,9 +350,15 @@ class _PvpLimitedClient extends http.BaseClient {
       await slot.future;
     }
     try {
-      // 等回應內容讀完才釋放名額，避免串流還沒讀完就送出下一個請求。
-      final res = await _inner.send(request);
-      final bytes = await res.stream.toBytes();
+      // 等回應內容讀完才釋放名額，避免串流還沒讀完就送出下一個請求；
+      // 逾時丟出 TimeoutException（呼叫端視為連線失敗，可退避重試）。
+      final read = () async {
+        final res = await _inner.send(request);
+        return (res, await res.stream.toBytes());
+      }();
+      final timeout = _timeout;
+      final (res, bytes) =
+          await (timeout == null ? read : read.timeout(timeout));
       return http.StreamedResponse(Stream.value(bytes), res.statusCode,
           contentLength: bytes.length,
           request: res.request,

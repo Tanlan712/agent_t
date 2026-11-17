@@ -135,7 +135,8 @@ class Harness {
       for (final id in wishlist)
         WishlistItem(skinUuid: id, addedAt: DateTime(2026, 10, 1)),
     ]);
-    final rc = RiotClient(client: riotHttp ?? riotClient());
+    // 測試在假時鐘裡跑：不設逾時，避免留下計時器（逾時另有 riot_client_test）。
+    final rc = RiotClient(client: riotHttp ?? riotClient(), pvpTimeout: null);
     final riot = RiotProvider(rc,
         now: now ?? DateTime.now,
         storage: storeSession ? SessionStorage(prefs) : null,

@@ -318,6 +318,7 @@ class _HistoryKpi extends StatelessWidget {
           child: _RankHeader(
               key: const ValueKey('history-rank'),
               rank: history.rank,
+              loading: history.rankLoading,
               recentRr: rr,
               facts: otherPlayer ? _profile(details) : const [],
               ref: ref)),
@@ -328,7 +329,7 @@ class _HistoryKpi extends StatelessWidget {
           child: KpiStrip(tiles: [
             KpiTile(
               key: const ValueKey('kpi-rr'),
-              label: '近 ${rr.length} 場 RR',
+              label: rr.isEmpty ? '近期 RR' : '近 ${rr.length} 場 RR',
               value: rr.isEmpty ? '—' : formatRr(rrSum),
               up: rrUp(rr),
             ),
@@ -494,6 +495,7 @@ class _RecentForm extends StatelessWidget {
 
 class _RankHeader extends StatelessWidget {
   final RankInfo? rank;
+  final bool loading;
   final List<int> recentRr;
 
   /// 額外的資料列（標籤、數值、圖示）。
@@ -503,6 +505,7 @@ class _RankHeader extends StatelessWidget {
   const _RankHeader(
       {super.key,
       required this.rank,
+      this.loading = false,
       required this.recentRr,
       this.facts = const [],
       required this.ref});
@@ -525,7 +528,7 @@ class _RankHeader extends StatelessWidget {
               children: [
                 SizedBox(
                     width: 40, height: 40, child: SkinIcon(url: tier?.iconUrl)),
-                Text(tier?.name ?? '未定級',
+                Text(tier?.name ?? (loading ? '讀取中…' : '未定級'),
                     style: Theme.of(context).textTheme.titleLarge),
                 if (rank != null) Text('${rank.rr} RR'),
               ],
