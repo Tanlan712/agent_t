@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:agent_t/services/riot_auth.dart';
 import 'package:agent_t/services/riot_client.dart';
 
@@ -82,9 +83,11 @@ void main() {
 void corsTests() {
   final now = DateTime(2026, 10, 20, 10);
 
-  test('userinfo 與 riot-geo 被 CORS 擋下時：puuid 取自 JWT、名稱取自 id_token、區域用預設 ap', () async {
+  test('userinfo 與 riot-geo 被 CORS 擋下時：puuid 取自 JWT、名稱取自 id_token、區域用預設 ap',
+      () async {
     final tokens = parseRiotRedirect(fakeRedirect)!;
-    final s = await RiotClient(client: riotClient(corsBlocked: true)).createSession(tokens, now);
+    final s = await RiotClient(client: riotClient(corsBlocked: true))
+        .createSession(tokens, now);
     expect(s.puuid, 'puuid-1');
     expect(s.displayName, 'Tester#TW1');
     expect(s.shard, 'ap');
@@ -92,8 +95,10 @@ void corsTests() {
 
   test('區域偵測失敗時使用指定的備用區域', () async {
     final requests = <http.Request>[];
-    final c = RiotClient(client: riotClient(corsBlocked: true, requests: requests));
-    final s = await c.createSession(parseRiotRedirect(fakeRedirect)!, now, fallbackShard: 'kr');
+    final c =
+        RiotClient(client: riotClient(corsBlocked: true, requests: requests));
+    final s = await c.createSession(parseRiotRedirect(fakeRedirect)!, now,
+        fallbackShard: 'kr');
     expect(s.shard, 'kr');
   });
 
@@ -109,7 +114,37 @@ void corsTests() {
   test('access_token 不是 JWT 時丟出格式錯誤', () async {
     final tokens = parseRiotRedirect(
         'https://x/#access_token=not-a-jwt&id_token=$fakeIdToken')!;
-    expect(RiotClient(client: riotClient(corsBlocked: true)).createSession(tokens, now),
-        throwsA(isA<RiotApiException>().having((e) => e.message, 'message', '登入資訊格式不符')));
+    expect(
+        RiotClient(client: riotClient(corsBlocked: true))
+            .createSession(tokens, now),
+        throwsA(isA<RiotApiException>()
+            .having((e) => e.message, 'message', '登入資訊格式不符')));
+  });
+
+  test('pd 請求逾時：當成連線失敗並釋放名額，後面的請求照常完成', () async {
+    final inner = riotClient();
+    var held = 0;
+    final c = RiotClient(
+        maxPvpConcurrent: 1,
+        pvpTimeout: const Duration(milliseconds: 50),
+        client: MockClient((req) async {
+          if (req.url.path.startsWith('/mmr/v1/players/hang')) {
+            held++;
+            await Future<void>.delayed(const Duration(seconds: 5));
+          }
+          final copy = http.Request(req.method, req.url)
+            ..headers.addAll(req.headers)
+            ..bodyBytes = req.bodyBytes;
+          return http.Response.fromStream(await inner.send(copy));
+        }));
+    final s = await c.createSession(
+        parseRiotRedirect(fakeRedirect)!, DateTime(2026, 10, 20, 10));
+    await expectLater(
+        c.getPd(s, '/mmr/v1/players/hang', label: '取得玩家牌位'),
+        throwsA(isA<RiotApiException>()
+            .having((e) => e.statusCode, 'statusCode', isNull)));
+    expect(held, 1);
+    final ok = await c.getPd(s, '/mmr/v1/players/puuid-1', label: '取得牌位');
+    expect(ok['Subject'], isNotNull);
   });
 }

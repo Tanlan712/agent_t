@@ -38,6 +38,7 @@ class MatchHistoryProvider with ChangeNotifier {
   bool _rrDone = false;
   Map<String, dynamic>? _mmr;
   RankInfo? _rank;
+  bool _rankLoading = false;
   int _total = 0;
   bool _isLoading = false;
   String? _error;
@@ -87,6 +88,9 @@ class MatchHistoryProvider with ChangeNotifier {
   String? get error => _error;
   RankInfo? get rank => _rank;
 
+  /// 牌位（MMR）還在讀取中；畫面據此顯示「讀取中」而不是「未定級」。
+  bool get rankLoading => _rankLoading;
+
   /// 焦點玩家的 MMR 原始資料（歷史最高、本幕戰績用）；讀不到時為 null。
   Map<String, dynamic>? get mmr => _mmr;
   List<int> get recentRr => _rr.values.take(5).toList();
@@ -105,19 +109,17 @@ class MatchHistoryProvider with ChangeNotifier {
     _rrDone = false;
     _mmr = null;
     _rank = null;
+    _rankLoading = false;
     _total = 0;
     _error = null;
     final s = _session();
     if (s == null) return;
     _loadedFor = s.puuid;
     await _guarded(gen, () async {
-      // 牌位只是頁首資訊：失敗（非登入過期）時留空，不阻擋列表。
-      final mmr = await _optional<Map<String, dynamic>?>(
-          () => _client.fetchMmrJson(s, focusPuuid ?? s.puuid), null);
-      if (gen != _generation) return;
-      _mmr = mmr;
-      _rank = mmr == null ? null : mapRank(mmr);
+      // 牌位只是頁首資訊：和列表同時讀、各自顯示；失敗（非登入過期）時留空，不阻擋列表。
+      final profile = _loadProfile(s, gen);
       await _loadPage(s, 0, gen);
+      if (await profile case final e?) throw e;
     });
   }
 
@@ -136,6 +138,32 @@ class MatchHistoryProvider with ChangeNotifier {
       if (_isAuthError(e)) rethrow;
       debugPrint('牌位資料取得失敗：${e.message}');
       return fallback;
+    }
+  }
+
+  /// 讀焦點玩家的 MMR；不丟出例外，登入失效時回傳該例外交給呼叫端處理。
+  Future<RiotApiException?> _loadProfile(RiotSession s, int gen) async {
+    _rankLoading = true;
+    try {
+      final mmr = await _optional<Map<String, dynamic>?>(
+          () => withRiotRetry(
+              () => _client.fetchMmrJson(s, focusPuuid ?? s.puuid),
+              delay: _delay),
+          null);
+      if (gen != _generation) return null;
+      _mmr = mmr;
+      _rank = mmr == null ? null : mapRank(mmr);
+      return null;
+    } on RiotApiException catch (e) {
+      return e;
+    } catch (e) {
+      debugPrint('牌位解析失敗：${e.runtimeType}');
+      return null;
+    } finally {
+      if (gen == _generation) {
+        _rankLoading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -208,17 +236,24 @@ class MatchHistoryProvider with ChangeNotifier {
         () => _client.fetchHistory(s, start, pageSize, puuid: focusPuuid),
         delay: _delay);
     if (gen != _generation) return;
-    await _ensureRr(s, refs, gen);
-    if (gen != _generation) return;
     _total = total;
-    final results = List<MatchEntry?>.filled(refs.length, null);
+    // 先放骨架卡片，每讀完一場就換上，不用等整頁（一頁 20 場）都讀完才顯示。
+    final base = _entries.length;
+    _entries.addAll([for (final r in refs) MatchEntry(ref: r)]);
+    notifyListeners();
     final fetched = <String, MatchDetail>{};
     RiotApiException? authError;
     var next = 0;
 
+    void put(int i, MatchEntry e) {
+      if (gen != _generation) return;
+      _entries[base + i] = e;
+      notifyListeners();
+    }
+
     // 固定數量的 worker 從佇列取場次，同時最多 maxConcurrent 個請求。
     Future<void> worker() async {
-      while (next < refs.length && authError == null) {
+      while (next < refs.length && authError == null && gen == _generation) {
         final i = next++;
         final ref = refs[i];
         try {
@@ -228,13 +263,13 @@ class MatchHistoryProvider with ChangeNotifier {
           final d = mapMatchDetail(json, focusPuuid ?? s.puuid,
               selfPuuid: s.puuid, rrChange: _rr[ref.matchId]);
           fetched[ref.matchId] = d;
-          results[i] = MatchEntry(ref: ref, detail: d);
+          put(i, MatchEntry(ref: ref, detail: d));
         } on RiotApiException catch (e) {
           if (_isAuthError(e)) authError = e;
-          results[i] = MatchEntry(ref: ref, failed: true);
+          put(i, MatchEntry(ref: ref, failed: true));
         } catch (e) {
           debugPrint('對戰詳情解析失敗：${e.runtimeType}');
-          results[i] = MatchEntry(ref: ref, failed: true);
+          put(i, MatchEntry(ref: ref, failed: true));
         }
       }
     }
@@ -242,7 +277,11 @@ class MatchHistoryProvider with ChangeNotifier {
     final workers = refs.length < maxConcurrent ? refs.length : maxConcurrent;
     await Future.wait([for (var w = 0; w < workers; w++) worker()]);
     if (gen != _generation) return;
-    if (authError != null) throw authError!;
+    if (authError != null) {
+      // 還沒讀到的場次不留骨架。
+      _entries.removeRange(base, _entries.length);
+      throw authError!;
+    }
 
     // 實測 match-details 沒有名稱：整頁的未知玩家一次向 name-service 查詢。
     final unnamed = {
@@ -253,20 +292,34 @@ class MatchHistoryProvider with ChangeNotifier {
     final names = await _optional(
         () => _client.fetchNames(s, unnamed), <String, String>{});
     if (gen != _generation) return;
-    if (names.isNotEmpty) {
-      fetched.updateAll((_, d) => applyNames(d, names));
-      for (var i = 0; i < results.length; i++) {
-        final r = results[i];
-        final d = r?.detail;
-        if (r != null && d != null) {
-          results[i] =
-              MatchEntry(ref: r.ref, detail: fetched[r.ref.matchId] ?? d);
-        }
-      }
-    }
-
+    if (names.isNotEmpty) fetched.updateAll((_, d) => applyNames(d, names));
     _details.addAll(fetched);
+    _refresh(base, refs.length);
     if (fetched.isNotEmpty) onDetails?.call(fetched.values);
-    _entries.addAll(results.whereType<MatchEntry>());
+    notifyListeners();
+
+    // 每場 RR 最後補上：列表已經可以看，RR 讀到後再填進卡片。
+    await _ensureRr(s, refs, gen);
+    if (gen != _generation) return;
+    _refresh(base, refs.length);
+  }
+
+  /// 把 [_details]（已補名稱）與已讀到的 RR 套回這一頁的列表。
+  void _refresh(int base, int count) {
+    for (var i = base; i < base + count && i < _entries.length; i++) {
+      final e = _entries[i];
+      var d = _details[e.ref.matchId];
+      if (d == null) continue;
+      final rr = _rr[e.ref.matchId];
+      if (rr != null && d.summary.rrChange != rr) {
+        d = MatchDetail(
+            summary: d.summary.withRr(rr),
+            teams: d.teams,
+            rounds: d.rounds,
+            kills: d.kills);
+        _details[e.ref.matchId] = d;
+      }
+      _entries[i] = MatchEntry(ref: e.ref, detail: d);
+    }
   }
 }

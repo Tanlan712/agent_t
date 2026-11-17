@@ -157,6 +157,26 @@ void main() {
     expect(seen.first.teams['Red']!.first.riotId, 'N-r1#TW1');
   });
 
+  test('對戰詳情逐場顯示：還在讀時先有骨架，不用等整頁', () async {
+    final rc = RiotClient(
+        client: riotClient(matchDelay: const Duration(milliseconds: 30)));
+    final riot = RiotProvider(rc);
+    await riot.login(fakeRedirect);
+    final p = PlayerHistoryProvider(MatchClient(rc), riot, MatchDetailCache(),
+        puuid: 'r1', pageSize: 6);
+    final snapshots = <(int, int)>[];
+    p.addListener(() => snapshots.add((
+          p.entries.length,
+          p.entries.where((e) => e.detail != null).length,
+        )));
+    await p.loadFirstPage();
+    // 列表一拿到就有 6 張骨架，之後逐場換上。
+    expect(snapshots, contains((6, 0)));
+    expect(snapshots, contains((6, 1)));
+    expect(p.entries.every((e) => e.detail != null), isTrue);
+    expect(p.entries.first.detail!.summary.rrChange, 20);
+  });
+
   test('載入中 dispose 不會丟出例外', () async {
     final (p, _) = await setup();
     final f = p.loadFirstPage();
