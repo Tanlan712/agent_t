@@ -35,6 +35,9 @@ class HistoryOverview {
   /// 最常用的 3 位特務。
   final List<GroupStat> topAgents;
 
+  /// 各模式（queueId）的場數、勝率、K/D 與 ACS，場數多的在前。
+  final List<GroupStat> modes;
+
   const HistoryOverview({
     required this.games,
     required this.wins,
@@ -45,6 +48,7 @@ class HistoryOverview {
     required this.adr,
     required this.form,
     required this.topAgents,
+    this.modes = const [],
   });
 }
 
@@ -75,6 +79,7 @@ HistoryOverview summarizeHistory(List<MatchDetail> details) {
     adr: _avg([for (final l in lines) l.adr]),
     form: details.take(10).toList(),
     topAgents: statsBy(summaries, (s) => s.myAgentId).take(3).toList(),
+    modes: statsBy(summaries, (s) => s.queueId),
   );
 }
 

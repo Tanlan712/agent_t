@@ -53,6 +53,20 @@ void main() {
     expect(rank.rr, 45);
   });
 
+  test('fetchRrPage 查他人：回傳 RR 與所有場次 ID', () async {
+    final requests = <http.Request>[];
+    final (c, s) = await setup(riotClient(requests: requests));
+    final (rr, ids) = await c.fetchRrPage(s, 20, 20, puuid: 'r1');
+    expect(ids.length, 10);
+    expect(ids.first, 'r1-g20');
+    expect(rr['r1-g20'], 20);
+    expect(rr['r1-g21'], -15);
+    final req = requests.last;
+    expect(req.url.path, '/mmr/v1/players/r1/competitiveupdates');
+    expect(req.url.queryParameters['startIndex'], '20');
+    expect(req.url.queryParameters['endIndex'], '40');
+  });
+
   test('401 丟出 isAuthError 且訊息不含 token', () async {
     final (c, s) = await setup(riotClient(historyStatus: 401));
     try {

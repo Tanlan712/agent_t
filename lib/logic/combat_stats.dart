@@ -11,6 +11,16 @@ class RankSnapshot {
   const RankSnapshot({required this.tier, required this.rr});
 }
 
+/// 某一幕的競技戰績（MMR 的 NumberOfWins／NumberOfGames）。
+class SeasonRecord {
+  final int wins;
+  final int games;
+
+  const SeasonRecord({required this.wins, required this.games});
+
+  double get winRate => games == 0 ? 0 : wins / games;
+}
+
 /// 歷史最高牌位與取得的賽季（推算）。
 class PeakRank {
   final int tier;
@@ -50,16 +60,29 @@ String? latestSeasonId(Map<String, dynamic> mmr) {
   return id is String && id.isNotEmpty ? id.toLowerCase() : null;
 }
 
-/// 這一幕的競技牌位與 RR；沒有資料或未定級時為 null。
-RankSnapshot? currentRank(Map<String, dynamic> mmr, String? actId) {
-  if (actId == null) return null;
+Map<String, dynamic>? _actInfo(Map<String, dynamic> mmr, String actId) {
   final seasonal = _seasonal(mmr);
   // MMR 的賽季 ID 可能是大寫。
-  final info = (seasonal[actId] ??
+  return (seasonal[actId] ??
       seasonal.entries
           .where((e) => e.key.toLowerCase() == actId.toLowerCase())
           .firstOrNull
           ?.value) as Map<String, dynamic>?;
+}
+
+/// [actId] 那一幕的競技勝場與場數；沒有打過時為 null。
+SeasonRecord? seasonRecord(Map<String, dynamic> mmr, String? actId) {
+  if (actId == null) return null;
+  final info = _actInfo(mmr, actId);
+  final games = _int(info?['NumberOfGames']);
+  if (games <= 0) return null;
+  return SeasonRecord(wins: _int(info?['NumberOfWins']), games: games);
+}
+
+/// 這一幕的競技牌位與 RR；沒有資料或未定級時為 null。
+RankSnapshot? currentRank(Map<String, dynamic> mmr, String? actId) {
+  if (actId == null) return null;
+  final info = _actInfo(mmr, actId);
   final tier = _int(info?['CompetitiveTier']);
   if (tier <= 0) return null;
   return RankSnapshot(tier: tier, rr: _int(info?['RankedRating']));

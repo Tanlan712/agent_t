@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../logic/combat_stats.dart';
 import '../logic/match_highlights.dart';
 import '../logic/match_mapper.dart';
 import '../logic/match_overview.dart';
@@ -48,23 +49,12 @@ class MatchHistoryPage extends StatefulWidget {
 }
 
 class _MatchHistoryPageState extends State<MatchHistoryPage> {
-  MatchFilter _filter = const MatchFilter();
-  String? _filterFor;
-
-  /// false：對戰列表與走勢圖；true：特務／地圖統計。
-  bool _stats = false;
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final riot = context.watch<RiotProvider>();
     final history = context.read<MatchHistoryProvider>();
     final puuid = riot.isLoggedIn ? riot.session?.puuid : null;
-    // 換帳號時清掉篩選（另一個帳號可能沒玩過選的特務或地圖）。
-    if (puuid != null && puuid != _filterFor) {
-      _filterFor = puuid;
-      _filter = const MatchFilter();
-    }
     // 第一次進入或換帳號時重新載入；舊帳號的資料不能留在畫面上。
     if (puuid != null && history.loadedFor != puuid && !history.isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -77,7 +67,6 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
   Widget build(BuildContext context) {
     final riot = context.watch<RiotProvider>();
     final history = context.watch<MatchHistoryProvider>();
-    final ref = context.watch<MatchReferenceProvider>();
 
     final Widget body;
     if (!riot.isLoggedIn) {
@@ -96,119 +85,14 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
           ),
         ],
       );
-    } else if (history.entries.isEmpty && history.isLoading) {
-      body = const Center(child: CircularProgressIndicator());
     } else {
-      // 篩選只作用在已有詳細資料的場次；沒有篩選時列出全部（含讀取失敗的）。
-      final summaries = [
-        for (final e in history.entries)
-          if (e.detail case final d?) d.summary,
-      ];
-      final filtered = summaries.where(_filter.accepts).toList();
-      final shown = _filter.isEmpty
-          ? history.entries
-          : [
-              for (final e in history.entries)
-                if (e.detail case final d? when _filter.accepts(d.summary)) e,
-            ];
-      body = ListView(
+      // 換帳號時 key 不同，篩選與分頁狀態跟著重設（另一個帳號可能沒玩過選的特務或地圖）。
+      body = MatchHistoryBody(
+        key: ValueKey('history-body-${riot.session?.puuid}'),
+        history: history,
+        playerName: riot.session?.displayName ?? '',
+        now: widget.now,
         padding: const EdgeInsets.symmetric(vertical: 16),
-        children: [
-          _HistoryKpi(history: history, ref: ref),
-          if (todaySummary(summaries, widget.now(), hasMore: history.hasMore)
-              case final today?) ...[
-            const SizedBox(height: 16),
-            TodaySummaryCard(
-              summary: today,
-              ref: ref,
-              playerName: riot.session?.displayName ?? '',
-              rank: history.rank,
-              now: widget.now(),
-            ),
-          ],
-          if (history.error case final e?)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Wrap(
-                spacing: 12,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Text(e, style: TextStyle(color: AppColors.error)),
-                  // 第一頁失敗時頁面不會自動重試，給使用者手動重試的入口。
-                  if (history.entries.isEmpty && !history.isLoading)
-                    OutlinedButton(
-                      onPressed: history.loadFirstPage,
-                      child: const Text('重試'),
-                    ),
-                ],
-              ),
-            ),
-          const SizedBox(height: 16),
-          _HistoryControls(
-            filter: _filter,
-            stats: _stats,
-            summaries: summaries,
-            ref: ref,
-            onFilter: (f) => setState(() => _filter = f),
-            onStats: (v) => setState(() => _stats = v),
-          ),
-          const SizedBox(height: 16),
-          if (_stats)
-            _StatsView(
-                games: filtered,
-                details: [
-                  for (final e in history.entries)
-                    if (e.detail case final d? when _filter.accepts(d.summary))
-                      d,
-                ],
-                mapId: _filter.mapId,
-                ref: ref)
-          else ...[
-            _Charts(games: filtered),
-            const SizedBox(height: 16),
-            if (shown.isEmpty && !history.isLoading)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                    child: Text('沒有符合的場次',
-                        style: TextStyle(color: AppColors.muted))),
-              ),
-            // 列表：依日期分組，每場一張卡片（地圖背景＋左側勝負色條）。
-            for (final (i, g) in groupByDay<MatchEntry>(
-                    shown, (e) => e.ref.startTime, (e) => e.detail?.summary)
-                .indexed) ...[
-              _DayHeader(group: g, index: i),
-              for (final e in g.items)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  // 至少 76 高；字放大時可以長高。
-                  child: ConstrainedBox(
-                      constraints: const BoxConstraints(minHeight: 76),
-                      child: MatchCard(entry: e, ref: ref)),
-                ),
-            ],
-          ],
-          if (history.hasMore)
-            Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Center(
-                child: OutlinedButton(
-                  onPressed: history.isLoading ? null : history.loadMore,
-                  child: history.isLoading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('載入更多'),
-                ),
-              ),
-            ),
-          const SizedBox(height: 24),
-          Center(
-            child: Text('請勿公開或分享他人資訊',
-                style: TextStyle(color: AppColors.muted, fontSize: 12)),
-          ),
-        ],
       );
     }
 
@@ -216,12 +100,207 @@ class _MatchHistoryPageState extends State<MatchHistoryPage> {
   }
 }
 
+/// 對戰紀錄的內容：頁首 KPI、篩選、走勢、列表或統計。
+/// 自己的對戰紀錄頁與其他玩家的玩家頁共用；[otherPlayer] 時數據都是那位玩家的。
+class MatchHistoryBody extends StatefulWidget {
+  final MatchHistoryProvider history;
+  final bool otherPlayer;
+
+  /// 今日小結分享圖用的名稱（只有自己的頁面會顯示今日小結）。
+  final String playerName;
+  final DateTime Function() now;
+  final EdgeInsets padding;
+
+  const MatchHistoryBody({
+    super.key,
+    required this.history,
+    this.otherPlayer = false,
+    this.playerName = '',
+    this.now = DateTime.now,
+    this.padding = const EdgeInsets.all(16),
+  });
+
+  @override
+  State<MatchHistoryBody> createState() => _MatchHistoryBodyState();
+}
+
+class _MatchHistoryBodyState extends State<MatchHistoryBody> {
+  MatchFilter _filter = const MatchFilter();
+
+  /// false：對戰列表與走勢圖；true：模式／特務／地圖統計。
+  bool _stats = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final history = widget.history;
+    final ref = context.watch<MatchReferenceProvider>();
+    if (history.entries.isEmpty && history.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    // 篩選只作用在已有詳細資料的場次；沒有篩選時列出全部（含讀取失敗的）。
+    final summaries = [
+      for (final e in history.entries)
+        if (e.detail case final d?) d.summary,
+    ];
+    final filtered = summaries.where(_filter.accepts).toList();
+    final shown = _filter.isEmpty
+        ? history.entries
+        : [
+            for (final e in history.entries)
+              if (e.detail case final d? when _filter.accepts(d.summary)) e,
+          ];
+    return ListView(
+      padding: widget.padding,
+      children: [
+        _HistoryKpi(
+            history: history,
+            ref: ref,
+            otherPlayer: widget.otherPlayer,
+            now: widget.now),
+        if (!widget.otherPlayer)
+          if (todaySummary(summaries, widget.now(), hasMore: history.hasMore)
+              case final today?) ...[
+            const SizedBox(height: 16),
+            TodaySummaryCard(
+              summary: today,
+              ref: ref,
+              playerName: widget.playerName,
+              rank: history.rank,
+              now: widget.now(),
+            ),
+          ],
+        if (history.error case final e?)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Wrap(
+              spacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(e, style: TextStyle(color: AppColors.error)),
+                // 第一頁失敗時頁面不會自動重試，給使用者手動重試的入口。
+                if (history.entries.isEmpty && !history.isLoading)
+                  OutlinedButton(
+                    onPressed: history.loadFirstPage,
+                    child: const Text('重試'),
+                  ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 16),
+        _HistoryControls(
+          filter: _filter,
+          stats: _stats,
+          summaries: summaries,
+          ref: ref,
+          onFilter: (f) => setState(() => _filter = f),
+          onStats: (v) => setState(() => _stats = v),
+        ),
+        const SizedBox(height: 16),
+        if (_stats)
+          _StatsView(
+              games: filtered,
+              details: [
+                for (final e in history.entries)
+                  if (e.detail case final d? when _filter.accepts(d.summary)) d,
+              ],
+              mapId: _filter.mapId,
+              ref: ref)
+        else ...[
+          _Charts(games: filtered),
+          const SizedBox(height: 16),
+          if (shown.isEmpty && !history.isLoading)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                  child: Text('沒有符合的場次',
+                      style: TextStyle(color: AppColors.muted))),
+            ),
+          // 列表：依日期分組，每場一張卡片（地圖背景＋左側勝負色條）。
+          for (final (i, g) in groupByDay<MatchEntry>(
+                  shown, (e) => e.ref.startTime, (e) => e.detail?.summary)
+              .indexed) ...[
+            _DayHeader(group: g, index: i),
+            for (final e in g.items)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                // 至少 76 高；字放大時可以長高。
+                child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 76),
+                    child: MatchCard(
+                        entry: e, ref: ref, otherPlayer: widget.otherPlayer)),
+              ),
+          ],
+        ],
+        if (history.hasMore)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Center(
+              child: OutlinedButton(
+                onPressed: history.isLoading ? null : history.loadMore,
+                child: history.isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Text('載入更多'),
+              ),
+            ),
+          ),
+        const SizedBox(height: 24),
+        Center(
+          child: Text('請勿公開或分享他人資訊',
+              style: TextStyle(color: AppColors.muted, fontSize: 12)),
+        ),
+      ],
+    );
+  }
+}
+
 /// 頁首：牌位、KPI（只用已載入的資料計算）、近期戰績與常用特務。
 class _HistoryKpi extends StatelessWidget {
   final MatchHistoryProvider history;
   final MatchReferenceProvider ref;
+  final bool otherPlayer;
+  final DateTime Function() now;
 
-  const _HistoryKpi({required this.history, required this.ref});
+  const _HistoryKpi(
+      {required this.history,
+      required this.ref,
+      required this.otherPlayer,
+      required this.now});
+
+  /// 玩家頁的牌位卡多列：歷史最高、本幕戰績、競技總場數、等級。
+  List<(String, String, String?)> _profile(List<MatchDetail> details) {
+    final mmr = history.mmr;
+    final seasons = ref.reference?.seasons ?? const <String, SeasonRef>{};
+    final peak = mmr == null ? null : peakRank(mmr, seasons);
+    final act = mmr == null
+        ? null
+        : seasonRecord(
+            mmr, currentActId(seasons, now()) ?? latestSeasonId(mmr));
+    final career = mmr == null ? 0 : competitiveGames(mmr);
+    final level = details
+        .map(focusLine)
+        .map((l) => l?.accountLevel ?? 0)
+        .where((v) => v > 0)
+        .firstOrNull;
+    return [
+      if (peak != null)
+        (
+          '歷史最高',
+          '${ref.tier(peak.tier).name}・${seasonLabel(seasons, peak.seasonId)}',
+          ref.tier(peak.tier).iconUrl,
+        ),
+      if (act != null)
+        (
+          '本幕競技',
+          '${act.wins} 勝 ${act.games - act.wins} 敗・${(act.winRate * 100).round()}%',
+          null,
+        ),
+      if (career > 0) ('競技總場數', '$career', null),
+      if (level != null) ('等級', '$level', null),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -240,6 +319,7 @@ class _HistoryKpi extends StatelessWidget {
               key: const ValueKey('history-rank'),
               rank: history.rank,
               recentRr: rr,
+              facts: otherPlayer ? _profile(details) : const [],
               ref: ref)),
       // KPI 小卡：窄螢幕每列 2 張，不會各佔一整列。
       BentoTile(
@@ -359,16 +439,53 @@ class _RecentForm extends StatelessWidget {
         ]),
       ],
     );
+    String pct(double? v) => v == null ? '—' : '${(v * 100).round()}%';
+    final modes = Column(
+      key: const ValueKey('history-modes'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('各模式', style: label),
+        const SizedBox(height: 8),
+        for (final m in overview.modes.take(4))
+          Padding(
+            key: ValueKey('mode-${m.key}'),
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(children: [
+              SizedBox(
+                  width: 72,
+                  child: Text(queueName(m.key),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600))),
+              Expanded(
+                child: Text(
+                    '${m.games} 場 · 勝率 ${pct(m.winRate)} · ACS ${m.avgAcs.round()}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.tabular(label)),
+              ),
+            ]),
+          ),
+      ],
+    );
     return PanelCard(
       child: LayoutBuilder(
-        builder: (context, c) => c.maxWidth < 640
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [form, const SizedBox(height: 16), agents])
+        builder: (context, c) => c.maxWidth < 760
+            ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                form,
+                const SizedBox(height: 16),
+                agents,
+                const SizedBox(height: 16),
+                modes,
+              ])
             : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Expanded(child: form),
                 const SizedBox(width: 24),
                 Expanded(child: agents),
+                const SizedBox(width: 24),
+                Expanded(child: modes),
               ]),
       ),
     );
@@ -378,12 +495,16 @@ class _RecentForm extends StatelessWidget {
 class _RankHeader extends StatelessWidget {
   final RankInfo? rank;
   final List<int> recentRr;
+
+  /// 額外的資料列（標籤、數值、圖示）。
+  final List<(String, String, String?)> facts;
   final MatchReferenceProvider ref;
 
   const _RankHeader(
       {super.key,
       required this.rank,
       required this.recentRr,
+      this.facts = const [],
       required this.ref});
 
   @override
@@ -421,6 +542,29 @@ class _RankHeader extends StatelessWidget {
                         style: AppText.tabular(TextStyle(
                             color: rr >= 0 ? AppColors.owned : AppColors.error,
                             fontWeight: FontWeight.bold))),
+                ],
+              ),
+            ],
+            for (final (label, value, icon) in facts) ...[
+              const SizedBox(height: 6),
+              Row(
+                key: ValueKey('rank-fact-$label'),
+                children: [
+                  SizedBox(
+                      width: 72,
+                      child: Text(label,
+                          style:
+                              TextStyle(color: AppColors.muted, fontSize: 12))),
+                  if (icon != null) ...[
+                    SizedBox(width: 20, height: 20, child: SkinIcon(url: icon)),
+                    const SizedBox(width: 6),
+                  ],
+                  Expanded(
+                    child: Text(value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.tabular(const TextStyle(fontSize: 13))),
+                  ),
                 ],
               ),
             ],
@@ -995,6 +1139,8 @@ class _StatsView extends StatelessWidget {
       Text('最近 ${games.length} 場',
           style: TextStyle(color: AppColors.muted, fontSize: 12)),
       const SizedBox(height: 12),
+      table('stats-modes', '模式', statsBy(games, (g) => g.queueId), queueName),
+      const SizedBox(height: 16),
       table('stats-agents', '特務', statsBy(games, (g) => g.myAgentId),
           (id) => ref.agent(id).name),
       const SizedBox(height: 16),

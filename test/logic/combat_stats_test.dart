@@ -124,4 +124,17 @@ void main() {
     expect(seasonLabel(seasons, 'a5'), 'V25 第五幕');
     expect(seasonLabel(seasons, 'zzz'), '未知賽季');
   });
+
+  test('本幕競技戰績：勝場與場數；沒打過時為 null', () {
+    final m = mmr({
+      'NOW': {'NumberOfWins': 7, 'NumberOfGames': 10},
+      'a5': {'NumberOfWins': 0, 'NumberOfGames': 0},
+    });
+    final r = seasonRecord(m, 'now')!;
+    expect(r.wins, 7);
+    expect(r.games, 10);
+    expect(r.winRate, 0.7);
+    expect(seasonRecord(m, 'a5'), isNull);
+    expect(seasonRecord(m, null), isNull);
+  });
 }

@@ -43,12 +43,27 @@ class MatchClient {
   Future<Map<String, dynamic>> fetchMatchJson(RiotSession s, String matchId) =>
       _riot.getPd(s, '/match-details/v1/matches/$matchId', label: '取得對戰詳情');
 
-  Future<Map<String, int>> fetchRrChanges(RiotSession s, int count) async {
+  /// 競技更新一次最多取這麼多筆（社群文件：endIndex − startIndex ≤ 20）。
+  static const maxUpdatesRange = 20;
+
+  /// [puuid]（預設是自己）從 [start] 起 [count] 筆競技更新的 RR 變化，
+  /// 以及 Riot 回傳的所有場次 ID（含定級與非競技；少於 [count] 筆代表已經到底）。
+  Future<(Map<String, int>, List<String>)> fetchRrPage(
+      RiotSession s, int start, int count,
+      {String? puuid}) async {
     final json = await _riot.getPd(
-        s, '/mmr/v1/players/${s.puuid}/competitiveupdates',
-        query: {'startIndex': '0', 'endIndex': '$count'}, label: '取得牌位變化');
-    return rrByMatch(json);
+        s, '/mmr/v1/players/${puuid ?? s.puuid}/competitiveupdates',
+        query: {'startIndex': '$start', 'endIndex': '${start + count}'},
+        label: '取得牌位變化');
+    final ids = [
+      for (final m in json['Matches'] as List<dynamic>? ?? const [])
+        if (m is Map && m['MatchID'] is String) m['MatchID'] as String,
+    ];
+    return (rrByMatch(json), ids);
   }
+
+  Future<Map<String, int>> fetchRrChanges(RiotSession s, int count) async =>
+      (await fetchRrPage(s, 0, count)).$1;
 
   /// 實測 match-details 不含玩家名稱，改用 name-service 查詢；
   /// 回傳 puuid → `名稱#Tag`，名稱為空的玩家不列入。

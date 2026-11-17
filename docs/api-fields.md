@@ -117,9 +117,11 @@
 ### `GET /mmr/v1/players/{puuid}/competitiveupdates?startIndex&endIndex` ✅ 🧩
 - `Matches[]{MatchID, QueueID, TierBeforeUpdate, TierAfterUpdate, RankedRatingBeforeUpdate, RankedRatingAfterUpdate, RankedRatingEarned}`
 - 實測 `RankedRatingEarned` 都是 0，RR 變化改用前後牌位計算 ✅。
+- 2026-11-17 起玩家頁也用他人的 puuid 查詢（每次最多 20 筆，依對戰紀錄需要往下補讀）📄：他人能否查詢尚未用真實帳號實測；讀不到時每場 RR 顯示「—」。
 
 ### `GET /mmr/v1/players/{puuid}` 🧩
-- `LatestCompetitiveUpdate{MatchID, TierAfterUpdate, RankedRatingAfterUpdate}`：自己的頁首牌位用這個 ✅。
+- `LatestCompetitiveUpdate{MatchID, TierAfterUpdate, RankedRatingAfterUpdate}`：自己與玩家頁的頁首牌位用這個 ✅（玩家頁 2026-11-17 起，他人的尚未實測）。
+- `SeasonalInfoBySeasonID[seasonId]{NumberOfGames, NumberOfWins, WinsByTier}`：玩家頁的本幕勝敗、競技總場數與歷史最高（推算）📄。
 - `QueueSkills.competitive.SeasonalInfoBySeasonID[seasonId]{SeasonID, CompetitiveTier, RankedRating, NumberOfWins}`：他人的這季牌位用這個 ✅ 2026-10-21（他人可以查詢）。
 - `IsActRankBadgeHidden` ✅ 2026-10-21：實測有這個欄位，隱藏牌位的玩家為 true。使用者決定忽略這個欄位，照樣顯示牌位。
 - `IsLeaderboardAnonymized` 📄：尚未實測。

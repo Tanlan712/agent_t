@@ -31,7 +31,12 @@ class MatchHistoryProvider with ChangeNotifier {
 
   final List<MatchEntry> _entries = [];
   final Map<String, MatchDetail> _details = {};
-  Map<String, int> _rr = {};
+  final Map<String, int> _rr = {};
+
+  /// 已讀過的競技更新場次（含定級、沒有 RR 的），用來判斷還要不要往下讀。
+  final Set<String> _rrSeen = {};
+  bool _rrDone = false;
+  Map<String, dynamic>? _mmr;
   RankInfo? _rank;
   int _total = 0;
   bool _isLoading = false;
@@ -41,7 +46,7 @@ class MatchHistoryProvider with ChangeNotifier {
 
   final MatchDetailCache cache;
 
-  /// 要查看的玩家；null 表示自己（含牌位與 RR）。
+  /// 要查看的玩家；null 表示自己。牌位與 RR 兩者都會讀。
   final String? focusPuuid;
 
   /// 每頁載入完成（已補上名稱）後呼叫，例如記錄遇過的玩家。
@@ -81,6 +86,9 @@ class MatchHistoryProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   RankInfo? get rank => _rank;
+
+  /// 焦點玩家的 MMR 原始資料（歷史最高、本幕戰績用）；讀不到時為 null。
+  Map<String, dynamic>? get mmr => _mmr;
   List<int> get recentRr => _rr.values.take(5).toList();
   MatchDetail? detail(String matchId) => _details[matchId];
 
@@ -92,7 +100,10 @@ class MatchHistoryProvider with ChangeNotifier {
     final gen = ++_generation;
     _entries.clear();
     _details.clear();
-    _rr = {};
+    _rr.clear();
+    _rrSeen.clear();
+    _rrDone = false;
+    _mmr = null;
     _rank = null;
     _total = 0;
     _error = null;
@@ -100,15 +111,12 @@ class MatchHistoryProvider with ChangeNotifier {
     if (s == null) return;
     _loadedFor = s.puuid;
     await _guarded(gen, () async {
-      if (focusPuuid == null) {
-        // 牌位只是頁首資訊：失敗（非登入過期）時留空，不阻擋列表。
-        final rank = await _optional(() => _client.fetchRank(s), null);
-        final rr = await _optional(
-            () => _client.fetchRrChanges(s, 20), <String, int>{});
-        if (gen != _generation) return;
-        _rank = rank;
-        _rr = rr;
-      }
+      // 牌位只是頁首資訊：失敗（非登入過期）時留空，不阻擋列表。
+      final mmr = await _optional<Map<String, dynamic>?>(
+          () => _client.fetchMmrJson(s, focusPuuid ?? s.puuid), null);
+      if (gen != _generation) return;
+      _mmr = mmr;
+      _rank = mmr == null ? null : mapRank(mmr);
       await _loadPage(s, 0, gen);
     });
   }
@@ -128,6 +136,31 @@ class MatchHistoryProvider with ChangeNotifier {
       if (_isAuthError(e)) rethrow;
       debugPrint('牌位資料取得失敗：${e.message}');
       return fallback;
+    }
+  }
+
+  /// 補讀競技更新，直到這一頁的競技場次都有 RR（或 Riot 沒有更多）；最多讀 3 批。
+  Future<void> _ensureRr(RiotSession s, List<MatchRef> refs, int gen) async {
+    for (var i = 0; i < 3 && !_rrDone; i++) {
+      final missing = refs.any(
+          (r) => r.queueId == 'competitive' && !_rrSeen.contains(r.matchId));
+      if (!missing) return;
+      const n = MatchClient.maxUpdatesRange;
+      final page = await _optional<(Map<String, int>, List<String>)?>(
+          () => withRiotRetry(
+              () =>
+                  _client.fetchRrPage(s, _rrSeen.length, n, puuid: focusPuuid),
+              delay: _delay),
+          null);
+      if (gen != _generation) return;
+      if (page == null) {
+        _rrDone = true;
+        return;
+      }
+      final (rr, ids) = page;
+      _rr.addAll(rr);
+      _rrSeen.addAll(ids);
+      if (ids.length < n) _rrDone = true;
     }
   }
 
@@ -174,6 +207,8 @@ class MatchHistoryProvider with ChangeNotifier {
     final (refs, total) = await withRiotRetry(
         () => _client.fetchHistory(s, start, pageSize, puuid: focusPuuid),
         delay: _delay);
+    if (gen != _generation) return;
+    await _ensureRr(s, refs, gen);
     if (gen != _generation) return;
     _total = total;
     final results = List<MatchEntry?>.filled(refs.length, null);
