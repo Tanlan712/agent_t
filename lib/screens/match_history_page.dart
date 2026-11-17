@@ -152,11 +152,7 @@ class _MatchHistoryBodyState extends State<MatchHistoryBody> {
     return ListView(
       padding: widget.padding,
       children: [
-        _HistoryKpi(
-            history: history,
-            ref: ref,
-            otherPlayer: widget.otherPlayer,
-            now: widget.now),
+        _HistoryKpi(history: history, ref: ref, now: widget.now),
         if (!widget.otherPlayer)
           if (todaySummary(summaries, widget.now(), hasMore: history.hasMore)
               case final today?) ...[
@@ -260,16 +256,12 @@ class _MatchHistoryBodyState extends State<MatchHistoryBody> {
 class _HistoryKpi extends StatelessWidget {
   final MatchHistoryProvider history;
   final MatchReferenceProvider ref;
-  final bool otherPlayer;
   final DateTime Function() now;
 
   const _HistoryKpi(
-      {required this.history,
-      required this.ref,
-      required this.otherPlayer,
-      required this.now});
+      {required this.history, required this.ref, required this.now});
 
-  /// 玩家頁的牌位卡多列：歷史最高、本幕戰績、競技總場數、等級。
+  /// 牌位卡多列：歷史最高、本幕戰績、競技總場數、等級（自己與玩家頁都顯示）。
   List<(String, String, String?)> _profile(List<MatchDetail> details) {
     final mmr = history.mmr;
     final seasons = ref.reference?.seasons ?? const <String, SeasonRef>{};
@@ -319,45 +311,53 @@ class _HistoryKpi extends StatelessWidget {
               key: const ValueKey('history-rank'),
               rank: history.rank,
               recentRr: rr,
-              facts: otherPlayer ? _profile(details) : const [],
+              facts: _profile(details),
               ref: ref)),
-      // KPI 小卡：窄螢幕每列 2 張，不會各佔一整列。
+      // KPI 小卡：手機整列寬時一列 3 張（數值都很短），6 張只佔 2 列；較寬時維持原本大小。
       BentoTile(
           span: 8,
           medium: 6,
-          child: KpiStrip(tiles: [
-            KpiTile(
-              key: const ValueKey('kpi-rr'),
-              label: '近 ${rr.length} 場 RR',
-              value: rr.isEmpty ? '—' : formatRr(rrSum),
-              up: rrUp(rr),
-            ),
-            KpiTile(
-              label: '勝率（${o.wins + o.losses} 場）',
-              value: o.winRate == null ? '—' : '${(o.winRate! * 100).round()}%',
-            ),
-            KpiTile(
-              label: '平均 ACS',
-              value: details.isEmpty
-                  ? '—'
-                  : '${(details.fold<int>(0, (a, d) => a + d.summary.acs) / details.length).round()}',
-            ),
-            KpiTile(
-              key: const ValueKey('kpi-kd'),
-              label: '平均 K/D',
-              value: o.kd?.toStringAsFixed(2) ?? '—',
-            ),
-            KpiTile(
-              key: const ValueKey('kpi-adr'),
-              label: '平均 ADR',
-              value: o.adr == null ? '—' : '${o.adr!.round()}',
-            ),
-            KpiTile(
-              key: const ValueKey('kpi-hs'),
-              label: '爆頭率',
-              value: o.headshot == null ? '—' : '${o.headshot!.round()}%',
-            ),
-          ])),
+          child: LayoutBuilder(
+              builder: (context, c) => KpiStrip(
+                      minTileWidth:
+                          c.maxWidth < 520 ? 104 : KpiStrip.defaultMinTileWidth,
+                      tiles: [
+                        KpiTile(
+                          key: const ValueKey('kpi-rr'),
+                          label: '近 ${rr.length} 場 RR',
+                          value: rr.isEmpty ? '—' : formatRr(rrSum),
+                          up: rrUp(rr),
+                        ),
+                        KpiTile(
+                          label: '勝率（${o.wins + o.losses} 場）',
+                          value: o.winRate == null
+                              ? '—'
+                              : '${(o.winRate! * 100).round()}%',
+                        ),
+                        KpiTile(
+                          label: '平均 ACS',
+                          value: details.isEmpty
+                              ? '—'
+                              : '${(details.fold<int>(0, (a, d) => a + d.summary.acs) / details.length).round()}',
+                        ),
+                        KpiTile(
+                          key: const ValueKey('kpi-kd'),
+                          label: '平均 K/D',
+                          value: o.kd?.toStringAsFixed(2) ?? '—',
+                        ),
+                        KpiTile(
+                          key: const ValueKey('kpi-adr'),
+                          label: '平均 ADR',
+                          value: o.adr == null ? '—' : '${o.adr!.round()}',
+                        ),
+                        KpiTile(
+                          key: const ValueKey('kpi-hs'),
+                          label: '爆頭率',
+                          value: o.headshot == null
+                              ? '—'
+                              : '${o.headshot!.round()}%',
+                        ),
+                      ]))),
       if (details.isNotEmpty)
         BentoTile(span: 12, child: _RecentForm(overview: o, ref: ref)),
     ]);
@@ -929,68 +929,87 @@ class _HistoryControls extends StatelessWidget {
             if (v is T) onChanged(v);
           },
         );
-    return PanelCard(
-      key: const ValueKey('history-filters'),
-      child: Wrap(
-        spacing: 16,
-        runSpacing: 8,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          SegmentedButton<bool>(
-            key: const ValueKey('history-tab'),
-            showSelectedIcon: false,
-            segments: const [
-              ButtonSegment(value: false, label: Text('對戰')),
-              ButtonSegment(value: true, label: Text('統計')),
-            ],
-            selected: {stats},
-            onSelectionChanged: (v) => onStats(v.first),
-          ),
-          drop<ModeFilter>(
-              'filter-mode',
-              filter.mode,
-              const {
-                ModeFilter.all: '全部模式',
-                ModeFilter.competitive: '競技',
-                ModeFilter.unrated: '一般',
-                ModeFilter.other: '其他',
-              },
-              (v) => onFilter(filter.copyWith(mode: v))),
-          drop<String>(
-              'filter-agent',
-              filter.agentId ?? '',
-              {
-                '': '全部特務',
-                for (final a in agents) a: ref.agent(a).name,
-              },
-              (v) => onFilter(
-                  filter.copyWith(agentId: () => v.isEmpty ? null : v))),
-          drop<String>(
-              'filter-map',
-              filter.mapId ?? '',
-              {
-                '': '全部地圖',
-                for (final m in maps) m: ref.map(m).name,
-              },
-              (v) =>
-                  onFilter(filter.copyWith(mapId: () => v.isEmpty ? null : v))),
-          drop<ResultFilter>(
-              'filter-result',
-              filter.result,
-              const {
-                ResultFilter.all: '全部勝負',
-                ResultFilter.win: '勝',
-                ResultFilter.loss: '敗',
-              },
-              (v) => onFilter(filter.copyWith(result: v))),
-          if (!filter.isEmpty)
-            TextButton(
-              onPressed: () => onFilter(const MatchFilter()),
-              child: const Text('清除篩選'),
-            ),
-        ],
+    // 對戰／統計分頁放在篩選上方、整列寬，手機上也一眼看得到「統計」。
+    // 寬螢幕最多 480 寬，不拉滿整列。
+    final tab = Align(
+        alignment: Alignment.centerLeft,
+        child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<bool>(
+                key: const ValueKey('history-tab'),
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment(
+                      value: false,
+                      icon: Icon(Icons.view_list_outlined, size: 18),
+                      label: Text('對戰')),
+                  ButtonSegment(
+                      value: true,
+                      icon: Icon(Icons.bar_chart, size: 18),
+                      label: Text('統計')),
+                ],
+                selected: {stats},
+                onSelectionChanged: (v) => onStats(v.first),
+              ),
+            )));
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      tab,
+      const SizedBox(height: 8),
+      PanelCard(
+        key: const ValueKey('history-filters'),
+        child: Wrap(
+          spacing: 16,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            drop<ModeFilter>(
+                'filter-mode',
+                filter.mode,
+                const {
+                  ModeFilter.all: '全部模式',
+                  ModeFilter.competitive: '競技',
+                  ModeFilter.unrated: '一般',
+                  ModeFilter.other: '其他',
+                },
+                (v) => onFilter(filter.copyWith(mode: v))),
+            drop<String>(
+                'filter-agent',
+                filter.agentId ?? '',
+                {
+                  '': '全部特務',
+                  for (final a in agents) a: ref.agent(a).name,
+                },
+                (v) => onFilter(
+                    filter.copyWith(agentId: () => v.isEmpty ? null : v))),
+            drop<String>(
+                'filter-map',
+                filter.mapId ?? '',
+                {
+                  '': '全部地圖',
+                  for (final m in maps) m: ref.map(m).name,
+                },
+                (v) => onFilter(
+                    filter.copyWith(mapId: () => v.isEmpty ? null : v))),
+            drop<ResultFilter>(
+                'filter-result',
+                filter.result,
+                const {
+                  ResultFilter.all: '全部勝負',
+                  ResultFilter.win: '勝',
+                  ResultFilter.loss: '敗',
+                },
+                (v) => onFilter(filter.copyWith(result: v))),
+            if (!filter.isEmpty)
+              TextButton(
+                onPressed: () => onFilter(const MatchFilter()),
+                child: const Text('清除篩選'),
+              ),
+          ],
+        ),
       ),
-    );
+    ]);
   }
 }
 

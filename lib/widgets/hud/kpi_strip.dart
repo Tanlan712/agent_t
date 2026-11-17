@@ -300,9 +300,15 @@ class CountUpText extends StatelessWidget {
 class KpiStrip extends StatelessWidget {
   final List<KpiTile> tiles;
 
-  static const minTileWidth = 160.0;
+  static const defaultMinTileWidth = 160.0;
 
-  const KpiStrip({super.key, required this.tiles});
+  /// 每張小卡的最小寬度；數值短的頁面可以調小，手機上一列多排幾張。
+  final double minTileWidth;
+
+  const KpiStrip(
+      {super.key,
+      required this.tiles,
+      this.minTileWidth = defaultMinTileWidth});
 
   @override
   Widget build(BuildContext context) {

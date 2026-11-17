@@ -87,6 +87,9 @@ void main() {
             : null,
       ));
       await settle(tester);
+      // 牌位卡多了歷史最高等資料列，第一張卡片可能在畫面外，先捲到它。
+      await tester.ensureVisible(find.byKey(const ValueKey('match-card-m1')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('match-card-m1')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('player-row-me')), findsOneWidget);
@@ -425,6 +428,30 @@ void scoreboardTests() {
       expect(kpi('+3'), findsOneWidget);
       expect(kpi('100%'), findsOneWidget);
       expect(kpi('191'), findsOneWidget);
+    });
+
+    testWidgets('自己的頁面也顯示牌位卡資料列；手機寬 KPI 一列 3 張、統計分頁在篩選上方', (tester) async {
+      setWidth(tester, 375);
+      final h =
+          await Harness.create(tester, riotHttp: riotClient(historyTotal: 3));
+      await tester.runAsync(() => h.riot.login(fakeRedirect));
+      await tester.pumpWidget(h.wrap(home: const MatchHistoryPage()));
+      await tester.pump();
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 80)));
+      await tester.pumpAndSettle();
+      // 使用者 2026-11-17：自己的對戰紀錄也要有統計資料（等級來自場次資料）。
+      expect(find.byKey(const ValueKey('rank-fact-等級')), findsOneWidget);
+      final rr = tester.getTopLeft(find.byKey(const ValueKey('kpi-rr')));
+      final kd = tester.getTopLeft(find.byKey(const ValueKey('kpi-kd')));
+      final hs = tester.getTopLeft(find.byKey(const ValueKey('kpi-hs')));
+      expect(kd.dy, greaterThan(rr.dy));
+      expect(hs.dy, kd.dy);
+      final tab = tester.getRect(find.byKey(const ValueKey('history-tab')));
+      final filters =
+          tester.getRect(find.byKey(const ValueKey('history-filters')));
+      expect(tab.bottom, lessThanOrEqualTo(filters.top));
+      expect(tab.width, greaterThan(300));
     });
 
     test('rrUp：正數上升、負數下降、0 與沒有資料為中性', () {
