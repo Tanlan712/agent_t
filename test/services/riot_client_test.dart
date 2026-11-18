@@ -147,4 +147,29 @@ void corsTests() {
     final ok = await c.getPd(s, '/mmr/v1/players/puuid-1', label: '取得牌位');
     expect(ok['Subject'], isNotNull);
   });
+
+  test('被限流（429）後所有 pd 請求暫停到 Retry-After 結束才送', () async {
+    final inner = riotClient();
+    final sentAt = <String, DateTime>{};
+    var limited = true;
+    final c = RiotClient(client: MockClient((req) async {
+      if (req.url.path == '/mmr/v1/players/limited' && limited) {
+        limited = false;
+        return http.Response('{}', 429, headers: {'retry-after': '1'});
+      }
+      sentAt[req.url.path] = DateTime.now();
+      final copy = http.Request(req.method, req.url)
+        ..headers.addAll(req.headers)
+        ..bodyBytes = req.bodyBytes;
+      return http.Response.fromStream(await inner.send(copy));
+    }));
+    final s = await c.createSession(
+        parseRiotRedirect(fakeRedirect)!, DateTime(2026, 10, 20, 10));
+    final start = DateTime.now();
+    await expectLater(c.getPd(s, '/mmr/v1/players/limited', label: 'x'),
+        throwsA(isA<RiotApiException>()));
+    await c.getPd(s, '/mmr/v1/players/puuid-1', label: 'x');
+    expect(sentAt['/mmr/v1/players/puuid-1']!.difference(start),
+        greaterThanOrEqualTo(const Duration(milliseconds: 900)));
+  });
 }

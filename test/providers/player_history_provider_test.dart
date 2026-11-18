@@ -52,7 +52,7 @@ void main() {
     final riot = RiotProvider(rc);
     await riot.login(fakeRedirect);
     final p = PlayerHistoryProvider(MatchClient(rc), riot, MatchDetailCache(),
-        puuid: 'r1');
+        puuid: 'r1', pageSize: 20);
     await p.loadFirstPage();
     await p.loadMore();
     expect(p.entries.length, 30);
@@ -133,7 +133,7 @@ void main() {
     expect(p.error, MatchHistoryProvider.expiredMessage);
   });
 
-  test('沒有指定 pageSize 時每頁 20 場', () async {
+  test('沒有指定 pageSize 時每頁 10 場（減少一次送出的請求）', () async {
     final rc = RiotClient(client: riotClient());
     final riot = RiotProvider(rc);
     await riot.login(fakeRedirect);
@@ -141,8 +141,8 @@ void main() {
         puuid: 'r1');
     await p.loadFirstPage();
     expect(p.error, isNull);
-    expect(p.entries.length, 20);
-    expect(p.entries.map((e) => e.ref.matchId).toSet().length, 20);
+    expect(p.entries.length, 10);
+    expect(p.entries.map((e) => e.ref.matchId).toSet().length, 10);
   });
 
   test('每頁載入完成後把補上名稱的詳情交給 onDetails', () async {
@@ -175,6 +175,45 @@ void main() {
     expect(snapshots, contains((6, 1)));
     expect(p.entries.every((e) => e.detail != null), isTrue);
     expect(p.entries.first.detail!.summary.rrChange, 20);
+  });
+
+  test('單場失敗後可以重試失敗的場次', () async {
+    final fail = {'r1-g1', 'r1-g2'};
+    final inner = riotClient(blankNames: true);
+    final rc = RiotClient(
+        pvpCooldown: false,
+        client: MockClient((req) async {
+          if (fail.contains(req.url.pathSegments.last)) {
+            return http.Response('{}', 500);
+          }
+          final copy = http.Request(req.method, req.url)
+            ..headers.addAll(req.headers)
+            ..bodyBytes = req.bodyBytes;
+          return http.Response.fromStream(await inner.send(copy));
+        }));
+    final riot = RiotProvider(rc);
+    await riot.login(fakeRedirect);
+    final p = PlayerHistoryProvider(MatchClient(rc), riot, MatchDetailCache(),
+        puuid: 'r1', pageSize: 3);
+    await p.loadFirstPage();
+    expect(p.failedCount, 2);
+    fail.clear();
+    await p.retryFailed();
+    expect(p.failedCount, 0);
+    expect(p.entries.every((e) => e.detail != null), isTrue);
+    expect(p.entries[1].detail!.teams['Red']!.first.riotId, 'N-r1#TW1');
+  });
+
+  test('牌位讀不到時標成失敗（不是未定級）', () async {
+    final rc = RiotClient(client: riotClient(otherMmrStatus: {'r1': 500}));
+    final riot = RiotProvider(rc);
+    await riot.login(fakeRedirect);
+    final p = PlayerHistoryProvider(MatchClient(rc), riot, MatchDetailCache(),
+        puuid: 'r1', pageSize: 3);
+    await p.loadFirstPage();
+    expect(p.rank, isNull);
+    expect(p.rankFailed, isTrue);
+    expect(p.rankLoading, isFalse);
   });
 
   test('載入中 dispose 不會丟出例外', () async {

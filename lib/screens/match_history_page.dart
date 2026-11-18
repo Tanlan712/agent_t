@@ -182,6 +182,23 @@ class _MatchHistoryBodyState extends State<MatchHistoryBody> {
               ],
             ),
           ),
+        if (history.failedCount > 0 && !history.isLoading)
+          Padding(
+            key: const ValueKey('history-failed'),
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Wrap(
+              spacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text('${history.failedCount} 場讀取失敗（Riot 可能暫時限制查詢）',
+                    style: TextStyle(color: AppColors.error)),
+                OutlinedButton(
+                  onPressed: history.retryFailed,
+                  child: const Text('重試'),
+                ),
+              ],
+            ),
+          ),
         const SizedBox(height: 16),
         _HistoryControls(
           filter: _filter,
@@ -311,6 +328,7 @@ class _HistoryKpi extends StatelessWidget {
               key: const ValueKey('history-rank'),
               rank: history.rank,
               loading: history.rankLoading,
+              failed: history.rankFailed,
               recentRr: rr,
               facts: _profile(details),
               ref: ref)),
@@ -496,6 +514,7 @@ class _RecentForm extends StatelessWidget {
 class _RankHeader extends StatelessWidget {
   final RankInfo? rank;
   final bool loading;
+  final bool failed;
   final List<int> recentRr;
 
   /// 額外的資料列（標籤、數值、圖示）。
@@ -506,6 +525,7 @@ class _RankHeader extends StatelessWidget {
       {super.key,
       required this.rank,
       this.loading = false,
+      this.failed = false,
       required this.recentRr,
       this.facts = const [],
       required this.ref});
@@ -528,7 +548,9 @@ class _RankHeader extends StatelessWidget {
               children: [
                 SizedBox(
                     width: 40, height: 40, child: SkinIcon(url: tier?.iconUrl)),
-                Text(tier?.name ?? (loading ? '讀取中…' : '未定級'),
+                Text(
+                    tier?.name ??
+                        (loading ? '讀取中…' : (failed ? '無法取得牌位' : '未定級')),
                     style: Theme.of(context).textTheme.titleLarge),
                 if (rank != null) Text('${rank.rr} RR'),
               ],

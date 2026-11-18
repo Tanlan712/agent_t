@@ -6,7 +6,7 @@ import 'match_history_provider.dart';
 class PlayerHistoryProvider extends MatchHistoryProvider {
   PlayerHistoryProvider(super.client, super.riot, MatchDetailCache cache,
       {required String puuid,
-      super.pageSize = 20,
+      super.pageSize = 10,
       super.maxConcurrent = 2,
       super.onDetails,
       super.delay})

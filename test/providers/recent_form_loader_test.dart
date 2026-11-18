@@ -93,7 +93,8 @@ void main() {
         if (pd) inFlight--;
       }
     });
-    final rc = RiotClient(client: client);
+    // 這裡測每個請求自己的退避；整體限流暫停另有 riot_client_test。
+    final rc = RiotClient(client: client, pvpCooldown: false);
     final riot = RiotProvider(rc);
     await riot.login(fakeRedirect);
     paths.clear();

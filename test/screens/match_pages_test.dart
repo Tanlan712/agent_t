@@ -300,7 +300,7 @@ void scoreboardTests() {
     expect(find.byKey(const ValueKey('form-r1-0')), findsOneWidget);
     expect(find.byKey(const ValueKey('form-r1-4')), findsOneWidget);
     expect(inCell('form-r1', '平均 227'), findsOneWidget);
-    expect(inCell('form-r2', '—'), findsOneWidget);
+    expect(inCell('form-r2', '讀取失敗'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
