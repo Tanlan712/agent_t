@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import '../models/account_progress.dart';
 import '../models/penalty_status.dart';
 import '../models/player_loadout.dart';
@@ -62,9 +63,10 @@ class RiotClient {
   RiotClient(
       {http.Client? client,
       int maxPvpConcurrent = 2,
-      Duration? pvpTimeout = const Duration(seconds: 15)})
+      Duration? pvpTimeout = const Duration(seconds: 15),
+      bool pvpCooldown = true})
       : _client = _PvpLimitedClient(
-            client ?? http.Client(), maxPvpConcurrent, pvpTimeout);
+            client ?? http.Client(), maxPvpConcurrent, pvpTimeout, pvpCooldown);
 
   /// 瀏覽器實測：userinfo 與 riot-geo 的實際回應沒有 CORS 標頭會被擋下，
   /// 所以 puuid 從 access_token（JWT）解出，名稱優先取 id_token 的 acct，
@@ -333,10 +335,26 @@ class _PvpLimitedClient extends http.BaseClient {
   final http.Client _inner;
   final int _max;
   final Duration? _timeout;
+  final bool _cooldown;
   int _running = 0;
   final _waiting = <Completer<void>>[];
 
-  _PvpLimitedClient(this._inner, this._max, this._timeout);
+  /// 被限流（429）或連線失敗後，所有請求暫停到這個時間再送；連續失敗時拉長。
+  /// 瀏覽器裡 429 常常沒有 CORS 標頭，只會看到連線失敗，所以兩者一起算。
+  DateTime? _pauseUntil;
+  int _strikes = 0;
+
+  _PvpLimitedClient(this._inner, this._max, this._timeout, this._cooldown);
+
+  void _strike(Duration? retryAfter) {
+    if (!_cooldown) return;
+    _strikes++;
+    final wait = retryAfter ?? Duration(seconds: min(2 << (_strikes - 1), 30));
+    final until = DateTime.now().add(wait);
+    if (_pauseUntil == null || until.isAfter(_pauseUntil!)) {
+      _pauseUntil = until;
+    }
+  }
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
@@ -350,22 +368,52 @@ class _PvpLimitedClient extends http.BaseClient {
       await slot.future;
     }
     try {
-      // 等回應內容讀完才釋放名額，避免串流還沒讀完就送出下一個請求；
-      // 逾時丟出 TimeoutException（呼叫端視為連線失敗，可退避重試）。
-      final read = () async {
-        final res = await _inner.send(request);
-        return (res, await res.stream.toBytes());
-      }();
+      // 限流暫停中：等暫停結束再送，不要讓排隊的請求一個個撞上限流、各自用完重試次數。
+      for (;;) {
+        final until = _pauseUntil;
+        if (until == null) break;
+        final left = until.difference(DateTime.now());
+        if (left <= Duration.zero) break;
+        await Future<void>.delayed(left);
+      }
+      // 逾時要真的中斷請求（瀏覽器的 fetch 會 abort），否則卡住的連線會一直佔著。
+      final abort = Completer<void>();
+      final sent = _abortable(request, abort.future);
       final timeout = _timeout;
-      final (res, bytes) =
-          await (timeout == null ? read : read.timeout(timeout));
-      return http.StreamedResponse(Stream.value(bytes), res.statusCode,
-          contentLength: bytes.length,
-          request: res.request,
-          headers: res.headers,
-          isRedirect: res.isRedirect,
-          persistentConnection: res.persistentConnection,
-          reasonPhrase: res.reasonPhrase);
+      final timer = timeout == null
+          ? null
+          : Timer(timeout, () {
+              if (!abort.isCompleted) abort.complete();
+            });
+      try {
+        // 等回應內容讀完才釋放名額，避免串流還沒讀完就送出下一個請求；
+        // 逾時丟出 TimeoutException（呼叫端視為連線失敗，可退避重試）。
+        final read = () async {
+          final res = await _inner.send(sent);
+          return (res, await res.stream.toBytes());
+        }();
+        final (res, bytes) = await (timeout == null
+            ? read
+            : read.timeout(timeout + const Duration(seconds: 1)));
+        if (res.statusCode == 429) {
+          final seconds = int.tryParse(res.headers['retry-after'] ?? '');
+          _strike(seconds == null ? null : Duration(seconds: seconds));
+        } else {
+          _strikes = 0;
+        }
+        return http.StreamedResponse(Stream.value(bytes), res.statusCode,
+            contentLength: bytes.length,
+            request: res.request,
+            headers: res.headers,
+            isRedirect: res.isRedirect,
+            persistentConnection: res.persistentConnection,
+            reasonPhrase: res.reasonPhrase);
+      } catch (_) {
+        _strike(null);
+        rethrow;
+      } finally {
+        timer?.cancel();
+      }
     } finally {
       if (_waiting.isNotEmpty) {
         _waiting.removeAt(0).complete();
@@ -373,6 +421,19 @@ class _PvpLimitedClient extends http.BaseClient {
         _running--;
       }
     }
+  }
+
+  /// 換成可以中斷的請求（同樣的方法、網址、標頭與內容）。
+  static http.BaseRequest _abortable(
+      http.BaseRequest request, Future<void> trigger) {
+    if (request is! http.Request) return request;
+    return http.AbortableRequest(request.method, request.url,
+        abortTrigger: trigger)
+      ..headers.addAll(request.headers)
+      ..followRedirects = request.followRedirects
+      ..maxRedirects = request.maxRedirects
+      ..persistentConnection = request.persistentConnection
+      ..bodyBytes = request.bodyBytes;
   }
 
   @override

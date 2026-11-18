@@ -25,7 +25,10 @@ class RecentFormCell extends StatelessWidget {
       case FormStatus.loading:
         return Text('…', style: muted);
       case FormStatus.failed:
-        return Text('—', style: muted);
+        return Tooltip(
+            message: '讀取失敗（Riot 可能暫時限制查詢）',
+            triggerMode: TooltipTriggerMode.tap,
+            child: Text('讀取失敗', style: muted));
       case FormStatus.done:
         break;
     }

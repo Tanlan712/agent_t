@@ -39,6 +39,7 @@ class MatchHistoryProvider with ChangeNotifier {
   Map<String, dynamic>? _mmr;
   RankInfo? _rank;
   bool _rankLoading = false;
+  bool _rankFailed = false;
   int _total = 0;
   bool _isLoading = false;
   String? _error;
@@ -91,6 +92,12 @@ class MatchHistoryProvider with ChangeNotifier {
   /// 牌位（MMR）還在讀取中；畫面據此顯示「讀取中」而不是「未定級」。
   bool get rankLoading => _rankLoading;
 
+  /// 牌位讀不到（限流、連線失敗或 Riot 不提供）；畫面顯示「無法取得牌位」而不是「未定級」。
+  bool get rankFailed => _rankFailed;
+
+  /// 讀取失敗的場次數（可以用 [retryFailed] 重試）。
+  int get failedCount => _entries.where((e) => e.failed).length;
+
   /// 焦點玩家的 MMR 原始資料（歷史最高、本幕戰績用）；讀不到時為 null。
   Map<String, dynamic>? get mmr => _mmr;
   List<int> get recentRr => _rr.values.take(5).toList();
@@ -110,6 +117,7 @@ class MatchHistoryProvider with ChangeNotifier {
     _mmr = null;
     _rank = null;
     _rankLoading = false;
+    _rankFailed = false;
     _total = 0;
     _error = null;
     final s = _session();
@@ -153,11 +161,13 @@ class MatchHistoryProvider with ChangeNotifier {
       if (gen != _generation) return null;
       _mmr = mmr;
       _rank = mmr == null ? null : mapRank(mmr);
+      _rankFailed = mmr == null;
       return null;
     } on RiotApiException catch (e) {
       return e;
     } catch (e) {
       debugPrint('牌位解析失敗：${e.runtimeType}');
+      if (gen == _generation) _rankFailed = true;
       return null;
     } finally {
       if (gen == _generation) {
@@ -241,21 +251,65 @@ class MatchHistoryProvider with ChangeNotifier {
     final base = _entries.length;
     _entries.addAll([for (final r in refs) MatchEntry(ref: r)]);
     notifyListeners();
+    final (fetched, authError) = await _fillDetails(
+        s, gen, [for (var i = 0; i < refs.length; i++) base + i]);
+    if (gen != _generation) return;
+    if (authError != null) {
+      // 還沒讀到的場次不留骨架。
+      _entries.removeRange(base, _entries.length);
+      throw authError;
+    }
+
+    await _finishDetails(s, gen, fetched, base, refs.length);
+    if (gen != _generation) return;
+
+    // 每場 RR 最後補上：列表已經可以看，RR 讀到後再填進卡片。
+    await _ensureRr(s, refs, gen);
+    if (gen != _generation) return;
+    _refresh(base, refs.length);
+  }
+
+  /// 重新讀取失敗的場次（限流或連線失敗後，使用者按「重試」）。
+  Future<void> retryFailed() async {
+    if (_isLoading) return;
+    final s = _session();
+    if (s == null) return;
+    final gen = _generation;
+    final indices = [
+      for (var i = 0; i < _entries.length; i++)
+        if (_entries[i].failed) i,
+    ];
+    if (indices.isEmpty) return;
+    _error = null;
+    for (final i in indices) {
+      _entries[i] = MatchEntry(ref: _entries[i].ref);
+    }
+    await _guarded(gen, () async {
+      final (fetched, authError) = await _fillDetails(s, gen, indices);
+      if (gen != _generation) return;
+      if (authError != null) throw authError;
+      await _finishDetails(s, gen, fetched, 0, _entries.length);
+    });
+  }
+
+  /// 讀 [indices] 這些列的對戰詳情，每讀完一場就換上；回傳讀到的詳情與登入失效的例外。
+  Future<(Map<String, MatchDetail>, RiotApiException?)> _fillDetails(
+      RiotSession s, int gen, List<int> indices) async {
     final fetched = <String, MatchDetail>{};
     RiotApiException? authError;
     var next = 0;
 
     void put(int i, MatchEntry e) {
-      if (gen != _generation) return;
-      _entries[base + i] = e;
+      if (gen != _generation || i >= _entries.length) return;
+      _entries[i] = e;
       notifyListeners();
     }
 
     // 固定數量的 worker 從佇列取場次，同時最多 maxConcurrent 個請求。
     Future<void> worker() async {
-      while (next < refs.length && authError == null && gen == _generation) {
-        final i = next++;
-        final ref = refs[i];
+      while (next < indices.length && authError == null && gen == _generation) {
+        final i = indices[next++];
+        final ref = _entries[i].ref;
         try {
           final json = await withRiotRetry(
               () => cache.json(s, ref.matchId, _client),
@@ -274,15 +328,15 @@ class MatchHistoryProvider with ChangeNotifier {
       }
     }
 
-    final workers = refs.length < maxConcurrent ? refs.length : maxConcurrent;
+    final workers =
+        indices.length < maxConcurrent ? indices.length : maxConcurrent;
     await Future.wait([for (var w = 0; w < workers; w++) worker()]);
-    if (gen != _generation) return;
-    if (authError != null) {
-      // 還沒讀到的場次不留骨架。
-      _entries.removeRange(base, _entries.length);
-      throw authError!;
-    }
+    return (fetched, authError);
+  }
 
+  /// 補上名稱、存進 [_details]、套回列表並通知 [onDetails]。
+  Future<void> _finishDetails(RiotSession s, int gen,
+      Map<String, MatchDetail> fetched, int base, int count) async {
     // 實測 match-details 沒有名稱：整頁的未知玩家一次向 name-service 查詢。
     final unnamed = {
       for (final d in fetched.values)
@@ -294,14 +348,9 @@ class MatchHistoryProvider with ChangeNotifier {
     if (gen != _generation) return;
     if (names.isNotEmpty) fetched.updateAll((_, d) => applyNames(d, names));
     _details.addAll(fetched);
-    _refresh(base, refs.length);
+    _refresh(base, count);
     if (fetched.isNotEmpty) onDetails?.call(fetched.values);
     notifyListeners();
-
-    // 每場 RR 最後補上：列表已經可以看，RR 讀到後再填進卡片。
-    await _ensureRr(s, refs, gen);
-    if (gen != _generation) return;
-    _refresh(base, refs.length);
   }
 
   /// 把 [_details]（已補名稱）與已讀到的 RR 套回這一頁的列表。
